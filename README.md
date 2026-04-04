@@ -1,59 +1,197 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Trivora
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+A modern web application built with Laravel 12, React, Inertia.js, and Tailwind CSS.
 
-## About Laravel
+## Tech Stack
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+- **Backend**: Laravel 12 (PHP 8.2+)
+- **Frontend**: React 18 with Inertia.js
+- **Styling**: Tailwind CSS
+- **Build Tool**: Vite
+- **Database**: MySQL (configured in .env)
+- **Maps**: Leaflet & Mapbox GL
+- **Charts**: Recharts
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## Prerequisites
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+Before installing, make sure you have the following installed on your machine:
 
-## Learning Laravel
+- **PHP 8.2+** - [Download](https://www.php.net/downloads)
+- **Composer** - [Download](https://getcomposer.org/download/)
+- **Node.js 18+** - [Download](https://nodejs.org/)
+- **npm** or **yarn** - Comes with Node.js
+- **MySQL 8.0+** - [Download](https://www.mysql.com/downloads/)
+- **Git** - [Download](https://git-scm.com/)
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+## Installation
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+### 1. Clone the Repository
 
-## Laravel Sponsors
+```bash
+git clone <repository-url>
+cd trivora
+```
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+### 2. Run Setup Command
 
-### Premium Partners
+The easiest way to install all dependencies and set up the project:
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+```bash
+composer run-script setup
+```
 
-## Contributing
+This will:
+- Install PHP dependencies via Composer
+- Copy `.env.example` to `.env`
+- Generate the application key
+- Run database migrations
+- Install npm packages
+- Build frontend assets
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+### 3. Configure Environment
 
-## Code of Conduct
+Edit the `.env` file with your database and application settings:
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+```env
+APP_NAME=Trivora
+APP_ENV=local
+APP_DEBUG=true
+APP_URL=http://localhost
 
-## Security Vulnerabilities
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=trivora
+DB_USERNAME=root
+DB_PASSWORD=
+```
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+### 4. Create Database
+
+Make sure your MySQL database exists:
+
+```bash
+mysql -u root -p
+CREATE DATABASE trivora;
+EXIT;
+```
+
+## Running the Application
+
+### Development Mode
+
+Start the full development environment with all services:
+
+```bash
+composer run dev
+```
+
+This will automatically start:
+- Laravel development server (port 8000)
+- Queue listener
+- Log pail
+- Vite dev server (port 5173)
+
+The application will be available at `http://localhost:8000`
+
+### Individual Commands
+
+If you prefer to run services separately:
+
+```bash
+# Terminal 1: Start Laravel server
+php artisan serve
+
+# Terminal 2: Start Vite dev server
+npm run dev
+
+# Terminal 3: Listen to queue jobs (if needed)
+php artisan queue:listen
+```
+
+## Building for Production
+
+```bash
+npm run build
+php artisan optimize
+```
+
+## Project Structure
+
+```
+app/              # PHP application code
+  Http/           # Controllers, middleware, requests
+  Models/         # Database models
+  Providers/      # Service providers
+resources/
+  js/             # React components and pages
+  views/          # Blade templates
+  css/            # Stylesheets
+routes/           # Route definitions
+database/
+  migrations/     # Database schema migrations
+  seeders/        # Database seeders
+  factories/      # Model factories
+config/           # Configuration files
+storage/          # File storage and logs
+tests/            # Automated tests
+public/           # Public-accessible files
+```
+
+## Common Commands
+
+```bash
+# Create a new controller
+php artisan make:controller ControllerName
+
+# Create a new model with migration
+php artisan make:model ModelName -m
+
+# Run migrations
+php artisan migrate
+
+# Create a new React component (helpers)
+# Components are in resources/js/Components/
+
+# Run tests
+php artisan test
+
+# Code formatting with Pint
+composer pint
+```
+
+## Troubleshooting
+
+### Port Already in Use
+If port 8000 is already in use, specify a different port:
+```bash
+php artisan serve --port=8001
+```
+
+### Database Migration Errors
+Reset and re-run migrations:
+```bash
+php artisan migrate:refresh --seed
+```
+
+### npm Dependencies Issues
+Clear cache and reinstall:
+```bash
+rm -rf node_modules package-lock.json
+npm install
+```
+
+### Windows File Permissions
+If using Windows, ensure your project permissions are correct and clear the cache:
+```bash
+php artisan cache:clear
+php artisan view:clear
+```
+
+## Support
+
+For issues or questions, reach out to the development team or check the [Laravel Documentation](https://laravel.com/docs).
 
 ## License
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+MIT License
