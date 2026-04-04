@@ -1,0 +1,14 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Ensure the custom divIcon container doesn't hide the pin */
+.clear-marker {
+    background: transparent !important;
+    border: none !important;
+}
+
+/* Fix for Leaflet markers sometimes being hidden by container overflow */
+.leaflet-marker-icon {
+    overflow: visible !important;
+}
