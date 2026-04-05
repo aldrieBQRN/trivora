@@ -26,16 +26,26 @@ const CSS = `
   overflow-x: hidden;
 }
 
-/* ── Hero backdrop ────────────────────────────────────────────────────── */
+/* ── Hero backdrop (PHOTO BACKGROUND) ────────────────────────────────── */
 .pa-hero-backdrop {
   position: absolute; top: 0; left: 0; width: 100%;
-  height: 460px;
-  background: #1C2340;
+  height: 460px; /* Keep this height as is for the wizard header */
+
+  /* Dark gradient overlay + Photo Background */
+  background-image:
+    linear-gradient(to bottom, rgba(28, 35, 64, 0.6) 0%, rgba(28, 35, 64, 0.98) 100%),
+    url('/images/nasugbu-bg.jpg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+
+  /* We keep the rounded corners for the wizard form to sit beautifully underneath */
   border-bottom-left-radius: 40px;
   border-bottom-right-radius: 40px;
   z-index: 0;
   overflow: hidden;
 }
+
 .pa-hero-backdrop::after {
   content: '';
   position: absolute; inset: 0;

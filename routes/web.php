@@ -89,19 +89,19 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
 
     // ==========================================
-    // TREASURER WORKFLOW (Municipal Cashier)
+    // CASHIER WORKFLOW (Treasurer's Office)
     // ==========================================
 
     // --- PHASE 3: PAYMENT VERIFICATION ---
-    Route::get('/treasurer/dashboard', function () {
-        return Inertia::render('Treasurer/Dashboard');
-    })->name('treasurer.dashboard');
+    Route::get('/cashier/payments', function () {
+        return Inertia::render('CashierDashboard/PaymentQueue');
+    })->name('cashier.payments');
 
-    Route::get('/treasurer/verify/{id}', function ($id) {
-        return Inertia::render('Treasurer/VerifyPayment', [
-            'transactionId' => $id
+    Route::get('/cashier/verify/{id}', function ($id) {
+        return Inertia::render('CashierDashboard/VerifyPayment', [
+            'applicationId' => $id
         ]);
-    })->name('treasurer.verify');
+    })->name('cashier.verify');
 
 
     // ==========================================

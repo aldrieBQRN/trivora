@@ -55,8 +55,8 @@ const CSS = `
 }
 .t-logo:hover img { transform: scale(1.05); }
 
-/* Nav scroll area */
-.t-nav { flex: 1; overflow-y: auto; padding: 30px 14px 0 14px; }
+/* Nav scroll area (Flex 1 allows it to take up remaining space above logout) */
+.t-nav { flex: 1; overflow-y: auto; padding: 30px 14px 14px 14px; }
 .t-nav::-webkit-scrollbar { width: 0; }
 
 /* Group */
@@ -98,32 +98,32 @@ const CSS = `
 .t-nav-link:hover .t-nav-icon { color: #6A76A8; }
 .t-nav-link.active .t-nav-icon { color: #4F5BCB; }
 
-/* ── Bottom Action (Logout) ── */
+/* ── Bottom Action (Logout fixed at bottom) ── */
 .t-bottom-action {
   flex-shrink: 0;
   padding: 16px 14px 24px 14px;
-  margin-top: auto;
   border-top: 1px solid rgba(28,35,64,.06);
+  background: #FFFFFF; /* Ensure it blocks scrolling content behind it */
 }
 .t-logout-btn {
   display: flex; align-items: center; gap: 12px;
   width: 100%; padding: 10px 13px; border-radius: 9px;
-  font-family: 'Inter', sans-serif; font-size: 13.5px; font-weight: 500;
-  color: #DC2626; /* Text is red by default */
+  font-family: 'Inter', sans-serif; font-size: 13.5px; font-weight: 600;
+  color: #DC2626; /* Always red */
   background: transparent; border: none;
   cursor: pointer; transition: all .18s ease;
   text-align: left;
 }
 .t-logout-btn .t-nav-icon {
-  color: #DC2626; /* Icon is red by default */
+  color: #DC2626; /* Icon always red */
   transition: color .18s;
 }
 .t-logout-btn:hover {
   background: rgba(220,38,38,.08);
-  color: #B91C1C; /* Darker red on hover */
+  color: #B91C1C;
 }
 .t-logout-btn:hover .t-nav-icon {
-  color: #B91C1C; /* Darker red icon on hover */
+  color: #B91C1C;
 }
 
 /* ─── MOBILE OVERLAY ───────────────────────────────────────────────── */
@@ -388,13 +388,14 @@ export default function OperatorLayout({ children, title, operatorName = "Operat
     // Calculate active page name for breadcrumb
     const activePage = allLinks.find(l => isLinkActive(l.route))?.name || title;
 
+    // 🔴 REAL LOGOUT LOGIC 🔴
     const handleLogout = () => {
         setIsExiting(true);
         setTimeout(() => {
-            // Send POST request to destroy standard Laravel Session
-            // On success, it redirects browser fully to your specific login portal
+            // Destroy the session via Laravel backend
             router.post(route('logout'), {}, {
                 onFinish: () => {
+                    // Force the browser to redirect completely to the operator login page
                     window.location.href = '/operator/login';
                 }
             });
@@ -420,42 +421,41 @@ export default function OperatorLayout({ children, title, operatorName = "Operat
                         <img src="/images/logo.png" alt="TRIVORA" />
                     </Link>
 
+                    {/* Nav Area (Scrollable) */}
                     <nav className="t-nav">
-                        <div className="t-nav-scroll">
-                            {navigation.map((group, gi) => (
-                                <div key={gi} className="t-nav-group">
-                                    <div className="t-group-label">{group.group}</div>
+                        {navigation.map((group, gi) => (
+                            <div key={gi} className="t-nav-group">
+                                <div className="t-group-label">{group.group}</div>
 
-                                    {group.links.map((link) => {
-                                        const Icon = link.icon;
-                                        const active = isLinkActive(link.route);
-                                        return (
-                                            <Link
-                                                key={link.name}
-                                                href={route(link.route)}
-                                                className={`t-nav-link${active ? ' active' : ''}`}
-                                            >
-                                                <Icon
-                                                    size={16}
-                                                    strokeWidth={active ? 2.5 : 1.8}
-                                                    className="t-nav-icon"
-                                                />
-                                                <span>{link.name}</span>
-                                            </Link>
-                                        );
-                                    })}
-                                </div>
-                            ))}
-                        </div>
-
-                        {/* Bottom Logout Button */}
-                        <div className="t-bottom-action">
-                            <button onClick={handleLogout} className="t-logout-btn">
-                                <LogOut size={16} strokeWidth={2.5} className="t-nav-icon" />
-                                <span>Sign Out</span>
-                            </button>
-                        </div>
+                                {group.links.map((link) => {
+                                    const Icon = link.icon;
+                                    const active = isLinkActive(link.route);
+                                    return (
+                                        <Link
+                                            key={link.name}
+                                            href={route(link.route)}
+                                            className={`t-nav-link${active ? ' active' : ''}`}
+                                        >
+                                            <Icon
+                                                size={16}
+                                                strokeWidth={active ? 2.5 : 1.8}
+                                                className="t-nav-icon"
+                                            />
+                                            <span>{link.name}</span>
+                                        </Link>
+                                    );
+                                })}
+                            </div>
+                        ))}
                     </nav>
+
+                    {/* ONLY Logout anchored at the very bottom, outside the scrollable area */}
+                    <div className="t-bottom-action">
+                        <button onClick={handleLogout} className="t-logout-btn">
+                            <LogOut size={16} strokeWidth={2.5} className="t-nav-icon" />
+                            <span>Sign Out</span>
+                        </button>
+                    </div>
                 </aside>
 
                 {/* ══════ MAIN COLUMN ══════════════════════════════════ */}
