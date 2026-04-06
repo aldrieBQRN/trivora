@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Head, useForm, Link } from '@inertiajs/react';
 import {
-    ChevronRight, Upload, ShieldCheck, CreditCard,
-    Info, CheckCircle2, MapPin, Smartphone, Wallet,
+    ChevronRight, Upload, ShieldCheck,
+    Info, CheckCircle2, MapPin,
     Check, Loader2, ArrowRight, ArrowLeft, Bike, Wifi
 } from 'lucide-react';
 
 /* ─────────────────────────────────────────────────────────────────────────
    TRIVORA — Public Apply / MTOP Registration Wizard
-   5-Step Flow: Agreement → Operator → Vehicle → Documents → Payment
+   4-Step Flow: Agreement → Operator → Vehicle → Documents → Success
    Matches Welcome.jsx design system: Plus Jakarta Sans · Inter · DM Sans
    Palette: Navy #1C2340 · Indigo accent #4F5BCB · Slate bg #EDEEF4
 ───────────────────────────────────────────────────────────────────────── */
@@ -29,7 +29,7 @@ const CSS = `
 /* ── Hero backdrop (PHOTO BACKGROUND) ────────────────────────────────── */
 .pa-hero-backdrop {
   position: absolute; top: 0; left: 0; width: 100%;
-  height: 460px; /* Keep this height as is for the wizard header */
+  height: 460px;
 
   /* Dark gradient overlay + Photo Background */
   background-image:
@@ -39,7 +39,6 @@ const CSS = `
   background-position: center;
   background-repeat: no-repeat;
 
-  /* We keep the rounded corners for the wizard form to sit beautifully underneath */
   border-bottom-left-radius: 40px;
   border-bottom-right-radius: 40px;
   z-index: 0;
@@ -468,90 +467,6 @@ const CSS = `
   color: #92400E; line-height: 1.9;
 }
 
-/* ── IoT notice ──────────────────────────────────────────────────────── */
-.pa-iot-notice {
-  display: flex; gap: 14px; align-items: flex-start;
-  background: rgba(79,91,203,.05); border: 1px solid rgba(79,91,203,.18);
-  border-radius: 12px; padding: 16px 18px; margin-bottom: 28px;
-}
-.pa-iot-notice-icon { color: #4F5BCB; flex-shrink: 0; margin-top: 1px; }
-.pa-iot-notice-text {
-  font-family: 'DM Sans', sans-serif; font-size: 10px; font-weight: 700;
-  letter-spacing: .1em; text-transform: uppercase;
-  color: #2D3690; line-height: 1.9;
-}
-
-/* ── Fee breakdown ───────────────────────────────────────────────────── */
-.pa-fee-box {
-  background: #FAFAFA; border: 1.5px solid rgba(28,35,64,.1);
-  border-radius: 14px; padding: 0; overflow: hidden; margin-bottom: 28px;
-}
-.pa-fee-row {
-  display: flex; justify-content: space-between; align-items: center;
-  padding: 14px 20px; border-bottom: 1px solid rgba(28,35,64,.06);
-}
-.pa-fee-row:last-child { border-bottom: none; }
-.pa-fee-row.iot { background: rgba(79,91,203,.03); }
-.pa-fee-label {
-  font-family: 'DM Sans', sans-serif; font-size: 9.5px; font-weight: 700;
-  letter-spacing: .1em; text-transform: uppercase;
-  color: #5A6488; display: flex; align-items: center; gap: 8px;
-}
-.pa-fee-badge {
-  font-family: 'DM Sans', sans-serif; font-size: 7.5px; font-weight: 700;
-  letter-spacing: .1em; text-transform: uppercase;
-  padding: 2px 7px; border-radius: 5px;
-  background: rgba(79,91,203,.1); color: #4F5BCB;
-  border: 1px solid rgba(79,91,203,.2);
-}
-.pa-fee-amount {
-  font-family: 'Plus Jakarta Sans', sans-serif;
-  font-size: 14px; font-weight: 800;
-  color: #1C2340; letter-spacing: -.01em;
-}
-.pa-fee-total {
-  background: #1C2340;
-  display: flex; justify-content: space-between; align-items: center;
-  padding: 18px 20px;
-}
-.pa-fee-total-label {
-  font-family: 'DM Sans', sans-serif; font-size: 9.5px; font-weight: 700;
-  letter-spacing: .15em; text-transform: uppercase;
-  color: rgba(255,255,255,.5);
-}
-.pa-fee-total-amount {
-  font-family: 'Plus Jakarta Sans', sans-serif;
-  font-size: 28px; font-weight: 800;
-  letter-spacing: -.025em; color: #FFFFFF; line-height: 1;
-}
-
-/* ── Payment method buttons ──────────────────────────────────────────── */
-.pa-pay-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 28px; }
-.pa-pay-method {
-  display: flex; flex-direction: column; align-items: center; gap: 10px;
-  padding: 22px 12px; border-radius: 14px;
-  border: 1.5px solid rgba(28,35,64,.12); background: #FFFFFF; cursor: pointer;
-  transition: all .18s; box-shadow: 0 1px 4px rgba(28,35,64,.05);
-}
-.pa-pay-method:hover { border-color: rgba(79,91,203,.3); box-shadow: 0 4px 16px rgba(28,35,64,.09); }
-.pa-pay-method.active { border-color: #1C2340; background: #F8F9FC; box-shadow: 0 4px 16px rgba(28,35,64,.14); }
-.pa-pay-icon { color: #8A96BC; transition: color .18s; }
-.pa-pay-method:hover .pa-pay-icon { color: #4F5BCB; }
-.pa-pay-method.active .pa-pay-icon { color: #1C2340; }
-.pa-pay-label {
-  font-family: 'DM Sans', sans-serif; font-size: 10px; font-weight: 700;
-  letter-spacing: .12em; text-transform: uppercase;
-  color: #8A96BC; transition: color .18s;
-}
-.pa-pay-method:hover .pa-pay-label { color: #4F5BCB; }
-.pa-pay-method.active .pa-pay-label { color: #1C2340; }
-.pa-pay-check {
-  width: 18px; height: 18px; border-radius: 50%; background: #1C2340;
-  display: flex; align-items: center; justify-content: center;
-  opacity: 0; transform: scale(.6); transition: all .2s;
-}
-.pa-pay-method.active .pa-pay-check { opacity: 1; transform: scale(1); }
-
 /* ── Success card ────────────────────────────────────────────────────── */
 .pa-success-icon {
   width: 88px; height: 88px; border-radius: 50%;
@@ -602,17 +517,7 @@ export default function PublicApply() {
     const [step, setStep] = useState(1);
     const [agreed, setAgreed] = useState(false);
     const [scrolledTerms, setScrolledTerms] = useState(false);
-    const [paymentMethod, setPaymentMethod] = useState(null);
-    const [isProcessingPayment, setIsProcessingPayment] = useState(false);
-
-    const fees = [
-        { label: 'Police Clearance / OR from LGU',  price: 150 },
-        { label: 'Health Certificate (Driver)',       price: 55  },
-        { label: 'Cedula (Municipal Treasurer)',      price: 40  },
-        { label: 'Application & Filing Fee',          price: 250 },
-        { label: 'IoT Tracking Device (GPS Unit)',    price: 500, iot: true },
-    ];
-    const total = fees.reduce((acc, curr) => acc + curr.price, 0);
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     const nasugbuBarangays = [
         'Poblacion 1', 'Poblacion 2', 'Poblacion 3', 'Poblacion 4',
@@ -621,7 +526,7 @@ export default function PublicApply() {
 
     const documentList = [
         { id: 'prangkisa', label: 'Xerox Prangkisa (Kung Renew)',                         conditional: true  },
-        { id: 'orcr',      label: 'Xerox OR/CR',                                           required:    true  },
+        { id: 'orcr',      label: 'Xerox OR/CR',                                          required:    true  },
         { id: 'receipt',   label: 'Delivery Receipt (Kung walang OR/CR / New)',            conditional: true  },
         { id: 'license',   label: "Driver's License Back-to-back (Prof/Restriction 1/A1)", required:    true  },
         { id: 'brgy',      label: 'Barangay Clearance (Original)',                         required:    true  },
@@ -652,11 +557,12 @@ export default function PublicApply() {
     };
 
     const submitApplication = () => {
-        setIsProcessingPayment(true);
-        setTimeout(() => { setIsProcessingPayment(false); next(); }, 2000);
+        setIsSubmitting(true);
+        // Simulate API call
+        setTimeout(() => { setIsSubmitting(false); next(); }, 2000);
     };
 
-    const steps = ['Agreement', 'Operator', 'Vehicle', 'Documents', 'Payment'];
+    const steps = ['Agreement', 'Operator', 'Vehicle', 'Documents'];
 
     return (
         <div className="pa-root">
@@ -687,7 +593,7 @@ export default function PublicApply() {
             </header>
 
             {/* ── PAGE HEADING ── */}
-            {step < 6 && (
+            {step < 5 && (
                 <div className="pa-wrap">
                     <div className="pa-page-head">
                         <div className="pa-page-eyebrow">
@@ -695,7 +601,7 @@ export default function PublicApply() {
                             MTOP Online Application
                         </div>
                         <h1 className="pa-page-title">Register Your<br />Tricycle Unit</h1>
-                        <p className="pa-page-sub">Complete all five steps to submit your franchise</p>
+                        <p className="pa-page-sub">Complete all steps to submit your franchise application</p>
                     </div>
                 </div>
             )}
@@ -705,7 +611,7 @@ export default function PublicApply() {
                 <div className="pa-wrap">
 
                     {/* PROGRESS */}
-                    {step < 6 && (
+                    {step < 5 && (
                         <div className="pa-progress">
                             {steps.map((label, i) => {
                                 const num      = i + 1;
@@ -778,8 +684,9 @@ export default function PublicApply() {
                                 <h3 className="pa-agree-h">6. Fees and Payment</h3>
                                 <p className="pa-agree-p">
                                     All fees stated in this portal are in Philippine Peso (₱) and are subject to change by
-                                    municipal ordinance. Payments are processed through authorized digital payment channels
-                                    (GCash, Maya, Bank Transfer). Official receipts shall be issued electronically.
+                                    municipal ordinance. Payments will only be collected AFTER your unit passes physical inspection.
+                                    Payments can be processed through authorized digital payment channels (GCash, Maya) or via
+                                    walk-in Cashier.
                                 </p>
 
                                 <h3 className="pa-agree-h">7. Data Privacy</h3>
@@ -910,7 +817,7 @@ export default function PublicApply() {
                         </div>
                     )}
 
-                    {/* ── STEP 4: DOCUMENTS ── */}
+                    {/* ── STEP 4: DOCUMENTS & SUBMIT ── */}
                     {step === 4 && (
                         <div className="pa-card" style={{ maxWidth: 900 }}>
                             <h2 className="pa-card-title">Requirements</h2>
@@ -939,81 +846,28 @@ export default function PublicApply() {
                             </div>
 
                             <div className="pa-actions">
-                                <button className="pa-btn-ghost" onClick={back}>
+                                <button className="pa-btn-ghost" onClick={back} disabled={isSubmitting}>
                                     <ArrowLeft size={13} /> Back
                                 </button>
-                                <button className="pa-btn-primary" disabled={!hasAllRequired} onClick={next}>
-                                    {hasAllRequired
-                                        ? <>Proceed to Payment <ChevronRight size={14} /></>
-                                        : 'Upload Required Docs'
+                                <button className="pa-btn-success" disabled={!hasAllRequired || isSubmitting} onClick={submitApplication}>
+                                    {isSubmitting
+                                        ? <><Loader2 size={15} className="animate-spin" /> Submitting...</>
+                                        : <><ShieldCheck size={15} /> Submit Application</>
                                     }
                                 </button>
                             </div>
                         </div>
                     )}
 
-                    {/* ── STEP 5: PAYMENT ── */}
+                    {/* ── STEP 5: SUCCESS ── */}
                     {step === 5 && (
-                        <div className="pa-card">
-                            <h2 className="pa-card-title">Settlement</h2>
-                            <p className="pa-card-sub">Review fees and select a payment method</p>
-
-                            <div className="pa-fee-box">
-                                {fees.map((f, i) => (
-                                    <div key={i} className={`pa-fee-row${f.iot ? ' iot' : ''}`}>
-                                        <span className="pa-fee-label">
-                                            {f.label}
-                                            {f.iot && <span className="pa-fee-badge">New 2026</span>}
-                                        </span>
-                                        <span className="pa-fee-amount">₱{f.price.toFixed(2)}</span>
-                                    </div>
-                                ))}
-                                <div className="pa-fee-total">
-                                    <span className="pa-fee-total-label">Total Amount</span>
-                                    <span className="pa-fee-total-amount">₱{total.toFixed(2)}</span>
-                                </div>
-                            </div>
-
-                            <div className="pa-iot-notice">
-                                <Wifi size={17} className="pa-iot-notice-icon" />
-                                <p className="pa-iot-notice-text">
-                                    IoT GPS Tracking Device will be installed during physical inspection at the TMO office.
-                                    Device must remain active and unmodified for the duration of the franchise period.
-                                </p>
-                            </div>
-
-                            <label className="pa-label" style={{ marginBottom: 12 }}>Select Payment Method</label>
-                            <div className="pa-pay-grid">
-                                <PayMethod active={paymentMethod === 'gcash'} label="GCash"   icon={Smartphone} onClick={() => setPaymentMethod('gcash')} />
-                                <PayMethod active={paymentMethod === 'maya'}  label="Maya"    icon={Wallet}     onClick={() => setPaymentMethod('maya')} />
-                                <PayMethod active={paymentMethod === 'bank'}  label="Bank"    icon={CreditCard} onClick={() => setPaymentMethod('bank')} />
-                            </div>
-
-                            <div className="pa-actions">
-                                <button className="pa-btn-ghost" onClick={back} disabled={isProcessingPayment}>
-                                    <ArrowLeft size={13} /> Back
-                                </button>
-                                <button className="pa-btn-success"
-                                    disabled={!paymentMethod || isProcessingPayment}
-                                    onClick={submitApplication}>
-                                    {isProcessingPayment
-                                        ? <><Loader2 size={15} className="animate-spin" /> Processing…</>
-                                        : <><ShieldCheck size={15} /> Pay ₱{total.toFixed(2)}</>
-                                    }
-                                </button>
-                            </div>
-                        </div>
-                    )}
-
-                    {/* ── STEP 6: SUCCESS ── */}
-                    {step === 6 && (
                         <div className="pa-card" style={{ textAlign: 'center', padding: '64px 48px', animation: 'paFadeUp .5s ease both' }}>
                             <div className="pa-success-icon">
                                 <CheckCircle2 size={38} strokeWidth={2} />
                             </div>
 
                             <h2 className="pa-card-title" style={{ marginBottom: 6 }}>Application Submitted</h2>
-                            <p className="pa-card-sub" style={{ marginBottom: 32 }}>Your documents and payment have been received</p>
+                            <p className="pa-card-sub" style={{ marginBottom: 32 }}>Your documents have been received</p>
 
                             <div className="pa-tracking-box">
                                 <p className="pa-tracking-eyebrow">Your Tracking Number</p>
@@ -1023,7 +877,7 @@ export default function PublicApply() {
                             <p className="pa-success-desc">
                                 Your application is now <span>pending TMO Validation.</span> Please wait
                                 for an SMS confirmation before bringing your tricycle for physical inspection
-                                and <span>IoT device installation.</span>
+                                and <span>IoT device installation.</span> Payment will be collected after passing inspection.
                             </p>
 
                             <Link href="/"
@@ -1112,17 +966,5 @@ function FileUpload({ id, label, required, conditional, file, onUpload }) {
                 )
             }
         </label>
-    );
-}
-
-function PayMethod({ active, label, icon: Icon, onClick }) {
-    return (
-        <button onClick={onClick} className={`pa-pay-method${active ? ' active' : ''}`}>
-            <Icon size={26} strokeWidth={1.6} className="pa-pay-icon" />
-            <span className="pa-pay-label">{label}</span>
-            <div className="pa-pay-check">
-                <Check size={10} strokeWidth={3} color="#FFFFFF" />
-            </div>
-        </button>
     );
 }

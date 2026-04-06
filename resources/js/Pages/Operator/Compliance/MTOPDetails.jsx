@@ -1,26 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Head, Link } from '@inertiajs/react';
 import OperatorLayout from '@/Layouts/OperatorLayout';
 import {
-    ChevronLeft,
-    FileText,
-    CheckCircle2,
-    Clock,
-    AlertCircle,
-    Bike,
-    FileSearch,
-    ClipboardCheck,
-    Stamp,
-    AlertTriangle,
-    UploadCloud,
-    XCircle,
-    Info,
-    Download,
-    Wrench,
-    Settings,
-    Wallet,
-    Receipt,
-    CreditCard
+    ChevronLeft, FileText, CheckCircle2, Clock, AlertCircle,
+    Bike, FileSearch, ClipboardCheck, Stamp, AlertTriangle,
+    UploadCloud, XCircle, Info, Download, Wrench, Settings,
+    Wallet, Receipt, CreditCard, Banknote, ArrowRight
 } from 'lucide-react';
 
 /* ─────────────────────────────────────────────────────────────────────────
@@ -87,7 +72,6 @@ const CSS = `
 .ad-chip-grid { display: flex; flex-wrap: wrap; gap: 8px; }
 .ad-chip { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 99px; background: rgba(5,150,105,.07); border: 1px solid rgba(5,150,105,.18); font-family: 'Inter', sans-serif; font-size: 11.5px; font-weight: 600; color: #065F46; white-space: nowrap; }
 .ad-chip svg { flex-shrink: 0; }
-
 .ad-summary-badge { margin-left: auto; display: inline-flex; align-items: center; gap: 5px; font-family: 'DM Sans', sans-serif; font-size: 9px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: #059669; background: rgba(5,150,105,.1); padding: 5px 12px; border-radius: 8px; white-space: nowrap; }
 
 /* ── Process Tracker ─────────────────────────────────────────────────── */
@@ -98,7 +82,7 @@ const CSS = `
 .ad-track-icon { width: 36px; height: 36px; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; background: #FFFFFF; border: 2px solid rgba(28,35,64,.15); color: #8A96BC; transition: all .2s; }
 .ad-track-step.done   .ad-track-icon { border-color: #059669; background: #059669; color: #FFFFFF; }
 .ad-track-step.active .ad-track-icon { border-color: #4F5BCB; background: #FFFFFF; color: #4F5BCB; box-shadow: 0 0 0 5px rgba(79,91,203,.15); }
-.ad-track-step.error  .ad-track-icon { border-color: #DC2626; background: #DC2626; color: #FFFFFF; box-shadow: 0 0 0 5px rgba(220,38,38,.15); }
+.ad-track-step.error  .ad-track-icon { border-color: #D97706; background: #D97706; color: #FFFFFF; box-shadow: 0 0 0 5px rgba(217,119,6,.15); }
 .ad-track-content { padding-top: 8px; }
 .ad-track-title { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 14px; font-weight: 700; color: #1C2340; margin-bottom: 4px; }
 .ad-track-desc  { font-family: 'Inter', sans-serif; font-size: 11.5px; font-weight: 500; color: #5A6488; line-height: 1.5; }
@@ -106,17 +90,20 @@ const CSS = `
 /* ── Action boxes ────────────────────────────────────────────────────── */
 .ad-action-box { border-radius: 16px; padding: 24px; text-align: left; border: 1px solid transparent; }
 .ad-action-box.error   { background: rgba(220,38,38,.04); border-color: rgba(220,38,38,.2); }
+.ad-action-box.warn    { background: rgba(217,119,6,.04); border-color: rgba(217,119,6,.2); }
 .ad-action-box.info    { background: rgba(79,91,203,.04); border-color: rgba(79,91,203,.2); }
 .ad-action-box.success { background: rgba(5,150,105,.04); border-color: rgba(5,150,105,.2); }
 
 .ad-action-icon { width: 44px; height: 44px; border-radius: 13px; background: #FFFFFF; display: flex; align-items: center; justify-content: center; margin-bottom: 16px; box-shadow: 0 4px 12px rgba(0,0,0,.05); }
 .ad-action-title { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 17px; font-weight: 800; margin-bottom: 8px; }
 .ad-action-box.error   .ad-action-title { color: #B91C1C; }
+.ad-action-box.warn    .ad-action-title { color: #B45309; }
 .ad-action-box.info    .ad-action-title { color: #2E3A9E; }
 .ad-action-box.success .ad-action-title { color: #047857; }
 
 .ad-action-desc { font-family: 'Inter', sans-serif; font-size: 13px; margin-bottom: 20px; line-height: 1.6; }
 .ad-action-box.error   .ad-action-desc { color: #7F1D1D; }
+.ad-action-box.warn    .ad-action-desc { color: #78350F; }
 .ad-action-box.info    .ad-action-desc { color: #3A4570; }
 .ad-action-box.success .ad-action-desc { color: #065F46; }
 
@@ -124,6 +111,28 @@ const CSS = `
 .ad-primary-btn:hover { background: #2E3A9E; transform: translateY(-1px); box-shadow: 0 8px 24px rgba(79,91,203,.25); }
 .ad-primary-btn.success-btn { background: #059669; box-shadow: 0 4px 14px rgba(5,150,105,.25); }
 .ad-primary-btn.success-btn:hover { background: #047857; box-shadow: 0 8px 24px rgba(5,150,105,.3); }
+
+/* ── Payment Options (Hybrid Flow) ───────────────────────────────────── */
+.ad-pay-options { display: flex; flex-direction: column; gap: 12px; margin-top: 16px; }
+.ad-pay-btn {
+  display: flex; align-items: center; justify-content: space-between; padding: 14px 16px;
+  background: #FFFFFF; border: 1.5px solid rgba(28,35,64,.1); border-radius: 12px;
+  cursor: pointer; transition: all .2s; color: #1C2340; text-decoration: none;
+}
+.ad-pay-btn:hover { border-color: #4F5BCB; box-shadow: 0 4px 12px rgba(79,91,203,.08); transform: translateY(-1px); }
+.ad-pay-btn-left { display: flex; align-items: center; gap: 12px; }
+.ad-pay-icon { width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.ad-pay-btn.online .ad-pay-icon { background: rgba(79,91,203,.1); color: #4F5BCB; }
+.ad-pay-btn.otc .ad-pay-icon { background: rgba(5,150,105,.1); color: #059669; }
+.ad-pay-lbl { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 14px; font-weight: 700; color: #1C2340; line-height: 1.2; text-align: left; }
+.ad-pay-sub { font-family: 'DM Sans', sans-serif; font-size: 10px; font-weight: 600; color: #8A96BC; margin-top: 3px; text-transform: uppercase; letter-spacing: .05em; text-align: left; }
+.ad-pay-chev { color: #8A96BC; transition: transform .2s; }
+.ad-pay-btn:hover .ad-pay-chev { transform: translateX(3px); color: #4F5BCB; }
+
+/* ── Ref Box ── */
+.ad-ref-box { background: rgba(28,35,64,.04); border: 1px dashed rgba(28,35,64,.2); border-radius: 10px; padding: 16px; margin-bottom: 20px; text-align: center; }
+.ad-ref-lbl { font-family: 'DM Sans', sans-serif; font-size: 10px; font-weight: 700; letter-spacing: .15em; text-transform: uppercase; color: #8A96BC; margin-bottom: 6px; }
+.ad-ref-val { font-family: 'Courier Prime', monospace; font-size: 22px; font-weight: 700; color: #1C2340; letter-spacing: 2px; }
 
 /* ── Payment rows ────────────────────────────────────────────────────── */
 .ad-pay-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px dashed rgba(28,35,64,.08); gap: 16px; }
@@ -170,9 +179,7 @@ const mockApplicationsData = {
         date: 'March 28, 2026', toda: 'TODA A (Poblacion)',
         make: 'Honda TMX 125', plate: '123 ABC', engine: 'ENG-987', chassis: 'CHS-123',
         operatorName: 'Mario Dela Cruz',
-        documents: generateItems(documentList,
-            { orcr: 'rejected', orcr_note: 'The OR/CR scan is unreadable. Please upload a high-resolution photo.' },
-            'approved'),
+        documents: generateItems(documentList, { orcr: 'rejected', orcr_note: 'The OR/CR scan is unreadable. Please upload a high-resolution photo.' }, 'approved'),
         inspections: generateItems(inspectionList, {}, 'pending'),
     },
     /* 2 ── TMO PHYSICAL PHASE (action-req) */
@@ -182,20 +189,17 @@ const mockApplicationsData = {
         make: 'Honda TMX 125', plate: '789 GHI', engine: 'ENG-554', chassis: 'CHS-112',
         operatorName: 'Mario Dela Cruz',
         documents: generateItems(documentList, {}, 'approved'),
-        inspections: generateItems(inspectionList,
-            { mirrors: 'rejected', mirrors_note: 'Missing right side mirror',
-              horn: 'rejected', horn_note: 'Horn is not working' },
-            'approved'),
+        inspections: generateItems(inspectionList, { mirrors: 'rejected', mirrors_note: 'Missing right side mirror', horn: 'rejected', horn_note: 'Horn is not working' }, 'approved'),
     },
-    /* 3 ── CASHIER PAYMENT PHASE */
+    /* 3 ── CASHIER PAYMENT PHASE (Hybrid Flow - Pending Payment) */
     'APP-2026-0622': {
-        id: 'APP-2026-0622', type: 'New Franchise', status: 'in-progress', phase: 'cashier-pay',
+        id: 'APP-2026-0622', type: 'New Franchise', status: 'action-req', phase: 'cashier-pay',
         date: 'April 02, 2026', toda: 'TODA B (Wawa)',
         make: 'TVS Max 125', plate: 'Pending (New)', engine: 'ENG-622', chassis: 'CHS-622',
         operatorName: 'Mario Dela Cruz',
         documents: generateItems(documentList, {}, 'approved'),
         inspections: generateItems(inspectionList, {}, 'approved'),
-        payment: { method: 'GCash', ref: 'GC-99210-TRV', amount: 515.00, date: 'April 03, 2026' },
+        payment_due: 995.00, payment_ref: 'TRV-88210',
     },
     /* 4 ── BPLO RELEASE PHASE */
     'APP-2026-0501': {
@@ -205,7 +209,7 @@ const mockApplicationsData = {
         operatorName: 'Mario Dela Cruz',
         documents: generateItems(documentList, {}, 'approved'),
         inspections: generateItems(inspectionList, {}, 'approved'),
-        payment: { method: 'Maya', ref: 'MY-88210-TRV', amount: 1695.00, date: 'March 20, 2026' },
+        payment: { method: 'PayMongo (Maya)', ref: 'MY-88210-TRV', amount: 1695.00, date: 'March 20, 2026' },
         bplo: { assignedBody: 'PENDING ASSIGNMENT' },
     },
     /* 5 ── COMPLETED */
@@ -216,14 +220,13 @@ const mockApplicationsData = {
         operatorName: 'Mario Dela Cruz',
         documents: generateItems(documentList, {}, 'approved'),
         inspections: generateItems(inspectionList, {}, 'approved'),
-        payment: { method: 'Cashier', ref: 'OR-77210-LGU', amount: 495.00, date: 'Feb 12, 2025' },
+        payment: { method: 'Walk-in (Cash)', ref: 'OR-77210-LGU', amount: 495.00, date: 'Feb 12, 2025' },
         bplo: { assignedBody: 'MTOP-2025-019' },
     },
 };
 
 /* ─────────────────────── Sub-components ────────────────────────────── */
 
-/** Full document / inspection row (used only while actively being reviewed) */
 const FullChecklistRow = ({ item, isPhys }) => (
     <div className={`ad-doc-row ${item.status === 'rejected' ? 'rejected' : ''}`}>
         <div className="ad-doc-left">
@@ -248,10 +251,6 @@ const FullChecklistRow = ({ item, isPhys }) => (
     </div>
 );
 
-/**
- * Compact chip summary — shown for phases where docs/phys are already approved.
- * Renders each item as a small pill. Much shorter than the full grid.
- */
 const CompactChecklist = ({ title, icon: Icon, items, accentColor = '#059669', accentBg = 'rgba(5,150,105,.1)' }) => (
     <div className="ad-card" style={{ border: `1px solid ${accentColor}22` }}>
         <div className="ad-card-header" style={{ background: `${accentColor}06` }}>
@@ -277,7 +276,6 @@ const CompactChecklist = ({ title, icon: Icon, items, accentColor = '#059669', a
     </div>
 );
 
-/** Settlement card */
 const SettlementCard = ({ payment }) => (
     <div className="ad-card" style={{ background: 'linear-gradient(to right, #FFFFFF, #FAFAFC)' }}>
         <div className="ad-card-header">
@@ -290,7 +288,8 @@ const SettlementCard = ({ payment }) => (
             <div className="ad-pay-row">
                 <span className="ad-info-label">Payment Method</span>
                 <span className="ad-info-value" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <CreditCard size={14} color="#8A96BC" /> {payment.method}
+                    {payment.method.includes('Cash') ? <Wallet size={14} color="#8A96BC" /> : <CreditCard size={14} color="#8A96BC" />}
+                    {payment.method}
                 </span>
             </div>
             <div className="ad-pay-row">
@@ -311,7 +310,6 @@ const SettlementCard = ({ payment }) => (
     </div>
 );
 
-/** BPLO card */
 const BPLOCard = ({ bplo }) => (
     <div className="ad-card" style={{ border: '1px solid rgba(5,150,105,.2)' }}>
         <div className="ad-card-header" style={{ background: 'rgba(5,150,105,.04)' }}>
@@ -331,21 +329,12 @@ const BPLOCard = ({ bplo }) => (
     </div>
 );
 
-/* ─────────────────────────────────────────────────────────────────────────
-   PHASE ORDER & DISPLAY LOGIC
-   ─────────────────────────────────────────────────────────────────────────
-   Phase index:   0=tmo-docs  1=tmo-phys  2=cashier-pay  3=bplo-release  4=completed
-
-   showDocsFull      → only idx 0  (actively reviewing docs)
-   showDocsSummary   → idx 1+      (docs approved; compact chips)
-   showPhysFull      → only idx 1  (actively reviewing unit)
-   showPhysSummary   → idx 2+      (inspection cleared; compact chips)
-───────────────────────────────────────────────────────────────────────── */
-
 export default function MTOPDetails({ applicationId }) {
     const urlId = applicationId
-        || (typeof window !== 'undefined' ? window.location.pathname.split('/').pop() : 'APP-2026-0812');
+        || (typeof window !== 'undefined' ? window.location.pathname.split('/').pop() : 'APP-2026-0622'); // Default to payment phase for demo
     const app = mockApplicationsData[urlId] || mockApplicationsData['APP-2026-0812'];
+
+    const [showOtcRef, setShowOtcRef] = useState(false);
 
     const phaseOrder = ['tmo-docs', 'tmo-phys', 'cashier-pay', 'bplo-release', 'completed'];
     const phaseIdx   = phaseOrder.indexOf(app.phase);
@@ -358,7 +347,7 @@ export default function MTOPDetails({ applicationId }) {
     const trackerSteps = [
         { id: 'tmo-docs',      title: 'Document Verification', desc: 'TMO review of requirements.',    icon: FileSearch    },
         { id: 'tmo-phys',      title: 'Physical Inspection',   desc: 'Unit roadworthiness check.',     icon: ClipboardCheck },
-        { id: 'cashier-pay',   title: 'Payment Verification',  desc: 'Municipal fee confirmation.',    icon: Wallet        },
+        { id: 'cashier-pay',   title: 'Payment Processing',    desc: 'Municipal fee settlement.',      icon: Wallet        },
         { id: 'bplo-release',  title: 'BPLO Processing',       desc: 'Issuance of Body Number.',       icon: Stamp         },
     ];
 
@@ -375,7 +364,6 @@ export default function MTOPDetails({ applicationId }) {
 
             <div className="ad-root">
 
-                {/* Nav */}
                 <div className="ad-nav">
                     <Link href={route('operator.mtop')} className="ad-back-link">
                         <ChevronLeft size={14} strokeWidth={3} /> Back to Applications
@@ -383,7 +371,6 @@ export default function MTOPDetails({ applicationId }) {
                     <span className="ad-id-badge">{app.id}</span>
                 </div>
 
-                {/* Header */}
                 <div className="ad-header">
                     <h1 className="ad-title">{app.type} Application</h1>
                     <p className="ad-subtitle">Submitted on {app.date}</p>
@@ -391,12 +378,8 @@ export default function MTOPDetails({ applicationId }) {
 
                 <div className="ad-grid">
 
-                    {/* ════════════════════════════
-                        LEFT SIDEBAR
-                        ════════════════════════════ */}
+                    {/* ════════════════════════════ LEFT SIDEBAR ════════════════════════════ */}
                     <div className="ad-side-col">
-
-                        {/* Action / Status box */}
 
                         {app.status === 'action-req' && app.phase === 'tmo-docs' && (
                             <div className="ad-action-box error">
@@ -420,11 +403,54 @@ export default function MTOPDetails({ applicationId }) {
                             </div>
                         )}
 
-                        {app.status === 'in-progress' && app.phase === 'cashier-pay' && (
-                            <div className="ad-action-box info">
-                                <div className="ad-action-icon"><Wallet size={22} color="#4F5BCB" /></div>
-                                <h3 className="ad-action-title">Payment Verification</h3>
-                                <p className="ad-action-desc">Your payment has been logged. The Municipal Cashier is verifying your reference number — this usually takes up to 24 hours.</p>
+                        {/* 🔴 HYBRID PAYMENT PHASE 🔴 */}
+                        {app.status === 'action-req' && app.phase === 'cashier-pay' && (
+                            <div className="ad-action-box warn">
+                                <div className="ad-action-icon"><Wallet size={22} color="#D97706" /></div>
+                                <h3 className="ad-action-title">Payment Required</h3>
+
+                                {showOtcRef ? (
+                                    <>
+                                        <p className="ad-action-desc" style={{ marginBottom: 12 }}>Present this reference number to the Municipal Cashier to settle your franchise fee.</p>
+                                        <div className="ad-ref-box">
+                                            <p className="ad-ref-lbl">System Reference</p>
+                                            <p className="ad-ref-val">{app.payment_ref}</p>
+                                        </div>
+                                        <button className="ad-pay-btn" style={{ justifyContent: 'center' }} onClick={() => setShowOtcRef(false)}>
+                                            <span className="ad-pay-lbl" style={{ textAlign: 'center' }}>Change Payment Method</span>
+                                        </button>
+                                    </>
+                                ) : (
+                                    <>
+                                        <p className="ad-action-desc" style={{ marginBottom: 8 }}>Your inspections are cleared. Please select how you want to pay the <strong>₱{app.payment_due.toFixed(2)}</strong> fee to proceed to BPLO.</p>
+
+                                        <div className="ad-pay-options">
+                                            {/* Redirects to PayMongo Checkout */}
+                                            <Link href={`/operator/mtop/${app.id}/pay`} className="ad-pay-btn online">
+    <div className="ad-pay-btn-left">
+        <div className="ad-pay-icon"><CreditCard size={18} strokeWidth={2.5}/></div>
+        <div>
+            <p className="ad-pay-lbl">Pay Online Now</p>
+            <p className="ad-pay-sub">GCash, Maya, or Bank Card</p>
+        </div>
+    </div>
+    <ArrowRight size={16} strokeWidth={2.5} className="ad-pay-chev" />
+</Link>
+
+                                            {/* Generates OTC Code */}
+                                            <button className="ad-pay-btn otc" onClick={() => setShowOtcRef(true)}>
+                                                <div className="ad-pay-btn-left">
+                                                    <div className="ad-pay-icon"><Banknote size={18} strokeWidth={2.5}/></div>
+                                                    <div>
+                                                        <p className="ad-pay-lbl">Pay at Municipal Hall</p>
+                                                        <p className="ad-pay-sub">Over-the-Counter Cash</p>
+                                                    </div>
+                                                </div>
+                                                <ArrowRight size={16} strokeWidth={2.5} className="ad-pay-chev" />
+                                            </button>
+                                        </div>
+                                    </>
+                                )}
                             </div>
                         )}
 
@@ -432,7 +458,7 @@ export default function MTOPDetails({ applicationId }) {
                             <div className="ad-action-box info">
                                 <div className="ad-action-icon"><Stamp size={22} color="#4F5BCB" /></div>
                                 <h3 className="ad-action-title">BPLO Final Processing</h3>
-                                <p className="ad-action-desc">Application approved! The BPLO is issuing your franchise certificate and assigning your official tricycle Body Number sticker.</p>
+                                <p className="ad-action-desc">Application approved and payment verified! The BPLO is issuing your franchise certificate and assigning your official tricycle Body Number sticker.</p>
                             </div>
                         )}
 
@@ -461,7 +487,7 @@ export default function MTOPDetails({ applicationId }) {
                                             <div key={step.id} className={`ad-track-step ${status}`}>
                                                 <div className="ad-track-icon">
                                                     {status === 'done'  ? <CheckCircle2 size={15} /> :
-                                                     status === 'error' ? <XCircle size={15} />      :
+                                                     status === 'error' ? <AlertCircle size={15} />  :
                                                      <Icon size={14} />}
                                                 </div>
                                                 <div className="ad-track-content">
@@ -475,14 +501,11 @@ export default function MTOPDetails({ applicationId }) {
                             </div>
                         </div>
 
-                    </div>{/* end side-col */}
+                    </div>
 
-                    {/* ════════════════════════════
-                        MAIN COLUMN
-                        ════════════════════════════ */}
+                    {/* ════════════════════════════ MAIN COLUMN ════════════════════════════ */}
                     <div className="ad-main-col">
 
-                        {/* ── Vehicle Information (always visible) ── */}
                         <div className="ad-card">
                             <div className="ad-card-header">
                                 <div className="ad-card-icon"><Bike size={17} /></div>
@@ -514,11 +537,6 @@ export default function MTOPDetails({ applicationId }) {
                             </div>
                         </div>
 
-                        {/* ════════════════════════════════════════════════════
-                            PHASE: tmo-docs  (idx 0)
-                            RIGHT: Vehicle Info ✓ | Full Doc List
-                            ════════════════════════════════════════════════════ */}
-
                         {showDocsFull && (
                             <div className="ad-card">
                                 <div className="ad-card-header">
@@ -535,17 +553,8 @@ export default function MTOPDetails({ applicationId }) {
                             </div>
                         )}
 
-                        {/* ════════════════════════════════════════════════════
-                            PHASE: tmo-phys  (idx 1)
-                            RIGHT: Vehicle Info ✓ | Doc Compact Summary | Full Phys List
-                            ════════════════════════════════════════════════════ */}
-
                         {showDocsSummary && !showPhysSummary && (
-                            <CompactChecklist
-                                title="Document Verification"
-                                icon={FileText}
-                                items={app.documents}
-                            />
+                            <CompactChecklist title="Document Verification" icon={FileText} items={app.documents} />
                         )}
 
                         {showPhysFull && (
@@ -564,19 +573,10 @@ export default function MTOPDetails({ applicationId }) {
                             </div>
                         )}
 
-                        {/* ════════════════════════════════════════════════════
-                            PHASE: cashier-pay  (idx 2)
-                            RIGHT: Vehicle Info ✓ | Settlement | [Doc ∣ Phys] split
-                            ════════════════════════════════════════════════════ */}
-
+                        {/* Shows Completed Payment Card */}
                         {app.payment && !app.bplo && (
                             <SettlementCard payment={app.payment} />
                         )}
-
-                        {/* ════════════════════════════════════════════════════
-                            PHASE: bplo-release / completed  (idx 3-4)
-                            RIGHT: Vehicle Info ✓ | [Settlement ∣ BPLO] split | [Doc ∣ Phys] split
-                            ════════════════════════════════════════════════════ */}
 
                         {app.payment && app.bplo && (
                             <div className="ad-split-grid">
@@ -585,23 +585,14 @@ export default function MTOPDetails({ applicationId }) {
                             </div>
                         )}
 
-                        {/* Compact summaries for cashier+ — side-by-side to minimise height */}
                         {showDocsSummary && showPhysSummary && (
                             <div className="ad-split-grid">
-                                <CompactChecklist
-                                    title="Document Verification"
-                                    icon={FileText}
-                                    items={app.documents}
-                                />
-                                <CompactChecklist
-                                    title="Physical Inspection"
-                                    icon={Settings}
-                                    items={app.inspections}
-                                />
+                                <CompactChecklist title="Document Verification" icon={FileText} items={app.documents} />
+                                <CompactChecklist title="Physical Inspection" icon={Settings} items={app.inspections} />
                             </div>
                         )}
 
-                    </div>{/* end main-col */}
+                    </div>
                 </div>
             </div>
         </OperatorLayout>

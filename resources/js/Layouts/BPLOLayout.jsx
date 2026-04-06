@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 import { Link, usePage, router } from '@inertiajs/react';
 import {
     Bell, Menu, Search, Settings, LogOut,
-    ChevronDown, ChevronRight, Command,
-    Award, FileCheck, Users2, BarChart3,
+    ChevronDown, Command,
+    Award, FileCheck
 } from 'lucide-react';
 
 /* ─────────────────────────────────────────────────────────────────────────
@@ -55,7 +55,7 @@ const CSS = `
 .b-logo:hover img { transform: scale(1.05); }
 
 /* Nav scroll area */
-.b-nav { flex: 1; overflow-y: auto; padding: 30px 14px; }
+.b-nav { flex: 1; overflow-y: auto; padding: 30px 14px 14px; }
 .b-nav::-webkit-scrollbar { width: 0; }
 
 /* Group */
@@ -97,32 +97,32 @@ const CSS = `
 .b-nav-link:hover .b-nav-icon { color: #5A7AAA; }
 .b-nav-link.active .b-nav-icon { color: #4169E1; }
 
-/* Footer */
-.b-footer {
+/* ── Bottom Action (Logout fixed at bottom) ── */
+.b-bottom-action {
   flex-shrink: 0;
+  padding: 16px 14px 24px 14px;
   border-top: 1px solid rgba(26,51,128,.06);
-  padding: 16px 20px;
-  display: flex; align-items: center; justify-content: space-between;
+  background: #FFFFFF;
 }
-.b-footer-text {
-  font-family: 'DM Sans', sans-serif;
-  font-size: 8.5px; font-weight: 700;
-  letter-spacing: .14em; text-transform: uppercase;
-  color: #8AAAD4;
-  display: flex; align-items: center; gap: 7px;
+.b-logout-btn {
+  display: flex; align-items: center; gap: 12px;
+  width: 100%; padding: 10px 13px; border-radius: 9px;
+  font-family: 'Inter', sans-serif; font-size: 13.5px; font-weight: 600;
+  color: #DC2626;
+  background: transparent; border: none;
+  cursor: pointer; transition: all .18s ease;
+  text-align: left;
 }
-.b-footer-dot {
-  width: 5px; height: 5px; border-radius: 50%;
-  background: #4169E1; opacity: .6;
+.b-logout-btn .b-nav-icon {
+  color: #DC2626;
+  transition: color .18s;
 }
-.b-footer-badge {
-  font-family: 'DM Sans', sans-serif;
-  font-size: 8px; font-weight: 800;
-  letter-spacing: .1em; text-transform: uppercase;
-  color: #4169E1;
-  background: rgba(65,105,225,.1);
-  border: 1px solid rgba(65,105,225,.22);
-  border-radius: 5px; padding: 3px 8px;
+.b-logout-btn:hover {
+  background: rgba(220,38,38,.08);
+  color: #B91C1C;
+}
+.b-logout-btn:hover .b-nav-icon {
+  color: #B91C1C;
 }
 
 /* ─── MOBILE OVERLAY ───────────────────────────────────────────────── */
@@ -339,19 +339,13 @@ export default function BPLOLayout({ children, title, role = "BPLO Officer" }) {
     const [profileOpen, setProfileOpen] = useState(false);
     const [isExiting,   setIsExiting]   = useState(false);
 
+    // 🔴 BPLO NAVIGATION (Administration removed as requested) 🔴
     const navigation = [
         {
             group: "Issuance Hub",
             links: [
-                { name: 'Releasing Queue', icon: Award,    route: '/bplo/releasing' },
+                { name: 'Releasing Queue', icon: Award,     route: '/bplo/releasing' },
                 { name: 'Active Registry', icon: FileCheck, route: '/bplo/registry'  },
-            ]
-        },
-        {
-            group: "Administration",
-            links: [
-                { name: 'TODA Masterlist', icon: Users2,   route: '/bplo/todas'   },
-                { name: 'Revenue Reports', icon: BarChart3, route: '/bplo/reports' },
             ]
         }
     ];
@@ -359,9 +353,17 @@ export default function BPLOLayout({ children, title, role = "BPLO Officer" }) {
     const allLinks   = navigation.flatMap(g => g.links);
     const activePage = allLinks.find(l => url.startsWith(l.route))?.name || title;
 
+    // Fixed logout redirection
+    // 🔴 DEMO LOGOUT LOGIC 🔴
     const handleLogout = () => {
         setIsExiting(true);
-        setTimeout(() => { router.post(route('logout')); }, 600);
+        setTimeout(() => {
+            // For now, just instantly redirect to the login page
+            window.location.href = '/login';
+
+            // NOTE: Once we connect the real database authentication,
+            // you will swap this back to: router.post('/logout')
+        }, 400);
     };
 
     return (
@@ -370,7 +372,6 @@ export default function BPLOLayout({ children, title, role = "BPLO Officer" }) {
 
             <div className="bplo-root" style={{ opacity: isExiting ? 0 : 1, transition: 'opacity .5s' }}>
 
-                {/* Mobile overlay */}
                 <div
                     className={`b-overlay${sidebarOpen ? '' : ' hidden'}`}
                     onClick={() => setSidebarOpen(false)}
@@ -379,8 +380,8 @@ export default function BPLOLayout({ children, title, role = "BPLO Officer" }) {
                 {/* ══════ SIDEBAR ══════════════════════════════════════ */}
                 <aside className={`b-sidebar${sidebarOpen ? ' open' : ''}`}>
 
-                    <Link href="/dashboard" className="b-logo">
-                        <img src="/images/logo.png" alt="Trivora" />
+                    <Link href="/bplo/releasing" className="b-logo">
+                        <img src="/images/logo.png" alt="TRIVORA" />
                     </Link>
 
                     <nav className="b-nav">
@@ -410,12 +411,12 @@ export default function BPLOLayout({ children, title, role = "BPLO Officer" }) {
                         ))}
                     </nav>
 
-                    <div className="b-footer">
-                        <div className="b-footer-text">
-                            <span className="b-footer-dot" />
-                            BPLO Municipal Console
-                        </div>
-                        <span className="b-footer-badge">LGU</span>
+                    {/* ONLY Logout anchored at the bottom */}
+                    <div className="b-bottom-action">
+                        <button onClick={handleLogout} className="b-logout-btn">
+                            <LogOut size={16} strokeWidth={2.5} className="b-nav-icon" />
+                            <span>Sign Out</span>
+                        </button>
                     </div>
                 </aside>
 
@@ -425,7 +426,6 @@ export default function BPLOLayout({ children, title, role = "BPLO Officer" }) {
                     {/* Header */}
                     <header className="b-header">
 
-                        {/* Left */}
                         <div className="b-header-left">
                             <button
                                 className="b-menu-btn"
@@ -441,10 +441,8 @@ export default function BPLOLayout({ children, title, role = "BPLO Officer" }) {
                             </div>
                         </div>
 
-                        {/* Right */}
                         <div className="b-header-right">
 
-                            {/* Search */}
                             <div className="b-search">
                                 <Search size={13} strokeWidth={2} className="b-search-icon" />
                                 <input placeholder="Search registry…" />
@@ -454,7 +452,6 @@ export default function BPLOLayout({ children, title, role = "BPLO Officer" }) {
                                 </div>
                             </div>
 
-                            {/* Bell */}
                             <button className="b-notif">
                                 <Bell size={18} strokeWidth={1.8} />
                                 <span className="b-notif-pip" />
@@ -462,7 +459,6 @@ export default function BPLOLayout({ children, title, role = "BPLO Officer" }) {
 
                             <div className="b-hdivider" />
 
-                            {/* Profile */}
                             <div className="b-profile">
                                 <button
                                     className="b-profile-btn"

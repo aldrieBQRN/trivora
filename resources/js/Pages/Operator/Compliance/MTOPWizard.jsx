@@ -10,14 +10,10 @@ import {
     Bike,
     Check,
     Loader2,
-    Wallet,
-    Smartphone,
-    CreditCard,
     ShieldCheck,
     ArrowLeft,
     ArrowRight,
-    Info,
-    X
+    Info
 } from 'lucide-react';
 
 /* ─────────────────────────────────────────────────────────────────────────
@@ -28,7 +24,7 @@ import {
 const CSS = `
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600;700&family=DM+Sans:wght@500;600;700&display=swap');
 
-.mw-root { font-family: 'Inter', sans-serif; color: #1C2340; width: 100%; padding-bottom: 64px; }
+.mw-root { font-family: 'Inter', sans-serif; color: #1C2340; width: 100%; padding-bottom: 64px; max-width: 1200px; margin: 0 auto; }
 .mw-root *, .mw-root *::before, .mw-root *::after { box-sizing: border-box; }
 
 /* ── Page heading ───────────────────────────────────────────────────── */
@@ -51,15 +47,14 @@ const CSS = `
 }
 .mw-subtitle {
   font-family: 'DM Sans', sans-serif;
-  font-size: 9px; font-weight: 600;
-  letter-spacing: .14em; text-transform: uppercase;
+  font-size: 13px; font-weight: 500;
   color: #8A96BC; margin-top: 6px;
 }
 
 .mw-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 32px; }
 .mw-back-link {
   display: inline-flex; align-items: center; gap: 6px;
-  font-family: 'DM Sans', sans-serif; font-size: 9px; font-weight: 700;
+  font-family: 'DM Sans', sans-serif; font-size: 9.5px; font-weight: 700;
   letter-spacing: .16em; text-transform: uppercase; color: #8A96BC; text-decoration: none;
   transition: color .2s;
 }
@@ -76,7 +71,7 @@ const CSS = `
 }
 .mw-step.active .mw-step-circle { background: #FFFFFF; color: #4F5BCB; border-color: #4F5BCB; box-shadow: 0 0 0 4px rgba(79,91,203,.1); }
 .mw-step.done .mw-step-circle { background: #059669; color: #FFFFFF; border-color: #059669; }
-.mw-step-label { font-family: 'DM Sans', sans-serif; font-size: 9px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: #8A96BC; }
+.mw-step-label { font-family: 'DM Sans', sans-serif; font-size: 9.5px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: #8A96BC; }
 .mw-step.active .mw-step-label { color: #1C2340; }
 .mw-step.done .mw-step-label { color: #059669; }
 .mw-stepper-line { width: 40px; height: 2px; background: #E2E8F0; border-radius: 2px; flex-shrink: 0; }
@@ -90,7 +85,7 @@ const CSS = `
 
 .mw-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px; }
 .mw-input-group { display: flex; flex-direction: column; gap: 8px; }
-.mw-label { font-family: 'DM Sans', sans-serif; font-size: 10px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: #5A6488; }
+.mw-label { font-family: 'DM Sans', sans-serif; font-size: 10.5px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: #5A6488; }
 .mw-input, .mw-select {
   height: 52px; border: 1.5px solid rgba(28,35,64,.12); border-radius: 12px;
   padding: 0 18px; font-family: 'Inter', sans-serif; font-size: 14px; color: #1C2340;
@@ -112,17 +107,6 @@ const CSS = `
 .mw-tag-done { font-family: 'DM Sans', sans-serif; font-size: 8.5px; font-weight: 800; color: #059669; background: rgba(5,150,105,.08); padding: 3px 10px; border-radius: 6px; text-transform: uppercase; }
 .mw-file-thumb { width: 50px; height: 50px; border-radius: 10px; object-fit: cover; border: 1px solid rgba(5,150,105,.2); }
 .mw-file-icon-wrap { width: 44px; height: 44px; border-radius: 10px; background: #FFF; border: 1px solid rgba(28,35,64,.08); display: flex; align-items: center; justify-content: center; color: #8A96BC; }
-
-/* ── Settlement ── */
-.mw-fee-box { background: #FAFAFA; border: 1.5px solid rgba(28,35,64,.1); border-radius: 16px; overflow: hidden; margin-bottom: 32px; }
-.mw-fee-row { display: flex; justify-content: space-between; padding: 18px 24px; border-bottom: 1px solid rgba(28,35,64,.06); }
-.mw-fee-total { background: #1C2340; display: flex; justify-content: space-between; padding: 24px; color: #FFFFFF; align-items: center; }
-.mw-pay-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 32px; }
-.mw-pay-method {
-  display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 28px 12px;
-  border-radius: 16px; border: 1.5px solid rgba(28,35,64,.12); background: #FFFFFF; cursor: pointer; transition: all .18s;
-}
-.mw-pay-method.active { border-color: #1C2340; background: #F8F9FC; box-shadow: 0 4px 16px rgba(28,35,64,.1); transform: translateY(-2px); }
 
 /* ── Success Page ── */
 .mw-success-card { text-align: center; padding: 80px 40px; animation: mwFadeUp 0.6s ease both; }
@@ -153,8 +137,8 @@ const CSS = `
 `;
 
 export default function MTOPWizard() {
+    // We only need 3 steps now: 1. Vehicle, 2. Documents, 3. Success
     const [step, setStep] = useState(1);
-    const [paymentMethod, setPaymentMethod] = useState(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const { data, setData } = useForm({
@@ -165,15 +149,6 @@ export default function MTOPWizard() {
         toda: 'A (Poblacion)',
         documents: {},
     });
-
-    const fees = [
-        { label: 'Police Clearance / OR from LGU', price: 150 },
-        { label: 'Health Certificate (Driver)', price: 55 },
-        { label: 'Cedula (Municipal Treasurer)', price: 40 },
-        { label: 'New Franchise Application Fee', price: 250 },
-        { label: 'IoT Tracking & Monitoring Device', price: 1200, isHardware: true },
-    ];
-    const total = fees.reduce((acc, curr) => acc + curr.price, 0);
 
     const documentList = [
         { id: 'receipt',   label: 'Delivery Receipt (New)', required: true },
@@ -197,7 +172,7 @@ export default function MTOPWizard() {
         setIsSubmitting(true);
         setTimeout(() => {
             setIsSubmitting(false);
-            setStep(4);
+            setStep(3); // Move to Success Page
         }, 2000);
     };
 
@@ -211,7 +186,7 @@ export default function MTOPWizard() {
 
             <div className="mw-root">
 
-                {step < 4 && (
+                {step < 3 && (
                     <>
                         <div className="mw-nav">
                             <Link href={route('operator.mtop')} className="mw-back-link">
@@ -222,16 +197,14 @@ export default function MTOPWizard() {
                         <div style={{ marginBottom: 40 }}>
                             <p className="mw-eyebrow">Franchise & Compliance</p>
                             <h1 className="mw-title">New Unit Registration</h1>
-                            <p className="mw-subtitle">Complete the steps below to register your additional tricycle unit.</p>
+                            <p className="mw-subtitle">Complete the steps below to submit your application for a new tricycle unit.</p>
                         </div>
 
                         {/* ── Progress Tracker ── */}
                         <div className="mw-stepper">
-                            <StepNode num={1} label="Vehicle" active={step === 1} done={step > 1} />
+                            <StepNode num={1} label="Vehicle Details" active={step === 1} done={step > 1} />
                             <div className={`mw-stepper-line ${step > 1 ? 'filled' : ''}`} />
-                            <StepNode num={2} label="Documents" active={step === 2} done={step > 2} />
-                            <div className={`mw-stepper-line ${step > 2 ? 'filled' : ''}`} />
-                            <StepNode num={3} label="Payment" active={step === 3} done={step > 3} />
+                            <StepNode num={2} label="Requirements" active={step === 2} done={step > 2} />
                         </div>
                     </>
                 )}
@@ -294,67 +267,31 @@ export default function MTOPWizard() {
                             ))}
                         </div>
                         <div className="mw-footer">
-                            <button className="mw-btn-primary mw-btn-secondary" onClick={back}><ArrowLeft size={16}/> Back</button>
-                            <button className="mw-btn-primary" disabled={!isStep2Valid} onClick={next}>
-                                Continue to Payment <ChevronRight size={16} />
+                            <button className="mw-btn-primary mw-btn-secondary" onClick={back} disabled={isSubmitting}>
+                                <ArrowLeft size={16}/> Back
                             </button>
-                        </div>
-                    </div>
-                )}
-
-                {/* ── STEP 3: PAYMENT ── */}
-                {step === 3 && (
-                    <div className="mw-form-card">
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 32 }}>
-                            <div style={{ padding: 12, background: 'rgba(79,91,203,.1)', borderRadius: 12, color: '#4F5BCB' }}><Wallet size={24} /></div>
-                            <h2 style={{ fontFamily: 'Plus Jakarta Sans', fontSize: 22, fontWeight: 800 }}>Payment Settlement</h2>
-                        </div>
-
-                        <div className="mw-fee-box">
-                            {fees.map((f, i) => (
-                                <div key={i} className="mw-fee-row">
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                        <span style={{ fontSize: '11px', fontWeight: '700', color: '#5A6488', textTransform: 'uppercase' }}>{f.label}</span>
-                                        {f.isHardware && <span style={{ fontSize: '9px', padding: '3px 8px', background: '#EEF2FF', color: '#4F5BCB', borderRadius: '6px', fontWeight: '800' }}>HARDWARE</span>}
-                                    </div>
-                                    <span style={{ fontWeight: '700', fontSize: 15 }}>₱{f.price.toFixed(2)}</span>
-                                </div>
-                            ))}
-                            <div className="mw-fee-total">
-                                <div>
-                                    <span style={{ fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', opacity: 0.7 }}>Total Amount Due</span>
-                                    <p style={{ fontSize: '12px', color: 'rgba(255,255,255,.5)', marginTop: '4px' }}>Includes mandatory IoT installation</p>
-                                </div>
-                                <span style={{ fontSize: '32px', fontWeight: '800', letterSpacing: '-.02em' }}>₱{total.toFixed(2)}</span>
-                            </div>
-                        </div>
-
-                        <label className="mw-label" style={{ marginBottom: 16, display: 'block' }}>Select Payment Method</label>
-                        <div className="mw-pay-grid">
-                            <PayTile active={paymentMethod === 'gcash'} label="GCash" icon={Smartphone} onClick={() => setPaymentMethod('gcash')} />
-                            <PayTile active={paymentMethod === 'maya'} label="Maya" icon={Wallet} onClick={() => setPaymentMethod('maya')} />
-                            <PayTile active={paymentMethod === 'bank'} label="Bank Transfer" icon={CreditCard} onClick={() => setPaymentMethod('bank')} />
-                        </div>
-
-                        <div className="mw-footer">
-                            <button className="mw-btn-primary mw-btn-secondary" onClick={back} disabled={isSubmitting}><ArrowLeft size={16}/> Back</button>
-                            <button className="mw-btn-primary" style={{ background: '#059669' }} disabled={!paymentMethod || isSubmitting} onClick={handleFinalSubmit}>
+                            <button
+                                className="mw-btn-primary"
+                                style={{ background: '#059669' }}
+                                disabled={!isStep2Valid || isSubmitting}
+                                onClick={handleFinalSubmit}
+                            >
                                 {isSubmitting ? <Loader2 size={18} className="animate-spin" /> : <ShieldCheck size={18} />}
-                                {isSubmitting ? 'Verifying...' : `Pay & Submit ₱${total.toFixed(2)}`}
+                                {isSubmitting ? 'Submitting...' : 'Submit Application'}
                             </button>
                         </div>
                     </div>
                 )}
 
-                {/* ── STEP 4: SUCCESS SUBMISSION ── */}
-                {step === 4 && (
+                {/* ── STEP 3: SUCCESS SUBMISSION ── */}
+                {step === 3 && (
                     <div className="mw-form-card mw-success-card">
                         <div className="mw-success-icon">
                             <CheckCircle2 size={48} strokeWidth={2.5} />
                         </div>
-                        <h1 className="mw-title" style={{ fontSize: 36, marginBottom: 16 }}>Application Received</h1>
+                        <h1 className="mw-title" style={{ fontSize: 36, marginBottom: 16 }}>Application Submitted</h1>
                         <p className="mw-subtitle" style={{ maxWidth: 520, margin: '0 auto 40px', fontSize: 16, lineHeight: 1.6 }}>
-                            Your registration for the new unit and online payment have been successfully received.
+                            Your registration for the new unit has been successfully submitted.
                             The Nasugbu TMO team will begin document verification shortly.
                         </p>
 
@@ -377,8 +314,8 @@ export default function MTOPWizard() {
                                     <span><strong>Physical Inspection:</strong> You will be notified via SMS to schedule the vehicle's roadworthiness check.</span>
                                 </li>
                                 <li style={{ fontSize: 14, color: '#5A6488', lineHeight: 1.5, display: 'flex', gap: 12 }}>
-                                    <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#4F5BCB', marginTop: 8, flexShrink: 0 }} />
-                                    <span><strong>IoT Device Issuance:</strong> Your tracking hardware will be issued upon passing physical inspection.</span>
+                                    <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#D97706', marginTop: 8, flexShrink: 0 }} />
+                                    <span><strong>Payment & Fees:</strong> Franchise and IoT installation fees will only be collected <em>after</em> your unit passes physical inspection.</span>
                                 </li>
                             </ul>
                         </div>
@@ -429,14 +366,5 @@ function FileUploadTile({ doc, file, onUpload }) {
             </div>
             {preview ? <img src={preview} className="mw-file-thumb" /> : <div className="mw-file-icon-wrap">{file ? <Check size={18} color="#059669" /> : <UploadCloud size={18} />}</div>}
         </label>
-    );
-}
-
-function PayTile({ active, label, icon: Icon, onClick }) {
-    return (
-        <div className={`mw-pay-method ${active ? 'active' : ''}`} onClick={onClick}>
-            <Icon size={28} strokeWidth={1.5} color={active ? '#1C2340' : '#8A96BC'} />
-            <span style={{ fontSize: '10px', fontWeight: '700', textTransform: 'uppercase', color: active ? '#1C2340' : '#8A96BC', marginTop: 8 }}>{label}</span>
-        </div>
     );
 }

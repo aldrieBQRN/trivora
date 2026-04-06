@@ -5,6 +5,7 @@ import {
     ChevronDown, Command,
     LayoutDashboard, ShieldCheck,
     FileSearch, ClipboardCheck,
+    CheckSquare, Bike, ShieldAlert // <-- NEW ICONS ADDED
 } from 'lucide-react';
 
 /* ─────────────────────────────────────────────────────────────────────────
@@ -44,20 +45,33 @@ const CSS = `
 
 /* Logo */
 .t-logo {
-  height: 72px; flex-shrink: 0;
+  height: 76px; flex-shrink: 0;
   display: flex; align-items: center; justify-content: center;
-  border-bottom: 1px solid rgba(28,35,64,.06);
   padding: 0 24px; text-decoration: none;
+  border: none;
 }
-.t-logo img {
-  height: 50px; width: auto; object-fit: contain;
-  transition: transform .3s ease;
+.t-logo-wrap {
+  background: #FFFFFF;
+  border-radius: 12px;
+  padding: 8px 16px;
+  display: flex; align-items: center; justify-content: center;
+  border: none;
+  box-shadow: 0 2px 10px rgba(28,35,64,0.06), 0 1px 3px rgba(28,35,64,0.04);
+  transition: transform .2s ease, box-shadow .2s ease;
 }
-.t-logo:hover img { transform: scale(1.05); }
+.t-logo:hover .t-logo-wrap {
+  transform: scale(1.05);
+  box-shadow: 0 4px 14px rgba(28,35,64,0.1);
+}
+.t-logo-img { height: 28px; width: auto; display: block; object-fit: contain; }
 
-/* Nav scroll area */
-.t-nav { flex: 1; overflow-y: auto; padding: 30px 14px; }
+/* ── Nav Area ──────────────────────────────────────────────────────── */
+.t-nav {
+  flex: 1; display: flex; flex-direction: column;
+  padding: 24px 14px 14px 14px; overflow-y: auto;
+}
 .t-nav::-webkit-scrollbar { width: 0; }
+.t-nav-scroll { flex: 1; }
 
 /* Group */
 .t-nav-group { margin-bottom: 30px; }
@@ -98,32 +112,32 @@ const CSS = `
 .t-nav-link:hover .t-nav-icon { color: #6A76A8; }
 .t-nav-link.active .t-nav-icon { color: #4F5BCB; }
 
-/* Footer */
-.t-footer {
+/* ── Bottom Action (Logout) ────────────────────────────────────────── */
+.t-bottom-action {
   flex-shrink: 0;
+  padding: 16px 14px 24px 14px;
   border-top: 1px solid rgba(28,35,64,.06);
-  padding: 16px 20px;
-  display: flex; align-items: center; justify-content: space-between;
+  background: #FFFFFF;
 }
-.t-footer-text {
-  font-family: 'DM Sans', sans-serif;
-  font-size: 8.5px; font-weight: 700;
-  letter-spacing: .14em; text-transform: uppercase;
-  color: #9AA3CC;
-  display: flex; align-items: center; gap: 7px;
+.t-logout-btn {
+  display: flex; align-items: center; gap: 12px;
+  width: 100%; padding: 10px 13px; border-radius: 9px;
+  font-family: 'Inter', sans-serif; font-size: 13.5px; font-weight: 600;
+  color: #DC2626;
+  background: transparent; border: none;
+  cursor: pointer; transition: all .18s ease;
+  text-align: left;
 }
-.t-footer-dot {
-  width: 5px; height: 5px; border-radius: 50%;
-  background: #4F5BCB; opacity: .6;
+.t-logout-btn .t-nav-icon {
+  color: #DC2626;
+  transition: color .18s;
 }
-.t-footer-badge {
-  font-family: 'DM Sans', sans-serif;
-  font-size: 8px; font-weight: 800;
-  letter-spacing: .1em; text-transform: uppercase;
-  color: #4F5BCB;
-  background: rgba(79,91,203,.1);
-  border: 1px solid rgba(79,91,203,.22);
-  border-radius: 5px; padding: 3px 8px;
+.t-logout-btn:hover {
+  background: rgba(220,38,38,.08);
+  color: #B91C1C;
+}
+.t-logout-btn:hover .t-nav-icon {
+  color: #B91C1C;
 }
 
 /* ─── MOBILE OVERLAY ───────────────────────────────────────────────── */
@@ -354,16 +368,19 @@ export default function TrivoraLayout({ children, title, role = "TMO Personnel" 
     const [profileOpen, setProfileOpen] = useState(false);
     const [isExiting,   setIsExiting]   = useState(false);
 
+    // 🔴 TMO-SPECIFIC NAVIGATION (UPDATED) 🔴
     const navigation = [
         {
             group: "Operations",
             links: [
                 { name: 'Live Monitoring',   icon: LayoutDashboard, route: '/tmo-dashboard' },
-                { name: 'Violation Records', icon: ShieldCheck,     route: '/violations'    },
+
+                { name: 'Unit Registry',     icon: Bike,            route: '/tmo/registry' },
+                { name: 'Violation Records', icon: ShieldAlert,     route: '/violations' },
             ]
         },
         {
-            group: "TMO Operations",
+            group: "TMO Pipeline",
             links: [
                 { name: 'Document Review',     icon: FileSearch,     route: '/tmo/docs'     },
                 { name: 'Physical Inspection', icon: ClipboardCheck, route: '/tmo/physical' },
@@ -372,11 +389,20 @@ export default function TrivoraLayout({ children, title, role = "TMO Personnel" 
     ];
 
     const allLinks   = navigation.flatMap(g => g.links);
+
+    // Fallback matching to determine active state visually
     const activePage = allLinks.find(l => url.startsWith(l.route))?.name || title;
 
+   // 🔴 DEMO LOGOUT LOGIC 🔴
     const handleLogout = () => {
         setIsExiting(true);
-        setTimeout(() => { router.post(route('logout')); }, 600);
+        setTimeout(() => {
+            // For now, just instantly redirect to the login page
+            window.location.href = '/login';
+
+            // NOTE: Once we connect the real database authentication,
+            // you will swap this back to: router.post('/logout')
+        }, 400);
     };
 
     return (
@@ -395,43 +421,48 @@ export default function TrivoraLayout({ children, title, role = "TMO Personnel" 
                 <aside className={`t-sidebar${sidebarOpen ? ' open' : ''}`}>
 
                     <Link href="/tmo-dashboard" className="t-logo">
-                        <img src="/images/logo.png" alt="Trivora" />
+                        <div className="t-logo-wrap">
+                            <img src="/images/logo.png" alt="Trivora" className="t-logo-img" />
+                        </div>
                     </Link>
 
+                    {/* Nav Area (Scrollable) */}
                     <nav className="t-nav">
-                        {navigation.map((group, gi) => (
-                            <div key={gi} className="t-nav-group">
-                                <div className="t-group-label">{group.group}</div>
+                        <div className="t-nav-scroll">
+                            {navigation.map((group, gi) => (
+                                <div key={gi} className="t-nav-group">
+                                    <div className="t-group-label">{group.group}</div>
 
-                                {group.links.map((link) => {
-                                    const Icon     = link.icon;
-                                    const isActive = url.startsWith(link.route);
-                                    return (
-                                        <Link
-                                            key={link.name}
-                                            href={link.route}
-                                            className={`t-nav-link${isActive ? ' active' : ''}`}
-                                        >
-                                            <Icon
-                                                size={16}
-                                                strokeWidth={isActive ? 2.5 : 1.8}
-                                                className="t-nav-icon"
-                                            />
-                                            <span>{link.name}</span>
-                                        </Link>
-                                    );
-                                })}
-                            </div>
-                        ))}
-                    </nav>
-
-                    <div className="t-footer">
-                        <div className="t-footer-text">
-                            <span className="t-footer-dot" />
-                            TMO Municipal Console
+                                    {group.links.map((link) => {
+                                        const Icon     = link.icon;
+                                        const isActive = url.startsWith(link.route);
+                                        return (
+                                            <Link
+                                                key={link.name}
+                                                href={link.route}
+                                                className={`t-nav-link${isActive ? ' active' : ''}`}
+                                            >
+                                                <Icon
+                                                    size={16}
+                                                    strokeWidth={isActive ? 2.5 : 1.8}
+                                                    className="t-nav-icon"
+                                                />
+                                                <span>{link.name}</span>
+                                            </Link>
+                                        );
+                                    })}
+                                </div>
+                            ))}
                         </div>
-                        <span className="t-footer-badge">TMO</span>
-                    </div>
+
+                        {/* Bottom Logout Button */}
+                        <div className="t-bottom-action">
+                            <button onClick={handleLogout} className="t-logout-btn">
+                                <LogOut size={16} strokeWidth={2.5} className="t-nav-icon" />
+                                <span>Sign Out</span>
+                            </button>
+                        </div>
+                    </nav>
                 </aside>
 
                 {/* ══════ MAIN COLUMN ══════════════════════════════════ */}
@@ -512,7 +543,7 @@ export default function TrivoraLayout({ children, title, role = "TMO Personnel" 
                                                 className="t-dd-item danger"
                                             >
                                                 <LogOut size={14} strokeWidth={1.8} />
-                                                Terminate Session
+                                                Sign Out
                                             </button>
                                         </div>
                                     </div>

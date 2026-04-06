@@ -561,9 +561,9 @@ export default function Welcome() {
                                 Already approved? Log in to view your digital franchise,
                                 check violation records, and receive system alerts.
                             </p>
-                            <Link href="/operator/login" className="wl-btn-outline">
-                                Login <ArrowRight size={14} strokeWidth={2.5} />
-                            </Link>
+                            <Link href={route('login')} className="wl-btn-outline">
+                              Login
+                          </Link>
                         </div>
                     </div>
 

@@ -2,14 +2,12 @@ import React, { useState } from 'react';
 import { Link, usePage, router } from '@inertiajs/react';
 import {
     Bell, Menu, Search, Settings, LogOut,
-    ChevronDown, Command,
-    LayoutDashboard, CheckSquare,
-    WalletCards, FileBarChart, Banknote
+    ChevronDown, Command, CheckSquare
 } from 'lucide-react';
 
 /* ─────────────────────────────────────────────────────────────────────────
    TREASURER PORTAL — Enterprise light theme (Indigo/Slate)
-   Matches OperatorLayout's exact token system
+   Matches Operator/Trivora token system exactly
    Fonts  : Plus Jakarta Sans (display) · Inter (UI) · DM Sans (labels)
 ───────────────────────────────────────────────────────────────────────── */
 const CSS = `
@@ -42,12 +40,12 @@ const CSS = `
 }
 .t-sidebar.open { transform: translateX(0); }
 
-/* Logo */
+/* Logo - No Borders */
 .t-logo {
   height: 72px; flex-shrink: 0;
   display: flex; align-items: center; justify-content: center;
-  border-bottom: 1px solid rgba(28,35,64,.06);
   padding: 0 24px; text-decoration: none;
+  border: none;
 }
 .t-logo img {
   height: 50px; width: auto; object-fit: contain;
@@ -55,15 +53,8 @@ const CSS = `
 }
 .t-logo:hover img { transform: scale(1.05); }
 
-/* Text logo alternative if image is missing */
-.t-logo-text {
-  font-family: 'Plus Jakarta Sans', sans-serif;
-  font-size: 22px; font-weight: 800; color: #1C2340;
-  display: flex; align-items: center; gap: 8px;
-}
-
-/* Nav scroll area */
-.t-nav { flex: 1; overflow-y: auto; padding: 30px 14px; }
+/* Nav scroll area (Flex 1 allows it to take up remaining space above logout) */
+.t-nav { flex: 1; overflow-y: auto; padding: 30px 14px 14px 14px; }
 .t-nav::-webkit-scrollbar { width: 0; }
 
 /* Group */
@@ -105,32 +96,32 @@ const CSS = `
 .t-nav-link:hover .t-nav-icon { color: #6A76A8; }
 .t-nav-link.active .t-nav-icon { color: #4F5BCB; }
 
-/* Footer */
-.t-footer {
+/* ── Bottom Action (Logout fixed at bottom) ── */
+.t-bottom-action {
   flex-shrink: 0;
+  padding: 16px 14px 24px 14px;
   border-top: 1px solid rgba(28,35,64,.06);
-  padding: 16px 20px;
-  display: flex; align-items: center; justify-content: space-between;
+  background: #FFFFFF; /* Ensure it blocks scrolling content behind it */
 }
-.t-footer-text {
-  font-family: 'DM Sans', sans-serif;
-  font-size: 8.5px; font-weight: 700;
-  letter-spacing: .14em; text-transform: uppercase;
-  color: #9AA3CC;
-  display: flex; align-items: center; gap: 7px;
+.t-logout-btn {
+  display: flex; align-items: center; gap: 12px;
+  width: 100%; padding: 10px 13px; border-radius: 9px;
+  font-family: 'Inter', sans-serif; font-size: 13.5px; font-weight: 600;
+  color: #DC2626; /* Always red */
+  background: transparent; border: none;
+  cursor: pointer; transition: all .18s ease;
+  text-align: left;
 }
-.t-footer-dot {
-  width: 5px; height: 5px; border-radius: 50%;
-  background: #4F5BCB; opacity: .6;
+.t-logout-btn .t-nav-icon {
+  color: #DC2626; /* Icon always red */
+  transition: color .18s;
 }
-.t-footer-badge {
-  font-family: 'DM Sans', sans-serif;
-  font-size: 8px; font-weight: 800;
-  letter-spacing: .1em; text-transform: uppercase;
-  color: #4F5BCB;
-  background: rgba(79,91,203,.1);
-  border: 1px solid rgba(79,91,203,.22);
-  border-radius: 5px; padding: 3px 8px;
+.t-logout-btn:hover {
+  background: rgba(220,38,38,.08);
+  color: #B91C1C;
+}
+.t-logout-btn:hover .t-nav-icon {
+  color: #B91C1C;
 }
 
 /* ─── MOBILE OVERLAY ───────────────────────────────────────────────── */
@@ -366,15 +357,7 @@ export default function TreasurerLayout({ children, title, treasurerName = "Muni
         {
             group: "Finance Operations",
             links: [
-                { name: 'Dashboard', icon: LayoutDashboard, route: 'treasurer.dashboard' },
-                { name: 'Payment Verifications', icon: CheckSquare, route: 'treasurer.verify' },
-            ]
-        },
-        {
-            group: "Records",
-            links: [
-                { name: 'Financial Ledger', icon: WalletCards, route: 'treasurer.dashboard' }, // Placeholder routes
-                { name: 'Revenue Reports', icon: FileBarChart, route: 'treasurer.dashboard' },
+                { name: 'Payment Queue', icon: CheckSquare, route: 'treasurer.dashboard' },
             ]
         }
     ];
@@ -394,10 +377,16 @@ export default function TreasurerLayout({ children, title, treasurerName = "Muni
     // Calculate active page name for breadcrumb
     const activePage = allLinks.find(l => isLinkActive(l.route))?.name || title;
 
+// 🔴 DEMO LOGOUT LOGIC 🔴
     const handleLogout = () => {
         setIsExiting(true);
-        // Replace with your actual treasurer login route when ready
-        setTimeout(() => { router.post(route('home')); }, 600);
+        setTimeout(() => {
+            // For now, just instantly redirect to the login page
+            window.location.href = '/login';
+
+            // NOTE: Once we connect the real database authentication,
+            // you will swap this back to: router.post('/logout')
+        }, 400);
     };
 
     return (
@@ -416,12 +405,10 @@ export default function TreasurerLayout({ children, title, treasurerName = "Muni
                 <aside className={`t-sidebar${sidebarOpen ? ' open' : ''}`}>
 
                     <Link href={route('treasurer.dashboard')} className="t-logo">
-                        <div className="t-logo-text">
-                            <Banknote size={26} color="#4F5BCB" strokeWidth={2.5} />
-                            <span>TRIVORA</span>
-                        </div>
+                        <img src="/images/logo.png" alt="TRIVORA" />
                     </Link>
 
+                    {/* Nav Area (Scrollable) */}
                     <nav className="t-nav">
                         {navigation.map((group, gi) => (
                             <div key={gi} className="t-nav-group">
@@ -449,12 +436,12 @@ export default function TreasurerLayout({ children, title, treasurerName = "Muni
                         ))}
                     </nav>
 
-                    <div className="t-footer">
-                        <div className="t-footer-text">
-                            <span className="t-footer-dot" />
-                            Treasurer Portal
-                        </div>
-                        <span className="t-footer-badge">STAFF</span>
+                    {/* ONLY Logout anchored at the very bottom, outside the scrollable area */}
+                    <div className="t-bottom-action">
+                        <button onClick={handleLogout} className="t-logout-btn">
+                            <LogOut size={16} strokeWidth={2.5} className="t-nav-icon" />
+                            <span>Sign Out</span>
+                        </button>
                     </div>
                 </aside>
 

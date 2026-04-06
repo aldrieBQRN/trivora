@@ -1,9 +1,12 @@
 import React from 'react';
 import { Head, Link, useForm } from '@inertiajs/react';
-import { ShieldCheck, User, KeyRound, ArrowLeft } from 'lucide-react';
+import {
+    ShieldCheck, User, KeyRound, ArrowLeft,
+    Banknote, Award, Bike, Shield
+} from 'lucide-react';
 
 /* ─────────────────────────────────────────────────────────────────────────
-   TRIVORA — Unified System Login
+   TRIVORA — Unified System Login (With Demo Accounts)
    Matches Welcome.jsx / PublicApply.jsx design system
    Plus Jakarta Sans · Inter · DM Sans · Navy #1C2340 · Indigo #4F5BCB
 ───────────────────────────────────────────────────────────────────────── */
@@ -232,6 +235,33 @@ const CSS = `
   box-shadow: none; cursor: not-allowed; transform: none;
 }
 
+/* ── Demo Accounts Section ───────────────────────────────────────────── */
+.ol-demo-wrap {
+  margin-top: 32px;
+  padding-top: 24px;
+  border-top: 1px dashed rgba(28,35,64,.1);
+}
+.ol-demo-title {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 9px; font-weight: 700;
+  letter-spacing: .15em; text-transform: uppercase;
+  color: #8A96BC; margin-bottom: 12px; text-align: center;
+}
+.ol-demo-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+}
+.ol-demo-btn {
+  background: #FAFAFC; border: 1px solid rgba(28,35,64,.08);
+  border-radius: 8px; padding: 10px 12px;
+  font-family: 'Inter', sans-serif; font-size: 11px; font-weight: 600;
+  color: #5A6488; cursor: pointer; transition: all .15s;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+}
+.ol-demo-btn:hover {
+  background: #FFFFFF; border-color: #4F5BCB; color: #4F5BCB;
+  box-shadow: 0 2px 8px rgba(79,91,203,.1);
+}
+
 /* ── Footer note ─────────────────────────────────────────────────────── */
 .ol-footer-note {
   position: absolute; bottom: 32px; left: 0; right: 0;
@@ -244,8 +274,6 @@ const CSS = `
 `;
 
 export default function Login() {
-    // Note: 'login_id' can accept either an email or a mobile number.
-    // Your backend controller will need to check which one it is during auth.
     const { data, setData, post, processing, errors } = useForm({
         login_id: '',
         password: '',
@@ -254,8 +282,23 @@ export default function Login() {
 
     const submit = (e) => {
         e.preventDefault();
-        // Updated to generic login route
         post('/login');
+    };
+
+    // Auto-fill form fields for quick demo access
+    const setDemoAccount = (role) => {
+        const credentials = {
+            tmo: { login_id: 'tmo@nasugbu.gov.ph', password: 'password' },
+            cashier: { login_id: 'cashier@nasugbu.gov.ph', password: 'password' },
+            bplo: { login_id: 'bplo@nasugbu.gov.ph', password: 'password' },
+            operator: { login_id: 'mario.delacruz@operator.ph', password: 'password' }
+        };
+
+        setData({
+            login_id: credentials[role].login_id,
+            password: credentials[role].password,
+            remember: false
+        });
     };
 
     return (
@@ -301,7 +344,6 @@ export default function Login() {
                     {/* Form */}
                     <form onSubmit={submit}>
                         <div className="ol-fields">
-
                             {/* Generic Email/Mobile Input */}
                             <div>
                                 <label className="ol-label">Email or Mobile Number</label>
@@ -358,6 +400,26 @@ export default function Login() {
                             Secure Login
                         </button>
                     </form>
+
+                    {/* ── Quick Demo Access ── */}
+                    <div className="ol-demo-wrap">
+                        <p className="ol-demo-title">Quick Demo Access</p>
+                        <div className="ol-demo-grid">
+                            <button type="button" className="ol-demo-btn" onClick={() => setDemoAccount('tmo')}>
+                                <Shield size={14} strokeWidth={2} /> TMO Officer
+                            </button>
+                            <button type="button" className="ol-demo-btn" onClick={() => setDemoAccount('cashier')}>
+                                <Banknote size={14} strokeWidth={2} /> Cashier
+                            </button>
+                            <button type="button" className="ol-demo-btn" onClick={() => setDemoAccount('bplo')}>
+                                <Award size={14} strokeWidth={2} /> BPLO Head
+                            </button>
+                            <button type="button" className="ol-demo-btn" onClick={() => setDemoAccount('operator')}>
+                                <Bike size={14} strokeWidth={2} /> Operator
+                            </button>
+                        </div>
+                    </div>
+
                 </div>
             </div>
 

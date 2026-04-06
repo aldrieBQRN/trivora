@@ -8,27 +8,48 @@ use Inertia\Inertia;
 class OperatorAuthController extends Controller
 {
     /**
-     * Display the operator login view.
+     * Display the unified login view.
      */
     public function showLoginForm()
     {
-        return Inertia::render('Operator/Login');
+        // Points directly to resources/js/Pages/Login.jsx
+        return Inertia::render('Login');
     }
 
     /**
      * Handle an incoming authentication request.
-     * (We will wire up the actual database logic later)
+     * (Currently wired for Demo Accounts routing)
      */
     public function login(Request $request)
     {
+        // Updated to match the 'login_id' field sent from React
         $request->validate([
-            'mobile_number' => 'required|string',
+            'login_id' => 'required|string',
             'password' => 'required|string',
         ]);
 
-        // For now, let's just pretend it's successful and redirect them to a placeholder dashboard
-        // In the future, this will use Auth::guard('operator')->attempt(...)
+        $loginId = strtolower($request->login_id);
 
+        // 🔴 DEMO ROUTING LOGIC 🔴
+        // Redirects to the specific dashboard based on the demo account used
+        if ($loginId === 'tmo@nasugbu.gov.ph') {
+            // Redirects to Live Monitoring map
+            return redirect()->route('tmo.dashboard')->with('success', 'Logged in as TMO Officer');
+        }
+
+        if ($loginId === 'cashier@nasugbu.gov.ph') {
+            return redirect()->route('treasurer.dashboard')->with('success', 'Logged in as Cashier');
+        }
+
+        if ($loginId === 'bplo@nasugbu.gov.ph') {
+            return redirect()->route('bplo.releasing')->with('success', 'Logged in as BPLO Head');
+        }
+
+        if ($loginId === 'mario.delacruz@operator.ph') {
+            return redirect()->route('operator.dashboard')->with('success', 'Logged in as Operator');
+        }
+
+        // Fallback for any other login attempts
         return redirect()->route('home')->with('success', 'Logged in successfully!');
     }
 }

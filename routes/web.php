@@ -21,20 +21,21 @@ Route::get('/', function () {
 // Phase 0: Public MTOP Registration Wizard (Account Creation + First Application)
 Route::get('/register-mtop', [RegistrationController::class, 'publicWizard'])->name('register.public');
 
-// Operator Authentication
-Route::get('/operator/login', [OperatorAuthController::class, 'showLoginForm'])->name('operator.login');
-Route::post('/operator/login', [OperatorAuthController::class, 'login'])->name('operator.login.submit');
+// Unified System Login (Replaces Operator-only login)
+Route::get('/login', [OperatorAuthController::class, 'showLoginForm'])->name('login');
+Route::post('/login', [OperatorAuthController::class, 'login'])->name('login.submit');
 
 
 /*
 |--------------------------------------------------------------------------
-| 2. PROTECTED MUNICIPAL & OPERATOR ROUTES (Auth Required)
+| 2. PROTECTED MUNICIPAL & OPERATOR ROUTES
 |--------------------------------------------------------------------------
 */
 
-Route::middleware(['auth', 'verified'])->group(function () {
+// 🔴 TEMPORARILY DISABLED 'auth' MIDDLEWARE FOR UI DEMO TESTING 🔴
+Route::group([], function () {
 
-    // Default System Dashboard (Redirect logic usually handled in Controller)
+    // Default System Dashboard
     Route::get('/dashboard', function () {
         return Inertia::render('Dashboard');
     })->name('dashboard');
@@ -43,10 +44,23 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // TMO WORKFLOW (Traffic Management Office)
     // ==========================================
 
-    // TMO Master Hub
-    Route::get('/tmo/validations', function () {
-        return Inertia::render('TMODashboard/ValidationQueue');
-    })->name('tmo.validations');
+
+    // TMO Unit Registry (previously Active Fleet)
+    Route::get('/tmo/registry', function () {
+        return Inertia::render('TMODashboard/UnitRegistry');
+    })->name('tmo.registry');
+
+    // TMO Violation Records (Pointed to the dedicated Violations folder)
+    Route::get('/violations', function () {
+        return Inertia::render('TMODashboard/Violations/Violations');
+    })->name('tmo.violations');
+
+    // TMO Violation Details (Pointed to the dedicated Violations folder)
+    Route::get('/violations/{id}', function ($id) {
+        return Inertia::render('TMODashboard/Violations/ViolationDetails', [
+            'violationId' => $id
+        ]);
+    })->name('tmo.violations.details');
 
     // --- PHASE 1: DOCUMENT REVIEW ---
     Route::get('/tmo/docs', function () {
@@ -89,19 +103,26 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
 
     // ==========================================
-    // CASHIER WORKFLOW (Treasurer's Office)
+    // TREASURER WORKFLOW (Treasurer's Office)
     // ==========================================
 
-    // --- PHASE 3: PAYMENT VERIFICATION ---
-    Route::get('/cashier/payments', function () {
-        return Inertia::render('CashierDashboard/PaymentQueue');
-    })->name('cashier.payments');
+    // --- PHASE 3: PAYMENT PROCESSING ---
+    Route::get('/treasurer/dashboard', function () {
+        return Inertia::render('Treasurer/Dashboard');
+    })->name('treasurer.dashboard');
 
-    Route::get('/cashier/verify/{id}', function ($id) {
-        return Inertia::render('CashierDashboard/VerifyPayment', [
+    Route::get('/treasurer/verify/{id}', function ($id) {
+        return Inertia::render('Treasurer/ProcessPayment', [
             'applicationId' => $id
         ]);
-    })->name('cashier.verify');
+    })->name('treasurer.verify');
+
+    // Official Receipt Generation
+    Route::get('/treasurer/receipt/{id}', function ($id) {
+        return Inertia::render('Treasurer/Receipt', [
+            'transactionId' => $id
+        ]);
+    })->name('treasurer.receipt');
 
 
     // ==========================================
@@ -124,6 +145,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
             ]
         ]);
     })->name('bplo.issue');
+
+    // --- Active Registry ---
+    Route::get('/bplo/registry', function () {
+        return Inertia::render('BPLODashboard/ActiveRegistry');
+    })->name('bplo.registry');
 
 
     // ==========================================
@@ -166,6 +192,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
             'applicationId' => $id
         ]);
     })->name('operator.mtop.fix');
+
+    // Operator Online Checkout Page
+    Route::get('/operator/mtop/{id}/pay', function ($id) {
+        return Inertia::render('Operator/Compliance/Checkout', [
+            'applicationId' => $id
+        ]);
+    })->name('operator.mtop.pay');
 
 
     // --- Group 3: Violations & Payments ---

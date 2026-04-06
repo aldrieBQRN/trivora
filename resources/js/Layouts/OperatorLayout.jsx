@@ -388,17 +388,15 @@ export default function OperatorLayout({ children, title, operatorName = "Operat
     // Calculate active page name for breadcrumb
     const activePage = allLinks.find(l => isLinkActive(l.route))?.name || title;
 
-    // 🔴 REAL LOGOUT LOGIC 🔴
+  // 🔴 DEMO LOGOUT LOGIC 🔴
     const handleLogout = () => {
         setIsExiting(true);
         setTimeout(() => {
-            // Destroy the session via Laravel backend
-            router.post(route('logout'), {}, {
-                onFinish: () => {
-                    // Force the browser to redirect completely to the operator login page
-                    window.location.href = '/operator/login';
-                }
-            });
+            // For now, just instantly redirect to the login page
+            window.location.href = '/login';
+
+            // NOTE: Once we connect the real database authentication,
+            // you will swap this back to: router.post('/logout')
         }, 400);
     };
 
