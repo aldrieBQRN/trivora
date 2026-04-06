@@ -401,7 +401,7 @@ export default function PhysicalInspection({ application }) {
         setTimeout(() => {
             setIsProcessing(false);
             if (type === 'pass') {
-                alert('UNIT PASSED: Forwarded to BPLO for Plate Issuance.');
+                alert('UNIT PASSED: Forwarded to Cashier. Operator notified to settle payment.');
             } else {
                 alert('UNIT FAILED: Operator notified of specific defects to fix.');
             }
@@ -522,7 +522,7 @@ export default function PhysicalInspection({ application }) {
                             </div>
                             <p className="pi-zone-ok-title">Unit Roadworthy</p>
                             <p className="pi-zone-ok-sub">
-                                Everything checked out. Forward to BPLO for final processing.
+                                Everything checked out. Forward to Cashier for payment processing.
                             </p>
                             <button
                                 className="pi-pass-btn"
@@ -532,7 +532,7 @@ export default function PhysicalInspection({ application }) {
                                 {isProcessing
                                     ? <Loader2 size={15} className="animate-spin" />
                                     : <CheckCircle2 size={15} strokeWidth={2} />}
-                                Complete & Forward to BPLO
+                                Complete & Forward to Cashier
                             </button>
                         </>
                     ) : anyFailed ? (
