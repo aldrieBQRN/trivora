@@ -23,7 +23,7 @@ import {
 const CSS = `
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600;700&family=DM+Sans:wght@500;600;700&display=swap');
 
-.ph-root { font-family: 'Inter', sans-serif; color: #1C2340; padding-bottom: 64px; max-width: 1200px; margin: 0 auto; }
+.ph-root { font-family: 'Inter', sans-serif; color: #1C2340; padding-bottom: 64px; max-width: 1440px; margin: 0 auto; }
 .ph-root *, .ph-root *::before, .ph-root *::after { box-sizing: border-box; }
 
 /* ── Page heading ───────────────────────────────────────────────────── */
@@ -42,14 +42,49 @@ const CSS = `
 }
 .ph-title {
   font-family: 'Plus Jakarta Sans', sans-serif;
-  font-size: 30px; font-weight: 800; letter-spacing: -.025em;
-  color: #1C2340; line-height: 1;
+  font-size: 32px; font-weight: 800; letter-spacing: -.02em;
+  color: #1C2340; line-height: 1.1;
 }
 .ph-subtitle {
-  font-family: 'DM Sans', sans-serif;
-  font-size: 9px; font-weight: 600;
-  letter-spacing: .14em; text-transform: uppercase;
-  color: #8A96BC; margin-top: 6px;
+  font-family: 'Inter', sans-serif;
+  font-size: 14px; font-weight: 500;
+  color: #5A6488; margin-top: 6px;
+}
+
+/* ── Fleet-Style Horizontal KPI Grid ── */
+.ph-stats-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    gap: 16px; margin-top: 32px; margin-bottom: 32px;
+}
+@media (max-width: 1024px) { .ph-stats-grid { grid-template-columns: 1fr; } }
+
+.ph-stat {
+    background: #fff; border: 1px solid rgba(28,35,64,.08); border-radius: 14px;
+    padding: 20px 22px; display: flex; align-items: flex-start; gap: 16px;
+    transition: box-shadow .2s, border-color .2s; position: relative; overflow: hidden;
+}
+.ph-stat:hover { border-color: rgba(28,35,64,.14); box-shadow: 0 4px 20px rgba(28,35,64,.07); }
+.ph-stat::after {
+    content: ''; position: absolute; bottom: 0; right: 0; width: 80px; height: 80px;
+    border-radius: 50%; background: radial-gradient(circle, rgba(79,91,203,.04) 0%, transparent 70%);
+    pointer-events: none;
+}
+.ph-stat-icon {
+    width: 42px; height: 42px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.ph-stat-teal { background: linear-gradient(135deg, #059669 0%, #047857 100%); color: #FFFFFF; }
+.ph-stat-blue { background: linear-gradient(135deg, #4F5BCB 0%, #6675A8 100%); color: #FFFFFF; }
+.ph-stat-amber { background: linear-gradient(135deg, #D97706 0%, #B45309 100%); color: #FFFFFF; }
+.ph-stat-rose { background: linear-gradient(135deg, #DC2626 0%, #B91C1C 100%); color: #FFFFFF; }
+
+.ph-stat-val {
+    font-family: 'Plus Jakarta Sans', sans-serif; font-size: 26px;
+    font-weight: 800; color: #1C2340; line-height: 1;
+}
+.ph-stat-lbl {
+    font-family: 'DM Sans', sans-serif; font-size: 9px; font-weight: 700;
+    letter-spacing: .13em; text-transform: uppercase; color: #8A96BC; margin-top: 6px;
 }
 
 /* ── Toolbar ────────────────────────────────────────────────────────── */
@@ -105,16 +140,6 @@ const CSS = `
   font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
   color: #059669;
 }
-
-/* Stats Row */
-.ph-stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px; margin-bottom: 32px; }
-.ph-stat-card {
-    background: #FFFFFF; border: 1px solid rgba(28,35,64,.08); border-radius: 16px; padding: 24px;
-    display: flex; align-items: center; gap: 20px; box-shadow: 0 1px 4px rgba(28,35,64,.04);
-}
-.ph-stat-icon { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; }
-.ph-stat-label { font-family: 'DM Sans', sans-serif; font-size: 9px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: #8A96BC; margin-bottom: 4px; }
-.ph-stat-value { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 20px; font-weight: 800; color: #1C2340; line-height: 1; }
 
 /* Table Styling */
 .ph-card { background: #FFFFFF; border: 1px solid rgba(28,35,64,.08); border-radius: 20px; overflow: hidden; box-shadow: 0 4px 20px rgba(28,35,64,.03); }
@@ -197,12 +222,6 @@ export default function PaymentHistory() {
         }
     ];
 
-    const stats = [
-        { label: 'Total Paid (2026)', value: '₱2,210.00', icon: Wallet, color: '#059669', bg: 'rgba(5,150,105,.08)' },
-        { label: 'Total Transactions', value: '3', icon: Receipt, color: '#4F5BCB', bg: 'rgba(79,91,203,.08)' },
-        { label: 'Cleared Violations', value: '1', icon: ShieldAlert, color: '#DC2626', bg: 'rgba(220,38,38,.08)' },
-    ];
-
     // Filter Logic
     const filteredLedger = ledger.filter(txn =>
         txn.refNo.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -234,19 +253,20 @@ export default function PaymentHistory() {
                     <p className="ph-subtitle">A complete ledger of your settled MTOP fees, violations, and IoT subscriptions.</p>
                 </div>
 
-                {/* ── STATS ROW ── */}
+                {/* ── FLEET-STYLE HORIZONTAL KPI GRID ── */}
                 <div className="ph-stats-grid">
-                    {stats.map((s, i) => (
-                        <div key={i} className="ph-stat-card">
-                            <div className="ph-stat-icon" style={{ background: s.bg, color: s.color }}>
-                                <s.icon size={24} />
-                            </div>
-                            <div>
-                                <p className="ph-stat-val" style={{ fontFamily: 'Plus Jakarta Sans', fontSize: 28, fontWeight: 800, color: '#1C2340', lineHeight: 1 }}>{s.value}</p>
-                                <p className="ph-stat-lbl" style={{ fontFamily: 'DM Sans', fontSize: 9, fontWeight: 700, letterSpacing: '.13em', textTransform: 'uppercase', color: '#8A96BC', marginTop: 5 }}>{s.label}</p>
-                            </div>
-                        </div>
-                    ))}
+                    <StatCard
+                        value="₱2,210.00" label="Total Paid (2026)"
+                        icon={Wallet} iconClass="ph-stat-teal" accentColor="#059669"
+                    />
+                    <StatCard
+                        value="3" label="Total Transactions"
+                        icon={Receipt} iconClass="ph-stat-blue"
+                    />
+                    <StatCard
+                        value="1" label="Cleared Violations"
+                        icon={ShieldAlert} iconClass="ph-stat-rose"
+                    />
                 </div>
 
                 {/* ── TOOLBAR ── */}
@@ -346,5 +366,23 @@ export default function PaymentHistory() {
 
             </div>
         </OperatorLayout>
+    );
+}
+
+/* ── SUB-COMPONENT: STAT CARD ── */
+function StatCard({ value, label, icon: Icon, iconClass, accentColor }) {
+    // Only apply top border if an accentColor is provided
+    const cardStyle = accentColor ? { borderTop: `2.5px solid ${accentColor}` } : {};
+
+    return (
+        <div className="ph-stat" style={cardStyle}>
+            <div className={`ph-stat-icon ${iconClass}`}>
+                <Icon size={20} strokeWidth={2.5} />
+            </div>
+            <div>
+                <p className="ph-stat-val">{value}</p>
+                <p className="ph-stat-lbl">{label}</p>
+            </div>
+        </div>
     );
 }

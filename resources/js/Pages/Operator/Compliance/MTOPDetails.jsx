@@ -1,11 +1,11 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Head, Link } from '@inertiajs/react';
 import OperatorLayout from '@/Layouts/OperatorLayout';
 import {
     ChevronLeft, FileText, CheckCircle2, Clock, AlertCircle,
     Bike, FileSearch, ClipboardCheck, Stamp, AlertTriangle,
     UploadCloud, XCircle, Info, Download, Wrench, Settings,
-    Wallet, Receipt, CreditCard, Banknote, ArrowRight
+    Wallet, Receipt, CreditCard, ArrowRight
 } from 'lucide-react';
 
 /* ─────────────────────────────────────────────────────────────────────────
@@ -112,7 +112,7 @@ const CSS = `
 .ad-primary-btn.success-btn { background: #059669; box-shadow: 0 4px 14px rgba(5,150,105,.25); }
 .ad-primary-btn.success-btn:hover { background: #047857; box-shadow: 0 8px 24px rgba(5,150,105,.3); }
 
-/* ── Payment Options (Hybrid Flow) ───────────────────────────────────── */
+/* ── Payment Options ───────────────────────────────────── */
 .ad-pay-options { display: flex; flex-direction: column; gap: 12px; margin-top: 16px; }
 .ad-pay-btn {
   display: flex; align-items: center; justify-content: space-between; padding: 14px 16px;
@@ -123,16 +123,10 @@ const CSS = `
 .ad-pay-btn-left { display: flex; align-items: center; gap: 12px; }
 .ad-pay-icon { width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
 .ad-pay-btn.online .ad-pay-icon { background: rgba(79,91,203,.1); color: #4F5BCB; }
-.ad-pay-btn.otc .ad-pay-icon { background: rgba(5,150,105,.1); color: #059669; }
 .ad-pay-lbl { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 14px; font-weight: 700; color: #1C2340; line-height: 1.2; text-align: left; }
 .ad-pay-sub { font-family: 'DM Sans', sans-serif; font-size: 10px; font-weight: 600; color: #8A96BC; margin-top: 3px; text-transform: uppercase; letter-spacing: .05em; text-align: left; }
 .ad-pay-chev { color: #8A96BC; transition: transform .2s; }
 .ad-pay-btn:hover .ad-pay-chev { transform: translateX(3px); color: #4F5BCB; }
-
-/* ── Ref Box ── */
-.ad-ref-box { background: rgba(28,35,64,.04); border: 1px dashed rgba(28,35,64,.2); border-radius: 10px; padding: 16px; margin-bottom: 20px; text-align: center; }
-.ad-ref-lbl { font-family: 'DM Sans', sans-serif; font-size: 10px; font-weight: 700; letter-spacing: .15em; text-transform: uppercase; color: #8A96BC; margin-bottom: 6px; }
-.ad-ref-val { font-family: 'Courier Prime', monospace; font-size: 22px; font-weight: 700; color: #1C2340; letter-spacing: 2px; }
 
 /* ── Payment rows ────────────────────────────────────────────────────── */
 .ad-pay-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px dashed rgba(28,35,64,.08); gap: 16px; }
@@ -191,7 +185,7 @@ const mockApplicationsData = {
         documents: generateItems(documentList, {}, 'approved'),
         inspections: generateItems(inspectionList, { mirrors: 'rejected', mirrors_note: 'Missing right side mirror', horn: 'rejected', horn_note: 'Horn is not working' }, 'approved'),
     },
-    /* 3 ── CASHIER PAYMENT PHASE (Hybrid Flow - Pending Payment) */
+    /* 3 ── CASHIER PAYMENT PHASE (Online Flow Only) */
     'APP-2026-0622': {
         id: 'APP-2026-0622', type: 'New Franchise', status: 'action-req', phase: 'cashier-pay',
         date: 'April 02, 2026', toda: 'TODA B (Wawa)',
@@ -199,7 +193,7 @@ const mockApplicationsData = {
         operatorName: 'Mario Dela Cruz',
         documents: generateItems(documentList, {}, 'approved'),
         inspections: generateItems(inspectionList, {}, 'approved'),
-        payment_due: 995.00, payment_ref: 'TRV-88210',
+        payment_due: 995.00,
     },
     /* 4 ── BPLO RELEASE PHASE */
     'APP-2026-0501': {
@@ -220,7 +214,7 @@ const mockApplicationsData = {
         operatorName: 'Mario Dela Cruz',
         documents: generateItems(documentList, {}, 'approved'),
         inspections: generateItems(inspectionList, {}, 'approved'),
-        payment: { method: 'Walk-in (Cash)', ref: 'OR-77210-LGU', amount: 495.00, date: 'Feb 12, 2025' },
+        payment: { method: 'Online (GCash)', ref: 'OR-77210-LGU', amount: 495.00, date: 'Feb 12, 2025' },
         bplo: { assignedBody: 'MTOP-2025-019' },
     },
 };
@@ -251,7 +245,7 @@ const FullChecklistRow = ({ item, isPhys }) => (
     </div>
 );
 
-const CompactChecklist = ({ title, icon: Icon, items, accentColor = '#059669', accentBg = 'rgba(5,150,105,.1)' }) => (
+const CompactChecklist = ({ title, icon: Icon, items, accentColor = '#059669' }) => (
     <div className="ad-card" style={{ border: `1px solid ${accentColor}22` }}>
         <div className="ad-card-header" style={{ background: `${accentColor}06` }}>
             <div className="ad-card-icon" style={{ background: `${accentColor}14`, color: accentColor }}>
@@ -334,8 +328,6 @@ export default function MTOPDetails({ applicationId }) {
         || (typeof window !== 'undefined' ? window.location.pathname.split('/').pop() : 'APP-2026-0622'); // Default to payment phase for demo
     const app = mockApplicationsData[urlId] || mockApplicationsData['APP-2026-0812'];
 
-    const [showOtcRef, setShowOtcRef] = useState(false);
-
     const phaseOrder = ['tmo-docs', 'tmo-phys', 'cashier-pay', 'bplo-release', 'completed'];
     const phaseIdx   = phaseOrder.indexOf(app.phase);
 
@@ -403,54 +395,25 @@ export default function MTOPDetails({ applicationId }) {
                             </div>
                         )}
 
-                        {/* 🔴 HYBRID PAYMENT PHASE 🔴 */}
+                        {/* 🔴 PAYMENT PHASE (Online Only) 🔴 */}
                         {app.status === 'action-req' && app.phase === 'cashier-pay' && (
                             <div className="ad-action-box warn">
                                 <div className="ad-action-icon"><Wallet size={22} color="#D97706" /></div>
                                 <h3 className="ad-action-title">Payment Required</h3>
+                                <p className="ad-action-desc" style={{ marginBottom: 12 }}>Your inspections are cleared. Please settle the <strong>₱{app.payment_due.toFixed(2)}</strong> franchise fee online to proceed to BPLO.</p>
 
-                                {showOtcRef ? (
-                                    <>
-                                        <p className="ad-action-desc" style={{ marginBottom: 12 }}>Present this reference number to the Municipal Cashier to settle your franchise fee.</p>
-                                        <div className="ad-ref-box">
-                                            <p className="ad-ref-lbl">System Reference</p>
-                                            <p className="ad-ref-val">{app.payment_ref}</p>
+                                <div className="ad-pay-options">
+                                    <Link href={`/operator/mtop/${app.id}/pay`} className="ad-pay-btn online">
+                                        <div className="ad-pay-btn-left">
+                                            <div className="ad-pay-icon"><CreditCard size={18} strokeWidth={2.5}/></div>
+                                            <div>
+                                                <p className="ad-pay-lbl">Pay Online Now</p>
+                                                <p className="ad-pay-sub">GCash, Maya, or Bank Card</p>
+                                            </div>
                                         </div>
-                                        <button className="ad-pay-btn" style={{ justifyContent: 'center' }} onClick={() => setShowOtcRef(false)}>
-                                            <span className="ad-pay-lbl" style={{ textAlign: 'center' }}>Change Payment Method</span>
-                                        </button>
-                                    </>
-                                ) : (
-                                    <>
-                                        <p className="ad-action-desc" style={{ marginBottom: 8 }}>Your inspections are cleared. Please select how you want to pay the <strong>₱{app.payment_due.toFixed(2)}</strong> fee to proceed to BPLO.</p>
-
-                                        <div className="ad-pay-options">
-                                            {/* Redirects to PayMongo Checkout */}
-                                            <Link href={`/operator/mtop/${app.id}/pay`} className="ad-pay-btn online">
-    <div className="ad-pay-btn-left">
-        <div className="ad-pay-icon"><CreditCard size={18} strokeWidth={2.5}/></div>
-        <div>
-            <p className="ad-pay-lbl">Pay Online Now</p>
-            <p className="ad-pay-sub">GCash, Maya, or Bank Card</p>
-        </div>
-    </div>
-    <ArrowRight size={16} strokeWidth={2.5} className="ad-pay-chev" />
-</Link>
-
-                                            {/* Generates OTC Code */}
-                                            <button className="ad-pay-btn otc" onClick={() => setShowOtcRef(true)}>
-                                                <div className="ad-pay-btn-left">
-                                                    <div className="ad-pay-icon"><Banknote size={18} strokeWidth={2.5}/></div>
-                                                    <div>
-                                                        <p className="ad-pay-lbl">Pay at Municipal Hall</p>
-                                                        <p className="ad-pay-sub">Over-the-Counter Cash</p>
-                                                    </div>
-                                                </div>
-                                                <ArrowRight size={16} strokeWidth={2.5} className="ad-pay-chev" />
-                                            </button>
-                                        </div>
-                                    </>
-                                )}
+                                        <ArrowRight size={16} strokeWidth={2.5} className="ad-pay-chev" />
+                                    </Link>
+                                </div>
                             </div>
                         )}
 
@@ -597,4 +560,4 @@ export default function MTOPDetails({ applicationId }) {
             </div>
         </OperatorLayout>
     );
-}
+}   

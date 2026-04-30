@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { Head, Link } from '@inertiajs/react';
 import OperatorLayout from '@/Layouts/OperatorLayout';
+import Swal from 'sweetalert2';
 import {
     ChevronLeft, ShieldCheck, CreditCard,
     Smartphone, Lock, ArrowRight, Loader2,
-    CheckCircle2, Receipt
+    Receipt
 } from 'lucide-react';
 
 /* ─────────────────────────────────────────────────────────────────────────
@@ -14,7 +15,7 @@ import {
 const CSS = `
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600;700&family=DM+Sans:wght@500;600;700&display=swap');
 
-.co-root { font-family: 'Inter', sans-serif; color: #1C2340; max-width: 1000px; margin: 0 auto; padding-bottom: 64px; }
+.co-root { font-family: 'Inter', sans-serif; color: #1C2340; max-width: 1500px; margin: 0 auto; padding-bottom: 64px; }
 .co-root *, .co-root *::before, .co-root *::after { box-sizing: border-box; }
 
 /* ── Nav ── */
@@ -29,8 +30,8 @@ const CSS = `
 .co-subtitle { font-family: 'Inter', sans-serif; font-size: 14px; color: #5A6488; }
 
 /* ── Grid ── */
-.co-grid { display: grid; grid-template-columns: 1fr 380px; gap: 32px; align-items: start; }
-@media (max-width: 960px) { .co-grid { grid-template-columns: 1fr; } }
+.co-grid { display: grid; grid-template-columns: 1fr 450px; gap: 32px; align-items: start; }
+@media (max-width: 1024px) { .co-grid { grid-template-columns: 1fr; } }
 
 /* ── Cards ── */
 .co-card { background: #FFFFFF; border: 1px solid rgba(28,35,64,.08); border-radius: 16px; box-shadow: 0 4px 12px rgba(28,35,64,.02); padding: 32px; }
@@ -80,8 +81,8 @@ export default function Checkout({ applicationId = 'APP-2026-0622' }) {
             { name: 'Application & Filing Fee', amt: 250.00 },
             { name: 'Police Clearance / LGU OR', amt: 150.00 },
             { name: 'Health Certificate', amt: 55.00 },
-            { name: 'Cedula', amt: 40.00 },
-            { name: 'IoT Tracking Device (GPS Unit)', amt: 500.00 },
+            { name: 'Cedula', amt: 40.00 }
+            // Note: IoT Tracking Device fee removed
         ]
     };
 
@@ -90,16 +91,40 @@ export default function Checkout({ applicationId = 'APP-2026-0622' }) {
     const total = subtotal + convenienceFee;
 
     const handlePayment = () => {
-        setIsProcessing(true);
-        // Simulate API call to generate PayMongo Checkout Link
-        setTimeout(() => {
-            setIsProcessing(false);
-            // In a real app, window.location.href = data.checkout_url
-            alert('Redirecting to secure PayMongo gateway...');
+        const methodNames = {
+            gcash: 'GCash',
+            maya: 'Maya',
+            card: 'Credit/Debit Card'
+        };
 
-            // Simulating successful return from gateway:
-            window.location.href = `/operator/mtop/${applicationId}`;
-        }, 1500);
+        Swal.fire({
+            title: 'Proceed to Payment?',
+            text: `You are about to securely pay ₱${total.toFixed(2)} via ${methodNames[method]}.`,
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#1C2340',
+            cancelButtonColor: '#8A96BC',
+            confirmButtonText: 'Yes, Proceed',
+            customClass: { title: 'font-jakarta', popup: 'font-inter' }
+        }).then((result) => {
+            if (result.isConfirmed) {
+                setIsProcessing(true);
+                // Simulate processing delay
+                setTimeout(() => {
+                    setIsProcessing(false);
+                    Swal.fire({
+                        title: 'Payment Successful!',
+                        text: 'Your application fee has been settled and sent to the Treasurer.',
+                        icon: 'success',
+                        confirmButtonColor: '#059669',
+                        timer: 2500,
+                        showConfirmButton: false
+                    }).then(() => {
+                        window.location.href = '/operator/mtop'; // Routes back to tracker
+                    });
+                }, 1500);
+            }
+        });
     };
 
     return (

@@ -1,29 +1,28 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Head, Link } from '@inertiajs/react';
 import OperatorLayout from '@/Layouts/OperatorLayout';
 import {
-    Search,
     MapPin,
     User,
     Activity,
     Settings,
     Navigation2,
     Wifi,
-    WifiOff,
     Bike,
     FileText,
-    X,
-    Filter
+    BatteryMedium,
+    ShieldCheck,
+    Wrench
 } from 'lucide-react';
 
 /* ─────────────────────────────────────────────────────────────────────────
-   OPERATOR PORTAL — My Tricycles (Formerly Fleet)
+   DRIVER PORTAL — My Tricycle (Full-Width Enterprise View)
    Path: resources/js/Pages/Operator/Fleet.jsx
 ───────────────────────────────────────────────────────────────────────── */
 const CSS = `
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600;700&family=DM+Sans:wght@500;600;700&display=swap');
 
-.f-root { font-family: 'Inter', sans-serif; color: #1C2340; padding-bottom: 64px; max-width: 1200px; margin: 0 auto; }
+.f-root { font-family: 'Inter', sans-serif; color: #1C2340; padding-bottom: 64px; max-width: 1440px; margin: 0 auto; }
 .f-root *, .f-root *::before, .f-root *::after { box-sizing: border-box; }
 
 /* ── Page heading ───────────────────────────────────────────────────── */
@@ -42,344 +41,251 @@ const CSS = `
 }
 .f-title {
   font-family: 'Plus Jakarta Sans', sans-serif;
-  font-size: 30px; font-weight: 800; letter-spacing: -.025em;
-  color: #1C2340; line-height: 1;
+  font-size: 32px; font-weight: 800; letter-spacing: -.02em;
+  color: #1C2340; line-height: 1.1;
 }
 .f-subtitle {
-  font-family: 'DM Sans', sans-serif;
-  font-size: 9px; font-weight: 600;
-  letter-spacing: .14em; text-transform: uppercase;
-  color: #8A96BC; margin-top: 6px;
-}
-
-/* ── Toolbar ────────────────────────────────────────────────────────── */
-.f-toolbar {
-  display: flex; align-items: center; justify-content: space-between;
-  gap: 14px; margin-bottom: 24px; flex-wrap: wrap;
-}
-.f-search {
-  display: flex; align-items: center; gap: 10px;
-  background: #FFFFFF;
-  border: 1px solid rgba(28,35,64,.09);
-  border-radius: 50px; height: 42px; padding: 0 16px;
-  width: 320px; transition: all .2s;
-}
-.f-search:focus-within {
-  border-color: rgba(79,91,203,.45);
-  box-shadow: 0 0 0 3px rgba(79,91,203,.1);
-  width: 360px;
-}
-.f-search input {
-  border: none; outline: none; background: transparent;
   font-family: 'Inter', sans-serif;
-  font-size: 12.5px; font-weight: 500;
-  color: #1C2340; width: 100%;
-}
-.f-search input::placeholder { color: #8A96BC; font-weight: 400; }
-.f-search-icon { color: #8A96BC; flex-shrink: 0; }
-.f-clear-btn {
-  background: none; border: none; cursor: pointer;
-  color: #8A96BC; display: flex; padding: 0;
-  transition: color .15s;
-}
-.f-clear-btn:hover { color: #1C2340; }
-
-.f-toolbar-right { display: flex; align-items: center; gap: 10px; }
-.f-filter-btn {
-  height: 42px; padding: 0 16px; border-radius: 50px;
-  border: 1px solid rgba(28,35,64,.09);
-  background: #FFFFFF; color: #5A6488;
-  display: flex; align-items: center; gap: 7px;
-  font-family: 'DM Sans', sans-serif; font-size: 10px;
-  font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
-  cursor: pointer; transition: all .18s;
-}
-.f-filter-btn:hover { border-color: rgba(28,35,64,.18); color: #1C2340; }
-
-.f-count-badge {
-  display: flex; align-items: center; gap: 7px;
-  height: 42px; padding: 0 16px; border-radius: 50px;
-  background: rgba(79,91,203,.08);
-  border: 1px solid rgba(79,91,203,.15);
-  font-family: 'DM Sans', sans-serif; font-size: 10px;
-  font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
-  color: #4F5BCB;
+  font-size: 14px; font-weight: 500;
+  color: #5A6488; margin-top: 6px;
 }
 
-/* Stats Row */
-.f-stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px; margin-bottom: 32px; }
-.f-stat-card {
-    background: #FFFFFF; border: 1px solid rgba(28,35,64,.08); border-radius: 16px; padding: 24px;
-    display: flex; align-items: center; gap: 20px; box-shadow: 0 1px 4px rgba(28,35,64,.04);
+/* ── TMO Document Queue-Style Stats Grid ── */
+.f-stats-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    gap: 16px; margin-top: 32px; margin-bottom: 32px;
 }
-.f-stat-icon { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; }
-.f-stat-label { font-family: 'DM Sans', sans-serif; font-size: 9px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: #8A96BC; margin-bottom: 4px; }
-.f-stat-value { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 20px; font-weight: 800; color: #1C2340; line-height: 1; }
+@media (max-width: 1024px) { .f-stats-grid { grid-template-columns: 1fr; } }
 
-/* Fleet Grid */
-.f-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 24px; }
+.f-stat {
+    background: #fff; border: 1px solid rgba(28,35,64,.08); border-radius: 14px;
+    padding: 20px 22px; display: flex; align-items: flex-start; gap: 16px;
+    transition: box-shadow .2s, border-color .2s; position: relative; overflow: hidden;
+}
+.f-stat:hover { border-color: rgba(28,35,64,.14); box-shadow: 0 4px 20px rgba(28,35,64,.07); }
+.f-stat::after {
+    content: ''; position: absolute; bottom: 0; right: 0; width: 80px; height: 80px;
+    border-radius: 50%; background: radial-gradient(circle, rgba(79,91,203,.04) 0%, transparent 70%);
+    pointer-events: none;
+}
+.f-stat-icon {
+    width: 42px; height: 42px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.f-stat-teal { background: linear-gradient(135deg, #059669 0%, #047857 100%); color: #FFFFFF; }
+.f-stat-blue { background: linear-gradient(135deg, #4F5BCB 0%, #6675A8 100%); color: #FFFFFF; }
+.f-stat-amber { background: linear-gradient(135deg, #D97706 0%, #B45309 100%); color: #FFFFFF; }
 
-/* Unit Card */
+.f-stat-val {
+    font-family: 'Plus Jakarta Sans', sans-serif; font-size: 26px;
+    font-weight: 800; color: #1C2340; line-height: 1;
+}
+.f-stat-lbl {
+    font-family: 'DM Sans', sans-serif; font-size: 9px; font-weight: 700;
+    letter-spacing: .13em; text-transform: uppercase; color: #8A96BC; margin-top: 6px;
+}
+
+/* ── Full-Width Single Unit Card ────────────────────────────────────── */
 .f-card {
     background: #FFFFFF; border: 1px solid rgba(28,35,64,.08); border-radius: 20px;
     overflow: hidden; box-shadow: 0 4px 20px rgba(28,35,64,.03); transition: transform .2s, box-shadow .2s;
     display: flex; flex-direction: column;
 }
-.f-card:hover { transform: translateY(-2px); box-shadow: 0 12px 30px rgba(28,35,64,.06); border-color: rgba(79,91,203,.2); }
+.f-card:hover { border-color: rgba(79,91,203,.15); box-shadow: 0 8px 30px rgba(28,35,64,.05); }
 
-.f-card-header { padding: 24px 24px 16px; display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 1px dashed rgba(28,35,64,.08); }
-.f-unit-badge { display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; background: rgba(79,91,203,.08); color: #4F5BCB; border-radius: 12px; margin-bottom: 12px; }
-.f-unit-id { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 20px; font-weight: 800; color: #1C2340; line-height: 1; margin-bottom: 4px; }
-.f-unit-model { font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 500; color: #5A6488; }
+.f-card-header { padding: 32px 40px; display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 1px dashed rgba(28,35,64,.08); background: rgba(79,91,203,.02); }
+.f-unit-badge { display: inline-flex; align-items: center; justify-content: center; width: 64px; height: 64px; background: linear-gradient(135deg, rgba(79,91,203,.1) 0%, rgba(79,91,203,.05) 100%); color: #4F5BCB; border-radius: 16px; margin-bottom: 16px; border: 1px solid rgba(79,91,203,.15); }
+.f-unit-id { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 28px; font-weight: 800; color: #1C2340; line-height: 1; margin-bottom: 8px; }
+.f-unit-model { font-family: 'Inter', sans-serif; font-size: 15px; font-weight: 500; color: #5A6488; }
 
 .f-status-pill {
-    display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 50px;
-    font-family: 'DM Sans', sans-serif; font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: .08em;
+    display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: 50px;
+    font-family: 'DM Sans', sans-serif; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .08em;
+    background: rgba(5,150,105,.1); color: #059669; border: 1px solid rgba(5,150,105,.2);
 }
-.f-status-online { background: rgba(5,150,105,.1); color: #059669; }
-.f-status-offline { background: rgba(220,38,38,.08); color: #DC2626; }
 
-.f-card-body { padding: 20px 24px; flex: 1; display: flex; flex-direction: column; gap: 16px; }
+/* Changed to 4 columns for full-width monitors */
+.f-card-body { padding: 40px; flex: 1; display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; }
+@media (max-width: 1024px) { .f-card-body { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 640px) { .f-card-body { grid-template-columns: 1fr; } }
 
-.f-info-row { display: flex; align-items: center; gap: 12px; }
-.f-info-icon { width: 32px; height: 32px; border-radius: 8px; background: #F8F9FC; color: #8A96BC; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.f-info-row { display: flex; align-items: center; gap: 16px; padding: 20px; background: #FFFFFF; border-radius: 14px; border: 1px solid rgba(28,35,64,.08); transition: background .2s, border-color .2s; }
+.f-info-row:hover { background: #F9FAFB; border-color: rgba(79,91,203,.2); }
+
+.f-info-icon { width: 44px; height: 44px; border-radius: 12px; background: rgba(79,91,203,.08); color: #4F5BCB; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.f-info-icon.emerald { background: rgba(5,150,105,.08); color: #059669; }
+.f-info-icon.amber { background: rgba(245,158,11,.08); color: #D97706; }
+
 .f-info-text { flex: 1; }
-.f-info-label { font-family: 'DM Sans', sans-serif; font-size: 9px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: #8A96BC; margin-bottom: 2px; }
-.f-info-value { font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 600; color: #1C2340; display: flex; align-items: center; gap: 6px; }
+.f-info-label { font-family: 'DM Sans', sans-serif; font-size: 9.5px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: #8A96BC; margin-bottom: 6px; }
+.f-info-value { font-family: 'Inter', sans-serif; font-size: 14.5px; font-weight: 600; color: #1C2340; display: flex; align-items: center; gap: 8px; }
 
-.f-color-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+.f-color-dot { width: 12px; height: 12px; border-radius: 50%; display: inline-block; }
 
-.f-card-footer { padding: 16px 24px; background: #FAFAFC; border-top: 1px solid rgba(28,35,64,.05); display: flex; gap: 12px; }
+.f-card-footer { padding: 24px 40px; background: #FAFAFC; border-top: 1px solid rgba(28,35,64,.05); display: flex; gap: 16px; }
 .f-btn-primary {
-    flex: 1; height: 40px; border-radius: 10px; background: #1C2340; color: #FFFFFF;
-    font-family: 'DM Sans', sans-serif; font-size: 10px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
-    display: flex; align-items: center; justify-content: center; gap: 8px; border: none; cursor: pointer; transition: all .2s;
-    text-decoration: none;
+    flex: 1; height: 48px; padding: 0 32px; border-radius: 12px; background: #1C2340; color: #FFFFFF;
+    font-family: 'DM Sans', sans-serif; font-size: 11px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
+    display: flex; align-items: center; justify-content: center; gap: 10px; border: none; cursor: pointer; transition: all .2s;
+    text-decoration: none; box-shadow: 0 4px 14px rgba(28,35,64,.25);
 }
-.f-btn-primary:hover { background: #2E3A9E; }
+.f-btn-primary:hover { background: #2E3A9E; box-shadow: 0 6px 20px rgba(79,91,203,.3); transform: translateY(-1px); color: #FFFFFF; }
 .f-btn-secondary {
-    width: 40px; height: 40px; border-radius: 10px; background: #FFFFFF; border: 1px solid rgba(28,35,64,.15);
-    color: #5A6488; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all .2s;
+    height: 48px; padding: 0 24px; border-radius: 12px; background: #FFFFFF; border: 1px solid rgba(28,35,64,.15);
+    color: #1C2340; font-family: 'DM Sans', sans-serif; font-size: 11px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
+    display: flex; align-items: center; justify-content: center; gap: 10px; cursor: pointer; transition: all .2s; text-decoration: none;
 }
-.f-btn-secondary:hover { background: #F8F9FC; color: #1C2340; border-color: rgba(28,35,64,.3); }
+.f-btn-secondary:hover { background: #F8F9FC; border-color: rgba(28,35,64,.3); color: #1C2340; }
 
-/* Empty state */
-.f-empty { padding: 64px 0; text-align: center; grid-column: 1 / -1; }
-.f-empty-icon { width: 56px; height: 56px; border-radius: 14px; background: rgba(28,35,64,.04); border: 1px solid rgba(28,35,64,.08); display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; color: #8A96BC; }
-.f-empty-title { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 14px; font-weight: 700; color: #3A4570; margin-bottom: 6px; }
-.f-empty-sub { font-family: 'DM Sans', sans-serif; font-size: 10px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: #8A96BC; }
+/* ── Pulse animation ── */
+@keyframes pulse {
+    0%   { box-shadow: 0 0 0 0 rgba(5,150,105,.7); }
+    70%  { box-shadow: 0 0 0 6px rgba(5,150,105,0); }
+    100% { box-shadow: 0 0 0 0 rgba(5,150,105,0); }
+}
 `;
 
-export default function Tricycles() {
-    const [searchTerm, setSearchTerm] = useState('');
-
-    // Mock Tricycle Data
-    const tricycles = [
-        {
-            id: 'NSB-123',
-            makeModel: 'Honda TMX 125 Alpha',
-            plateNo: '123-ABC',
-            driver: 'Mario Dela Cruz (Self)',
-            zone: 'Wawa / Barangay 1-4',
-            colorCode: 'Green',
-            colorHex: '#059669',
-            status: 'online',
-            lastPing: 'Just now',
-            iotBattery: '89%'
-        },
-        {
-            id: 'NSB-456',
-            makeModel: 'Kawasaki Barako 175',
-            plateNo: '456-DEF',
-            driver: 'Luigi Dela Cruz',
-            zone: 'Poblacion Proper',
-            colorCode: 'Yellow',
-            colorHex: '#D97706',
-            status: 'offline',
-            lastPing: '2 hours ago',
-            iotBattery: '12%'
-        },
-        {
-            id: 'NSB-789',
-            makeModel: 'Yamaha SZ 150',
-            plateNo: '789-GHI',
-            driver: 'Pedro Penduko',
-            zone: 'Lumbangan / Bucana',
-            colorCode: 'Blue',
-            colorHex: '#2563EB',
-            status: 'online',
-            lastPing: '5 mins ago',
-            iotBattery: '74%'
-        }
-    ];
-
-    const stats = [
-        { label: 'Total Tricycles', value: '3', icon: Bike, color: '#4F5BCB', bg: 'rgba(79,91,203,.08)' },
-        { label: 'IoT Online', value: '2', icon: Wifi, color: '#059669', bg: 'rgba(5,150,105,.08)' },
-        { label: 'IoT Offline', value: '1', icon: WifiOff, color: '#DC2626', bg: 'rgba(220,38,38,.08)' },
-    ];
-
-    // Filter logic
-    const filteredTricycles = tricycles.filter(unit =>
-        unit.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        unit.plateNo.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        unit.makeModel.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+export default function MyTricycle() {
+    // Single Tricycle Data for the logged-in Driver
+    const tricycle = {
+        id: 'NSB-123',
+        applicationId: 'APP-2026-0812',
+        makeModel: 'Honda TMX 125 Alpha',
+        plateNo: '123-ABC',
+        driver: 'Mario Dela Cruz',
+        zone: 'Poblacion Zone (TODA A)',
+        colorCode: 'Green',
+        colorHex: '#059669',
+        status: 'online',
+        lastPing: 'Just now',
+        iotBattery: '89%',
+        mtopStatus: 'Valid',
+        mtopExpiry: 'Oct 12, 2026'
+    };
 
     return (
-        <OperatorLayout title="My Tricycles" operatorName="Mario Dela Cruz">
-            <Head title="My Tricycles | TRIVORA" />
+        <OperatorLayout title="My Tricycle" operatorName="Mario Dela Cruz">
+            <Head title="My Tricycle | TRIVORA" />
             <style dangerouslySetInnerHTML={{ __html: CSS }} />
 
             <div className="f-root">
 
                 {/* ── PAGE HEADING ── */}
-                <div style={{ marginBottom: 32 }}>
-                    <p className="f-eyebrow">Tricycle Management</p>
-                    <h1 className="f-title">My Tricycles</h1>
-                    <p className="f-subtitle">Manage your registered tricycles, assigned drivers, and IoT trackers.</p>
+                <div>
+                    <p className="f-eyebrow">Unit Management</p>
+                    <h1 className="f-title">My Tricycle</h1>
+                    <p className="f-subtitle">View your assigned tricycle unit details and real-time IoT tracker status.</p>
                 </div>
 
-                {/* ── STATS ROW ── */}
+                {/* ── TMO DOCUMENT QUEUE-STYLE STATS GRID ── */}
                 <div className="f-stats-grid">
-                    {stats.map((s, i) => (
-                        <div key={i} className="f-stat-card">
-                            <div className="f-stat-icon" style={{ background: s.bg, color: s.color }}>
-                                <s.icon size={24} />
-                            </div>
-                            <div>
-                                <p className="f-stat-val" style={{ fontFamily: 'Plus Jakarta Sans', fontSize: 28, fontWeight: 800, color: '#1C2340', lineHeight: 1 }}>{s.value}</p>
-                                <p className="f-stat-lbl" style={{ fontFamily: 'DM Sans', fontSize: 9, fontWeight: 700, letterSpacing: '.13em', textTransform: 'uppercase', color: '#8A96BC', marginTop: 5 }}>{s.label}</p>
-                            </div>
-                        </div>
-                    ))}
+                    <StatCard
+                        value="Online" label="IoT Connection Status"
+                        icon={Wifi} iconClass="f-stat-teal" accentColor="#059669"
+                    />
+                    <StatCard
+                        value={tricycle.iotBattery} label="Tracker Battery Level"
+                        icon={BatteryMedium} iconClass="f-stat-blue"
+                    />
+                    <StatCard
+                        value={tricycle.mtopStatus} label="Franchise Validity"
+                        icon={ShieldCheck} iconClass="f-stat-amber"
+                    />
                 </div>
 
-                {/* ── TOOLBAR ── */}
-                <div className="f-toolbar">
-                    <div className="f-search">
-                        <Search size={14} strokeWidth={2} className="f-search-icon" />
-                        <input
-                            type="text"
-                            placeholder="Search tricycle or plate number…"
-                            value={searchTerm}
-                            onChange={e => setSearchTerm(e.target.value)}
-                        />
-                        {searchTerm && (
-                            <button className="f-clear-btn" onClick={() => setSearchTerm('')}>
-                                <X size={13} />
-                            </button>
-                        )}
-                    </div>
-                    <div className="f-toolbar-right">
-                        <button className="f-filter-btn">
-                            <Filter size={14} strokeWidth={2} />
-                            Filter
-                        </button>
-                        <div className="f-count-badge">
-                            <Bike size={13} strokeWidth={2} />
-                            Units: {filteredTricycles.length}
+                {/* ── FULL-WIDTH TRICYCLE CARD ── */}
+                <div className="f-card">
+
+                    {/* Card Header */}
+                    <div className="f-card-header">
+                        <div>
+                            <div className="f-unit-badge">
+                                <Bike size={32} strokeWidth={2.5} />
+                            </div>
+                            <h2 className="f-unit-id">{tricycle.id}</h2>
+                            <p className="f-unit-model">{tricycle.makeModel} • Plate: {tricycle.plateNo}</p>
+                        </div>
+                        <div>
+                            <div className="f-status-pill">
+                                <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#059669', display: 'block', animation: 'pulse 2s infinite' }} />
+                                Connected
+                            </div>
                         </div>
                     </div>
-                </div>
 
-                {/* ── TRICYCLE GRID ── */}
-                <div className="f-grid">
-                    {filteredTricycles.length === 0 ? (
-                        <div className="f-empty">
-                            <div className="f-empty-icon">
-                                <Bike size={26} strokeWidth={1.4} />
+                    {/* 4-Column Card Body Grid */}
+                    <div className="f-card-body">
+
+                        <div className="f-info-row">
+                            <div className="f-info-icon"><User size={20} /></div>
+                            <div className="f-info-text">
+                                <p className="f-info-label">Assigned Driver</p>
+                                <p className="f-info-value">{tricycle.driver}</p>
                             </div>
-                            <p className="f-empty-title">No tricycles found</p>
-                            <p className="f-empty-sub">Try searching for a different ID or plate number</p>
                         </div>
-                    ) : (
-                        filteredTricycles.map((unit, index) => (
-                            <div key={index} className="f-card">
 
-                                {/* Card Header */}
-                                <div className="f-card-header">
-                                    <div>
-                                        <div className="f-unit-badge">
-                                            <Bike size={20} strokeWidth={2} />
-                                        </div>
-                                        <h2 className="f-unit-id">{unit.id}</h2>
-                                        <p className="f-unit-model">{unit.makeModel} • {unit.plateNo}</p>
-                                    </div>
-                                    <div>
-                                        {unit.status === 'online' ? (
-                                            <div className="f-status-pill f-status-online">
-                                                <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#059669', display: 'block', animation: 'pulse 2s infinite' }} />
-                                                Online
-                                            </div>
-                                        ) : (
-                                            <div className="f-status-pill f-status-offline">
-                                                <WifiOff size={10} strokeWidth={3} />
-                                                Offline
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-
-                                {/* Card Body */}
-                                <div className="f-card-body">
-
-                                    <div className="f-info-row">
-                                        <div className="f-info-icon"><User size={14} /></div>
-                                        <div className="f-info-text">
-                                            <p className="f-info-label">Assigned Driver</p>
-                                            <p className="f-info-value">{unit.driver}</p>
-                                        </div>
-                                    </div>
-
-                                    <div className="f-info-row">
-                                        <div className="f-info-icon"><MapPin size={14} /></div>
-                                        <div className="f-info-text">
-                                            <p className="f-info-label">Color Code & Zone</p>
-                                            <p className="f-info-value">
-                                                <span className="f-color-dot" style={{ background: unit.colorHex }}></span>
-                                                {unit.colorCode} ({unit.zone})
-                                            </p>
-                                        </div>
-                                    </div>
-
-                                    <div className="f-info-row">
-                                        <div className="f-info-icon"><Activity size={14} /></div>
-                                        <div className="f-info-text">
-                                            <p className="f-info-label">IoT Tracker Data</p>
-                                            <p className="f-info-value">
-                                                <span style={{ color: unit.status === 'online' ? '#059669' : '#8A96BC' }}>
-                                                    Last Sync: {unit.lastPing}
-                                                </span>
-                                                <span style={{ color: '#8A96BC', padding: '0 4px' }}>•</span>
-                                                <span style={{ color: unit.status === 'online' ? '#1C2340' : '#8A96BC' }}>
-                                                    Batt: {unit.iotBattery}
-                                                </span>
-                                            </p>
-                                        </div>
-                                    </div>
-
-                                </div>
-
-                                {/* Card Footer Actions */}
-                                <div className="f-card-footer">
-                                    <button className="f-btn-primary">
-                                        <Navigation2 size={14} /> Track Location
-                                    </button>
-                                    <button className="f-btn-secondary" title="View MTOP Documents">
-                                        <FileText size={16} />
-                                    </button>
-                                    <button className="f-btn-secondary" title="Unit Settings">
-                                        <Settings size={16} />
-                                    </button>
-                                </div>
-
+                        <div className="f-info-row">
+                            <div className="f-info-icon amber"><MapPin size={20} /></div>
+                            <div className="f-info-text">
+                                <p className="f-info-label">Color Code & Zone</p>
+                                <p className="f-info-value">
+                                    <span className="f-color-dot" style={{ background: tricycle.colorHex }}></span>
+                                    {tricycle.colorCode} ({tricycle.zone})
+                                </p>
                             </div>
-                        ))
-                    )}
-                </div>
+                        </div>
 
+                        <div className="f-info-row">
+                            <div className="f-info-icon emerald"><FileText size={20} /></div>
+                            <div className="f-info-text">
+                                <p className="f-info-label">MTOP Franchise Expiry</p>
+                                <p className="f-info-value" style={{ color: '#059669' }}>
+                                    {tricycle.mtopExpiry}
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="f-info-row">
+                            <div className="f-info-icon"><Activity size={20} /></div>
+                            <div className="f-info-text">
+                                <p className="f-info-label">IoT Sync Status</p>
+                                <p className="f-info-value">
+                                    Last synced: {tricycle.lastPing}
+                                </p>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    {/* Card Footer Actions */}
+                    <div className="f-card-footer">
+                        <Link href={route('operator.tracking')} className="f-btn-primary">
+                            <Navigation2 size={16} /> Open Live GPS Tracking
+                        </Link>
+                        <Link href={route('operator.settings')} className="f-btn-secondary" title="Unit Settings">
+                            <Settings size={16} /> Unit Settings
+                        </Link>
+                    </div>
+
+                </div>
             </div>
         </OperatorLayout>
+    );
+}
+
+/* ── SUB-COMPONENT: STAT CARD ── */
+function StatCard({ value, label, icon: Icon, iconClass, accentColor }) {
+    const cardStyle = accentColor ? { borderTop: `2.5px solid ${accentColor}` } : {};
+
+    return (
+        <div className="f-stat" style={cardStyle}>
+            <div className={`f-stat-icon ${iconClass}`}>
+                <Icon size={20} strokeWidth={2.5} />
+            </div>
+            <div>
+                <p className="f-stat-val">{value}</p>
+                <p className="f-stat-lbl">{label}</p>
+            </div>
+        </div>
     );
 }

@@ -4,7 +4,7 @@ import TrivoraLayout from '@/Layouts/TrivoraLayout';
 import {
     Search, Filter, ShieldAlert,
     AlertCircle, CheckCircle2, Clock,
-    ChevronRight, X, FileText
+    ChevronRight, X, FileText, Download
 } from 'lucide-react';
 
 /* ─────────────────────────────────────────────────────────────────────────
@@ -18,6 +18,9 @@ const CSS = `
 .vr-root {
   font-family: 'Inter', sans-serif;
   color: #1C2340;
+  max-width: 1500px;
+  margin: 0 auto;
+  padding-bottom: 48px;
 }
 .vr-root *, .vr-root *::before, .vr-root *::after { box-sizing: border-box; }
 
@@ -57,7 +60,7 @@ const CSS = `
 
 .vr-stat {
   background: #FFFFFF;
-  border: 1px solid rgba(28,35,64,.08);
+  border: 1px solid rgba(28,35,64,.15);
   border-radius: 14px;
   padding: 20px 22px;
   display: flex; align-items: flex-start; gap: 16px;
@@ -68,7 +71,7 @@ const CSS = `
   border-color: rgba(28,35,64,.14);
   box-shadow: 0 4px 20px rgba(28,35,64,.07);
 }
-.vr-stat-accent { border-top: 2.5px solid #DC2626; }
+.vr-stat-accent { border-top: 2.5px solid #4F5BCB; }
 .vr-stat::after {
   content: '';
   position: absolute; bottom: 0; right: 0;
@@ -81,9 +84,9 @@ const CSS = `
   display: flex; align-items: center; justify-content: center;
   flex-shrink: 0;
 }
-.vr-stat-rose    { background: rgba(220,38,38,.08);  color: #991B1B; }
-.vr-stat-amber   { background: rgba(217,119,6,.09);  color: #78350F; }
-.vr-stat-emerald { background: rgba(5,150,105,.09);  color: #065F46; }
+.vr-stat-rose    { background: linear-gradient(135deg, #DC2626 0%, #B91C1C 100%);  color: #FFFFFF; }
+.vr-stat-amber   { background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%);  color: #FFFFFF; }
+.vr-stat-emerald { background: linear-gradient(135deg, #059669 0%, #047857 100%);  color: #FFFFFF; }
 .vr-stat-val {
   font-family: 'Plus Jakarta Sans', sans-serif;
   font-size: 28px; font-weight: 800;
@@ -104,7 +107,7 @@ const CSS = `
 .vr-search {
   display: flex; align-items: center; gap: 10px;
   background: #FFFFFF;
-  border: 1px solid rgba(28,35,64,.09);
+  border: 1px solid rgba(28,35,64,.15);
   border-radius: 50px; height: 42px; padding: 0 16px;
   width: 320px; transition: all .2s;
 }
@@ -120,7 +123,7 @@ const CSS = `
   color: #1C2340; width: 100%;
 }
 .vr-search input::placeholder { color: #8A96BC; font-weight: 400; }
-.vr-search-icon { color: #8A96BC; flex-shrink: 0; }
+.vr-search-icon { color: #6B7280; flex-shrink: 0; }
 .vr-clear-btn {
   background: none; border: none; cursor: pointer;
   color: #8A96BC; display: flex; padding: 0;
@@ -131,8 +134,8 @@ const CSS = `
 .vr-toolbar-right { display: flex; align-items: center; gap: 10px; }
 .vr-filter-btn {
   height: 42px; padding: 0 16px; border-radius: 50px;
-  border: 1px solid rgba(28,35,64,.09);
-  background: #FFFFFF; color: #5A6488;
+  border: 1px solid rgba(28,35,64,.15);
+  background: #FFFFFF; color: #374151;
   display: flex; align-items: center; gap: 7px;
   font-family: 'DM Sans', sans-serif; font-size: 10px;
   font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
@@ -156,7 +159,8 @@ const CSS = `
   font-family: 'DM Sans', sans-serif;
   font-size: 8.5px; font-weight: 700;
   letter-spacing: .16em; text-transform: uppercase;
-  color: #8A96BC; text-align: left; white-space: nowrap;
+  color: #4F5BCB; text-align: left; white-space: nowrap;
+  background: rgba(79, 91, 203, 0.05);
 }
 .vr-th-right { text-align: right; }
 
@@ -232,20 +236,23 @@ const CSS = `
 /* Action button */
 .vr-action-btn {
   display: inline-flex; align-items: center; gap: 7px;
-  background: #FFFFFF; color: #1C2340;
+  background: #1C2340; color: #FFFFFF;
   border: 1px solid rgba(28,35,64,.15);
   padding: 9px 18px; border-radius: 50px;
   font-family: 'DM Sans', sans-serif; font-size: 10px;
   font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
   text-decoration: none;
-  transition: all .18s;
+  transition: background .18s, box-shadow .18s, transform .18s;
   white-space: nowrap;
 }
 .vr-action-btn:hover {
-  border-color: rgba(28,35,64,.3);
-  background: #FAFAFA;
-  box-shadow: 0 2px 8px rgba(28,35,64,.06);
+  background: #2E3A9E;
+  box-shadow: 0 4px 14px rgba(79,91,203,.28);
+  transform: translateX(2px);
 }
+
+/* td right alignment */
+.vr-td-right { text-align: right; }
 
 /* Empty state */
 .vr-empty { padding: 64px 0; text-align: center; }
@@ -272,17 +279,39 @@ const CSS = `
 export default function Violations() {
     const [query, setQuery] = useState('');
 
-    // Mock STRICTLY IoT Coding Violations Data
+    // Export handler
+    const handleExport = () => {
+        const csvContent = [
+            ['Incident ID', 'Date', 'Time', 'Operator', 'Plate No', 'TODA', 'Type', 'Source', 'Fine', 'Status'],
+            ...violations.map(v => [v.id, v.date, v.time, v.operator, v.plate_no, v.toda, v.type, v.source, v.fine, v.status])
+        ]
+            .map(row => row.map(cell => `"${cell}"`).join(','))
+            .join('\n');
+
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+
+        link.setAttribute('href', url);
+        link.setAttribute('download', `Violation_Records_${new Date().toISOString().split('T')[0]}.csv`);
+        link.style.visibility = 'hidden';
+
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
+    // Mock Coding Violations Data
     const violations = [
         {
             id: 'VIO-26-8841',
             date: '2026-04-05',
             time: '08:45 AM',
             operator: 'Ricardo Dalisay',
-            body_no: 'N-142',
             plate_no: '8812',
+            toda: 'TODA BUCANA',
             type: 'Coding Violation',
-            source: 'IoT Camera (Zone 1)',
+            source: 'Location Tracker',
             fine: 500,
             status: 'unsettled'
         },
@@ -291,10 +320,10 @@ export default function Violations() {
             date: '2026-04-04',
             time: '02:15 PM',
             operator: 'Juan Dela Cruz',
-            body_no: 'N-089',
             plate_no: '4491',
+            toda: 'TODA BRGY. 6',
             type: 'Coding Violation',
-            source: 'IoT Camera (Zone 4)',
+            source: 'Location Tracker',
             fine: 500,
             status: 'unsettled'
         },
@@ -303,10 +332,10 @@ export default function Violations() {
             date: '2026-04-01',
             time: '11:20 AM',
             operator: 'Mario Santos',
-            body_no: 'N-301',
             plate_no: '2245',
+            toda: 'TODA BRGY 11',
             type: 'Coding Violation',
-            source: 'IoT Camera (Zone 2)',
+            source: 'Location Tracker',
             fine: 500,
             status: 'settled'
         },
@@ -327,13 +356,13 @@ export default function Violations() {
 
             <style dangerouslySetInnerHTML={{ __html: CSS }} />
 
-            <div className="vr-root" style={{ maxWidth: 1100, margin: '0 auto', paddingBottom: 48 }}>
+            <div className="vr-root" style={{ maxWidth: 1500, margin: '0 auto', paddingBottom: 48 }}>
 
                 {/* ── Page heading ── */}
                 <div style={{ marginBottom: 32 }}>
                     <p className="vr-eyebrow">Enforcement Records</p>
-                    <h1 className="vr-title">IoT Coding Violations</h1>
-                    <p className="vr-subtitle">Database of all auto-detected coding scheme violations</p>
+                    <h1 className="vr-title">Coding Violations</h1>
+                    <p className="vr-subtitle">Database of detected coding scheme violations</p>
                 </div>
 
                 {/* ── Stat cards ── */}
@@ -360,6 +389,10 @@ export default function Violations() {
                         )}
                     </div>
                     <div className="vr-toolbar-right">
+                        <button className="vr-filter-btn" onClick={handleExport}>
+                            <Download size={14} strokeWidth={2} />
+                            Export CSV
+                        </button>
                         <button className="vr-filter-btn">
                             <Filter size={14} strokeWidth={2} />
                             Filter Status
@@ -374,8 +407,9 @@ export default function Violations() {
                             <thead>
                                 <tr className="vr-thead-row">
                                     <th className="vr-th">Incident / Date</th>
-                                    <th className="vr-th">Violator Details</th>
-                                    <th className="vr-th">Infraction</th>
+                                <th className="vr-th">Plate Number</th>
+                                <th className="vr-th">Trycicle Driver & TODA</th>
+                                <th className="vr-th">Violation</th>
                                     <th className="vr-th">Fine & Status</th>
                                     <th className="vr-th vr-th-right">Action</th>
                                 </tr>
@@ -383,7 +417,7 @@ export default function Violations() {
                             <tbody>
                                 {filtered.length === 0 ? (
                                     <tr>
-                                        <td colSpan={5}>
+                                  <td colSpan={6}>
                                             <div className="vr-empty">
                                                 <div className="vr-empty-icon">
                                                     <FileText size={26} strokeWidth={1.4} />
@@ -439,16 +473,17 @@ function ViolationRow({ record }) {
                 </p>
             </td>
             <td className="vr-td">
-                <p className="vr-op-name">{record.operator}</p>
-                <p className="vr-op-meta">
-                    Body: {record.body_no} • Plate: {record.plate_no}
-                </p>
+        <span className="vr-id-chip">{record.plate_no}</span>
             </td>
             <td className="vr-td">
-                <p className="vr-type-name">{record.type}</p>
-                <p className="vr-type-sub">{record.source}</p>
+        <p className="vr-op-name">{record.operator}</p>
+              <p className="vr-op-meta">{record.toda}</p>
             </td>
             <td className="vr-td">
+        <p className="vr-type-name">{record.type}</p>
+        <p className="vr-type-sub">{record.source}</p>
+      </td>
+      <td className="vr-td">
                 <p className="vr-fine">₱{record.fine.toFixed(2)}</p>
                 {record.status === 'unsettled' ? (
                     <span className="vr-status-badge vr-status-unsettled">
@@ -461,7 +496,6 @@ function ViolationRow({ record }) {
                 )}
             </td>
             <td className="vr-td vr-td-right">
-                {/* Prepare Link to Details Page */}
                 <Link href={`/violations/${record.id}`} className="vr-action-btn">
                     View Details
                     <ChevronRight size={13} strokeWidth={2.5} />

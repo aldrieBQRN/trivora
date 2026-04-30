@@ -4,7 +4,7 @@ import TrivoraLayout from '@/Layouts/TrivoraLayout';
 import {
     Search, ClipboardCheck, Bike,
     ChevronRight, Clock, Gauge,
-    Inbox, X, Calendar,
+    Inbox, X, Calendar, Filter,
 } from 'lucide-react';
 
 /* ─────────────────────────────────────────────────────────────────────────
@@ -18,6 +18,9 @@ const CSS = `
 .pq-root {
   font-family: 'Inter', sans-serif;
   color: #1C2340;
+  max-width: 1500px;
+  margin: 0 auto;
+  padding-bottom: 48px;
 }
 .pq-root *, .pq-root *::before, .pq-root *::after { box-sizing: border-box; }
 
@@ -58,7 +61,7 @@ const CSS = `
 
 .pq-stat {
   background: #FFFFFF;
-  border: 1px solid rgba(28,35,64,.08);
+  border: 1px solid rgba(28,35,64,.15);
   border-radius: 14px;
   padding: 20px 22px;
   display: flex; align-items: flex-start; gap: 16px;
@@ -82,9 +85,9 @@ const CSS = `
   display: flex; align-items: center; justify-content: center;
   flex-shrink: 0;
 }
-.pq-stat-indigo { background: rgba(79,91,203,.10);  color: #2E3A9E; }
-.pq-stat-emerald { background: rgba(5,150,105,.09); color: #065F46; }
-.pq-stat-amber  { background: rgba(217,119,6,.09);  color: #78350F; }
+.pq-stat-indigo { background: linear-gradient(135deg, #4F5BCB 0%, #6675A8 100%);  color: #FFFFFF; }
+.pq-stat-emerald { background: linear-gradient(135deg, #059669 0%, #047857 100%); color: #FFFFFF; }
+.pq-stat-amber  { background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%);  color: #FFFFFF; }
 .pq-stat-val {
   font-family: 'Plus Jakarta Sans', sans-serif;
   font-size: 28px; font-weight: 800;
@@ -99,13 +102,13 @@ const CSS = `
 
 /* ── Toolbar ────────────────────────────────────────────────────────── */
 .pq-toolbar {
-  display: flex; align-items: center; justify-content: space-between;
-  gap: 14px; margin-bottom: 20px; flex-wrap: wrap;
+  display: flex; align-items: center; justify-content: flex-start;
+  gap: 10px; margin-bottom: 20px; flex-wrap: wrap;
 }
 .pq-search {
   display: flex; align-items: center; gap: 10px;
   background: #FFFFFF;
-  border: 1px solid rgba(28,35,64,.09);
+  border: 1px solid rgba(28,35,64,.15);
   border-radius: 50px; height: 42px; padding: 0 16px;
   width: 320px; transition: all .2s;
 }
@@ -121,7 +124,7 @@ const CSS = `
   color: #1C2340; width: 100%;
 }
 .pq-search input::placeholder { color: #8A96BC; font-weight: 400; }
-.pq-search-icon { color: #8A96BC; flex-shrink: 0; }
+.pq-search-icon { color: #6B7280; flex-shrink: 0; }
 .pq-clear-btn {
   background: none; border: none; cursor: pointer;
   color: #8A96BC; display: flex; padding: 0;
@@ -129,6 +132,19 @@ const CSS = `
 }
 .pq-clear-btn:hover { color: #1C2340; }
 
+.pq-toolbar-right { display: flex; align-items: center; gap: 10px; margin-left: auto; }
+.pq-filter-btn {
+  height: 42px; padding: 0 16px; border-radius: 50px;
+  border: 1px solid rgba(28,35,64,.15);
+  background: #FFFFFF; color: #374151;
+  display: flex; align-items: center; gap: 7px;
+  font-family: 'DM Sans', sans-serif; font-size: 10px;
+  font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
+  cursor: pointer; transition: all .18s;
+}
+.pq-filter-btn:hover { border-color: rgba(28,35,64,.18); color: #1C2340; }
+
+.pq-toolbar-right { display: flex; align-items: center; gap: 10px; }
 .pq-count-badge {
   display: flex; align-items: center; gap: 7px;
   height: 42px; padding: 0 16px; border-radius: 50px;
@@ -155,7 +171,8 @@ const CSS = `
   font-family: 'DM Sans', sans-serif;
   font-size: 8.5px; font-weight: 700;
   letter-spacing: .16em; text-transform: uppercase;
-  color: #8A96BC; text-align: left; white-space: nowrap;
+  color: #4F5BCB; text-align: left; white-space: nowrap;
+  background: rgba(79, 91, 203, 0.05);
 }
 .pq-th-right { text-align: right; }
 
@@ -206,6 +223,27 @@ const CSS = `
   letter-spacing: .08em; text-transform: uppercase;
   color: #8A96BC;
   display: flex; align-items: center; gap: 5px;
+}
+
+/* Status badge */
+.pq-status {
+  display: inline-flex; align-items: center;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 9px; font-weight: 700;
+  letter-spacing: .11em; text-transform: uppercase;
+  border-radius: 999px;
+  padding: 6px 10px;
+  border: 1px solid transparent;
+}
+.pq-status-scheduled {
+  color: #065F46;
+  background: rgba(16, 185, 129, .14);
+  border-color: rgba(5, 150, 105, .35);
+}
+.pq-status-reinspection {
+  color: #92400E;
+  background: rgba(245, 158, 11, .14);
+  border-color: rgba(245, 158, 11, .35);
 }
 
 /* Action button */
@@ -289,6 +327,7 @@ export default function PhysicalQueue() {
             make: 'Honda TMX 125',
             scheduled_date: '2026-04-05',
             time_slot: '09:00 AM',
+        status: 'Scheduled',
         },
         {
             id: 'NSB-26-5521',
@@ -297,12 +336,35 @@ export default function PhysicalQueue() {
             make: 'Kawasaki Barako 175',
             scheduled_date: '2026-04-05',
             time_slot: '10:30 AM',
+        status: 'Scheduled',
+      },
+      {
+        id: 'NSB-26-5884',
+        operator: 'Elena Dela Fuente',
+        toda: 'TODA C (Banilad)',
+        make: 'Yamaha YTX 125',
+        scheduled_date: '2026-04-06',
+        time_slot: '01:00 PM',
+        status: 'Re-inspection',
+      },
+      {
+        id: 'NSB-26-5927',
+        operator: 'Marco Villanueva',
+        toda: 'TODA B (Wawa)',
+        make: 'Rusi TC 125',
+        scheduled_date: '2026-04-06',
+        time_slot: '02:30 PM',
+        status: 'Re-inspection',
         },
     ];
 
+    const scheduledCount = applications.filter(a => a.status === 'Scheduled').length;
+    const reinspectionCount = applications.filter(a => a.status === 'Re-inspection').length;
+
     const filtered = applications.filter(a =>
         a.id.toLowerCase().includes(query.toLowerCase()) ||
-        a.operator.toLowerCase().includes(query.toLowerCase())
+      a.operator.toLowerCase().includes(query.toLowerCase()) ||
+      a.status.toLowerCase().includes(query.toLowerCase())
     );
 
     return (
@@ -311,20 +373,20 @@ export default function PhysicalQueue() {
 
             <style dangerouslySetInnerHTML={{ __html: CSS }} />
 
-            <div className="pq-root" style={{ maxWidth: 1100, margin: '0 auto', paddingBottom: 48 }}>
+            <div className="pq-root" style={{ maxWidth: 1500, margin: '0 auto', paddingBottom: 48 }}>
 
                 {/* ── Page heading ── */}
                 <div style={{ marginBottom: 32 }}>
                     <p className="pq-eyebrow">TMO Operations</p>
                     <h1 className="pq-title">Physical Inspection</h1>
-                    <p className="pq-subtitle">Phase 2 · On-site roadworthiness testing and unit verification</p>
+                    <p className="pq-subtitle">Phase 2 · On-site testing and Trycicle verification</p>
                 </div>
 
                 {/* ── Stat cards ── */}
                 <div className="pq-stats">
-                    <StatCard count={applications.length} label="Scheduled Today"    icon={ClipboardCheck} iconClass="pq-stat-indigo" accent />
-                    <StatCard count="5"                   label="Completed Today"    icon={ClipboardCheck} iconClass="pq-stat-emerald" />
-                    <StatCard count="1"                   label="Awaiting Reschedule" icon={Clock}         iconClass="pq-stat-amber" />
+                  <StatCard count={scheduledCount}   label="Scheduled Today" icon={ClipboardCheck} iconClass="pq-stat-indigo" accent />
+                  <StatCard count="5"               label="Completed Today" icon={ClipboardCheck} iconClass="pq-stat-emerald" />
+                  <StatCard count={reinspectionCount} label="Re-inspection"  icon={Clock}         iconClass="pq-stat-amber" />
                 </div>
 
                 {/* ── Toolbar ── */}
@@ -343,9 +405,15 @@ export default function PhysicalQueue() {
                             </button>
                         )}
                     </div>
-                    <div className="pq-count-badge">
-                        <Clock size={13} strokeWidth={2} />
-                        Scheduled: {applications.length}
+                    <div className="pq-toolbar-right">
+                        <button className="pq-filter-btn">
+                            <Filter size={14} strokeWidth={2} />
+                            Filter
+                        </button>
+                        <div className="pq-count-badge">
+                            <Clock size={13} strokeWidth={2} />
+                          Scheduled: {scheduledCount}
+                        </div>
                     </div>
                 </div>
 
@@ -356,15 +424,16 @@ export default function PhysicalQueue() {
                             <thead>
                                 <tr className="pq-thead-row">
                                     <th className="pq-th">Application ID</th>
-                                    <th className="pq-th">Operator</th>
+                                    <th className="pq-th">Trycicle Driver</th>
                                     <th className="pq-th">Schedule</th>
+                                    <th className="pq-th">Status</th>
                                     <th className="pq-th pq-th-right">Action</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {filtered.length === 0 ? (
                                     <tr>
-                                        <td colSpan={4}>
+                                      <td colSpan={5}>
                                             <div className="pq-empty">
                                                 <div className="pq-empty-icon">
                                                     <Inbox size={24} strokeWidth={1.4} />
@@ -396,8 +465,8 @@ export default function PhysicalQueue() {
                     <div>
                         <p className="pq-notice-title">TMO Field Protocol</p>
                         <p className="pq-notice-body">
-                            Inspect units only when the operator is physically present.
-                            Ensure safety gear (helmet) is also verified during the road test.
+                            Inspect units only when the Trycicle Driver is physically present.
+                            Ensure safety gear is also verified during the road test.
                         </p>
                     </div>
                 </div>
@@ -442,6 +511,11 @@ function QueueRow({ app }) {
                     <Clock size={10} strokeWidth={2} />
                     {app.time_slot}
                 </p>
+            </td>
+            <td className="pq-td">
+              <span className={`pq-status ${app.status === 'Scheduled' ? 'pq-status-scheduled' : 'pq-status-reinspection'}`}>
+                {app.status}
+              </span>
             </td>
             <td className="pq-td pq-td-right">
                 <Link href={`/tmo/review/physical/${app.id}`} className="pq-action-btn">

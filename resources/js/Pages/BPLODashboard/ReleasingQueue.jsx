@@ -8,7 +8,7 @@ import {
 
 /* ─────────────────────────────────────────────────────────────────────────
    Civic Prestige — ReleasingQueue page
-   Matches BPLOLayout's cool blue-white / royal blue system
+   Matches BPLOLayout's slate-indigo system (TMO color palette)
 ───────────────────────────────────────────────────────────────────────── */
 const CSS = `
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600;700&family=DM+Sans:wght@500;600;700&display=swap');
@@ -16,7 +16,8 @@ const CSS = `
 /* ── Page-level tokens (mirror layout) ─────────────────────────────── */
 .rq-root {
   font-family: 'Inter', sans-serif;
-  color: #1A3380;
+  color: #1C2340;
+  padding-bottom: 48px;
 }
 .rq-root *, .rq-root *::before, .rq-root *::after { box-sizing: border-box; }
 
@@ -25,25 +26,25 @@ const CSS = `
   font-family: 'DM Sans', sans-serif;
   font-size: 9.5px; font-weight: 700;
   letter-spacing: .18em; text-transform: uppercase;
-  color: #4169E1;
+  color: #4F5BCB;
   display: flex; align-items: center; gap: 8px;
   margin-bottom: 6px;
 }
 .rq-eyebrow::before {
   content: '';
   width: 18px; height: 1.5px;
-  background: #4169E1; border-radius: 2px;
+  background: #4F5BCB; border-radius: 2px;
 }
 .rq-title {
   font-family: 'Plus Jakarta Sans', sans-serif;
   font-size: 30px; font-weight: 800; letter-spacing: -.02em;
-  color: #1A3380; line-height: 1;
+  color: #1C2340; line-height: 1;
 }
 .rq-subtitle {
   font-family: 'DM Sans', sans-serif;
   font-size: 9px; font-weight: 600;
   letter-spacing: .14em; text-transform: uppercase;
-  color: #7A9BC8; margin-top: 6px;
+  color: #8A96BC; margin-top: 6px;
 }
 
 /* ── Stat cards ─────────────────────────────────────────────────────── */
@@ -52,7 +53,7 @@ const CSS = `
 
 .rq-stat {
   background: #fff;
-  border: 1px solid rgba(26,51,128,.08);
+  border: 1px solid rgba(28,35,64,.08);
   border-radius: 14px;
   padding: 20px 22px;
   display: flex; align-items: flex-start; gap: 16px;
@@ -60,16 +61,16 @@ const CSS = `
   position: relative; overflow: hidden;
 }
 .rq-stat:hover {
-  border-color: rgba(26,51,128,.14);
-  box-shadow: 0 4px 20px rgba(26,51,128,.07);
+  border-color: rgba(28,35,64,.14);
+  box-shadow: 0 4px 20px rgba(28,35,64,.07);
 }
-.rq-stat-accent { border-top: 2.5px solid #4169E1; }
+.rq-stat-accent { border-top: 2.5px solid #4F5BCB; }
 .rq-stat::after {
   content: '';
   position: absolute; bottom: 0; right: 0;
   width: 80px; height: 80px;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(65,105,225,.04) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(79,91,203,.04) 0%, transparent 70%);
   pointer-events: none;
 }
 .rq-stat-icon {
@@ -77,90 +78,91 @@ const CSS = `
   display: flex; align-items: center; justify-content: center;
   flex-shrink: 0;
 }
-.rq-stat-blue  { background: rgba(65,105,225,.10);  color: #1E3A8A; }
-.rq-stat-teal  { background: rgba(16,185,129,.09);  color: #065F46; }
-.rq-stat-navy  { background: rgba(26,51,128,.06);   color: #2E4A7A; }
+.rq-stat-blue  { background: linear-gradient(135deg, #4F5BCB 0%, #6675A8 100%);  color: #FFFFFF; }
+.rq-stat-teal  { background: linear-gradient(135deg, #059669 0%, #047857 100%);  color: #FFFFFF; }
+.rq-stat-navy  { background: linear-gradient(135deg, #1C2340 0%, #3A4570 100%);    color: #FFFFFF; }
 .rq-stat-val {
   font-family: 'Plus Jakarta Sans', sans-serif;
-  font-size: 28px; font-weight: 800; color: #1A3380;
+  font-size: 28px; font-weight: 800; color: #1C2340;
   line-height: 1;
 }
 .rq-stat-lbl {
   font-family: 'DM Sans', sans-serif;
   font-size: 9px; font-weight: 700;
   letter-spacing: .13em; text-transform: uppercase;
-  color: #7A9BC8; margin-top: 5px;
+  color: #8A96BC; margin-top: 5px;
 }
 
 /* ── Toolbar ────────────────────────────────────────────────────────── */
 .rq-toolbar {
-  display: flex; align-items: flex-end; justify-content: space-between;
+  display: flex; align-items: flex-end; justify-content: flex-start;
   gap: 16px; margin-bottom: 20px;
   flex-wrap: wrap;
 }
 .rq-toolbar-left {}
-.rq-toolbar-right { display: flex; align-items: center; gap: 10px; }
+.rq-toolbar-right { display: flex; align-items: center; gap: 10px; margin-left: auto; }
 
 .rq-search {
   display: flex; align-items: center; gap: 10px;
-  background: #fff; border: 1px solid rgba(26,51,128,.09);
+  background: #fff; border: 1px solid rgba(28,35,64,.15);
   border-radius: 50px; height: 42px; padding: 0 16px;
   width: 300px; transition: all .2s;
 }
 .rq-search:focus-within {
-  border-color: rgba(65,105,225,.45);
-  box-shadow: 0 0 0 3px rgba(65,105,225,.1);
+  border-color: rgba(79,91,203,.45);
+  box-shadow: 0 0 0 3px rgba(79,91,203,.1);
   width: 340px;
 }
 .rq-search input {
   border: none; outline: none; background: transparent;
   font-family: 'Inter', sans-serif;
-  font-size: 12.5px; font-weight: 500; color: #1A3380;
+  font-size: 12.5px; font-weight: 500; color: #1C2340;
   width: 100%; letter-spacing: .01em;
 }
-.rq-search input::placeholder { color: #7A9BC8; font-weight: 400; }
-.rq-search-icon { color: #7A9BC8; flex-shrink: 0; }
+.rq-search input::placeholder { color: #8A96BC; font-weight: 400; }
+.rq-search-icon { color: #8A96BC; flex-shrink: 0; }
 
 .rq-filter-btn {
   height: 42px; padding: 0 16px;
   border-radius: 50px;
-  border: 1px solid rgba(26,51,128,.09);
-  background: #fff; color: #4A6090;
+  border: 1px solid rgba(28,35,64,.15);
+  background: #fff; color: #3A4570;
   display: flex; align-items: center; gap: 7px;
   font-family: 'DM Sans', sans-serif; font-size: 10px;
   font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
   cursor: pointer; transition: all .18s;
 }
-.rq-filter-btn:hover { border-color: rgba(26,51,128,.18); color: #1A3380; }
+.rq-filter-btn:hover { border-color: rgba(28,35,64,.18); color: #1C2340; }
 
 /* ── Table card ─────────────────────────────────────────────────────── */
 .rq-card {
   background: #fff;
-  border: 1px solid rgba(26,51,128,.08);
+  border: 1px solid rgba(28,35,64,.08);
   border-radius: 16px;
   overflow: hidden;
-  box-shadow: 0 1px 6px rgba(26,51,128,.05);
+  box-shadow: 0 1px 6px rgba(28,35,64,.05);
 }
 .rq-table { width: 100%; border-collapse: collapse; }
 
 /* Table head */
-.rq-thead-row { border-bottom: 1px solid rgba(26,51,128,.07); }
+.rq-thead-row { border-bottom: 1px solid rgba(28,35,64,.07); }
 .rq-th {
   padding: 14px 24px;
   font-family: 'DM Sans', sans-serif;
   font-size: 8.5px; font-weight: 700;
   letter-spacing: .16em; text-transform: uppercase;
-  color: #7A9BC8; text-align: left; white-space: nowrap;
+  color: #4F5BCB; text-align: left; white-space: nowrap;
+  background: rgba(79, 91, 203, 0.05);
 }
 .rq-th-right { text-align: right; }
 
 /* Table rows */
 .rq-row {
-  border-bottom: 1px solid rgba(26,51,128,.05);
+  border-bottom: 1px solid rgba(28,35,64,.05);
   transition: background .15s;
 }
 .rq-row:last-child { border-bottom: none; }
-.rq-row:hover { background: rgba(238,243,255,.7); }
+.rq-row:hover { background: rgba(237,238,244,.7); }
 .rq-td { padding: 18px 24px; vertical-align: middle; }
 .rq-td-right { text-align: right; }
 
@@ -168,9 +170,9 @@ const CSS = `
 .rq-id-chip {
   font-family: 'DM Sans', sans-serif;
   font-size: 10.5px; font-weight: 700; letter-spacing: .06em;
-  color: #1E3A8A;
-  background: rgba(65,105,225,.09);
-  border: 1px solid rgba(65,105,225,.2);
+  color: #2E3A9E;
+  background: rgba(79,91,203,.09);
+  border: 1px solid rgba(79,91,203,.2);
   border-radius: 7px; padding: 5px 11px;
   display: inline-block;
 }
@@ -179,27 +181,27 @@ const CSS = `
 .rq-op-wrap { display: flex; align-items: center; gap: 14px; }
 .rq-op-avatar {
   width: 38px; height: 38px; border-radius: 10px; flex-shrink: 0;
-  background: linear-gradient(145deg, #1E3A8A 0%, #2E57C8 100%);
+  background: linear-gradient(145deg, #2D3B6E 0%, #4F5BCB 100%);
   display: flex; align-items: center; justify-content: center;
   font-family: 'Plus Jakarta Sans', sans-serif;
-  font-size: 15px; font-weight: 700; color: #BFDBFE;
-  border: 1px solid rgba(91,136,240,.25);
+  font-size: 15px; font-weight: 700; color: #F1F5FE;
+  border: 1px solid rgba(79,91,203,.25);
 }
 .rq-op-name {
   font-family: 'Inter', sans-serif;
-  font-size: 13.5px; font-weight: 600; color: #1A3380;
+  font-size: 13.5px; font-weight: 600; color: #1C2340;
   line-height: 1; margin-bottom: 5px; letter-spacing: -.01em;
 }
 .rq-op-unit {
   display: flex; align-items: center; gap: 5px;
-  font-size: 11px; font-weight: 500; color: #7A9BC8;
+  font-size: 11px; font-weight: 500; color: #8A96BC;
 }
-.rq-op-unit-icon { color: #4169E1; }
+.rq-op-unit-icon { color: #4F5BCB; }
 
 /* TODA / TMO cell */
 .rq-toda {
   font-family: 'Inter', sans-serif;
-  font-size: 13px; font-weight: 600; color: #1A3380;
+  font-size: 13px; font-weight: 600; color: #1C2340;
   margin-bottom: 6px; line-height: 1;
 }
 .rq-tmo-badge {
@@ -216,7 +218,7 @@ const CSS = `
 .rq-issue-btn {
   display: inline-flex; align-items: center; gap: 8px;
   height: 40px; padding: 0 18px;
-  background: #1E3A8A; color: #BFDBFE;
+  background: #2D3B6E; color: #F1F5FE;
   border-radius: 50px;
   font-family: 'DM Sans', sans-serif;
   font-size: 9.5px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
@@ -224,8 +226,8 @@ const CSS = `
   transition: all .2s; white-space: nowrap;
 }
 .rq-issue-btn:hover {
-  background: #2E57C8;
-  box-shadow: 0 4px 16px rgba(65,105,225,.3);
+  background: #4F5BCB;
+  box-shadow: 0 4px 16px rgba(79,91,203,.3);
   transform: translateY(-1px);
 }
 .rq-issue-btn:active { transform: translateY(0); }
@@ -234,45 +236,45 @@ const CSS = `
 .rq-empty { padding: 64px 32px; text-align: center; }
 .rq-empty-icon {
   width: 64px; height: 64px; border-radius: 16px;
-  border: 1.5px dashed rgba(26,51,128,.15);
+  border: 1.5px dashed rgba(28,35,64,.15);
   display: flex; align-items: center; justify-content: center;
-  color: rgba(26,51,128,.18);
+  color: rgba(28,35,64,.18);
   margin: 0 auto 20px;
 }
 .rq-empty-title {
   font-family: 'Plus Jakarta Sans', sans-serif;
-  font-size: 20px; font-weight: 700; color: #1A3380; margin-bottom: 6px;
+  font-size: 20px; font-weight: 700; color: #1C2340; margin-bottom: 6px;
 }
 .rq-empty-sub {
   font-family: 'DM Sans', sans-serif;
   font-size: 9px; font-weight: 700; letter-spacing: .13em;
-  text-transform: uppercase; color: #7A9BC8;
+  text-transform: uppercase; color: #8A96BC;
 }
 
 /* ── Notice box ─────────────────────────────────────────────────────── */
 .rq-notice {
   margin-top: 24px;
   background: #fff;
-  border: 1px solid rgba(26,51,128,.08);
-  border-left: 3px solid #4169E1;
+  border: 1px solid rgba(28,35,64,.08);
+  border-left: 3px solid #4F5BCB;
   border-radius: 14px;
   padding: 22px 24px;
   display: flex; align-items: flex-start; gap: 16px;
-  box-shadow: 0 1px 4px rgba(26,51,128,.04);
+  box-shadow: 0 1px 4px rgba(28,35,64,.04);
 }
 .rq-notice-icon {
   width: 36px; height: 36px; border-radius: 9px; flex-shrink: 0;
-  background: rgba(65,105,225,.09);
+  background: rgba(79,91,203,.09);
   display: flex; align-items: center; justify-content: center;
-  color: #1E3A8A;
+  color: #2E3A9E;
 }
 .rq-notice-title {
   font-family: 'DM Sans', sans-serif;
   font-size: 10px; font-weight: 700; letter-spacing: .12em;
-  text-transform: uppercase; color: #1A3380; margin-bottom: 7px;
+  text-transform: uppercase; color: #1C2340; margin-bottom: 7px;
 }
 .rq-notice-body {
-  font-size: 12.5px; font-weight: 400; color: #4A6090;
+  font-size: 12.5px; font-weight: 400; color: #3A4570;
   line-height: 1.65;
 }
 
@@ -329,7 +331,7 @@ export default function ReleasingQueue() {
 
             <style dangerouslySetInnerHTML={{ __html: CSS }} />
 
-            <div className="rq-root" style={{ maxWidth: 1100, margin: '0 auto', paddingBottom: 48 }}>
+            <div className="rq-root">
 
                 {/* ── Page heading ── */}
                 <div style={{ marginBottom: 32 }}>
@@ -363,26 +365,25 @@ export default function ReleasingQueue() {
 
                 {/* ── Toolbar ── */}
                 <div className="rq-toolbar">
-                    <div /> {/* spacer */}
-                    <div className="rq-toolbar-right">
-                        <div className="rq-search">
-                            <Search size={14} strokeWidth={2} className="rq-search-icon" />
-                            <input
-                                type="text"
-                                placeholder="Search ID or operator…"
-                                value={query}
-                                onChange={e => setQuery(e.target.value)}
-                            />
-                            {query && (
-                                <button
-                                    onClick={() => setQuery('')}
-                                    style={{ background:'none', border:'none', cursor:'pointer',
-                                             color:'#7A9BC8', display:'flex', padding:0 }}
-                                >
-                                    <X size={13} />
-                                </button>
-                            )}
-                        </div>
+                  <div className="rq-search">
+                    <Search size={14} strokeWidth={2} className="rq-search-icon" />
+                    <input
+                      type="text"
+                      placeholder="Search ID or operator…"
+                      value={query}
+                      onChange={e => setQuery(e.target.value)}
+                    />
+                    {query && (
+                      <button
+                        onClick={() => setQuery('')}
+                        style={{ background:'none', border:'none', cursor:'pointer',
+                             color:'#8A96BC', display:'flex', padding:0 }}
+                      >
+                        <X size={13} />
+                      </button>
+                    )}
+                  </div>
+                  <div className="rq-toolbar-right">
                         <button className="rq-filter-btn">
                             <Filter size={14} strokeWidth={2} />
                             Filter
@@ -396,7 +397,7 @@ export default function ReleasingQueue() {
                         <table className="rq-table">
                             <thead>
                                 <tr className="rq-thead-row">
-                                    <th className="rq-th">Tracking ID</th>
+                                    <th className="rq-th">Application ID</th>
                                     <th className="rq-th">Operator &amp; Unit</th>
                                     <th className="rq-th">TMO Verification</th>
                                     <th className="rq-th rq-th-right">Action</th>

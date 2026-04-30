@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Head, Link, router } from '@inertiajs/react';
 import OperatorLayout from '@/Layouts/OperatorLayout';
+import Swal from 'sweetalert2';
 import {
     ChevronLeft,
     AlertTriangle,
@@ -127,6 +128,7 @@ const CSS = `
   font-weight: 500; color: #DC2626; display: flex; align-items: flex-start; gap: 8px;
 }
 .mf-dropzone {
+  display: block; /* Required for label to act as a container */
   padding: 40px 24px; text-align: center;
   background: #FAFAFC; border: 2px dashed rgba(79,91,203,.2);
   margin: 24px; border-radius: 12px; cursor: pointer;
@@ -284,19 +286,44 @@ export default function MTOPFix({ applicationId }) {
     const [repairsConfirmed, setRepairsConfirmed] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    const handleFileSelect = (docId) => {
+    // Capture the actual file selected by the user
+    const handleFileSelect = (docId, file) => {
         setNewFiles(prev => ({
             ...prev,
-            [docId]: { name: `Updated_${docId}_Scan.pdf`, size: '1.2 MB' }
+            [docId]: file
         }));
     };
 
     const handleSubmit = () => {
-        setIsSubmitting(true);
-        setTimeout(() => {
-            setIsSubmitting(false);
-            router.get(route('operator.mtop.details', { id: app.id }));
-        }, 1500);
+        Swal.fire({
+            title: isPhysFix ? 'Request Re-inspection?' : 'Submit Corrections?',
+            text: isPhysFix
+                ? 'Confirm that all defects have been repaired. Your tricycle will be scheduled for another physical inspection.'
+                : 'Confirm that you have uploaded the correct replacement documents.',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#1C2340',
+            cancelButtonColor: '#8A96BC',
+            confirmButtonText: 'Yes, Submit',
+            customClass: { title: 'font-jakarta', popup: 'font-inter' }
+        }).then((result) => {
+            if (result.isConfirmed) {
+                setIsSubmitting(true);
+                setTimeout(() => {
+                    setIsSubmitting(false);
+                    Swal.fire({
+                        title: 'Submitted Successfully!',
+                        text: isPhysFix ? 'Your re-inspection request has been sent to the TMO.' : 'Your updated documents have been sent to the TMO for review.',
+                        icon: 'success',
+                        confirmButtonColor: '#059669',
+                        timer: 2500,
+                        showConfirmButton: false
+                    }).then(() => {
+                        window.location.href = '/operator/mtop'; // Routes back to the tracker
+                    });
+                }, 1500);
+            }
+        });
     };
 
     const isSubmitDisabled = isSubmitting || (!isPhysFix && rejectedDocs.length > 0 && !rejectedDocs.every(d => newFiles[d.id])) || (isPhysFix && !repairsConfirmed);
@@ -363,13 +390,23 @@ export default function MTOPFix({ applicationId }) {
                                             </div>
 
                                             {!isPhysFix && (
-                                                <div className={`mf-dropzone ${hasFile ? 'has-file' : ''}`} onClick={() => handleFileSelect(item.id)}>
+                                                <label className={`mf-dropzone ${hasFile ? 'has-file' : ''}`}>
+                                                    <input
+                                                        type="file"
+                                                        accept="image/*,.pdf"
+                                                        style={{ display: 'none' }}
+                                                        onChange={(e) => {
+                                                            if (e.target.files?.[0]) {
+                                                                handleFileSelect(item.id, e.target.files[0]);
+                                                            }
+                                                        }}
+                                                    />
                                                     <div className="mf-drop-icon">
                                                         {hasFile ? <Check size={22} /> : <UploadCloud size={22} />}
                                                     </div>
                                                     <p className="mf-drop-title">{hasFile ? hasFile.name : 'Click to upload replacement file'}</p>
                                                     <p className="mf-drop-sub">{hasFile ? 'File ready' : 'PDF, JPG, or PNG (Max 5MB)'}</p>
-                                                </div>
+                                                </label>
                                             )}
                                         </div>
                                     );

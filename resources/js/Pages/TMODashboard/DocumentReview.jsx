@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Head, Link } from '@inertiajs/react';
 import TrivoraLayout from '@/Layouts/TrivoraLayout';
+import Swal from 'sweetalert2';
 import {
     ChevronLeft, User, MapPin, Bike, Send,
     Smartphone, CheckCircle2, ClipboardList,
     RefreshCw, Check, X, MessageSquare,
-    Loader2, Clock, AlertTriangle, Eye,
+    Loader2, Clock, AlertTriangle, Eye, Gauge,
 } from 'lucide-react';
 
 /* ─────────────────────────────────────────────────────────────────────────
@@ -19,6 +21,9 @@ const CSS = `
 .dr-root {
   font-family: 'Inter', sans-serif;
   color: #1C2340;
+  max-width: 1500px;
+  margin: 0 auto;
+  padding-bottom: 48px;
 }
 .dr-root *, .dr-root *::before, .dr-root *::after { box-sizing: border-box; }
 
@@ -63,21 +68,25 @@ const CSS = `
   border-radius: 16px;
   box-shadow: 0 1px 6px rgba(28,35,64,.05);
   overflow: hidden;
-}
-.dr-card-pad { padding: 32px; }
+}.dr-grid > div:first-child .dr-card {
+  background: linear-gradient(135deg, #FFFFFF 0%, rgba(79,91,203,.03) 100%);
+  border: 1.5px solid rgba(79,91,203,.2);
+  box-shadow: 0 4px 16px rgba(79,91,203,.08), 0 1px 3px rgba(28,35,64,.05);
+}.dr-card-pad { padding: 32px; }
 
 /* ── Operator profile ────────────────────────────────────────────────── */
 .dr-profile-header {
   display: flex; flex-direction: column; align-items: center; text-align: center;
   padding-bottom: 28px; margin-bottom: 28px;
-  border-bottom: 1px solid rgba(28,35,64,.07);
+  border-bottom: 1px solid rgba(79,91,203,.15);
 }
 .dr-avatar-wrap {
   width: 76px; height: 76px; border-radius: 18px;
-  background: #EDEEF4;
-  border: 1px solid rgba(28,35,64,.08);
+  background: linear-gradient(135deg, rgba(79,91,203,.12) 0%, rgba(79,91,203,.06) 100%);
+  border: 1.5px solid rgba(79,91,203,.25);
   display: flex; align-items: center; justify-content: center;
-  color: #9AA3CC; margin-bottom: 16px;
+  color: #4F5BCB; margin-bottom: 16px;
+  box-shadow: 0 2px 8px rgba(79,91,203,.1);
 }
 .dr-op-name {
   font-family: 'Plus Jakarta Sans', sans-serif;
@@ -95,10 +104,10 @@ const CSS = `
 .dr-field { display: flex; align-items: center; gap: 14px; }
 .dr-field-icon {
   width: 38px; height: 38px; border-radius: 10px; flex-shrink: 0;
-  background: #EDEEF4;
-  border: 1px solid rgba(28,35,64,.07);
+  background: linear-gradient(135deg, rgba(79,91,203,.1) 0%, rgba(79,91,203,.04) 100%);
+  border: 1px solid rgba(79,91,203,.2);
   display: flex; align-items: center; justify-content: center;
-  color: #8A96BC;
+  color: #4F5BCB;
 }
 .dr-field-label {
   font-family: 'DM Sans', sans-serif;
@@ -216,7 +225,7 @@ const CSS = `
 
 /* ── Rejection reason modal ──────────────────────────────────────────── */
 .dr-modal-overlay {
-  position: fixed; inset: 0; z-index: 100;
+  position: fixed; inset: 0; z-index: 9999;
   background: rgba(10,14,50,.4);
   backdrop-filter: blur(4px);
   display: flex; align-items: center; justify-content: center;
@@ -381,24 +390,95 @@ const CSS = `
 }
 .dr-reject-btn:hover:not(:disabled) { background: #B91C1C; }
 .dr-reject-btn:disabled { opacity: .6; cursor: default; }
+
+/* ── Preview modal ──────────────────────────────────────────────────── */
+.dr-modal-preview-overlay {
+  position: fixed; inset: 0; z-index: 9999;
+  background: rgba(10,14,50,.4);
+  backdrop-filter: blur(4px);
+  display: flex; align-items: center; justify-content: center;
+  padding: 24px;
+}
+.dr-modal-preview {
+  background: #FFFFFF;
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(28,35,64,.2);
+  width: 100%; max-width: 600px;
+  overflow: hidden;
+  animation: drModalIn .22s cubic-bezier(.2,0,.2,1) both;
+}
+.dr-modal-preview-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 20px 24px;
+  border-bottom: 1px solid rgba(28,35,64,.07);
+}
+.dr-modal-preview-title {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 16px; font-weight: 800;
+  color: #1C2340; letter-spacing: -.02em;
+}
+.dr-modal-preview-close {
+  background: none; border: none; cursor: pointer;
+  color: #8A96BC; padding: 0;
+  transition: color .15s;
+}
+.dr-modal-preview-close:hover { color: #1C2340; }
+.dr-modal-preview-body {
+  padding: 24px;
+  max-height: 500px; overflow-y: auto;
+}
+.dr-modal-preview-image {
+  width: 100%; height: auto; border-radius: 12px;
+  border: 1px solid rgba(28,35,64,.08);
+}
+.dr-modal-preview-frame {
+  width: 100%; height: 500px; border: none; border-radius: 12px;
+  background: white; box-shadow: inset 0 1px 3px rgba(28,35,64,.05);
+}
 `;
 
 export default function DocumentReview({ application }) {
     const [isProcessing, setIsProcessing] = useState(false);
     const [docStatuses, setDocStatuses] = useState({});
     const [rejectionReasons, setRejectionReasons] = useState({});
+    const [previewOpen, setPreviewOpen] = useState(false);
 
     // Rejection modal state
     const [pendingRejectId, setPendingRejectId] = useState(null);
     const [draftReason, setDraftReason] = useState('');
 
+    // Mock application data if not provided
+    const appData = application || {
+        operator: 'Juan Dela Cruz',
+        id: 'NSB-26-8812',
+        make: 'Kawasaki Barako 175',
+        engine_number: 'ENG-KAW-12345',
+        chassis_number: 'CHAS-KAW-98765',
+        plate: 'NSB-2024-ABC',
+        toda: 'TODA A (Poblacion)',
+        contact: '09171234567',
+        barangay: 'Poblacion 1',
+    };
+
+    // Ensure all vehicle properties have values
+    const vehicleData = {
+        make: appData?.make || 'Kawasaki Barako 175',
+        engine_number: appData?.engine_number || 'ENG-KAW-12345',
+        chassis_number: appData?.chassis_number || 'CHAS-KAW-98765',
+        plate: appData?.plate || 'NSB-2024-ABC',
+        toda: appData?.toda || 'TODA A (Poblacion)',
+    };
+
     const requirements = [
-        { id: 'orcr',     label: 'Xerox OR/CR (Motorcycle)',            mandatory: true  },
-        { id: 'license',  label: "Driver's License (Back-to-back)",      mandatory: true  },
-        { id: 'brgy',     label: 'Barangay Clearance (Original)',        mandatory: true  },
-        { id: 'toda',     label: 'TODA/NAFTODA/ACTODAN Clearance',       mandatory: true  },
-        { id: 'prangkisa',label: 'Xerox Prangkisa (Renewal)',            mandatory: false },
-        { id: 'tariff',   label: 'List of Existing Tariff Fee',          mandatory: false },
+        { id: 'prangkisa', label: 'Xerox Prangkisa (Kung Renew)',                         mandatory: false },
+        { id: 'orcr',      label: 'Xerox OR/CR',                                          mandatory: true  },
+        { id: 'receipt',   label: 'Delivery Receipt (Kung walang OR/CR / New)',            mandatory: false },
+        { id: 'license',   label: "Driver's License Back-to-back (Prof/Restriction 1/A1)", mandatory: true  },
+        { id: 'brgy',      label: 'Barangay Clearance (Original)',                         mandatory: true  },
+        { id: 'toda',      label: 'TODA/NAFTODA/ACTODAN Clearance (Original)',             mandatory: true  },
+        { id: 'driver_id', label: "Driver's ID Issued by NAFTODA/ACTODAN",                mandatory: true  },
+        { id: 'tariff',    label: 'List of Existing Tariff Fee (For sidecar)',             mandatory: true  },
+        { id: 'auth',      label: "Authorization Letter & ID (Kung hindi may-ari)",       mandatory: false },
     ];
 
     const handleApprove = (id) => {
@@ -431,28 +511,82 @@ export default function DocumentReview({ application }) {
     const canSchedule        = allMandatoryApproved && !anyRejected;
 
     const handleFinalAction = (type) => {
-        setIsProcessing(true);
-        setTimeout(() => {
-            setIsProcessing(false);
-            if (type === 'approve') {
-                alert(`SUCCESS: ${application.id} moved to Phase 2. Operator notified via SMS.`);
-            } else {
-                alert(`NOTICE: Rejection report sent. Operator must re-upload specific files.`);
+        const isApprove = type === 'approve';
+
+        Swal.fire({
+            title: isApprove ? 'Confirm Approval' : 'Confirm Rejection',
+            html: isApprove
+                ? `Are you sure you want to approve <b>${appData.id}</b>? It will be moved to Phase 2 (Physical Inspection).`
+                : `Are you sure you want to reject <b>${appData.id}</b>? The operator will be notified to re-upload the rejected documents.`,
+            icon: isApprove ? 'question' : 'warning',
+            showCancelButton: true,
+            confirmButtonColor: isApprove ? '#059669' : '#DC2626',
+            cancelButtonColor: '#8A96BC',
+            confirmButtonText: isApprove ? 'Yes, Approve' : 'Yes, Send Rejection',
+            customClass: {
+                title: 'font-jakarta',
+                popup: 'font-inter'
             }
-            window.location.href = '/tmo/docs';
-        }, 1500);
+        }).then((result) => {
+            if (result.isConfirmed) {
+                setIsProcessing(true);
+
+                // Simulate API call
+                setTimeout(() => {
+                    setIsProcessing(false);
+                    Swal.fire({
+                        title: isApprove ? 'Documents Approved!' : 'Rejection Sent',
+                        text: isApprove
+                            ? 'Unit moved to Phase 2. Operator notified via SMS.'
+                            : 'Rejection report sent. Operator must re-upload files.',
+                        icon: isApprove ? 'success' : 'info',
+                        confirmButtonColor: '#1C2340',
+                        timer: 2500,
+                        showConfirmButton: false,
+                        customClass: {
+                            title: 'font-jakarta',
+                            popup: 'font-inter'
+                        }
+                    }).then(() => {
+                        window.location.href = '/tmo/docs';
+                    });
+                }, 1200);
+            }
+        });
     };
 
     const pendingDoc = requirements.find(r => r.id === pendingRejectId);
 
     return (
         <TrivoraLayout title="Document Review" role="TMO Officer">
-            <Head title={`Review: ${application.id} | TRIVORA`} />
+            <Head title={`Review: ${appData.id} | TRIVORA`} />
 
             <style dangerouslySetInnerHTML={{ __html: CSS }} />
 
-            {/* ── Rejection Reason Modal ── */}
-            {pendingRejectId && (
+            {/* ── File Preview Modal (Portaled to body) ── */}
+            {previewOpen && createPortal(
+                <div className="dr-modal-preview-overlay" onClick={() => setPreviewOpen(false)}>
+                    <div className="dr-modal-preview" onClick={e => e.stopPropagation()}>
+                        <div className="dr-modal-preview-header">
+                            <p className="dr-modal-preview-title">Document Preview - OR/CR</p>
+                            <button className="dr-modal-preview-close" onClick={() => setPreviewOpen(false)}>
+                                <X size={20} strokeWidth={2} />
+                            </button>
+                        </div>
+                        <div className="dr-modal-preview-body">
+                            <iframe
+                                src="/document/orcr-preview"
+                                className="dr-modal-preview-frame"
+                                title="OR/CR Document Preview"
+                            />
+                        </div>
+                    </div>
+                </div>,
+                document.body
+            )}
+
+            {/* ── Rejection Reason Modal (Portaled to body) ── */}
+            {pendingRejectId && createPortal(
                 <div className="dr-modal-overlay" onClick={cancelRejection}>
                     <div className="dr-modal" onClick={e => e.stopPropagation()}>
                         <p className="dr-modal-title">Rejection Reason</p>
@@ -471,10 +605,11 @@ export default function DocumentReview({ application }) {
                             <button className="dr-modal-confirm" onClick={confirmRejection}>Confirm Rejection</button>
                         </div>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
 
-            <div className="dr-root" style={{ maxWidth: 1100, margin: '0 auto', paddingBottom: 52 }}>
+            <div className="dr-root" style={{ maxWidth: 1500, margin: '0 auto', paddingBottom: 52 }}>
 
                 {/* ── Back nav ── */}
                 <div className="dr-nav">
@@ -482,12 +617,12 @@ export default function DocumentReview({ application }) {
                         <ChevronLeft size={14} strokeWidth={3} />
                         Back to Document Queue
                     </Link>
-                    <span className="dr-reviewing-badge">Reviewing {application.id}</span>
+                    <span className="dr-reviewing-badge">Reviewing {appData.id}</span>
                 </div>
 
                 <div className="dr-grid">
 
-                    {/* ════ LEFT: Operator Profile ════ */}
+                    {/* ════ LEFT: Operator Profile + Vehicle Specs ════ */}
                     <div>
                         <div className="dr-card">
                             <div className="dr-card-pad">
@@ -495,14 +630,24 @@ export default function DocumentReview({ application }) {
                                     <div className="dr-avatar-wrap">
                                         <User size={30} strokeWidth={1.6} />
                                     </div>
-                                    <p className="dr-op-name">{application.operator}</p>
-                                    <p className="dr-op-toda">{application.toda}</p>
+                                    <p className="dr-op-name">{appData.operator}</p>
+                                    <p className="dr-op-toda">{appData.toda}</p>
                                 </div>
 
                                 <div className="dr-profile-fields">
-                                    <ProfileField icon={Smartphone} label="Contact"  value={application.contact}  />
-                                    <ProfileField icon={MapPin}      label="Barangay" value={application.barangay} />
-                                    <ProfileField icon={Bike}        label="Vehicle"  value={application.make}     />
+                                    <ProfileField icon={Smartphone} label="Contact"  value={appData.contact}  />
+                                    <ProfileField icon={MapPin}      label="Barangay" value={appData.barangay} />
+                                </div>
+
+                                {/* Vehicle Specs Separator */}
+                                <div style={{ paddingTop: 28, marginTop: 28, borderTop: '1px solid rgba(79,91,203,.15)' }} />
+
+                                <div className="dr-profile-fields">
+                                    <ProfileField icon={Bike}   label="Make & Model"    value={vehicleData.make}             />
+                                    <ProfileField icon={Gauge} label="Engine Number"   value={vehicleData.engine_number}   />
+                                    <ProfileField icon={Gauge} label="Chassis Number"  value={vehicleData.chassis_number}  />
+                                    <ProfileField icon={Bike}   label="Plate Number"    value={vehicleData.plate}           />
+                                    <ProfileField icon={MapPin} label="TODA Assignment" value={vehicleData.toda}            />
                                 </div>
                             </div>
                         </div>
@@ -540,7 +685,7 @@ export default function DocumentReview({ application }) {
                                                                 {rejectionReasons[doc.id]}
                                                             </p>
                                                         ) : (
-                                                            <button className="dr-doc-preview-btn">
+                                                            <button className="dr-doc-preview-btn" onClick={() => setPreviewOpen(true)}>
                                                                 <Eye size={10} strokeWidth={2} />
                                                                 Preview file
                                                             </button>
@@ -589,7 +734,7 @@ export default function DocumentReview({ application }) {
                                                 {isProcessing
                                                     ? <Loader2 size={15} className="animate-spin" />
                                                     : <Send size={15} strokeWidth={2} />}
-                                                Schedule Physical Test
+                                                Complete
                                             </button>
                                         </>
                                     ) : anyRejected ? (

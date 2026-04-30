@@ -1,0 +1,443 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TRIVORA - Vehicle Inspection Example Document</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #f5f5f5;
+            color: #1C2340;
+            padding: 20px;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .document {
+            background: white;
+            padding: 48px;
+            border-radius: 8px;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+            page-break-after: always;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 32px;
+            padding-bottom: 24px;
+            border-bottom: 3px solid #4F5BCB;
+        }
+
+        .logo-section h1 {
+            font-size: 28px;
+            color: #4F5BCB;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .logo-section p {
+            font-size: 13px;
+            color: #6B7280;
+        }
+
+        .doc-meta {
+            text-align: right;
+        }
+
+        .doc-meta p {
+            font-size: 13px;
+            font-weight: 600;
+            color: #1C2340;
+            margin-bottom: 4px;
+        }
+
+        .doc-meta span {
+            font-size: 12px;
+            color: #6B7280;
+        }
+
+        .title-section {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+
+        .title-section h2 {
+            font-size: 22px;
+            color: #1C2340;
+            margin-bottom: 4px;
+        }
+
+        .title-section p {
+            font-size: 13px;
+            color: #6B7280;
+        }
+
+        .section {
+            margin-bottom: 28px;
+        }
+
+        .section-title {
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #4F5BCB;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid rgba(79, 91, 203, 0.2);
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 12px;
+        }
+
+        .grid-3 {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 12px;
+        }
+
+        .field {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .field-label {
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+            color: #6B7280;
+            margin-bottom: 4px;
+        }
+
+        .field-value {
+            font-size: 13px;
+            color: #1C2340;
+            padding: 10px 12px;
+            background: rgba(79, 91, 203, 0.03);
+            border: 1px solid rgba(79, 91, 203, 0.15);
+            border-radius: 4px;
+        }
+
+        .checklist {
+            background: rgba(79, 91, 203, 0.03);
+            border: 1px solid rgba(79, 91, 203, 0.15);
+            border-radius: 6px;
+            padding: 16px;
+            margin-bottom: 12px;
+        }
+
+        .check-row {
+            display: flex;
+            align-items: center;
+            margin-bottom: 12px;
+            font-size: 12px;
+        }
+
+        .check-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .check-box {
+            width: 16px;
+            height: 16px;
+            min-width: 16px;
+            border: 2px solid #4F5BCB;
+            border-radius: 3px;
+            margin-right: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #4F5BCB;
+            color: white;
+            font-weight: bold;
+            font-size: 10px;
+        }
+
+        .check-label {
+            flex-grow: 1;
+            color: #1C2340;
+            font-weight: 500;
+        }
+
+        .check-badge {
+            padding: 3px 8px;
+            background: #059669;
+            color: white;
+            border-radius: 3px;
+            font-size: 10px;
+            font-weight: 600;
+        }
+
+        .notes-box {
+            background: rgba(245, 158, 11, 0.03);
+            border-left: 3px solid #F59E0B;
+            padding: 12px;
+            border-radius: 3px;
+            font-size: 11px;
+            color: #6B7280;
+            line-height: 1.6;
+            margin-bottom: 12px;
+        }
+
+        .signature-area {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 32px;
+            margin-top: 32px;
+        }
+
+        .sig-box {
+            text-align: center;
+            border-top: 2px solid #1C2340;
+            padding-top: 40px;
+        }
+
+        .sig-name {
+            font-size: 12px;
+            font-weight: 600;
+            color: #1C2340;
+            margin-bottom: 4px;
+        }
+
+        .sig-title {
+            font-size: 10px;
+            color: #6B7280;
+        }
+
+        .footer {
+            margin-top: 32px;
+            padding-top: 16px;
+            border-top: 1px solid rgba(28, 35, 64, 0.1);
+            text-align: center;
+            font-size: 10px;
+            color: #6B7280;
+        }
+
+        .btn-group {
+            margin-top: 24px;
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+        }
+
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .btn-print {
+            background: #4F5BCB;
+            color: white;
+        }
+
+        .btn-download {
+            background: #6B7280;
+            color: white;
+        }
+
+        @media print {
+            body {
+                background: white;
+                padding: 0;
+            }
+            .document {
+                box-shadow: none;
+                border-radius: 0;
+                margin: 0;
+            }
+            .btn-group {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="document">
+            <!-- Header -->
+            <div class="header">
+                <div class="logo-section">
+                    <h1>TRIVORA</h1>
+                    <p>TMO Management System</p>
+                </div>
+                <div class="doc-meta">
+                    <p>NSB-26-8812</p>
+                    <span>April 17, 2026</span>
+                </div>
+            </div>
+
+            <!-- Title -->
+            <div class="title-section">
+                <h2>Vehicle Inspection Report</h2>
+                <p>TMO Field Testing & Verification</p>
+            </div>
+
+            <!-- Operator Information Section -->
+            <div class="section">
+                <div class="section-title">Operator Information</div>
+                <div class="grid-2">
+                    <div class="field">
+                        <label class="field-label">Operator Name</label>
+                        <div class="field-value">Juan Dela Cruz</div>
+                    </div>
+                    <div class="field">
+                        <label class="field-label">Contact Number</label>
+                        <div class="field-value">09171234567</div>
+                    </div>
+                </div>
+                <div class="grid-2">
+                    <div class="field">
+                        <label class="field-label">Barangay</label>
+                        <div class="field-value">Poblacion 1</div>
+                    </div>
+                    <div class="field">
+                        <label class="field-label">Application ID</label>
+                        <div class="field-value">NSB-26-8812</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Vehicle Specifications Section -->
+            <div class="section">
+                <div class="section-title">Vehicle Specifications</div>
+                <div class="grid-2">
+                    <div class="field">
+                        <label class="field-label">Make & Model</label>
+                        <div class="field-value">Kawasaki Barako 175</div>
+                    </div>
+                    <div class="field">
+                        <label class="field-label">Plate Number</label>
+                        <div class="field-value">NSB-2024-ABC</div>
+                    </div>
+                </div>
+                <div class="grid-2">
+                    <div class="field">
+                        <label class="field-label">Engine Number</label>
+                        <div class="field-value">ENG-KAW-12345</div>
+                    </div>
+                    <div class="field">
+                        <label class="field-label">Chassis Number</label>
+                        <div class="field-value">CHAS-KAW-98765</div>
+                    </div>
+                </div>
+                <div class="grid-2">
+                    <div class="field">
+                        <label class="field-label">TODA Assignment</label>
+                        <div class="field-value">TODA A (Poblacion)</div>
+                    </div>
+                    <div class="field">
+                        <label class="field-label">Inspection Date</label>
+                        <div class="field-value">April 17, 2026</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Inspection Findings Section -->
+            <div class="section">
+                <div class="section-title">Inspection Findings</div>
+                <div class="checklist">
+                    <div class="check-row">
+                        <div class="check-box">✓</div>
+                        <span class="check-label">Safety Equipment (Helmets, First Aid Kit)</span>
+                        <span class="check-badge">PASS</span>
+                    </div>
+                    <div class="check-row">
+                        <div class="check-box">✓</div>
+                        <span class="check-label">Brakes and Steering Functionality</span>
+                        <span class="check-badge">PASS</span>
+                    </div>
+                    <div class="check-row">
+                        <div class="check-box">✓</div>
+                        <span class="check-label">Lights and Reflectors Operational</span>
+                        <span class="check-badge">PASS</span>
+                    </div>
+                    <div class="check-row">
+                        <div class="check-box">✓</div>
+                        <span class="check-label">Tires and Suspension Condition</span>
+                        <span class="check-badge">PASS</span>
+                    </div>
+                    <div class="check-row">
+                        <div class="check-box">✓</div>
+                        <span class="check-label">Emissions and Engine Test</span>
+                        <span class="check-badge">PASS</span>
+                    </div>
+                    <div class="check-row">
+                        <div class="check-box">✓</div>
+                        <span class="check-label">Driver License Validity and TODA Documentation</span>
+                        <span class="check-badge">PASS</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Inspector Notes -->
+            <div class="section">
+                <div class="section-title">Inspector Notes & Observations</div>
+                <div class="notes-box">
+                    Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Vehicle meets all TMO safety and operational requirements for field-based public transportation. No deficiencies noted during comprehensive inspection. Operator demonstrated full compliance with TODA regulations and municipal traffic ordinances. All safety equipment properly maintained and functional. Recommended for Phase 2 approval pending final documentation review and municipal compliance certification.
+                </div>
+            </div>
+
+            <!-- Inspector Information -->
+            <div class="section">
+                <div class="section-title">Inspection Officer Details</div>
+                <div class="grid-2">
+                    <div class="field">
+                        <label class="field-label">Inspector Name</label>
+                        <div class="field-value">Maria Santos</div>
+                    </div>
+                    <div class="field">
+                        <label class="field-label">Officer ID</label>
+                        <div class="field-value">TMO-2024-0847</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Signature Area -->
+            <div class="signature-area">
+                <div class="sig-box">
+                    <div class="sig-name">Maria Santos</div>
+                    <div class="sig-title">Inspection Officer</div>
+                </div>
+                <div class="sig-box">
+                    <div class="sig-name">Juan Dela Cruz</div>
+                    <div class="sig-title">Operator / Applicant</div>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="footer">
+                <p>This is an official TRIVORA document. Please retain for your records.</p>
+                <p style="margin-top: 8px;">Report ID: NSB-26-8812-INS-202604171530</p>
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="btn-group">
+            <button class="btn-print" onclick="window.print()">🖨️ Print / Save as PDF</button>
+            <button class="btn-download" onclick="alert('Download functionality would be implemented with a backend service')">⬇️ Download PDF</button>
+        </div>
+    </div>
+</body>
+</html>

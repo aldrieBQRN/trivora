@@ -2,11 +2,11 @@ import React, { useState } from 'react';
 import { Link, usePage, router } from '@inertiajs/react';
 import {
     Bell, Menu, Search, Settings, LogOut,
-    ChevronDown, Command, CheckSquare
+    ChevronDown, Command, LayoutDashboard, FileText, CheckSquare
 } from 'lucide-react';
 
 /* ─────────────────────────────────────────────────────────────────────────
-   TREASURER PORTAL — Enterprise light theme (Indigo/Slate)
+   TREASURER PORTAL — Enterprise light theme (Centered Logo & No Breadcrumb)
    Matches Operator/Trivora token system exactly
    Fonts  : Plus Jakarta Sans (display) · Inter (UI) · DM Sans (labels)
 ───────────────────────────────────────────────────────────────────────── */
@@ -19,7 +19,7 @@ const CSS = `
 
 .tmo-root {
   font-family: 'Inter', sans-serif;
-  background: #EDEEF4;
+  background: #FFFFFF;
   color: #1C2340;
   min-height: 100vh;
   display: flex;
@@ -29,33 +29,47 @@ const CSS = `
 .t-sidebar {
   position: fixed; top: 0; left: 0; bottom: 0;
   width: 262px; z-index: 50;
-  background: #FFFFFF;
-  border-right: 1px solid rgba(28,35,64,.07);
+  background: linear-gradient(180deg, #1C2340 0%, #2A3B5C 100%);
+  border-right: 1px solid rgba(255,255,255,.08);
   display: flex; flex-direction: column;
   transform: translateX(-100%);
   transition: transform .3s cubic-bezier(.4,0,.2,1);
 }
-@media (min-width: 1024px) {
+@media (min-width: 768px) {
   .t-sidebar { position: static; transform: none !important; }
 }
 .t-sidebar.open { transform: translateX(0); }
 
-/* Logo - No Borders */
+/* Logo */
 .t-logo {
-  height: 72px; flex-shrink: 0;
-  display: flex; align-items: center; justify-content: center;
+  height: 76px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center; /* Centered */
   padding: 0 24px; text-decoration: none;
   border: none;
 }
-.t-logo img {
-  height: 50px; width: auto; object-fit: contain;
-  transition: transform .3s ease;
+.t-logo-wrap {
+  background: #FFFFFF;
+  border-radius: 8px;
+  padding: 4px 8px;
+  display: flex; align-items: center; justify-content: center;
+  border: none;
+  box-shadow: none;
+  transition: transform .2s ease, box-shadow .2s ease;
+  flex-shrink: 0;
 }
-.t-logo:hover img { transform: scale(1.05); }
+.t-logo:hover .t-logo-wrap {
+  box-shadow: 0 4px 14px rgba(0,0,0,0.3);
+  border-color: rgba(255,255,255,.25);
+}
+.t-logo-img { height: 38px; width: auto; display: block; object-fit: contain; }
 
-/* Nav scroll area (Flex 1 allows it to take up remaining space above logout) */
-.t-nav { flex: 1; overflow-y: auto; padding: 30px 14px 14px 14px; }
+/* ── Nav Area ──────────────────────────────────────────────────────── */
+.t-nav {
+  flex: 1; display: flex; flex-direction: column;
+  padding: 24px 14px 14px 14px; overflow-y: auto;
+}
 .t-nav::-webkit-scrollbar { width: 0; }
+.t-nav-scroll { flex: 1; }
 
 /* Group */
 .t-nav-group { margin-bottom: 30px; }
@@ -65,11 +79,11 @@ const CSS = `
   font-family: 'DM Sans', sans-serif;
   font-size: 9px; font-weight: 700;
   letter-spacing: .17em; text-transform: uppercase;
-  color: #8A96BC;
+  color: #FFFFFF;
 }
 .t-group-label::after {
   content: ''; flex: 1; height: 1px;
-  background: rgba(28,35,64,.07);
+  background: #FFFFFF;
 }
 
 /* Nav link */
@@ -77,51 +91,52 @@ const CSS = `
   display: flex; align-items: center; gap: 12px;
   padding: 10px 13px; border-radius: 9px;
   font-size: 13.5px; font-weight: 500;
-  color: #5A6488; text-decoration: none;
+  color: #FFFFFF; text-decoration: none;
   position: relative; transition: all .18s ease;
+  margin-bottom: 6px;
 }
-.t-nav-link:hover { background: rgba(28,35,64,.05); color: #1C2340; }
+.t-nav-link:hover { background: rgba(255,255,255,.05); color: #FFFFFF; font-weight: 600; }
 .t-nav-link.active {
-  background: rgba(79,91,203,.09);
+  background: #FFFFFF;
   color: #1C2340; font-weight: 600;
 }
 .t-nav-link.active::before {
   content: '';
   position: absolute; left: 0; top: 50%; transform: translateY(-50%);
   width: 3px; height: 20px;
-  background: linear-gradient(180deg, #7B8EF5 0%, #3040B0 100%);
+  background: linear-gradient(180deg, #7B8EF5 0%, #60A5FA 100%);
   border-radius: 0 3px 3px 0;
 }
-.t-nav-icon { flex-shrink: 0; color: #9AA3CC; transition: color .18s; }
-.t-nav-link:hover .t-nav-icon { color: #6A76A8; }
+.t-nav-icon { flex-shrink: 0; color: #FFFFFF; transition: color .18s; }
+.t-nav-link:hover .t-nav-icon { color: #FFFFFF; }
 .t-nav-link.active .t-nav-icon { color: #4F5BCB; }
 
 /* ── Bottom Action (Logout fixed at bottom) ── */
 .t-bottom-action {
   flex-shrink: 0;
   padding: 16px 14px 24px 14px;
-  border-top: 1px solid rgba(28,35,64,.06);
-  background: #FFFFFF; /* Ensure it blocks scrolling content behind it */
+  border-top: 1px solid rgba(255,255,255,.08);
+  background: transparent;
 }
 .t-logout-btn {
   display: flex; align-items: center; gap: 12px;
   width: 100%; padding: 10px 13px; border-radius: 9px;
   font-family: 'Inter', sans-serif; font-size: 13.5px; font-weight: 600;
-  color: #DC2626; /* Always red */
+  color: #FF6B6B;
   background: transparent; border: none;
   cursor: pointer; transition: all .18s ease;
   text-align: left;
 }
 .t-logout-btn .t-nav-icon {
-  color: #DC2626; /* Icon always red */
+  color: #FF6B6B;
   transition: color .18s;
 }
 .t-logout-btn:hover {
-  background: rgba(220,38,38,.08);
-  color: #B91C1C;
+  background: rgba(255,107,107,.1);
+  color: #FF8787;
 }
 .t-logout-btn:hover .t-nav-icon {
-  color: #B91C1C;
+  color: #FF8787;
 }
 
 /* ─── MOBILE OVERLAY ───────────────────────────────────────────────── */
@@ -140,7 +155,7 @@ const CSS = `
 /* ─── HEADER ───────────────────────────────────────────────────────── */
 .t-header {
   height: 72px; flex-shrink: 0;
-  background: rgba(237,238,244,.92);
+  background: rgba(255,255,255,.95);
   backdrop-filter: blur(24px) saturate(180%);
   -webkit-backdrop-filter: blur(24px) saturate(180%);
   border-bottom: 1px solid rgba(28,35,64,.07);
@@ -160,24 +175,8 @@ const CSS = `
   transition: all .18s;
 }
 .t-menu-btn:hover { border-color: rgba(28,35,64,.18); color: #1C2340; }
-
-/* Breadcrumb */
-.t-breadcrumb {
-  align-items: center; gap: 10px;
-  display: none;
-}
-@media (min-width: 1024px) { .t-breadcrumb { display: flex; } }
-.t-bc-base {
-  font-family: 'DM Sans', sans-serif;
-  font-size: 9.5px; font-weight: 700;
-  letter-spacing: .14em; text-transform: uppercase; color: #8A96BC;
-}
-.t-bc-sep { color: rgba(28,35,64,.2); font-size: 14px; line-height: 1; }
-.t-bc-page {
-  font-family: 'Plus Jakarta Sans', sans-serif;
-  font-size: 16px; font-weight: 700; letter-spacing: -.01em;
-  color: #1C2340; line-height: 1;
-}
+.t-menu-btn.mobile { display: flex; }
+@media (min-width: 1024px) { .t-menu-btn.mobile { display: none; } }
 
 /* Right cluster */
 .t-header-right { display: flex; align-items: center; gap: 8px; }
@@ -357,12 +356,12 @@ export default function TreasurerLayout({ children, title, treasurerName = "Muni
         {
             group: "Finance Operations",
             links: [
-                { name: 'Payment Queue', icon: CheckSquare, route: 'treasurer.dashboard' },
+                { name: 'Dashboard', icon: LayoutDashboard, route: 'treasurer.dashboard' },
+                { name: 'Pending Payments', icon: CheckSquare, route: 'treasurer.pending' }, // Added Pending Tab
+                { name: 'Payment Records', icon: FileText, route: 'treasurer.transactions' },
             ]
         }
     ];
-
-    const allLinks = navigation.flatMap(g => g.links);
 
     // Helper to determine if a link is active based on current route name
     const isLinkActive = (routeName) => {
@@ -374,10 +373,7 @@ export default function TreasurerLayout({ children, title, treasurerName = "Muni
         }
     };
 
-    // Calculate active page name for breadcrumb
-    const activePage = allLinks.find(l => isLinkActive(l.route))?.name || title;
-
-// 🔴 DEMO LOGOUT LOGIC 🔴
+    // 🔴 DEMO LOGOUT LOGIC 🔴
     const handleLogout = () => {
         setIsExiting(true);
         setTimeout(() => {
@@ -404,8 +400,11 @@ export default function TreasurerLayout({ children, title, treasurerName = "Muni
                 {/* ══════ SIDEBAR ══════════════════════════════════════ */}
                 <aside className={`t-sidebar${sidebarOpen ? ' open' : ''}`}>
 
+                    {/* Centered Logo without text */}
                     <Link href={route('treasurer.dashboard')} className="t-logo">
-                        <img src="/images/logo.png" alt="TRIVORA" />
+                        <div className="t-logo-wrap">
+                            <img src="/images/logo.png" alt="Trivora" className="t-logo-img" />
+                        </div>
                     </Link>
 
                     {/* Nav Area (Scrollable) */}
@@ -454,17 +453,11 @@ export default function TreasurerLayout({ children, title, treasurerName = "Muni
                         {/* Left */}
                         <div className="t-header-left">
                             <button
-                                className="t-menu-btn"
+                                className="t-menu-btn mobile"
                                 onClick={() => setSidebarOpen(true)}
                             >
                                 <Menu size={18} strokeWidth={2} />
                             </button>
-
-                            <div className="t-breadcrumb">
-                                <span className="t-bc-base">Portal</span>
-                                <span className="t-bc-sep">/</span>
-                                <span className="t-bc-page">{activePage}</span>
-                            </div>
                         </div>
 
                         {/* Right */}

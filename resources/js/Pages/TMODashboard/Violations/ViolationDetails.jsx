@@ -204,6 +204,8 @@ const CSS = `
   background: #DC2626; color: #FFFFFF;
   padding: 28px 24px; display: flex; flex-direction: column; align-items: center;
   text-align: center;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
 }
 .vd-fine-box.settled {
   background: #059669;
@@ -228,6 +230,27 @@ const CSS = `
   cursor: pointer; transition: all .18s; margin-top: 24px;
 }
 .vd-print-btn:hover { background: #FAFAFA; border-color: #1C2340; box-shadow: 0 4px 12px rgba(28,35,64,.05); }
+
+/* ── Print Media Query ───────────────────────────────────────────────── */
+@media print {
+  /* Hide sidebar, top navigation, and print button */
+  aside, header, .vd-nav, .vd-print-btn { display: none !important; }
+
+  /* Reset max-width and padding for full page layout */
+  .vd-root { max-width: 100% !important; padding: 0 !important; margin: 0 !important; }
+
+  /* Stack grid into a single column for printing */
+  .vd-grid { grid-template-columns: 1fr !important; gap: 20px; }
+
+  /* Retain styling for cards */
+  .vd-card { border: 1px solid #E5E7EB; box-shadow: none; break-inside: avoid; margin-bottom: 20px; }
+
+  /* Ensure colors print properly */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+}
 `;
 
 export default function ViolationDetails({ violationId = 'VIO-26-8841' }) {
@@ -241,13 +264,12 @@ export default function ViolationDetails({ violationId = 'VIO-26-8841' }) {
         location_desc: 'Nasugbu Highway, Zone 1',
         operator: 'Ricardo Dalisay',
         toda: 'TODA D (Papaya)',
-        body_no: 'N-142',
         plate_no: '8812',
         type: 'Coding Scheme Violation',
-        source: 'IoT Location Tracker',
+        source: 'Location Tracker',
         fine: 500,
         status: 'unsettled', // 'unsettled' | 'settled'
-        notes: 'GPS Tracker detected movement during a restricted operational day based on plate ending (2).'
+        notes: 'Tracker detected movement during a restricted operational day based on plate ending (2).'
     };
 
     return (
@@ -255,7 +277,7 @@ export default function ViolationDetails({ violationId = 'VIO-26-8841' }) {
             <Head title={`Ticket ${record.id} | TRIVORA`} />
             <style dangerouslySetInnerHTML={{ __html: CSS }} />
 
-            <div className="vd-root" style={{ maxWidth: 1100, margin: '0 auto', paddingBottom: 52 }}>
+            <div className="vd-root" style={{ maxWidth: 1500, margin: '0 auto', paddingBottom: 52 }}>
 
                 {/* ── Nav ── */}
                 <div className="vd-nav">
@@ -273,7 +295,7 @@ export default function ViolationDetails({ violationId = 'VIO-26-8841' }) {
                 <div className="vd-header">
                     <p className="vd-eyebrow">Apprehension Ticket</p>
                     <h1 className="vd-title">Incident {record.id}</h1>
-                    <p className="vd-subtitle">Recorded via TRIVORA IoT Network</p>
+                    <p className="vd-subtitle">Recorded via TRIVORA</p>
                 </div>
 
                 <div className="vd-grid">
@@ -372,12 +394,11 @@ export default function ViolationDetails({ violationId = 'VIO-26-8841' }) {
                                 <div className="vd-detail-icon"><Bike size={18} /></div>
                                 <div>
                                     <p className="vd-detail-lbl">Vehicle Specs</p>
-                                    <p className="vd-detail-val">Plate: {record.plate_no}</p>
-                                    <p className="vd-detail-val" style={{ color: '#5A6488' }}>Body No: {record.body_no}</p>
+                                    <p className="vd-detail-val">Plate No: {record.plate_no}</p>
                                 </div>
                             </div>
 
-                            <button className="vd-print-btn">
+                            <button className="vd-print-btn" onClick={() => window.print()}>
                                 <Printer size={15} strokeWidth={2} />
                                 Print Ticket Notice
                             </button>

@@ -4,6 +4,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\RegistrationController;
 use App\Http\Controllers\OperatorAuthController;
+use App\Http\Controllers\DocumentController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -50,12 +51,19 @@ Route::group([], function () {
         return Inertia::render('TMODashboard/UnitRegistry');
     })->name('tmo.registry');
 
-    // TMO Violation Records (Pointed to the dedicated Violations folder)
+    // TMO Tricycle Details View
+    Route::get('/tmo/tricycle/{id}', function ($id) {
+        return Inertia::render('TMODashboard/TricycleDetails', [
+            'tricycleId' => $id
+        ]);
+    })->name('tricycle.details');
+
+    // TMO Violation Records
     Route::get('/violations', function () {
         return Inertia::render('TMODashboard/Violations/Violations');
     })->name('tmo.violations');
 
-    // TMO Violation Details (Pointed to the dedicated Violations folder)
+    // TMO Violation Details
     Route::get('/violations/{id}', function ($id) {
         return Inertia::render('TMODashboard/Violations/ViolationDetails', [
             'violationId' => $id
@@ -98,6 +106,10 @@ Route::group([], function () {
         ]);
     })->name('tmo.review.physical');
 
+    // Document Preview Routes
+    Route::get('/document/inspection-preview', [DocumentController::class, 'previewDocument'])->name('document.preview');
+    Route::get('/document/orcr-preview', [DocumentController::class, 'previewORCR'])->name('document.orcr');
+
     // Fleet Monitoring (IoT Map Feature)
     Route::get('/tmo-dashboard', [DashboardController::class, 'index'])->name('tmo.dashboard');
 
@@ -106,16 +118,26 @@ Route::group([], function () {
     // TREASURER WORKFLOW (Treasurer's Office)
     // ==========================================
 
-    // --- PHASE 3: PAYMENT PROCESSING ---
     Route::get('/treasurer/dashboard', function () {
         return Inertia::render('Treasurer/Dashboard');
     })->name('treasurer.dashboard');
 
+    // Pending Payments Queue
+    Route::get('/treasurer/pending', function () {
+        return Inertia::render('Treasurer/PendingPayments');
+    })->name('treasurer.pending');
+
+    // Verify Specific Payment
     Route::get('/treasurer/verify/{id}', function ($id) {
-        return Inertia::render('Treasurer/ProcessPayment', [
-            'applicationId' => $id
+        return Inertia::render('Treasurer/VerifyPayment', [
+            'paymentId' => $id
         ]);
     })->name('treasurer.verify');
+
+    // Transaction Ledger (Master list of online payments)
+    Route::get('/treasurer/transactions', function () {
+        return Inertia::render('Treasurer/TransactionRecord');
+    })->name('treasurer.transactions');
 
     // Official Receipt Generation
     Route::get('/treasurer/receipt/{id}', function ($id) {
@@ -129,6 +151,11 @@ Route::group([], function () {
     // BPLO WORKFLOW (Business Permits Office)
     // ==========================================
 
+    // --- BPLO Dashboard ---
+    Route::get('/bplo-dashboard', function () {
+        return Inertia::render('BPLODashboard/Index');
+    })->name('bplo.dashboard');
+
     // --- PHASE 4: FINAL ISSUANCE ---
     Route::get('/bplo/releasing', function () {
         return Inertia::render('BPLODashboard/ReleasingQueue');
@@ -141,6 +168,8 @@ Route::group([], function () {
                 'operator' => 'Juan Dela Cruz',
                 'toda' => 'TODA A',
                 'make' => 'Honda TMX 125',
+                'engine_number' => 'ENG-HON-67890',
+                'chassis_number' => 'CHAS-HON-54321',
                 'status' => 'passed_inspection'
             ]
         ]);
@@ -150,6 +179,36 @@ Route::group([], function () {
     Route::get('/bplo/registry', function () {
         return Inertia::render('BPLODashboard/ActiveRegistry');
     })->name('bplo.registry');
+
+    Route::get('/bplo/registry/{plateNo}', function ($plateNo) {
+        return Inertia::render('BPLODashboard/RegistryDetails', [
+            'registry' => [
+                'plate_no' => $plateNo,
+                'body_no' => 'N-142',
+                'tricycle_id' => 'TRX-2026-0847',
+                'operator' => 'Mario Dela Cruz',
+                'contact' => '0917 123 4567',
+                'toda' => 'TODA A (Poblacion)',
+                'make' => 'Honda TMX 125',
+                'engine_number' => 'ENG-HON-67890',
+                'chassis_number' => 'CHAS-HON-54321',
+                'issue_date' => 'April 5, 2026',
+                'coding_day' => 'Monday',
+                'status' => 'active',
+                'requirements' => [
+                    ['name' => 'Xerox Prangkisa (Kung Renew)', 'preview_url' => '/sample-inspection-document.html'],
+                    ['name' => 'Xerox OR/CR', 'preview_url' => '/sample-orcr-document.html'],
+                    ['name' => 'Delivery Receipt (Kung walang OR/CR / New)', 'preview_url' => '/sample-inspection-document.html'],
+                    ['name' => "Driver's License Back-to-back (Prof/Restriction 1/A1)", 'preview_url' => '/sample-inspection-document.html'],
+                    ['name' => 'Barangay Clearance (Original)', 'preview_url' => '/sample-inspection-document.html'],
+                    ['name' => 'TODA/NAFTODA/ACTODAN Clearance (Original)', 'preview_url' => '/sample-inspection-document.html'],
+                    ['name' => "Driver's ID Issued by NAFTODA/ACTODAN", 'preview_url' => '/sample-inspection-document.html'],
+                    ['name' => 'List of Existing Tariff Fee (For sidecar)', 'preview_url' => '/sample-inspection-document.html'],
+                    ['name' => "Authorization Letter & ID (Kung hindi may-ari)", 'preview_url' => '/sample-inspection-document.html'],
+                ],
+            ],
+        ]);
+    })->name('bplo.registry.details');
 
 
     // ==========================================
@@ -163,6 +222,14 @@ Route::group([], function () {
     Route::get('/operator/fleet', function () {
         return Inertia::render('Operator/Fleet');
     })->name('operator.fleet');
+
+    Route::get('/operator/tracking', function () {
+        return Inertia::render('Operator/LiveTracking');
+    })->name('operator.tracking');
+
+    Route::get('/operator/settings', function () {
+        return Inertia::render('Operator/UnitSettings');
+    })->name('operator.settings');
 
 
     // --- Group 2: MTOP Franchise Compliance ---

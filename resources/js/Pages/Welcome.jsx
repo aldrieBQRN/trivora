@@ -1,15 +1,16 @@
 import React, { useState } from 'react';
 import { Head, Link } from '@inertiajs/react';
+import Swal from 'sweetalert2';
 import {
     FileText, LogIn, ShieldCheck,
-    ArrowRight, Search,
-    Cpu, Zap, Megaphone, Phone, QrCode
+    Search, Cpu, Zap, Megaphone,
+    Phone
 } from 'lucide-react';
 
 /* ─────────────────────────────────────────────────────────────────────────
-   TRIVORA — Public Welcome / Landing Page
+   TRIVORA — Public Welcome / Landing Page (User-Friendly Text & Verification)
    Shares TrivoraLayout's slate-indigo token system
-   Prefix: wl-* (welcome/landing)
+   Path: resources/js/Pages/Welcome.jsx
 ───────────────────────────────────────────────────────────────────────── */
 const CSS = `
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600;700&family=DM+Sans:wght@500;600;700&display=swap');
@@ -29,7 +30,6 @@ const CSS = `
 .wl-hero-backdrop {
   position: absolute; top: 0; left: 0; width: 100%;
   height: 62vh; min-height: 460px;
-  /* Dark gradient overlay + Photo Background */
   background-image:
     linear-gradient(to bottom, rgba(28, 35, 64, 0.7) 0%, rgba(28, 35, 64, 0.95) 100%),
     url('/images/nasugbu-bg.jpg');
@@ -42,7 +42,6 @@ const CSS = `
   overflow: hidden;
 }
 
-/* Subtle tech dot grid overlay on top of the photo */
 .wl-hero-backdrop::before {
   content: '';
   position: absolute; inset: 0;
@@ -66,7 +65,7 @@ const CSS = `
   display: flex; align-items: center; justify-content: space-between;
   position: relative; z-index: 10;
 }
-.wl-logo { display: flex; align-items: center; gap: 14px; text-decoration: none; }
+.wl-logo { display: flex; align-items: center; text-decoration: none; }
 .wl-logo-img-wrap {
   height: 46px; width: auto; border-radius: 10px;
   background: #FFFFFF;
@@ -79,60 +78,15 @@ const CSS = `
 .wl-logo-img {
   height: 30px; width: auto; object-fit: contain; display: block;
 }
-.wl-logo-name {
-  font-family: 'Plus Jakarta Sans', sans-serif;
-  font-size: 18px; font-weight: 800;
-  letter-spacing: -.02em; color: #FFFFFF;
-  line-height: 1; margin-bottom: 4px;
-}
-.wl-logo-sub {
-  font-family: 'DM Sans', sans-serif;
-  font-size: 8.5px; font-weight: 700;
-  letter-spacing: .16em; text-transform: uppercase;
-  color: rgba(255,255,255,.6); line-height: 1;
-}
-.wl-header-link {
-  display: inline-flex; align-items: center; gap: 7px;
-  font-family: 'DM Sans', sans-serif;
-  font-size: 9.5px; font-weight: 700;
-  letter-spacing: .14em; text-transform: uppercase;
-  color: rgba(255,255,255,.7); text-decoration: none;
-  transition: color .18s;
-}
-.wl-header-link:hover { color: #FFFFFF; }
-@media (max-width: 640px) { .wl-header-link { display: none; } }
 
 /* ── Hero ────────────────────────────────────────────────────────────── */
 .wl-hero {
   position: relative; z-index: 10;
   text-align: center;
-  padding-top: 48px;
+  padding-top: 80px;
   padding-bottom: 100px;
 }
-.wl-status-pill {
-  display: inline-flex; align-items: center; gap: 8px;
-  padding: 6px 14px; border-radius: 50px;
-  background: rgba(255,255,255,.1);
-  border: 1px solid rgba(255,255,255,.2);
-  backdrop-filter: blur(8px);
-  margin-bottom: 28px;
-}
-.wl-status-dot {
-  width: 7px; height: 7px; border-radius: 50%;
-  background: #34D399;
-  box-shadow: 0 0 0 3px rgba(52,211,153,.2);
-  animation: wlPulse 2s ease-in-out infinite;
-}
-@keyframes wlPulse {
-  0%, 100% { box-shadow: 0 0 0 3px rgba(52,211,153,.2); }
-  50%       { box-shadow: 0 0 0 6px rgba(52,211,153,.08); }
-}
-.wl-status-text {
-  font-family: 'DM Sans', sans-serif;
-  font-size: 9px; font-weight: 700;
-  letter-spacing: .17em; text-transform: uppercase;
-  color: #FFFFFF;
-}
+
 .wl-hero-title {
   font-family: 'Plus Jakarta Sans', sans-serif;
   font-size: clamp(36px, 6vw, 64px);
@@ -180,7 +134,7 @@ const CSS = `
   background: #EDEEF4;
   border: 1px solid rgba(28,35,64,.07);
   display: flex; align-items: center; justify-content: center;
-  color: #1C2340; margin-bottom: 20px;
+  color: #4F5BCB; margin-bottom: 20px;
 }
 .wl-card-title {
   font-family: 'Plus Jakarta Sans', sans-serif;
@@ -365,7 +319,7 @@ const CSS = `
   font-family: 'DM Sans', sans-serif;
   font-size: 8.5px; font-weight: 700;
   letter-spacing: .15em; text-transform: uppercase;
-  color: #3A4570; margin-bottom: 32px;
+  color: #4F5BCB; margin-bottom: 32px;
 }
 .wl-stat-row {
   display: flex; align-items: flex-end; justify-content: space-between;
@@ -377,7 +331,7 @@ const CSS = `
   font-family: 'DM Sans', sans-serif;
   font-size: 9px; font-weight: 700;
   letter-spacing: .13em; text-transform: uppercase;
-  color: #5A6488;
+  color: #8A96BC;
 }
 .wl-stat-value {
   font-family: 'Plus Jakarta Sans', sans-serif;
@@ -487,6 +441,75 @@ const CSS = `
 export default function Welcome() {
     const [plateQuery, setPlateQuery] = useState('');
 
+    // Public Verification Function using SweetAlert2
+    const handleVerify = () => {
+        if (!plateQuery.trim()) {
+            Swal.fire({
+                title: 'Input Required',
+                text: 'Please enter a Plate Number to check.',
+                icon: 'warning',
+                confirmButtonColor: '#1C2340',
+                customClass: { title: 'font-jakarta', popup: 'font-inter' }
+            });
+            return;
+        }
+
+        const query = plateQuery.trim().toUpperCase();
+
+        // Mock Database for Demo
+        const mockDb = {
+            '8812': { status: 'Active', operator: 'Mario Dela Cruz', make: 'Honda TMX 125', toda: 'TODA A' },
+            '4491': { status: 'Active', operator: 'Juanito Perez', make: 'Kawasaki Barako 175', toda: 'TODA B' },
+            '1100': { status: 'Revoked', operator: 'Antonio Luna', make: 'Yamaha YTX 125', toda: 'TODA C' }
+        };
+
+        // Try to find the record (strips out "PLT-" if the user types it)
+        const cleanQuery = query.replace('PLT-', '');
+        const result = mockDb[cleanQuery];
+
+        if (result) {
+            if (result.status === 'Active') {
+                Swal.fire({
+                    title: 'Valid Franchise',
+                    html: `
+                        <div style="text-align: left; padding: 10px; background: #F4F6FF; border-radius: 8px; margin-top: 10px;">
+                            <b>Plate No:</b> PLT-${cleanQuery}<br/>
+                            <b>Operator:</b> ${result.operator}<br/>
+                            <b>TODA:</b> ${result.toda}<br/>
+                            <b>Unit:</b> ${result.make}<br/><br/>
+                            <span style="color:#059669; font-weight:800; font-size: 14px;">Status: ACTIVE ✓</span>
+                        </div>
+                    `,
+                    icon: 'success',
+                    confirmButtonColor: '#059669',
+                    customClass: { title: 'font-jakarta', popup: 'font-inter' }
+                });
+            } else {
+                Swal.fire({
+                    title: 'Franchise Revoked',
+                    html: `
+                        <div style="text-align: left; padding: 10px; background: #FEF2F2; border-radius: 8px; margin-top: 10px;">
+                            <b>Plate No:</b> PLT-${cleanQuery}<br/><br/>
+                            <span style="color:#DC2626; font-weight:800; font-size: 14px;">Status: REVOKED ⊗</span><br/><br/>
+                            <span style="font-size: 13px; color: #5A6488;">This tricycle is not allowed to operate. Please report to the BPLO office immediately.</span>
+                        </div>
+                    `,
+                    icon: 'error',
+                    confirmButtonColor: '#1C2340',
+                    customClass: { title: 'font-jakarta', popup: 'font-inter' }
+                });
+            }
+        } else {
+            Swal.fire({
+                title: 'Record Not Found',
+                text: `No official franchise record found for Plate No. "${query}".`,
+                icon: 'question',
+                confirmButtonColor: '#1C2340',
+                customClass: { title: 'font-jakarta', popup: 'font-inter' }
+            });
+        }
+    };
+
     return (
         <div className="wl-root">
             <Head title="TRIVORA | Nasugbu LGU" />
@@ -499,18 +522,9 @@ export default function Welcome() {
             <header className="wl-wrap">
                 <div className="wl-header">
                     <Link href="/" className="wl-logo">
-                        <div>
-                            <div className="wl-logo-img-wrap">
-                                <img src="/images/logo.png" alt="TRIVORA" className="wl-logo-img" />
-                            </div>
+                        <div className="wl-logo-img-wrap">
+                            <img src="/images/logo.png" alt="TRIVORA" className="wl-logo-img" />
                         </div>
-                        <div>
-                            <p className="wl-logo-name">TMO Portal</p>
-                            <p className="wl-logo-sub">Municipality of Nasugbu</p>
-                        </div>
-                    </Link>
-                    <Link href="/login" className="wl-header-link">
-                        Admin Portal <ArrowRight size={13} strokeWidth={2.5} />
                     </Link>
                 </div>
             </header>
@@ -518,16 +532,12 @@ export default function Welcome() {
             {/* ══════ HERO ═══════════════════════════════════════════ */}
             <div className="wl-wrap">
                 <div className="wl-hero">
-                    <div className="wl-status-pill">
-                        <span className="wl-status-dot" />
-                        <span className="wl-status-text">System Online &amp; Active</span>
-                    </div>
                     <h1 className="wl-hero-title">
                         Smart Tricycle<br />Management System
                     </h1>
                     <p className="wl-hero-sub">
-                        Official LGU portal for MTOP applications,<br />
-                        franchise renewal, and IoT-enabled fleet monitoring.
+                        Official portal of Nasugbu for applying, renewing tricycle permits (MTOP),<br />
+                        and smart GPS tracking.
                     </p>
                 </div>
             </div>
@@ -542,13 +552,13 @@ export default function Welcome() {
                             <div className="wl-card-icon">
                                 <FileText size={26} strokeWidth={1.8} />
                             </div>
-                            <p className="wl-card-title">Apply for MTOP</p>
+                            <p className="wl-card-title">Apply or Renew Permit</p>
                             <p className="wl-card-desc">
-                                Register a new tricycle unit or renew your existing
-                                franchise. Upload documents directly from your phone.
+                                Register a new tricycle or renew your old permit.
+                                Just upload your documents using your phone—no physical papers needed.
                             </p>
                             <Link href="/register-mtop" className="wl-btn-primary">
-                                Register <ArrowRight size={14} strokeWidth={2.5} />
+                                Register Now
                             </Link>
                         </div>
 
@@ -556,13 +566,13 @@ export default function Welcome() {
                             <div className="wl-card-icon">
                                 <LogIn size={26} strokeWidth={1.8} />
                             </div>
-                            <p className="wl-card-title">Operator Portal</p>
+                            <p className="wl-card-title">Driver & Operator Login</p>
                             <p className="wl-card-desc">
-                                Already approved? Log in to view your digital franchise,
-                                check violation records, and receive system alerts.
+                                Already have an account? Log in to see your digital permit,
+                                check for violations, and read the latest updates.
                             </p>
                             <Link href={route('login')} className="wl-btn-outline">
-                              Login
+                              Log in to your Account
                           </Link>
                         </div>
                     </div>
@@ -576,18 +586,19 @@ export default function Welcome() {
                                 </div>
                                 <div>
                                     <p className="wl-verify-title">Public Verification</p>
-                                    <p className="wl-verify-sub">Verify a tricycle's franchise status</p>
+                                    <p className="wl-verify-sub">Check if a tricycle has a valid permit</p>
                                 </div>
                             </div>
                             <div className="wl-verify-right">
                                 <input
                                     type="text"
                                     className="wl-verify-input"
-                                    placeholder="Enter Plate or Body No."
+                                    placeholder="Enter Plate No. (e.g. 8812)"
                                     value={plateQuery}
                                     onChange={e => setPlateQuery(e.target.value)}
+                                    onKeyDown={(e) => e.key === 'Enter' && handleVerify()}
                                 />
-                                <button className="wl-verify-btn">Check</button>
+                                <button className="wl-verify-btn" onClick={handleVerify}>Check Status</button>
                             </div>
                         </div>
                     </div>
@@ -596,23 +607,23 @@ export default function Welcome() {
                     <div className="wl-section">
                         <p className="wl-sec-eyebrow">Technology</p>
                         <h2 className="wl-sec-title">Powered by Modern Technology</h2>
-                        <p className="wl-sec-sub">Integrating IoT and Web Systems for a Safer Nasugbu</p>
+                        <p className="wl-sec-sub">Using Smart Trackers and Online Tools for a Safer Nasugbu</p>
 
                         <div className="wl-features-grid">
                             <FeatureCard
                                 icon={Cpu}
-                                title="Automated Violation Detection"
-                                desc="Real-time IoT monitoring tracks coding schemes and out-of-line infractions without manual intervention."
+                                title="Automatic Violation Check"
+                                desc="Our smart GPS tracks coding days and out-of-line routes automatically to keep our roads disciplined."
                             />
                             <FeatureCard
-                                icon={QrCode}
-                                title="Digital Franchise & QR Codes"
-                                desc="Secure, tamper-proof digital franchises and integrated QR codes issued instantly upon BPLO approval."
+                                icon={ShieldCheck}
+                                title="Secure Digital Permit"
+                                desc="Get your approved digital permit straight to your phone. It is fast, paperless, and safe to use."
                             />
                             <FeatureCard
                                 icon={Zap}
-                                title="100% Cashless Pipeline"
-                                desc="Secure digital payments via GCash, Maya, and Bank Transfer sent directly to the Municipal Treasurer."
+                                title="Easy Online Payments"
+                                desc="Pay your fees safely using GCash, Maya, or Bank Transfer straight to the Municipal Office."
                             />
                         </div>
                     </div>
@@ -621,10 +632,10 @@ export default function Welcome() {
                     <div className="wl-section">
                         <div className="wl-bottom-grid">
                             <div className="wl-network">
-                                <p className="wl-network-title">Live Network</p>
-                                <p className="wl-network-sub">System Telemetry</p>
-                                <StatRow label="Active Franchises"  value="1,492" />
-                                <StatRow label="Monitored TODAs"    value="4"     />
+                                <p className="wl-network-title">Overview</p>
+                                <p className="wl-network-sub">Live Status</p>
+                                <StatRow label="Active Permits"  value="1,492" />
+                                <StatRow label="TODA Registered"    value="4"     />
                                 <StatRow label="Daily Transactions" value="84"    />
                             </div>
 
@@ -634,20 +645,20 @@ export default function Welcome() {
                                         <Megaphone size={18} strokeWidth={2} />
                                     </div>
                                     <div>
-                                        <p className="wl-adv-title">LGU Advisories</p>
-                                        <p className="wl-adv-sub">TMO &amp; BPLO Announcements</p>
+                                        <p className="wl-adv-title">Announcements</p>
+                                        <p className="wl-adv-sub">Updates from the Traffic and Permit Offices</p>
                                     </div>
                                 </div>
                                 <div className="wl-adv-list">
                                     <AdvisoryItem
                                         date="Mar 30"
                                         title="Strict Implementation of Coding Scheme"
-                                        desc="All units must follow the updated plate-ending coding schedule. Violators will be automatically flagged by the TRIVORA system."
+                                        desc="Please follow the updated plate-ending coding schedule. The system will automatically catch and record violators."
                                     />
                                     <AdvisoryItem
                                         date="Mar 25"
-                                        title="Online MTOP Renewal Now Open"
-                                        desc="Avoid the lines at the Municipal Hall. Renew your franchise completely online through this portal."
+                                        title="Online Permit Renewal Now Open"
+                                        desc="Skip the lines at the Municipal Hall! You can now renew your tricycle permit completely online using this portal."
                                     />
                                 </div>
                             </div>

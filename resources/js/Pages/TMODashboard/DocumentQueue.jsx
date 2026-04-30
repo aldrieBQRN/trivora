@@ -17,6 +17,9 @@ const CSS = `
 .dq-root {
   font-family: 'Inter', sans-serif;
   color: #1C2340;
+  max-width: 1500px;
+  margin: 0 auto;
+  padding-bottom: 48px;
 }
 .dq-root *, .dq-root *::before, .dq-root *::after { box-sizing: border-box; }
 
@@ -57,7 +60,7 @@ const CSS = `
 
 .dq-stat {
   background: #FFFFFF;
-  border: 1px solid rgba(28,35,64,.08);
+  border: 1px solid rgba(28,35,64,.15);
   border-radius: 14px;
   padding: 20px 22px;
   display: flex; align-items: flex-start; gap: 16px;
@@ -81,9 +84,10 @@ const CSS = `
   display: flex; align-items: center; justify-content: center;
   flex-shrink: 0;
 }
-.dq-stat-indigo  { background: rgba(79,91,203,.10);  color: #2E3A9E; }
-.dq-stat-amber   { background: rgba(217,119,6,.09);   color: #78350F; }
-.dq-stat-slate   { background: rgba(28,35,64,.06);    color: #3A4570; }
+.dq-stat-indigo  { background: linear-gradient(135deg, #4F5BCB 0%, #6675A8 100%);  color: #FFFFFF; }
+.dq-stat-emerald { background: linear-gradient(135deg, #059669 0%, #047857 100%);  color: #FFFFFF; }
+.dq-stat-amber   { background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%);  color: #FFFFFF; }
+.dq-stat-slate   { background: linear-gradient(135deg, #3A4570 0%, #5A6488 100%);  color: #FFFFFF; }
 .dq-stat-val {
   font-family: 'Plus Jakarta Sans', sans-serif;
   font-size: 28px; font-weight: 800;
@@ -104,7 +108,7 @@ const CSS = `
 .dq-search {
   display: flex; align-items: center; gap: 10px;
   background: #FFFFFF;
-  border: 1px solid rgba(28,35,64,.09);
+  border: 1px solid rgba(28,35,64,.15);
   border-radius: 50px; height: 42px; padding: 0 16px;
   width: 320px; transition: all .2s;
 }
@@ -120,7 +124,7 @@ const CSS = `
   color: #1C2340; width: 100%;
 }
 .dq-search input::placeholder { color: #8A96BC; font-weight: 400; }
-.dq-search-icon { color: #8A96BC; flex-shrink: 0; }
+.dq-search-icon { color: #6B7280; flex-shrink: 0; }
 .dq-clear-btn {
   background: none; border: none; cursor: pointer;
   color: #8A96BC; display: flex; padding: 0;
@@ -131,8 +135,8 @@ const CSS = `
 .dq-toolbar-right { display: flex; align-items: center; gap: 10px; }
 .dq-filter-btn {
   height: 42px; padding: 0 16px; border-radius: 50px;
-  border: 1px solid rgba(28,35,64,.09);
-  background: #FFFFFF; color: #5A6488;
+  border: 1px solid rgba(28,35,64,.15);
+  background: #FFFFFF; color: #374151;
   display: flex; align-items: center; gap: 7px;
   font-family: 'DM Sans', sans-serif; font-size: 10px;
   font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
@@ -166,7 +170,8 @@ const CSS = `
   font-family: 'DM Sans', sans-serif;
   font-size: 8.5px; font-weight: 700;
   letter-spacing: .16em; text-transform: uppercase;
-  color: #8A96BC; text-align: left; white-space: nowrap;
+  color: #4F5BCB; text-align: left; white-space: nowrap;
+  background: rgba(79, 91, 203, 0.05);
 }
 .dq-th-right { text-align: right; }
 
@@ -219,9 +224,30 @@ const CSS = `
 /* Time cell */
 .dq-time {
   font-family: 'DM Sans', sans-serif;
-  font-size: 10px; font-weight: 600;
+  font-size: 10px; font-weight: 700;
   letter-spacing: .1em; text-transform: uppercase;
-  color: #8A96BC;
+  color: #3A4570;
+}
+
+/* Status badge */
+.dq-status {
+  display: inline-flex; align-items: center;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 9px; font-weight: 700;
+  letter-spacing: .11em; text-transform: uppercase;
+  border-radius: 999px;
+  padding: 6px 10px;
+  border: 1px solid transparent;
+}
+.dq-status-pending {
+  color: #92400E;
+  background: rgba(245, 158, 11, .14);
+  border-color: rgba(245, 158, 11, .35);
+}
+.dq-status-resubmission {
+  color: #2E3A9E;
+  background: rgba(79,91,203,.12);
+  border-color: rgba(79,91,203,.28);
 }
 
 /* Action button */
@@ -297,13 +323,19 @@ export default function DocumentQueue() {
     const [query, setQuery] = useState('');
 
     const applications = [
-        { id: 'NSB-26-8812', operator: 'Juan Dela Cruz',  toda: 'TODA A (Poblacion)', submitted_at: '2 hours ago', docs_count: 5 },
-        { id: 'NSB-26-9012', operator: 'Maria Clara',     toda: 'TODA B (Wawa)',       submitted_at: '5 hours ago', docs_count: 4 },
+    { id: 'NSB-26-8812', operator: 'Juan Dela Cruz',  toda: 'TODA A (Poblacion)', submitted_at: '2 hours ago', submitted_date: 'April 17, 2026 · 10:30 AM', docs_count: 5, status: 'Pending' },
+    { id: 'NSB-26-9012', operator: 'Maria Clara',     toda: 'TODA B (Wawa)',       submitted_at: '5 hours ago', submitted_date: 'April 17, 2026 · 7:15 AM', docs_count: 4, status: 'Pending' },
+    { id: 'NSB-26-9133', operator: 'Pedro Santos',    toda: 'TODA C (Banilad)',    submitted_at: '1 day ago',   submitted_date: 'April 16, 2026 · 1:42 PM', docs_count: 6, status: 'Re-submission' },
+    { id: 'NSB-26-9175', operator: 'Ana Reyes',       toda: 'TODA D (Kaylaway)',   submitted_at: '1 day ago',   submitted_date: 'April 16, 2026 · 9:05 AM', docs_count: 5, status: 'Re-submission' },
     ];
+
+  const pendingCount = applications.filter(a => a.status === 'Pending').length;
+  const resubmissionCount = applications.filter(a => a.status === 'Re-submission').length;
 
     const filtered = applications.filter(a =>
         a.id.toLowerCase().includes(query.toLowerCase()) ||
-        a.operator.toLowerCase().includes(query.toLowerCase())
+    a.operator.toLowerCase().includes(query.toLowerCase()) ||
+    a.status.toLowerCase().includes(query.toLowerCase())
     );
 
     return (
@@ -312,7 +344,7 @@ export default function DocumentQueue() {
 
             <style dangerouslySetInnerHTML={{ __html: CSS }} />
 
-            <div className="dq-root" style={{ maxWidth: 1100, margin: '0 auto', paddingBottom: 48 }}>
+            <div className="dq-root" style={{ maxWidth: 1500, margin: '0 auto', paddingBottom: 48 }}>
 
                 {/* ── Page heading ── */}
                 <div style={{ marginBottom: 32 }}>
@@ -323,9 +355,9 @@ export default function DocumentQueue() {
 
                 {/* ── Stat cards ── */}
                 <div className="dq-stats">
-                    <StatCard count={applications.length} label="Pending Review"    icon={FileSearch} iconClass="dq-stat-indigo" accent />
-                    <StatCard count="8"                   label="Reviewed Today"    icon={FileText}   iconClass="dq-stat-amber"  />
-                    <StatCard count="3"                   label="Awaiting Callback" icon={Clock}      iconClass="dq-stat-slate"  />
+                  <StatCard count={pendingCount}      label="Pending Review"    icon={FileSearch} iconClass="dq-stat-indigo" accent />
+                  <StatCard count="8"               label="Reviewed Today"    icon={FileText}   iconClass="dq-stat-emerald"  />
+                  <StatCard count={resubmissionCount} label="Re-submission"     icon={Clock}      iconClass="dq-stat-amber"  />
                 </div>
 
                 {/* ── Toolbar ── */}
@@ -351,7 +383,7 @@ export default function DocumentQueue() {
                         </button>
                         <div className="dq-count-badge">
                             <Clock size={13} strokeWidth={2} />
-                            Pending: {applications.length}
+                          Pending: {pendingCount}
                         </div>
                     </div>
                 </div>
@@ -363,16 +395,17 @@ export default function DocumentQueue() {
                             <thead>
                                 <tr className="dq-thead-row">
                                     <th className="dq-th">Application ID</th>
-                                    <th className="dq-th">Applicant</th>
+                                    <th className="dq-th">Trycicle Driver</th>
                                     <th className="dq-th">Files</th>
                                     <th className="dq-th">Submission</th>
+                                    <th className="dq-th">Status</th>
                                     <th className="dq-th dq-th-right">Action</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {filtered.length === 0 ? (
                                     <tr>
-                                        <td colSpan={5}>
+                                      <td colSpan={6}>
                                             <div className="dq-empty">
                                                 <div className="dq-empty-icon">
                                                     <Inbox size={26} strokeWidth={1.4} />
@@ -448,7 +481,15 @@ function QueueRow({ app }) {
                 </span>
             </td>
             <td className="dq-td">
-                <span className="dq-time">{app.submitted_at}</span>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                    <span className="dq-time">{app.submitted_at}</span>
+                    <span style={{ fontSize: '9px', color: '#6B7280', fontWeight: '500', fontFamily: "'Inter', sans-serif" }}>{app.submitted_date}</span>
+                </div>
+            </td>
+            <td className="dq-td">
+              <span className={`dq-status ${app.status === 'Pending' ? 'dq-status-pending' : 'dq-status-resubmission'}`}>
+                {app.status}
+              </span>
             </td>
             <td className="dq-td dq-td-right">
                 <Link href={`/tmo/review/docs/${app.id}`} className="dq-action-btn">

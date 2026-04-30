@@ -45,49 +45,6 @@ const CSS = `
   pointer-events: none;
 }
 
-/* ── Header ──────────────────────────────────────────────────────────── */
-.ol-header {
-  height: 90px;
-  display: flex; align-items: center; justify-content: space-between;
-  position: absolute; top: 0; left: 0; right: 0;
-  padding: 0 40px;
-  z-index: 20;
-}
-@media (max-width: 640px) { .ol-header { padding: 0 20px; } }
-
-.ol-logo { display: flex; align-items: center; gap: 14px; text-decoration: none; }
-.ol-logo-img-wrap {
-  height: 46px; width: auto; border-radius: 12px;
-  background: #FFFFFF;
-  box-shadow: 0 2px 10px rgba(0,0,0,.15);
-  display: flex; align-items: center; justify-content: center;
-  padding: 6px 12px; flex-shrink: 0;
-  transition: transform .2s ease;
-}
-.ol-logo:hover .ol-logo-img-wrap { transform: scale(1.05); }
-.ol-logo-img { height: 28px; width: auto; object-fit: contain; display: block; }
-.ol-logo-name {
-  font-family: 'Plus Jakarta Sans', sans-serif;
-  font-size: 18px; font-weight: 800;
-  letter-spacing: -.02em; color: #FFFFFF;
-  line-height: 1; margin-bottom: 4px;
-}
-.ol-logo-sub {
-  font-family: 'DM Sans', sans-serif;
-  font-size: 8.5px; font-weight: 700;
-  letter-spacing: .16em; text-transform: uppercase;
-  color: rgba(255,255,255,.6); line-height: 1;
-}
-.ol-back-link {
-  display: inline-flex; align-items: center; gap: 7px;
-  font-family: 'DM Sans', sans-serif;
-  font-size: 10px; font-weight: 700;
-  letter-spacing: .14em; text-transform: uppercase;
-  color: rgba(255,255,255,.7); text-decoration: none;
-  transition: color .18s;
-}
-.ol-back-link:hover { color: #FFFFFF; }
-
 /* ── Center Layout ───────────────────────────────────────────────────── */
 .ol-center-container {
   position: relative; z-index: 10;
@@ -113,17 +70,17 @@ const CSS = `
   to   { opacity: 1; transform: translateY(0); }
 }
 
-/* ── Card branding ───────────────────────────────────────────────────── */
+/* ── Card branding (Clean Logo) ──────────────────────────────────────── */
 .ol-brand {
   display: flex; flex-direction: column; align-items: center;
   text-align: center; margin-bottom: 32px;
 }
 .ol-brand-icon {
-  width: 64px; height: 64px; border-radius: 18px;
-  background: #1C2340;
   display: flex; align-items: center; justify-content: center;
-  color: #FFFFFF; margin-bottom: 20px;
-  box-shadow: 0 8px 24px rgba(28,35,64,.3);
+  margin-bottom: 16px;
+}
+.ol-brand-logo {
+  height: 56px; width: auto; object-fit: contain; display: block;
 }
 .ol-brand-title {
   font-family: 'Plus Jakarta Sans', sans-serif;
@@ -235,9 +192,21 @@ const CSS = `
   box-shadow: none; cursor: not-allowed; transform: none;
 }
 
+/* ── Return Link ─────────────────────────────────────────────────────── */
+.ol-return-link {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  margin-top: 18px; width: 100%;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 9.5px; font-weight: 700;
+  letter-spacing: .12em; text-transform: uppercase;
+  color: #8A96BC; text-decoration: none;
+  transition: color .2s;
+}
+.ol-return-link:hover { color: #1C2340; }
+
 /* ── Demo Accounts Section ───────────────────────────────────────────── */
 .ol-demo-wrap {
-  margin-top: 32px;
+  margin-top: 28px;
   padding-top: 24px;
   border-top: 1px dashed rgba(28,35,64,.1);
 }
@@ -309,31 +278,13 @@ export default function Login() {
             {/* Full screen backdrop */}
             <div className="ol-backdrop" />
 
-            {/* ── HEADER ── */}
-            <header className="ol-header">
-                <Link href="/" className="ol-logo">
-                    <div>
-                        <div className="ol-logo-img-wrap">
-                            <img src="/images/logo.png" alt="TRIVORA" className="ol-logo-img" />
-                        </div>
-                    </div>
-                    <div>
-                        <p className="ol-logo-name">TMO Portal</p>
-                        <p className="ol-logo-sub">Municipality of Nasugbu</p>
-                    </div>
-                </Link>
-                <Link href="/" className="ol-back-link">
-                    <ArrowLeft size={14} strokeWidth={2.5} /> Back to Portal
-                </Link>
-            </header>
-
             {/* ── CENTERED CONTENT ── */}
             <div className="ol-center-container">
                 <div className="ol-card">
-                    {/* Branding */}
+                    {/* Branding with Clean Logo */}
                     <div className="ol-brand">
                         <div className="ol-brand-icon">
-                            <ShieldCheck size={32} strokeWidth={1.8} />
+                            <img src="/images/logo.png" alt="TRIVORA" className="ol-brand-logo" />
                         </div>
                         <p className="ol-brand-title">System Access</p>
                         <p className="ol-brand-sub">TRIVORA Unified Portal</p>
@@ -399,6 +350,12 @@ export default function Login() {
                             <ShieldCheck size={16} strokeWidth={2} />
                             Secure Login
                         </button>
+
+                        {/* Return Link */}
+                        <Link href="/" className="ol-return-link">
+
+                            Return to Home
+                        </Link>
                     </form>
 
                     {/* ── Quick Demo Access ── */}
@@ -406,16 +363,16 @@ export default function Login() {
                         <p className="ol-demo-title">Quick Demo Access</p>
                         <div className="ol-demo-grid">
                             <button type="button" className="ol-demo-btn" onClick={() => setDemoAccount('tmo')}>
-                                <Shield size={14} strokeWidth={2} /> TMO Officer
+                                <Shield size={14} strokeWidth={2} /> TMO
                             </button>
                             <button type="button" className="ol-demo-btn" onClick={() => setDemoAccount('cashier')}>
-                                <Banknote size={14} strokeWidth={2} /> Cashier
+                                <Banknote size={14} strokeWidth={2} /> Treasurer
                             </button>
                             <button type="button" className="ol-demo-btn" onClick={() => setDemoAccount('bplo')}>
-                                <Award size={14} strokeWidth={2} /> BPLO Head
+                                <Award size={14} strokeWidth={2} /> BPLO
                             </button>
                             <button type="button" className="ol-demo-btn" onClick={() => setDemoAccount('operator')}>
-                                <Bike size={14} strokeWidth={2} /> Operator
+                                <Bike size={14} strokeWidth={2} /> Driver
                             </button>
                         </div>
                     </div>

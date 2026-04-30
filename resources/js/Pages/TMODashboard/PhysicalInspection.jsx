@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Head, Link } from '@inertiajs/react';
 import TrivoraLayout from '@/Layouts/TrivoraLayout';
+import Swal from 'sweetalert2';
 import {
     ChevronLeft, Check, X, CheckCircle2, Bike,
     Loader2, Gauge, XCircle, MessageSquare,
-    AlertTriangle, RefreshCw, Search,
+    AlertTriangle, RefreshCw, Search, MapPin,
 } from 'lucide-react';
 
 /* ─────────────────────────────────────────────────────────────────────────
@@ -18,6 +20,9 @@ const CSS = `
 .pi-root {
   font-family: 'Inter', sans-serif;
   color: #1C2340;
+  max-width: 1500px;
+  margin: 0 auto;
+  padding-bottom: 48px;
 }
 .pi-root *, .pi-root *::before, .pi-root *::after { box-sizing: border-box; }
 
@@ -45,88 +50,106 @@ const CSS = `
   border-radius: 50px; padding: 5px 14px;
 }
 
-/* ── Unit identifier hero ────────────────────────────────────────────── */
-.pi-hero {
-  background: #1C2340;
+/* ── Grid layout ─────────────────────────────────────────────────────── */
+.pi-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 24px;
+}
+@media (min-width: 1024px) {
+  .pi-grid { grid-template-columns: 320px 1fr; }
+}
+
+/* ── Cards ───────────────────────────────────────────────────────────── */
+.pi-card {
+  background: #FFFFFF;
+  border: 1px solid rgba(28,35,64,.08);
   border-radius: 16px;
-  padding: 32px 36px;
-  margin-bottom: 28px;
-  position: relative; overflow: hidden;
-  box-shadow: 0 8px 32px rgba(28,35,64,.2);
+  box-shadow: 0 1px 6px rgba(28,35,64,.05);
+  overflow: hidden;
+}.pi-grid > div:first-child .pi-card {
+  background: linear-gradient(135deg, #FFFFFF 0%, rgba(79,91,203,.03) 100%);
+  border: 1.5px solid rgba(79,91,203,.2);
+  box-shadow: 0 4px 16px rgba(79,91,203,.08), 0 1px 3px rgba(28,35,64,.05);
+}.pi-card-pad { padding: 32px; }
+
+/* ── Unit info profile ───────────────────────────────────────────────── */
+.pi-profile-header {
+  display: flex; flex-direction: column; align-items: center; text-align: center;
+  padding-bottom: 28px; margin-bottom: 28px;
+  border-bottom: 1px solid rgba(79,91,203,.15);
 }
-.pi-hero-bg-icon {
-  position: absolute; top: 50%; right: -24px;
-  transform: translateY(-50%);
-  color: #FFFFFF; opacity: .04; pointer-events: none;
+.pi-avatar-wrap {
+  width: 76px; height: 76px; border-radius: 18px;
+  background: linear-gradient(135deg, rgba(79,91,203,.12) 0%, rgba(79,91,203,.06) 100%);
+  border: 1.5px solid rgba(79,91,203,.25);
+  display: flex; align-items: center; justify-content: center;
+  color: #4F5BCB; margin-bottom: 16px;
+  box-shadow: 0 2px 8px rgba(79,91,203,.1);
 }
-.pi-hero-inner {
-  position: relative; z-index: 1;
-  display: flex; align-items: center;
-  justify-content: space-between; gap: 24px;
-  flex-wrap: wrap;
-}
-.pi-hero-label {
-  font-family: 'DM Sans', sans-serif;
-  font-size: 8.5px; font-weight: 700;
-  letter-spacing: .18em; text-transform: uppercase;
-  color: #8A96BC; margin-bottom: 10px;
-}
-.pi-hero-name {
+.pi-op-name {
   font-family: 'Plus Jakarta Sans', sans-serif;
-  font-size: 26px; font-weight: 800;
-  letter-spacing: -.025em; color: #FFFFFF;
-  line-height: 1; margin-bottom: 10px;
+  font-size: 17px; font-weight: 800;
+  letter-spacing: -.02em; color: #1C2340;
+  line-height: 1; margin-bottom: 6px;
 }
-.pi-hero-meta {
-  display: flex; align-items: center; gap: 14px;
-  flex-wrap: wrap;
-}
-.pi-hero-meta-item {
+.pi-op-unit {
   font-family: 'DM Sans', sans-serif;
   font-size: 9px; font-weight: 700;
-  letter-spacing: .12em; text-transform: uppercase;
+  letter-spacing: .15em; text-transform: uppercase;
   color: #8A96BC;
 }
-.pi-hero-meta-sep {
-  width: 4px; height: 4px; border-radius: 50%;
-  background: #5A6488; flex-shrink: 0;
-}
-.pi-hero-icon-wrap {
-  width: 64px; height: 64px; border-radius: 16px;
-  background: rgba(255,255,255,.05);
-  border: 1px solid rgba(255,255,255,.08);
+.pi-profile-fields { display: flex; flex-direction: column; gap: 20px; }
+.pi-field { display: flex; align-items: center; gap: 14px; }
+.pi-field-icon {
+  width: 38px; height: 38px; border-radius: 10px; flex-shrink: 0;
+  background: linear-gradient(135deg, rgba(79,91,203,.1) 0%, rgba(79,91,203,.04) 100%);
+  border: 1px solid rgba(79,91,203,.2);
   display: flex; align-items: center; justify-content: center;
-  color: #8A96BC; flex-shrink: 0;
+  color: #4F5BCB;
+}
+.pi-field-label {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 8.5px; font-weight: 700;
+  letter-spacing: .15em; text-transform: uppercase;
+  color: #8A96BC; margin-bottom: 3px;
+}
+.pi-field-value {
+  font-family: 'Inter', sans-serif;
+  font-size: 13px; font-weight: 600;
+  color: #1C2340; letter-spacing: -.01em;
 }
 
 /* ── Checklist section ───────────────────────────────────────────────── */
-.pi-section-label {
+.pi-panel-eyebrow {
   font-family: 'DM Sans', sans-serif;
   font-size: 9px; font-weight: 700;
   letter-spacing: .17em; text-transform: uppercase;
   color: #4F5BCB;
   display: flex; align-items: center; gap: 8px;
-  margin-bottom: 16px;
+  margin-bottom: 6px;
 }
-.pi-section-label::before {
+.pi-panel-eyebrow::before {
   content: ''; width: 18px; height: 1.5px;
   background: #4F5BCB; border-radius: 2px;
 }
-
-.pi-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 10px;
+.pi-panel-title {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 24px; font-weight: 800;
+  letter-spacing: -.025em; color: #1C2340; line-height: 1;
   margin-bottom: 28px;
 }
-@media (max-width: 700px) { .pi-grid { grid-template-columns: 1fr; } }
+
+.pi-checklist {
+  display: flex; flex-direction: column; gap: 10px; margin-bottom: 28px;
+}
 
 .pi-item {
   display: flex; align-items: center; justify-content: space-between;
   gap: 14px; padding: 16px 18px;
   border-radius: 12px;
   border: 1px solid rgba(28,35,64,.08);
-  background: #FFFFFF;
+  background: #FAFAFA;
   transition: border-color .18s, background .18s;
 }
 .pi-item.is-passed {
@@ -136,6 +159,26 @@ const CSS = `
 .pi-item.is-failed {
   border-color: rgba(220,38,38,.28);
   background: rgba(220,38,38,.03);
+}
+
+.pi-item-left { display: flex; align-items: center; gap: 14px; flex: 1; min-width: 0; }
+.pi-item-icon {
+  width: 38px; height: 38px; border-radius: 10px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: #FFFFFF;
+  border: 1px solid rgba(28,35,64,.09);
+  color: #9AA3CC;
+  transition: all .18s;
+}
+.pi-item.is-passed .pi-item-icon {
+  background: rgba(5,150,105,.1);
+  border-color: rgba(5,150,105,.25);
+  color: #059669;
+}
+.pi-item.is-failed .pi-item-icon {
+  background: rgba(220,38,38,.08);
+  border-color: rgba(220,38,38,.22);
+  color: #DC2626;
 }
 
 .pi-item-label {
@@ -170,7 +213,7 @@ const CSS = `
 
 /* ── Defect note modal ───────────────────────────────────────────────── */
 .pi-modal-overlay {
-  position: fixed; inset: 0; z-index: 100;
+  position: fixed; inset: 0; z-index: 9999;
   background: rgba(10,14,50,.4);
   backdrop-filter: blur(4px);
   display: flex; align-items: center; justify-content: center;
@@ -221,7 +264,7 @@ const CSS = `
   border-color: rgba(220,38,38,.4);
   box-shadow: 0 0 0 3px rgba(220,38,38,.09);
 }
-.pi-modal-textarea::placeholder { color: #9AA3CC; }
+.pi-modal-textarea::placeholder { color: #AAACB4; }
 .pi-modal-actions { display: flex; gap: 10px; }
 .pi-modal-cancel {
   flex: 1; height: 42px; border-radius: 10px;
@@ -333,21 +376,7 @@ const CSS = `
   font-size: 8.5px; font-weight: 600;
   letter-spacing: .12em; text-transform: uppercase;
   color: #C5CBE5; max-width: 260px; line-height: 1.8; text-align: center;
-}
-
-/* ── No-show escape ──────────────────────────────────────────────────── */
-.pi-noshow-btn {
-  background: none; border: none; cursor: pointer;
-  font-family: 'DM Sans', sans-serif;
-  font-size: 9px; font-weight: 700;
-  letter-spacing: .13em; text-transform: uppercase;
-  color: #C5CBE5;
-  display: flex; align-items: center; gap: 6px;
-  margin: 0 auto;
-  transition: color .18s;
-}
-.pi-noshow-btn:hover { color: #8A96BC; }
-`;
+}`;
 
 export default function PhysicalInspection({ application }) {
     const [isProcessing, setIsProcessing] = useState(false);
@@ -357,6 +386,26 @@ export default function PhysicalInspection({ application }) {
     // Defect note modal state
     const [pendingFailId, setPendingFailId] = useState(null);
     const [draftNote, setDraftNote] = useState('');
+
+    // Mock application data if not provided
+    const appData = application || {
+        operator: 'Juan Dela Cruz',
+        id: 'NSB-26-8812',
+        make: 'Kawasaki Barako 175',
+        engine_number: 'ENG-KAW-12345',
+        chassis_number: 'CHAS-KAW-98765',
+        plate: 'NSB-2024-ABC',
+        toda: 'TODA A (Poblacion)',
+    };
+
+    // Ensure all properties have values
+    const vehicleData = {
+        make: appData?.make || 'Kawasaki Barako 175',
+        engine_number: appData?.engine_number || 'ENG-KAW-12345',
+        chassis_number: appData?.chassis_number || 'CHAS-KAW-98765',
+        plate: appData?.plate || 'NSB-2024-ABC',
+        toda: appData?.toda || 'TODA A (Poblacion)',
+    };
 
     const items = [
         { id: 'headlights', label: 'Headlights (High/Low Beam)' },
@@ -397,28 +446,60 @@ export default function PhysicalInspection({ application }) {
     const allPassed       = items.every(item => inspectionStatuses[item.id] === 'passed');
 
     const handleFinalAction = (type) => {
-        setIsProcessing(true);
-        setTimeout(() => {
-            setIsProcessing(false);
-            if (type === 'pass') {
-                alert('UNIT PASSED: Forwarded to Cashier. Operator notified to settle payment.');
-            } else {
-                alert('UNIT FAILED: Operator notified of specific defects to fix.');
+        const isPass = type === 'pass';
+
+        Swal.fire({
+            title: isPass ? 'Confirm Passed Inspection' : 'Confirm Failed Inspection',
+            html: isPass
+                ? `Are you sure you want to mark <b>${appData.id}</b> as passed? It will be forwarded to the Cashier.`
+                : `Are you sure you want to fail <b>${appData.id}</b>? The operator will be notified to repair the defects.`,
+            icon: isPass ? 'question' : 'warning',
+            showCancelButton: true,
+            confirmButtonColor: isPass ? '#059669' : '#DC2626',
+            cancelButtonColor: '#8A96BC',
+            confirmButtonText: isPass ? 'Yes, Mark as Passed' : 'Yes, Send for Re-inspection',
+            customClass: {
+                title: 'font-jakarta',
+                popup: 'font-inter'
             }
-            window.location.href = '/tmo/physical';
-        }, 1500);
+        }).then((result) => {
+            if (result.isConfirmed) {
+                setIsProcessing(true);
+
+                // Simulate API call
+                setTimeout(() => {
+                    setIsProcessing(false);
+                    Swal.fire({
+                        title: isPass ? 'Inspection Passed!' : 'Sent for Repair',
+                        text: isPass
+                            ? 'Unit passed physical inspection. Forwarded for payment.'
+                            : 'Unit failed inspection. Notice sent to operator.',
+                        icon: isPass ? 'success' : 'info',
+                        confirmButtonColor: '#1C2340',
+                        timer: 2500,
+                        showConfirmButton: false,
+                        customClass: {
+                            title: 'font-jakarta',
+                            popup: 'font-inter'
+                        }
+                    }).then(() => {
+                        window.location.href = '/tmo/physical';
+                    });
+                }, 1200);
+            }
+        });
     };
 
     const pendingItem = items.find(i => i.id === pendingFailId);
 
     return (
         <TrivoraLayout title="Physical Inspection" role="TMO Officer">
-            <Head title={`Physical Test: ${application.operator} | TRIVORA`} />
+            <Head title={`Physical Test: ${appData.operator} | TRIVORA`} />
 
             <style dangerouslySetInnerHTML={{ __html: CSS }} />
 
-            {/* ── Defect Note Modal ── */}
-            {pendingFailId && (
+            {/* ── Defect Note Modal (Portaled to body) ── */}
+            {pendingFailId && createPortal(
                 <div className="pi-modal-overlay" onClick={cancelFail}>
                     <div className="pi-modal" onClick={e => e.stopPropagation()}>
                         <p className="pi-modal-title">Defect Note</p>
@@ -437,10 +518,11 @@ export default function PhysicalInspection({ application }) {
                             <button className="pi-modal-confirm" onClick={confirmFail}>Confirm Failure</button>
                         </div>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
 
-            <div className="pi-root" style={{ maxWidth: 1100, margin: '0 auto', paddingBottom: 52 }}>
+            <div className="pi-root" style={{ maxWidth: 1500, margin: '0 auto', paddingBottom: 52 }}>
 
                 {/* ── Back nav ── */}
                 <div className="pi-nav">
@@ -448,135 +530,163 @@ export default function PhysicalInspection({ application }) {
                         <ChevronLeft size={14} strokeWidth={3} />
                         Cancel & Return to Queue
                     </Link>
-                    <span className="pi-phase-badge">Phase 2 · Field Testing</span>
+                    <span className="pi-phase-badge">Inspecting: {appData.id}</span>
                 </div>
-
-                {/* ── Unit hero card ── */}
-                <div className="pi-hero">
-                    <div className="pi-hero-bg-icon">
-                        <Bike size={220} strokeWidth={1} />
-                    </div>
-                    <div className="pi-hero-inner">
-                        <div>
-                            <p className="pi-hero-label">Currently Inspecting</p>
-                            <p className="pi-hero-name">{application.operator}</p>
-                            <div className="pi-hero-meta">
-                                <span className="pi-hero-meta-item">{application.id}</span>
-                                <span className="pi-hero-meta-sep" />
-                                <span className="pi-hero-meta-item">{application.make}</span>
-                            </div>
-                        </div>
-                        <div className="pi-hero-icon-wrap">
-                            <Gauge size={28} strokeWidth={1.6} />
-                        </div>
-                    </div>
-                </div>
-
-                {/* ── Checklist ── */}
-                <p className="pi-section-label">Roadworthiness Checklist</p>
 
                 <div className="pi-grid">
-                    {items.map((item) => {
-                        const status = inspectionStatuses[item.id];
-                        return (
-                            <div
-                                key={item.id}
-                                className={`pi-item${status === 'passed' ? ' is-passed' : status === 'failed' ? ' is-failed' : ''}`}
-                            >
-                                <div>
-                                    <p className="pi-item-label">{item.label}</p>
-                                    {status === 'failed' && (
-                                        <p className="pi-item-note">
-                                            <MessageSquare size={9} strokeWidth={2.5} />
-                                            {defectNotes[item.id]}
-                                        </p>
+
+                    {/* ════ LEFT: Vehicle Specs ════ */}
+                    <div>
+                        <div className="pi-card">
+                            <div className="pi-card-pad">
+                                <div className="pi-profile-header">
+                                    <div className="pi-avatar-wrap">
+                                        <Bike size={30} strokeWidth={1.6} />
+                                    </div>
+                                    <p className="pi-op-name">{vehicleData.make}</p>
+                                    <p className="pi-op-unit">Vehicle Specs</p>
+                                </div>
+
+                                <div className="pi-profile-fields">
+                                    <ProfileField icon={Bike}   label="Make & Model"    value={vehicleData.make}            />
+                                    <ProfileField icon={Gauge}  label="Engine Number"   value={vehicleData.engine_number}  />
+                                    <ProfileField icon={Gauge}  label="Chassis Number"  value={vehicleData.chassis_number} />
+                                    <ProfileField icon={Bike}   label="Plate Number"    value={vehicleData.plate}           />
+                                    <ProfileField icon={MapPin} label="TODA Assignment" value={vehicleData.toda}            />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* ════ RIGHT: Checklist ════ */}
+                    <div>
+                        <div className="pi-card">
+                            <div className="pi-card-pad">
+
+                                <p className="pi-panel-eyebrow">Phase 2 · Physical Inspection</p>
+                                <h2 className="pi-panel-title">Inspection Checklist</h2>
+
+                                {/* Inspection items */}
+                                <div className="pi-checklist">
+                                    {items.map((item) => {
+                                        const status = inspectionStatuses[item.id];
+                                        return (
+                                            <div
+                                                key={item.id}
+                                                className={`pi-item${status === 'passed' ? ' is-passed' : status === 'failed' ? ' is-failed' : ''}`}
+                                            >
+                                                <div className="pi-item-left">
+                                                    <div className="pi-item-icon">
+                                                        <Gauge size={17} strokeWidth={2} />
+                                                    </div>
+                                                    <div>
+                                                        <p className="pi-item-label">{item.label}</p>
+                                                        {status === 'failed' && (
+                                                            <p className="pi-item-note">
+                                                                <MessageSquare size={9} strokeWidth={2.5} />
+                                                                {defectNotes[item.id]}
+                                                            </p>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                                <div className="pi-item-actions">
+                                                    <button
+                                                        onClick={() => handlePass(item.id)}
+                                                        className={`pi-action-btn pass-btn${status === 'passed' ? ' active' : ''}`}
+                                                        title="Pass"
+                                                    >
+                                                        <Check size={16} strokeWidth={2.5} />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => openFailModal(item.id)}
+                                                        className={`pi-action-btn fail-btn${status === 'failed' ? ' active' : ''}`}
+                                                        title="Fail"
+                                                    >
+                                                        <X size={16} strokeWidth={2.5} />
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+
+                                {/* ── Dynamic Action Zone ── */}
+                                <div className="pi-action-zone">
+                                    {allPassed ? (
+                                        <>
+                                            <div className="pi-zone-ok-icon">
+                                                <CheckCircle2 size={28} strokeWidth={2} />
+                                            </div>
+                                            <p className="pi-zone-ok-title">Inspection Passed</p>
+                                            <p className="pi-zone-ok-sub">
+                                                Everything checked out. Forward to Cashier for payment processing.
+                                            </p>
+                                            <button
+                                                className="pi-pass-btn"
+                                                onClick={() => handleFinalAction('pass')}
+                                                disabled={isProcessing}
+                                            >
+                                                {isProcessing
+                                                    ? <Loader2 size={15} className="animate-spin" />
+                                                    : <CheckCircle2 size={15} strokeWidth={2} />}
+                                                Complete
+                                            </button>
+                                        </>
+                                    ) : anyFailed ? (
+                                        <>
+                                            <div className="pi-zone-err-icon">
+                                                <AlertTriangle size={28} strokeWidth={2} />
+                                            </div>
+                                            <p className="pi-zone-err-title">Inspection Failed</p>
+                                            <p className="pi-zone-err-sub">
+                                                Unit has defects. Notify operator to repair and return.
+                                            </p>
+                                            <button
+                                                className="pi-fail-btn"
+                                                onClick={() => handleFinalAction('fail')}
+                                                disabled={isProcessing}
+                                            >
+                                                {isProcessing
+                                                    ? <Loader2 size={15} className="animate-spin" />
+                                                    : <RefreshCw size={15} strokeWidth={2} />}
+                                                Send for Re-inspection
+                                            </button>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <div className="pi-zone-wait-icon">
+                                                <Search size={22} strokeWidth={1.8} />
+                                            </div>
+                                            <p className="pi-zone-wait-title">Awaiting Field Check</p>
+                                            <p className="pi-zone-wait-sub">
+                                                Perform physical check on the unit. Mark each item as Passed or Failed.
+                                            </p>
+                                        </>
                                     )}
                                 </div>
-                                <div className="pi-item-actions">
-                                    <button
-                                        onClick={() => handlePass(item.id)}
-                                        className={`pi-action-btn pass-btn${status === 'passed' ? ' active' : ''}`}
-                                        title="Pass"
-                                    >
-                                        <Check size={16} strokeWidth={2.5} />
-                                    </button>
-                                    <button
-                                        onClick={() => openFailModal(item.id)}
-                                        className={`pi-action-btn fail-btn${status === 'failed' ? ' active' : ''}`}
-                                        title="Fail"
-                                    >
-                                        <X size={16} strokeWidth={2.5} />
-                                    </button>
-                                </div>
+
                             </div>
-                        );
-                    })}
+                        </div>
+                    </div>
+
                 </div>
-
-                {/* ── Action zone ── */}
-                <div className="pi-action-zone">
-                    {allPassed ? (
-                        <>
-                            <div className="pi-zone-ok-icon">
-                                <CheckCircle2 size={28} strokeWidth={2} />
-                            </div>
-                            <p className="pi-zone-ok-title">Unit Roadworthy</p>
-                            <p className="pi-zone-ok-sub">
-                                Everything checked out. Forward to Cashier for payment processing.
-                            </p>
-                            <button
-                                className="pi-pass-btn"
-                                onClick={() => handleFinalAction('pass')}
-                                disabled={isProcessing}
-                            >
-                                {isProcessing
-                                    ? <Loader2 size={15} className="animate-spin" />
-                                    : <CheckCircle2 size={15} strokeWidth={2} />}
-                                Complete & Forward to Cashier
-                            </button>
-                        </>
-                    ) : anyFailed ? (
-                        <>
-                            <div className="pi-zone-err-icon">
-                                <AlertTriangle size={28} strokeWidth={2} />
-                            </div>
-                            <p className="pi-zone-err-title">Inspection Failed</p>
-                            <p className="pi-zone-err-sub">
-                                Unit has defects. Notify operator to repair and return.
-                            </p>
-                            <button
-                                className="pi-fail-btn"
-                                onClick={() => handleFinalAction('fail')}
-                                disabled={isProcessing}
-                            >
-                                {isProcessing
-                                    ? <Loader2 size={15} className="animate-spin" />
-                                    : <RefreshCw size={15} strokeWidth={2} />}
-                                Send for Repair
-                            </button>
-                        </>
-                    ) : (
-                        <>
-                            <div className="pi-zone-wait-icon">
-                                <Search size={22} strokeWidth={1.8} />
-                            </div>
-                            <p className="pi-zone-wait-title">Awaiting Field Check</p>
-                            <p className="pi-zone-wait-sub">
-                                Perform physical check on the unit. Mark each item as Passed or Failed.
-                            </p>
-                        </>
-                    )}
-                </div>
-
-                {/* ── No-show escape ── */}
-                {!allItemsChecked && (
-                    <button className="pi-noshow-btn">
-                        <XCircle size={13} strokeWidth={2} />
-                        Failed to appear? Move to No-Show
-                    </button>
-                )}
-
             </div>
         </TrivoraLayout>
+    );
+}
+
+/* ── Sub-components ──────────────────────────────────────────────────── */
+
+function ProfileField({ icon: Icon, label, value }) {
+    return (
+        <div className="pi-field">
+            <div className="pi-field-icon">
+                <Icon size={16} strokeWidth={2} />
+            </div>
+            <div>
+                <p className="pi-field-label">{label}</p>
+                <p className="pi-field-value">{value}</p>
+            </div>
+        </div>
     );
 }

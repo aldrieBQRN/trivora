@@ -25,7 +25,7 @@ import {
 const CSS = `
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600;700&family=DM+Sans:wght@500;600;700&display=swap');
 
-.v-root { font-family: 'Inter', sans-serif; color: #1C2340; padding-bottom: 64px; max-width: 1200px; margin: 0 auto; }
+.v-root { font-family: 'Inter', sans-serif; color: #1C2340; padding-bottom: 64px; max-width: 1440px; margin: 0 auto; }
 .v-root *, .v-root *::before, .v-root *::after { box-sizing: border-box; }
 
 /* ── Page heading ───────────────────────────────────────────────────── */
@@ -44,14 +44,48 @@ const CSS = `
 }
 .v-title {
   font-family: 'Plus Jakarta Sans', sans-serif;
-  font-size: 30px; font-weight: 800; letter-spacing: -.025em;
-  color: #1C2340; line-height: 1;
+  font-size: 32px; font-weight: 800; letter-spacing: -.02em;
+  color: #1C2340; line-height: 1.1;
 }
 .v-subtitle {
-  font-family: 'DM Sans', sans-serif;
-  font-size: 9px; font-weight: 600;
-  letter-spacing: .14em; text-transform: uppercase;
-  color: #8A96BC; margin-top: 6px;
+  font-family: 'Inter', sans-serif;
+  font-size: 14px; font-weight: 500;
+  color: #5A6488; margin-top: 6px;
+}
+
+/* ── Fleet-Style Horizontal KPI Grid ── */
+.v-stats-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    gap: 16px; margin-top: 32px; margin-bottom: 32px;
+}
+@media (max-width: 1024px) { .v-stats-grid { grid-template-columns: 1fr; } }
+
+.v-stat {
+    background: #fff; border: 1px solid rgba(28,35,64,.08); border-radius: 14px;
+    padding: 20px 22px; display: flex; align-items: flex-start; gap: 16px;
+    transition: box-shadow .2s, border-color .2s; position: relative; overflow: hidden;
+}
+.v-stat:hover { border-color: rgba(28,35,64,.14); box-shadow: 0 4px 20px rgba(28,35,64,.07); }
+.v-stat::after {
+    content: ''; position: absolute; bottom: 0; right: 0; width: 80px; height: 80px;
+    border-radius: 50%; background: radial-gradient(circle, rgba(79,91,203,.04) 0%, transparent 70%);
+    pointer-events: none;
+}
+.v-stat-icon {
+    width: 42px; height: 42px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.v-stat-rose { background: linear-gradient(135deg, #DC2626 0%, #B91C1C 100%); color: #FFFFFF; }
+.v-stat-amber { background: linear-gradient(135deg, #D97706 0%, #B45309 100%); color: #FFFFFF; }
+.v-stat-blue { background: linear-gradient(135deg, #4F5BCB 0%, #6675A8 100%); color: #FFFFFF; }
+
+.v-stat-val {
+    font-family: 'Plus Jakarta Sans', sans-serif; font-size: 26px;
+    font-weight: 800; color: #1C2340; line-height: 1;
+}
+.v-stat-lbl {
+    font-family: 'DM Sans', sans-serif; font-size: 9px; font-weight: 700;
+    letter-spacing: .13em; text-transform: uppercase; color: #8A96BC; margin-top: 6px;
 }
 
 /* ── Toolbar ────────────────────────────────────────────────────────── */
@@ -115,16 +149,6 @@ const CSS = `
     border-radius: 50px; transition: all .2s; border: 1px solid rgba(79,91,203,.15);
 }
 .v-history-link:hover { background: rgba(79,91,203,.15); color: #2E3A9E; border-color: rgba(79,91,203,.3); }
-
-/* Stats Row */
-.v-stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px; margin-bottom: 32px; }
-.v-stat-card {
-    background: #FFFFFF; border: 1px solid rgba(28,35,64,.08); border-radius: 16px; padding: 24px;
-    display: flex; align-items: center; gap: 20px; box-shadow: 0 1px 4px rgba(28,35,64,.04);
-}
-.v-stat-icon { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; }
-.v-stat-label { font-family: 'DM Sans', sans-serif; font-size: 9px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: #8A96BC; margin-bottom: 4px; }
-.v-stat-value { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 20px; font-weight: 800; color: #1C2340; line-height: 1; }
 
 /* Table Container */
 .v-card { background: #FFFFFF; border: 1px solid rgba(28,35,64,.08); border-radius: 20px; overflow: hidden; box-shadow: 0 4px 20px rgba(28,35,64,.03); }
@@ -199,12 +223,6 @@ export default function Violations() {
         }
     ];
 
-    const stats = [
-        { label: 'Total Unsettled Fines', value: '₱1,000.00', icon: ShieldAlert, color: '#DC2626', bg: 'rgba(220,38,38,.08)' },
-        { label: 'Active Violations', value: '2', icon: FileText, color: '#D97706', bg: 'rgba(245,158,11,.1)' },
-        { label: 'Units Flagged', value: '2 Units', icon: Bike, color: '#4F5BCB', bg: 'rgba(79,91,203,.08)' },
-    ];
-
     // Filter Logic
     const filteredViolations = activeViolations.filter(v =>
         v.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -226,19 +244,20 @@ export default function Violations() {
                     <p className="v-subtitle">Real-time IoT detection logs for the Color Coding Ordinance.</p>
                 </div>
 
-                {/* ── STATS ROW ── */}
+                {/* ── FLEET-STYLE HORIZONTAL KPI GRID ── */}
                 <div className="v-stats-grid">
-                    {stats.map((s, i) => (
-                        <div key={i} className="v-stat-card">
-                            <div className="v-stat-icon" style={{ background: s.bg, color: s.color }}>
-                                <s.icon size={24} />
-                            </div>
-                            <div>
-                                <p className="v-stat-val" style={{ fontFamily: 'Plus Jakarta Sans', fontSize: 28, fontWeight: 800, color: '#1C2340', lineHeight: 1 }}>{s.value}</p>
-                                <p className="v-stat-lbl" style={{ fontFamily: 'DM Sans', fontSize: 9, fontWeight: 700, letterSpacing: '.13em', textTransform: 'uppercase', color: '#8A96BC', marginTop: 5 }}>{s.label}</p>
-                            </div>
-                        </div>
-                    ))}
+                    <StatCard
+                        value="₱1,000.00" label="Total Unsettled Fines"
+                        icon={ShieldAlert} iconClass="v-stat-rose" accentColor="#DC2626"
+                    />
+                    <StatCard
+                        value="2" label="Active Violations"
+                        icon={FileText} iconClass="v-stat-amber"
+                    />
+                    <StatCard
+                        value="2 Units" label="Units Flagged"
+                        icon={Bike} iconClass="v-stat-blue"
+                    />
                 </div>
 
                 {/* ── TOOLBAR ── */}
@@ -368,5 +387,23 @@ export default function Violations() {
                 </div>
             </div>
         </OperatorLayout>
+    );
+}
+
+/* ── SUB-COMPONENT: STAT CARD ── */
+function StatCard({ value, label, icon: Icon, iconClass, accentColor }) {
+    // Only apply top border if an accentColor is provided
+    const cardStyle = accentColor ? { borderTop: `2.5px solid ${accentColor}` } : {};
+
+    return (
+        <div className="v-stat" style={cardStyle}>
+            <div className={`v-stat-icon ${iconClass}`}>
+                <Icon size={20} strokeWidth={2.5} />
+            </div>
+            <div>
+                <p className="v-stat-val">{value}</p>
+                <p className="v-stat-lbl">{label}</p>
+            </div>
+        </div>
     );
 }

@@ -13,8 +13,7 @@ import {
     ClipboardCheck,
     Stamp,
     Wallet,
-    X,
-    PlusCircle
+    X
 } from 'lucide-react';
 
 /* ─────────────────────────────────────────────────────────────────────────
@@ -64,20 +63,6 @@ const CSS = `
   display: flex; align-items: flex-end; justify-content: space-between;
   flex-wrap: wrap; gap: 20px;
   margin-bottom: 40px;
-}
-.mtop-action-btn {
-  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-  background: #1C2340; color: #FFFFFF;
-  padding: 12px 24px; border-radius: 12px;
-  font-family: 'DM Sans', sans-serif; font-size: 10.5px;
-  font-weight: 700; letter-spacing: .05em; text-transform: uppercase;
-  text-decoration: none;
-  transition: all .2s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 4px 14px rgba(28,35,64,.15);
-}
-.mtop-action-btn:hover {
-  background: #2E3A9E; transform: translateY(-1px);
-  box-shadow: 0 8px 20px rgba(79,91,203, 0.25);
 }
 
 /* ── Toolbar ────────────────────────────────────────────────────────── */
@@ -153,7 +138,7 @@ const CSS = `
 }
 .mtop-icon-pending  { background: rgba(79,91,203,.08); color: #4F5BCB; }
 .mtop-icon-approved { background: rgba(5,150,105,.08); color: #059669; }
-.mtop-icon-rejected { background: rgba(220,38,38,.08); color: #DC2626; }
+.mtop-icon-action   { background: rgba(217,119,6,.08); color: #D97706; } /* Changed to amber for re-submission */
 
 .mtop-details-title {
   font-family: 'Plus Jakarta Sans', sans-serif;
@@ -180,7 +165,7 @@ const CSS = `
 .mtop-step.done { color: #059669; }
 .mtop-step.active { color: #4F5BCB; background: rgba(79,91,203,.08); padding: 4px 12px; border-radius: 50px; }
 .mtop-step.waiting { color: #94A3B8; }
-.mtop-step.error { color: #DC2626; background: rgba(220,38,38,.08); padding: 4px 12px; border-radius: 50px; }
+.mtop-step.error { color: #D97706; background: rgba(217,119,6,.08); padding: 4px 12px; border-radius: 50px; } /* Using amber for action required */
 .mtop-pipe { width: 30px; height: 2px; background: #F1F5F9; border-radius: 2px; }
 .mtop-pipe.filled { background: #059669; }
 
@@ -201,7 +186,7 @@ const CSS = `
 }
 .mtop-status-badge.in-progress { background: rgba(79,91,203,.08); color: #4F5BCB; border-color: rgba(79,91,203,.1); }
 .mtop-status-badge.completed   { background: rgba(5,150,105,.08); color: #059669; border-color: rgba(5,150,105,.1); }
-.mtop-status-badge.action-req  { background: rgba(220,38,38,.08); color: #DC2626; border-color: rgba(220,38,38,.1); }
+.mtop-status-badge.action-req  { background: rgba(217,119,6,.08); color: #D97706; border-color: rgba(217,119,6,.1); } /* Changed to amber for softer alert */
 
 .mtop-view-text {
   font-family: 'DM Sans', sans-serif; font-size: 10px;
@@ -211,7 +196,7 @@ const CSS = `
 .mtop-card:hover .mtop-view-text { color: #4F5BCB; }
 `;
 
-export default function MTOPTracker({ operatorName = "Operator" }) {
+export default function MTOPTracker({ operatorName = "Mario Dela Cruz" }) {
     const [query, setQuery] = useState('');
 
     // Mock data reflecting the TMO/BPLO pipeline exactly as in MTOPDetails.jsx
@@ -270,10 +255,10 @@ export default function MTOPTracker({ operatorName = "Operator" }) {
 
     const renderPipeline = (phase, status) => {
         const steps = [
-            { id: 'tmo-docs', label: 'Docs', icon: FileSearch },
-            { id: 'tmo-phys', label: 'Inspection', icon: ClipboardCheck },
+            { id: 'tmo-docs', label: 'Requirements', icon: FileSearch },
+            { id: 'tmo-phys', label: 'Physical Inspection', icon: ClipboardCheck },
             { id: 'cashier-pay', label: 'Payment', icon: Wallet },
-            { id: 'bplo-release', label: 'BPLO', icon: Stamp }
+            { id: 'bplo-release', label: 'BPLO Releasing', icon: Stamp }
         ];
 
         let currentIndex = 4;
@@ -323,10 +308,6 @@ export default function MTOPTracker({ operatorName = "Operator" }) {
                         <h1 className="mtop-title">Application Tracker</h1>
                         <p className="mtop-subtitle">Monitor and manage your municipal franchise records.</p>
                     </div>
-
-                   <Link href={route('operator.mtop.create')} className="mtop-action-btn">
-                        <PlusCircle size={16} strokeWidth={2.5} /> New Application
-                    </Link>
                 </div>
 
                 <div className="mtop-toolbar">
@@ -366,7 +347,7 @@ export default function MTOPTracker({ operatorName = "Operator" }) {
                             <div className="mtop-card-left">
                                 <div className={`mtop-icon-box ${
                                     app.status === 'completed' ? 'mtop-icon-approved' :
-                                    app.status === 'action-req' ? 'mtop-icon-rejected' : 'mtop-icon-pending'
+                                    app.status === 'action-req' ? 'mtop-icon-action' : 'mtop-icon-pending'
                                 }`}>
                                     <FileText size={24} strokeWidth={2} />
                                 </div>
@@ -380,7 +361,7 @@ export default function MTOPTracker({ operatorName = "Operator" }) {
 
                                     {app.status !== 'completed' && renderPipeline(app.phase, app.status)}
 
-                                    <p className="mtop-details-msg" style={{ color: app.status === 'action-req' ? '#DC2626' : '#64748B' }}>
+                                    <p className="mtop-details-msg" style={{ color: app.status === 'action-req' ? '#D97706' : '#64748B' }}>
                                         {app.message}
                                     </p>
                                 </div>
@@ -391,8 +372,9 @@ export default function MTOPTracker({ operatorName = "Operator" }) {
                                     {app.status === 'completed' ? <CheckCircle2 size={12} strokeWidth={3}/> :
                                      app.status === 'action-req' ? <AlertCircle size={12} strokeWidth={3}/> :
                                      <Clock size={12} strokeWidth={3}/>}
+                                    {/* Updated the status labels here to be more friendly */}
                                     {app.status === 'completed' ? 'Approved' :
-                                     app.status === 'action-req' ? 'Rejected' : 'In Progress'}
+                                     app.status === 'action-req' ? (app.phase === 'tmo-phys' ? 'Re-inspection' : 'Re-submission') : 'In Progress'}
                                 </span>
                                 <div className="mtop-view-text">
                                     Track Status <ChevronRight size={14} strokeWidth={3} />

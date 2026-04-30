@@ -1,14 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Head, useForm, Link } from '@inertiajs/react';
 import {
-    ChevronRight, Upload, ShieldCheck,
-    Info, CheckCircle2, MapPin,
-    Check, Loader2, ArrowRight, ArrowLeft, Bike, Wifi
+    Upload, Info, CheckCircle2, MapPin, Check
 } from 'lucide-react';
 
 /* ─────────────────────────────────────────────────────────────────────────
    TRIVORA — Public Apply / MTOP Registration Wizard
-   4-Step Flow: Agreement → Operator → Vehicle → Documents → Success
+   4-Step Flow: Agreement → Tricycle Driver → Vehicle → Documents → Success
    Matches Welcome.jsx design system: Plus Jakarta Sans · Inter · DM Sans
    Palette: Navy #1C2340 · Indigo accent #4F5BCB · Slate bg #EDEEF4
 ───────────────────────────────────────────────────────────────────────── */
@@ -87,55 +85,24 @@ const CSS = `
 .pa-logo-img {
   height: 30px; width: auto; object-fit: contain; display: block;
 }
-.pa-logo-name {
-  font-family: 'Plus Jakarta Sans', sans-serif;
-  font-size: 18px; font-weight: 800;
-  letter-spacing: -.02em; color: #FFFFFF;
-  line-height: 1; margin-bottom: 4px;
-}
-.pa-logo-sub {
-  font-family: 'DM Sans', sans-serif;
-  font-size: 8.5px; font-weight: 700;
-  letter-spacing: .16em; text-transform: uppercase;
-  color: rgba(255,255,255,.35); line-height: 1;
-}
-.pa-header-link {
-  display: inline-flex; align-items: center; gap: 7px;
-  font-family: 'DM Sans', sans-serif;
-  font-size: 9.5px; font-weight: 700;
-  letter-spacing: .14em; text-transform: uppercase;
-  color: rgba(255,255,255,.5); text-decoration: none;
-  transition: color .18s;
-}
-.pa-header-link:hover { color: #FFFFFF; }
 
 /* ── Page heading band ───────────────────────────────────────────────── */
 .pa-page-head {
   position: relative; z-index: 10;
   padding-bottom: 64px; text-align: center;
-}
-.pa-page-eyebrow {
-  display: inline-flex; align-items: center; gap: 8px;
-  padding: 5px 14px; border-radius: 50px;
-  background: rgba(255,255,255,.07);
-  border: 1px solid rgba(255,255,255,.12);
-  margin-bottom: 18px;
-  font-family: 'DM Sans', sans-serif;
-  font-size: 9px; font-weight: 700;
-  letter-spacing: .17em; text-transform: uppercase;
-  color: rgba(255,255,255,.55);
+  padding-top: 32px;
 }
 .pa-page-title {
   font-family: 'Plus Jakarta Sans', sans-serif;
   font-size: clamp(28px, 4vw, 42px); font-weight: 800;
   letter-spacing: -.03em; color: #FFFFFF;
-  line-height: 1.1; margin-bottom: 12px;
+  line-height: 1.1; margin-bottom: 16px;
 }
 .pa-page-sub {
   font-family: 'DM Sans', sans-serif;
-  font-size: 10px; font-weight: 700;
+  font-size: 11px; font-weight: 700;
   letter-spacing: .14em; text-transform: uppercase;
-  color: rgba(255,255,255,.35);
+  color: rgba(255,255,255,.8);
 }
 
 /* ── Progress tracker ────────────────────────────────────────────────── */
@@ -153,12 +120,12 @@ const CSS = `
 }
 .pa-step-dot {
   width: 36px; height: 36px; border-radius: 50%;
-  border: 2px solid rgba(255,255,255,.2);
-  background: rgba(255,255,255,.08);
+  border: 2px solid rgba(255,255,255,.3);
+  background: rgba(255,255,255,.1);
   display: flex; align-items: center; justify-content: center;
   font-family: 'DM Sans', sans-serif;
   font-size: 11px; font-weight: 800;
-  color: rgba(255,255,255,.4);
+  color: rgba(255,255,255,.6);
   transition: all .3s ease;
 }
 .pa-step-dot.active {
@@ -177,14 +144,14 @@ const CSS = `
   font-family: 'DM Sans', sans-serif;
   font-size: 9px; font-weight: 700;
   letter-spacing: .12em; text-transform: uppercase;
-  color: rgba(255,255,255,.35); transition: color .3s;
+  color: rgba(255,255,255,.6); transition: color .3s;
   white-space: nowrap;
 }
 .pa-step-label.active { color: #FFFFFF; }
-.pa-step-label.done   { color: rgba(255,255,255,.6); }
+.pa-step-label.done   { color: rgba(255,255,255,.8); }
 .pa-step-line {
   width: 64px; height: 2px;
-  background: rgba(255,255,255,.1);
+  background: rgba(255,255,255,.2);
   margin: 0 4px; margin-bottom: 24px;
   border-radius: 2px; overflow: hidden;
   transition: background .3s;
@@ -209,6 +176,10 @@ const CSS = `
 }
 
 /* ── Card heading ────────────────────────────────────────────────────── */
+.pa-card-top {
+  display: flex; justify-content: space-between; align-items: flex-start;
+  margin-bottom: 36px; gap: 16px;
+}
 .pa-card-title {
   font-family: 'Plus Jakarta Sans', sans-serif;
   font-size: 26px; font-weight: 800;
@@ -219,7 +190,7 @@ const CSS = `
   font-family: 'DM Sans', sans-serif;
   font-size: 9px; font-weight: 700;
   letter-spacing: .16em; text-transform: uppercase;
-  color: #8A96BC; margin-bottom: 36px;
+  color: #8A96BC;
 }
 
 /* ── Agreement scroll box ────────────────────────────────────────────── */
@@ -263,7 +234,6 @@ const CSS = `
   letter-spacing: .12em; text-transform: uppercase;
   color: #8A96BC; text-align: center;
   margin-bottom: 16px;
-  display: flex; align-items: center; justify-content: center; gap: 6px;
 }
 
 /* ── Checkbox row ────────────────────────────────────────────────────── */
@@ -359,14 +329,10 @@ const CSS = `
   transition: background .18s, box-shadow .18s, transform .12s;
   box-shadow: 0 4px 14px rgba(28,35,64,.25);
 }
-.pa-btn-primary:hover:not(:disabled) {
+.pa-btn-primary:hover {
   background: #2E3A9E;
   box-shadow: 0 6px 20px rgba(28,35,64,.3);
   transform: translateY(-1px);
-}
-.pa-btn-primary:disabled {
-  background: rgba(28,35,64,.15); color: rgba(28,35,64,.35);
-  box-shadow: none; cursor: not-allowed; transform: none;
 }
 .pa-btn-success {
   flex: 2; height: 52px; border-radius: 12px;
@@ -378,26 +344,21 @@ const CSS = `
   transition: background .18s, box-shadow .18s, transform .12s;
   box-shadow: 0 4px 14px rgba(5,150,105,.25);
 }
-.pa-btn-success:hover:not(:disabled) {
+.pa-btn-success:hover {
   background: #047857;
   box-shadow: 0 6px 20px rgba(5,150,105,.3);
   transform: translateY(-1px);
 }
-.pa-btn-success:disabled {
-  background: rgba(28,35,64,.15); color: rgba(28,35,64,.35);
-  box-shadow: none; cursor: not-allowed;
-}
 .pa-btn-ghost {
   flex: 1; height: 52px; border-radius: 12px;
   border: 1.5px solid rgba(28,35,64,.14); background: #FFFFFF; color: #4A5070;
-  cursor: pointer;
+  cursor: pointer; text-decoration: none;
   font-family: 'DM Sans', sans-serif; font-size: 10px; font-weight: 700;
   letter-spacing: .13em; text-transform: uppercase;
   display: flex; align-items: center; justify-content: center; gap: 7px;
   transition: border-color .18s, background .18s, color .18s;
 }
 .pa-btn-ghost:hover { border-color: rgba(28,35,64,.25); color: #1C2340; background: #FAFAFA; }
-.pa-btn-ghost:disabled { opacity: .45; cursor: not-allowed; }
 
 /* ── File upload grid ────────────────────────────────────────────────── */
 .pa-docs-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 24px; }
@@ -486,7 +447,7 @@ const CSS = `
 .pa-tracking-eyebrow {
   font-family: 'DM Sans', sans-serif; font-size: 8.5px; font-weight: 700;
   letter-spacing: .18em; text-transform: uppercase;
-  color: rgba(255,255,255,.35); margin-bottom: 8px;
+  color: white; margin-bottom: 8px;
 }
 .pa-tracking-number {
   font-family: 'Plus Jakarta Sans', sans-serif;
@@ -532,7 +493,7 @@ export default function PublicApply() {
         { id: 'brgy',      label: 'Barangay Clearance (Original)',                         required:    true  },
         { id: 'toda',      label: 'TODA/NAFTODA/ACTODAN Clearance (Original)',             required:    true  },
         { id: 'driver_id', label: "Driver's ID Issued by NAFTODA/ACTODAN",                required:    true  },
-        { id: 'tariff',    label: 'List of Existing Tariff Fee (For sidecar)',             required:    true  },
+        { id: 'tariff',    label: 'List of Existing Tariff Fee (For sidecar)',             conditional: true  },
         { id: 'auth',      label: "Authorization Letter & ID (Kung hindi may-ari)",       conditional: true  },
     ];
 
@@ -562,11 +523,11 @@ export default function PublicApply() {
         setTimeout(() => { setIsSubmitting(false); next(); }, 2000);
     };
 
-    const steps = ['Agreement', 'Operator', 'Vehicle', 'Documents'];
+    const steps = ['Agreement', 'Tricycle Driver', 'Vehicle', 'Documents'];
 
     return (
         <div className="pa-root">
-            <Head title="MTOP Registration | TRIVORA Nasugbu" />
+            <Head title="Franchise Registration | TRIVORA Nasugbu" />
             <style dangerouslySetInnerHTML={{ __html: CSS }} />
 
             {/* Hero backdrop */}
@@ -576,18 +537,9 @@ export default function PublicApply() {
             <header className="pa-wrap">
                 <div className="pa-header">
                     <Link href="/" className="pa-logo">
-                        <div>
-                            <div className="pa-logo-img-wrap">
-                                <img src="/images/logo.png" alt="TRIVORA" className="pa-logo-img" />
-                            </div>
+                        <div className="pa-logo-img-wrap">
+                            <img src="/images/logo.png" alt="TRIVORA" className="pa-logo-img" />
                         </div>
-                        <div>
-                            <p className="pa-logo-name">TMO Portal</p>
-                            <p className="pa-logo-sub">Municipality of Nasugbu</p>
-                        </div>
-                    </Link>
-                    <Link href="/" className="pa-header-link">
-                        Cancel <ArrowRight size={13} strokeWidth={2.5} />
                     </Link>
                 </div>
             </header>
@@ -596,10 +548,6 @@ export default function PublicApply() {
             {step < 5 && (
                 <div className="pa-wrap">
                     <div className="pa-page-head">
-                        <div className="pa-page-eyebrow">
-                            <Bike size={12} strokeWidth={2.5} />
-                            MTOP Online Application
-                        </div>
                         <h1 className="pa-page-title">Register Your<br />Tricycle Unit</h1>
                         <p className="pa-page-sub">Complete all steps to submit your franchise application</p>
                     </div>
@@ -637,8 +585,12 @@ export default function PublicApply() {
                     {/* ── STEP 1: AGREEMENT ── */}
                     {step === 1 && (
                         <div className="pa-card">
-                            <h2 className="pa-card-title">Terms & Agreement</h2>
-                            <p className="pa-card-sub">Read the full policy before proceeding with your MTOP application</p>
+                            <div className="pa-card-top">
+                                <div>
+                                    <h2 className="pa-card-title">Terms & Agreement</h2>
+                                    <p className="pa-card-sub">Read the full policy before proceeding with your application</p>
+                                </div>
+                            </div>
 
                             <div className="pa-agree-scroll" onScroll={handleTermsScroll}>
                                 <h3 className="pa-agree-h">1. Purpose and Scope</h3>
@@ -657,16 +609,7 @@ export default function PublicApply() {
                                     <li>Applicant must not have any pending violations or unresolved cases with the TMO.</li>
                                 </ol>
 
-                                <h3 className="pa-agree-h">3. IoT Tracking Device Requirement</h3>
-                                <p className="pa-agree-p">
-                                    Effective Calendar Year 2026, all MTOP-covered tricycle units operating within Nasugbu are
-                                    required to install an approved GPS-based IoT Tracking Device as a condition of franchise
-                                    issuance or renewal. The one-time device fee of ₱500.00 is non-refundable and covers hardware
-                                    and first-year connectivity. Devices must remain functional at all times; tampering or removal
-                                    constitutes a violation of this franchise.
-                                </p>
-
-                                <h3 className="pa-agree-h">4. Document Authenticity</h3>
+                                <h3 className="pa-agree-h">3. Document Authenticity</h3>
                                 <p className="pa-agree-p">
                                     By submitting this application, the applicant certifies that all uploaded documents are genuine,
                                     unaltered, and legally obtained. Any falsification or submission of fraudulent documents is
@@ -674,33 +617,34 @@ export default function PublicApply() {
                                     of any issued permit.
                                 </p>
 
-                                <h3 className="pa-agree-h">5. Physical Inspection</h3>
+                                <h3 className="pa-agree-h">4. Tricycle Inspection & GPS Installation</h3>
                                 <p className="pa-agree-p">
-                                    Submission of this online application does not constitute automatic approval. The TMO reserves
-                                    the right to schedule and conduct a physical inspection of the tricycle unit prior to issuance
-                                    of the MTOP. The applicant will be notified via SMS of the inspection schedule.
+                                    Submission of this application does not guarantee approval. Units must pass a physical roadworthiness inspection.
+                                    Upon approval, the TMO will install an LGU-provided Smart GPS Tracker on the unit for safety and traffic monitoring.
+                                    Tampering with or removing this device is a severe violation.
+                                </p>
+
+                                <h3 className="pa-agree-h">5. Compliance with Local Ordinances</h3>
+                                <p className="pa-agree-p">
+                                    The operator agrees to strictly abide by the Nasugbu Traffic Code, including the Color Coding Scheme and designated TODA routing.
+                                    Violations detected manually or via the Smart GPS system may result in fines or franchise revocation.
                                 </p>
 
                                 <h3 className="pa-agree-h">6. Fees and Payment</h3>
                                 <p className="pa-agree-p">
-                                    All fees stated in this portal are in Philippine Peso (₱) and are subject to change by
-                                    municipal ordinance. Payments will only be collected AFTER your unit passes physical inspection.
-                                    Payments can be processed through authorized digital payment channels (GCash, Maya) or via
-                                    walk-in Cashier.
+                                    All franchise and regulatory fees are subject to current municipal ordinances. Payments are collected only after the unit passes physical inspection.
+                                    The Smart GPS Tracker is provided by the Municipal Government at no hardware cost to the operator.
                                 </p>
 
-                                <h3 className="pa-agree-h">7. Data Privacy</h3>
+                                <h3 className="pa-agree-h">7. Data Privacy and Consent</h3>
                                 <p className="pa-agree-p">
-                                    Personal information collected through this portal is governed by Republic Act No. 10173
-                                    (Data Privacy Act of 2012). Information will only be used for the processing of the MTOP
-                                    application and related official communications. The Municipality of Nasugbu does not sell
-                                    or share personal data with third parties.
+                                    By applying, you consent to the collection and processing of your personal data and real-time GPS location data in accordance with the Data Privacy Act of 2012 (R.A. 10173).
+                                    Data will be used exclusively for franchise administration, traffic management, and public safety.
                                 </p>
                             </div>
 
                             {!scrolledTerms && (
                                 <p className="pa-scroll-hint">
-                                    <ArrowLeft size={11} style={{ transform: 'rotate(-90deg)' }} />
                                     Scroll down to read the full terms
                                 </p>
                             )}
@@ -714,23 +658,30 @@ export default function PublicApply() {
                                 </div>
                                 <p className="pa-checkbox-text">
                                     I have read, understood, and agree to the <span>Terms & Conditions</span>,
-                                    including the mandatory <span>IoT Tracking Device requirement</span> and all applicable fees.
+                                    including the <span>Data Privacy Consent</span> and compliance with traffic ordinances.
                                 </p>
                             </div>
 
                             <div className="pa-actions">
-                                <button className="pa-btn-primary" disabled={!agreed} onClick={next}>
-                                    Proceed to Operator Info <ChevronRight size={14} strokeWidth={2.5} />
+                                <Link href="/" className="pa-btn-ghost">
+                                    Cancel
+                                </Link>
+                                <button className="pa-btn-primary" onClick={next}>
+                                    Continue
                                 </button>
                             </div>
                         </div>
                     )}
 
-                    {/* ── STEP 2: OPERATOR ── */}
+                    {/* ── STEP 2: DRIVER INFO ── */}
                     {step === 2 && (
                         <div className="pa-card">
-                            <h2 className="pa-card-title">Operator Info</h2>
-                            <p className="pa-card-sub">Owner / Registered Operator of the Tricycle Unit</p>
+                            <div className="pa-card-top">
+                                <div>
+                                    <h2 className="pa-card-title">Tricycle Driver Info</h2>
+                                    <p className="pa-card-sub">Registered Driver of the Tricycle Unit</p>
+                                </div>
+                            </div>
 
                             <div className="pa-fields">
                                 <Field label="First Name">
@@ -758,12 +709,10 @@ export default function PublicApply() {
 
                             <div className="pa-actions">
                                 <button className="pa-btn-ghost" onClick={back}>
-                                    <ArrowLeft size={13} /> Back
+                                    Back
                                 </button>
-                                <button className="pa-btn-primary"
-                                    disabled={!data.first_name || !data.last_name || !data.contact}
-                                    onClick={next}>
-                                    Next: Vehicle Details <ChevronRight size={14} strokeWidth={2.5} />
+                                <button className="pa-btn-primary" onClick={next}>
+                                    Continue
                                 </button>
                             </div>
                         </div>
@@ -772,8 +721,12 @@ export default function PublicApply() {
                     {/* ── STEP 3: VEHICLE ── */}
                     {step === 3 && (
                         <div className="pa-card">
-                            <h2 className="pa-card-title">Vehicle Specs</h2>
-                            <p className="pa-card-sub">Tricycle Registration & Unit Details</p>
+                            <div className="pa-card-top">
+                                <div>
+                                    <h2 className="pa-card-title">Vehicle Specs</h2>
+                                    <p className="pa-card-sub">Tricycle Registration & Unit Details</p>
+                                </div>
+                            </div>
 
                             <div className="pa-fields">
                                 <Field label="TODA Assignment" className="pa-field-full">
@@ -785,7 +738,6 @@ export default function PublicApply() {
                                             <option value="C">TODA C (Bucana)</option>
                                             <option value="D">TODA D (Papaya)</option>
                                         </select>
-                                        <ChevronRight size={14} strokeWidth={2} style={{ transform: 'rotate(90deg)' }} />
                                     </div>
                                 </Field>
                                 <div className="pa-field-full">
@@ -806,12 +758,10 @@ export default function PublicApply() {
 
                             <div className="pa-actions">
                                 <button className="pa-btn-ghost" onClick={back}>
-                                    <ArrowLeft size={13} /> Back
+                                    Back
                                 </button>
-                                <button className="pa-btn-primary"
-                                    disabled={!data.engine_number || !data.chassis_number}
-                                    onClick={next}>
-                                    Next: Upload Documents <ChevronRight size={14} strokeWidth={2.5} />
+                                <button className="pa-btn-primary" onClick={next}>
+                                    Continue
                                 </button>
                             </div>
                         </div>
@@ -820,8 +770,12 @@ export default function PublicApply() {
                     {/* ── STEP 4: DOCUMENTS & SUBMIT ── */}
                     {step === 4 && (
                         <div className="pa-card" style={{ maxWidth: 900 }}>
-                            <h2 className="pa-card-title">Requirements</h2>
-                            <p className="pa-card-sub">Take a clear photo or upload scanned copies of each document</p>
+                            <div className="pa-card-top">
+                                <div>
+                                    <h2 className="pa-card-title">Requirements</h2>
+                                    <p className="pa-card-sub">Take a clear photo or upload scanned copies of each document</p>
+                                </div>
+                            </div>
 
                             <div className="pa-docs-grid">
                                 {documentList.map(doc => (
@@ -846,14 +800,11 @@ export default function PublicApply() {
                             </div>
 
                             <div className="pa-actions">
-                                <button className="pa-btn-ghost" onClick={back} disabled={isSubmitting}>
-                                    <ArrowLeft size={13} /> Back
+                                <button className="pa-btn-ghost" onClick={back}>
+                                    Back
                                 </button>
-                                <button className="pa-btn-success" disabled={!hasAllRequired || isSubmitting} onClick={submitApplication}>
-                                    {isSubmitting
-                                        ? <><Loader2 size={15} className="animate-spin" /> Submitting...</>
-                                        : <><ShieldCheck size={15} /> Submit Application</>
-                                    }
+                                <button className="pa-btn-success" onClick={submitApplication}>
+                                    {isSubmitting ? 'Submitting...' : 'Submit'}
                                 </button>
                             </div>
                         </div>
@@ -877,7 +828,7 @@ export default function PublicApply() {
                             <p className="pa-success-desc">
                                 Your application is now <span>pending TMO Validation.</span> Please wait
                                 for an SMS confirmation before bringing your tricycle for physical inspection
-                                and <span>IoT device installation.</span> Payment will be collected after passing inspection.
+                                and <span>GPS device installation.</span> Payment will be collected after passing inspection.
                             </p>
 
                             <Link href="/"
@@ -890,7 +841,7 @@ export default function PublicApply() {
                                     boxShadow: '0 4px 14px rgba(28,35,64,.25)',
                                 }}
                             >
-                                Return to Portal <ArrowRight size={13} strokeWidth={2.5} />
+                                Return to Home
                             </Link>
                         </div>
                     )}
