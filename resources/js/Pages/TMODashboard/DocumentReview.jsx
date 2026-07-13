@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import TrivoraLayout from '@/Layouts/TrivoraLayout';
 import Swal from 'sweetalert2';
 import {
@@ -438,16 +438,6 @@ const CSS = `
 `;
 
 export default function DocumentReview({ application }) {
-    const [isProcessing, setIsProcessing] = useState(false);
-    const [docStatuses, setDocStatuses] = useState({});
-    const [rejectionReasons, setRejectionReasons] = useState({});
-    const [previewOpen, setPreviewOpen] = useState(false);
-
-    // Rejection modal state
-    const [pendingRejectId, setPendingRejectId] = useState(null);
-    const [draftReason, setDraftReason] = useState('');
-
-    // Mock application data if not provided
     const appData = application || {
         operator: 'Juan Dela Cruz',
         id: 'NSB-26-8812',
@@ -458,7 +448,18 @@ export default function DocumentReview({ application }) {
         toda: 'TODA A (Poblacion)',
         contact: '09171234567',
         barangay: 'Poblacion 1',
+        docStatuses: {},
+        rejectionReasons: {},
     };
+
+    const [isProcessing, setIsProcessing] = useState(false);
+    const [docStatuses, setDocStatuses] = useState(appData.docStatuses || {});
+    const [rejectionReasons, setRejectionReasons] = useState(appData.rejectionReasons || {});
+    const [previewOpen, setPreviewOpen] = useState(false);
+
+    // Rejection modal state
+    const [pendingRejectId, setPendingRejectId] = useState(null);
+    const [draftReason, setDraftReason] = useState('');
 
     // Ensure all vehicle properties have values
     const vehicleData = {
@@ -531,26 +532,25 @@ export default function DocumentReview({ application }) {
             if (result.isConfirmed) {
                 setIsProcessing(true);
 
-                // Simulate API call
-                setTimeout(() => {
-                    setIsProcessing(false);
-                    Swal.fire({
-                        title: isApprove ? 'Documents Approved!' : 'Rejection Sent',
-                        text: isApprove
-                            ? 'Unit moved to Phase 2. Operator notified via SMS.'
-                            : 'Rejection report sent. Operator must re-upload files.',
-                        icon: isApprove ? 'success' : 'info',
-                        confirmButtonColor: '#1C2340',
-                        timer: 2500,
-                        showConfirmButton: false,
-                        customClass: {
-                            title: 'font-jakarta',
-                            popup: 'font-inter'
-                        }
-                    }).then(() => {
-                        window.location.href = '/tmo/docs';
-                    });
-                }, 1200);
+                router.post(`/tmo/review/docs/${appData.id}`, {
+                    action: isApprove ? 'approve' : 'reject',
+                    docStatuses: docStatuses,
+                    rejectionReasons: rejectionReasons,
+                }, {
+                    onFinish: () => setIsProcessing(false),
+                    onSuccess: () => {
+                        Swal.fire({
+                            title: isApprove ? 'Documents Approved!' : 'Rejection Sent',
+                            text: isApprove
+                                ? 'Unit moved to Phase 2. Operator notified.'
+                                : 'Rejection report sent. Operator must re-upload files.',
+                            icon: 'success',
+                            confirmButtonColor: '#1C2340',
+                            timer: 2000,
+                            showConfirmButton: false,
+                        });
+                    }
+                });
             }
         });
     };

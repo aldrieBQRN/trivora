@@ -178,33 +178,21 @@ const CSS = `
 .csh-view-btn:hover { background: #1C2340; color: #FFFFFF; border-color: #1C2340; box-shadow: 0 4px 12px rgba(28,35,64,.15); }
 `;
 
-export default function TreasurerDashboard() {
-    const transactions = [
-        { id: 'TXN-001', app_id: 'APP-2026-0622', operator: 'Mario Dela Cruz', type: 'New Franchise Fee', amount: 515.00, method: 'GCash', ref: 'pay_mc12345', date: 'Apr 04, 2026 - 08:30 AM', status: 'verified' },
-        { id: 'TXN-002', app_id: 'APP-2026-0501', operator: 'Juanito Perez', type: 'MTOP Renewal Fee', amount: 1695.00, method: 'Credit Card', ref: 'pay_xyz987', date: 'Apr 04, 2026 - 09:15 AM', status: 'verified' },
-        { id: 'TXN-003', app_id: 'TRV-88210', operator: 'Ricardo Dalisay', type: 'Traffic Violation Fine', amount: 500.00, method: 'Maya', ref: 'pay_maya810', date: 'Apr 04, 2026 - 10:05 AM', status: 'verified' },
-    ];
-
-    const weeklyData = [
-        { day: 'Mon', amount: 3200 },
-        { day: 'Tue', amount: 4100 },
-        { day: 'Wed', amount: 2800 },
-        { day: 'Thu', amount: 5500 },
-        { day: 'Fri', amount: 3900 },
-        { day: 'Sat', amount: 1500 },
-        { day: 'Sun', amount: 800  },
-    ];
-
-    const maxVal = Math.max(...weeklyData.map(d => d.amount));
-    const yMax = Math.ceil(maxVal / 2000) * 2000;
+export default function TreasurerDashboard({
+    stats = { todayCollection: 0, monthCollection: 0, totalProcessed: 0 },
+    weeklyData = [],
+    breakdown = {
+        renewals: { val: 0, color: '#4F5BCB', label: 'MTOP Renewals' },
+        new: { val: 0, color: '#059669', label: 'New Franchises' },
+        fines: { val: 0, color: '#D97706', label: 'Violation Fines' }
+    },
+    transactions = []
+}) {
+    const maxVal = weeklyData.length > 0 ? Math.max(...weeklyData.map(d => d.amount)) : 0;
+    const yMax = maxVal > 0 ? Math.ceil(maxVal / 2000) * 2000 : 8000;
     const ySteps = [yMax, yMax * 0.75, yMax * 0.5, yMax * 0.25, 0];
 
-    const breakdown = {
-        renewals: { val: 28500.00, color: '#4F5BCB', label: 'MTOP Renewals' },
-        new: { val: 12500.00, color: '#059669', label: 'New Franchises' },
-        fines: { val: 4000.00, color: '#D97706', label: 'Violation Fines' }
-    };
-    const totalBd = breakdown.renewals.val + breakdown.new.val + breakdown.fines.val;
+    const totalBd = (breakdown.renewals?.val || 0) + (breakdown.new?.val || 0) + (breakdown.fines?.val || 0);
 
     return (
         <TreasurerLayout title="Collection Dashboard" treasurerName="Maria Santos">
@@ -223,15 +211,15 @@ export default function TreasurerDashboard() {
                 {/* ── TMO-STYLE KPI METRICS ── */}
                 <div className="csh-kpi-grid">
                     <KpiCard
-                        title="Today's Total Collection" value="₱2,710.00" unit="PHP"
+                        title="Today's Total Collection" value={`₱${(stats.todayCollection || 0).toLocaleString(undefined, {minimumFractionDigits: 2})}`} unit="PHP"
                         icon={Wallet} iconClass="csh-kpi-icon-emerald" trend="Live" trendClass="csh-kpi-trend-live"
                     />
                     <KpiCard
-                        title="This Month's Collection" value="₱45,000.00" unit="PHP"
+                        title="This Month's Collection" value={`₱${(stats.monthCollection || 0).toLocaleString(undefined, {minimumFractionDigits: 2})}`} unit="PHP"
                         icon={Calendar} iconClass="csh-kpi-icon-stone" trend="On Track" trendClass="csh-kpi-trend-synced"
                     />
                     <KpiCard
-                        title="Total Payments Processed" value="142" unit="Verified"
+                        title="Total Payments Processed" value={stats.totalProcessed || 0} unit="Verified"
                         icon={Receipt} iconClass="csh-kpi-icon-amber" trend="Synced" trendClass="csh-kpi-trend-detecting"
                     />
                 </div>

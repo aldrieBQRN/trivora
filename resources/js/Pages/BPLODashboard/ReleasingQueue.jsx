@@ -300,30 +300,16 @@ const CSS = `
 }
 `;
 
-export default function ReleasingQueue() {
+export default function ReleasingQueue({ applications = [], pendingCount = 0, issuedTodayCount = 0, activeRegistryCount = 0 }) {
     const [query, setQuery] = useState('');
 
-    const readyToRelease = [
-        {
-            id: 'NSB-26-8812',
-            operator: 'Juan Dela Cruz',
-            toda: 'TODA A (Poblacion)',
-            make: 'Honda TMX 125',
-            tmo_passed_at: '15 mins ago',
-        },
-        {
-            id: 'NSB-26-4491',
-            operator: 'Ricardo Dalisay',
-            toda: 'TODA D (Papaya)',
-            make: 'Kawasaki Barako 175',
-            tmo_passed_at: '1 hour ago',
-        },
-    ];
-
-    const filtered = readyToRelease.filter(a =>
-        a.id.toLowerCase().includes(query.toLowerCase()) ||
-        a.operator.toLowerCase().includes(query.toLowerCase())
-    );
+    const filtered = applications.filter(a => {
+        const idStr = a.id ? String(a.id).toLowerCase() : '';
+        const refStr = a.reference ? String(a.reference).toLowerCase() : '';
+        const opStr = a.operator ? String(a.operator).toLowerCase() : '';
+        const q = query.toLowerCase();
+        return idStr.includes(q) || refStr.includes(q) || opStr.includes(q);
+    });
 
     return (
         <BPLOLayout title="Releasing Hub" role="BPLO Officer">
@@ -343,20 +329,20 @@ export default function ReleasingQueue() {
                 {/* ── Stat cards ── */}
                 <div className="rq-stats">
                     <StatCard
-                        count={readyToRelease.length}
+                        count={pendingCount}
                         label="Pending Issuance"
                         icon={Award}
                         iconClass="rq-stat-blue"
                         accent
                     />
                     <StatCard
-                        count="12"
+                        count={issuedTodayCount}
                         label="Issued Today"
                         icon={CheckCircle2}
                         iconClass="rq-stat-teal"
                     />
                     <StatCard
-                        count="841"
+                        count={activeRegistryCount}
                         label="Active Registry"
                         icon={Hash}
                         iconClass="rq-stat-navy"
@@ -457,12 +443,12 @@ function StatCard({ count, label, icon: Icon, iconClass, accent }) {
 }
 
 function QueueRow({ app }) {
-    const initial = app.operator.charAt(0);
+    const initial = app.operator ? app.operator.charAt(0) : 'N';
     return (
         <tr className="rq-row">
             {/* Tracking ID */}
             <td className="rq-td">
-                <span className="rq-id-chip">{app.id}</span>
+                <span className="rq-id-chip">{app.reference}</span>
             </td>
 
             {/* Operator & Unit */}

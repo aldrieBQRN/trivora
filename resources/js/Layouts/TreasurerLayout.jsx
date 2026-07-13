@@ -373,15 +373,10 @@ export default function TreasurerLayout({ children, title, treasurerName = "Muni
         }
     };
 
-    // 🔴 DEMO LOGOUT LOGIC 🔴
     const handleLogout = () => {
         setIsExiting(true);
         setTimeout(() => {
-            // For now, just instantly redirect to the login page
-            window.location.href = '/login';
-
-            // NOTE: Once we connect the real database authentication,
-            // you will swap this back to: router.post('/logout')
+            router.post('/logout');
         }, 400);
     };
 

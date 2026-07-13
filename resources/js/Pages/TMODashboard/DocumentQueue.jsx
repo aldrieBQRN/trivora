@@ -319,23 +319,18 @@ const CSS = `
 }
 `;
 
-export default function DocumentQueue() {
+export default function DocumentQueue({
+    applications = [],
+    pendingCount = 0,
+    reviewedTodayCount = 0,
+    resubmissionCount = 0,
+}) {
     const [query, setQuery] = useState('');
 
-    const applications = [
-    { id: 'NSB-26-8812', operator: 'Juan Dela Cruz',  toda: 'TODA A (Poblacion)', submitted_at: '2 hours ago', submitted_date: 'April 17, 2026 · 10:30 AM', docs_count: 5, status: 'Pending' },
-    { id: 'NSB-26-9012', operator: 'Maria Clara',     toda: 'TODA B (Wawa)',       submitted_at: '5 hours ago', submitted_date: 'April 17, 2026 · 7:15 AM', docs_count: 4, status: 'Pending' },
-    { id: 'NSB-26-9133', operator: 'Pedro Santos',    toda: 'TODA C (Banilad)',    submitted_at: '1 day ago',   submitted_date: 'April 16, 2026 · 1:42 PM', docs_count: 6, status: 'Re-submission' },
-    { id: 'NSB-26-9175', operator: 'Ana Reyes',       toda: 'TODA D (Kaylaway)',   submitted_at: '1 day ago',   submitted_date: 'April 16, 2026 · 9:05 AM', docs_count: 5, status: 'Re-submission' },
-    ];
-
-  const pendingCount = applications.filter(a => a.status === 'Pending').length;
-  const resubmissionCount = applications.filter(a => a.status === 'Re-submission').length;
-
     const filtered = applications.filter(a =>
-        a.id.toLowerCase().includes(query.toLowerCase()) ||
-    a.operator.toLowerCase().includes(query.toLowerCase()) ||
-    a.status.toLowerCase().includes(query.toLowerCase())
+        String(a.id).toLowerCase().includes(query.toLowerCase()) ||
+        a.operator.toLowerCase().includes(query.toLowerCase()) ||
+        a.status.toLowerCase().includes(query.toLowerCase())
     );
 
     return (
@@ -356,7 +351,7 @@ export default function DocumentQueue() {
                 {/* ── Stat cards ── */}
                 <div className="dq-stats">
                   <StatCard count={pendingCount}      label="Pending Review"    icon={FileSearch} iconClass="dq-stat-indigo" accent />
-                  <StatCard count="8"               label="Reviewed Today"    icon={FileText}   iconClass="dq-stat-emerald"  />
+                  <StatCard count={reviewedTodayCount} label="Reviewed Today"    icon={FileText}   iconClass="dq-stat-emerald"  />
                   <StatCard count={resubmissionCount} label="Re-submission"     icon={Clock}      iconClass="dq-stat-amber"  />
                 </div>
 

@@ -155,7 +155,11 @@ const CSS = `
 @keyframes bdFadeUp { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
 `;
 
-export default function BPLODashboard() {
+export default function BPLODashboard({ stats }) {
+    const activeRegistry = stats?.totalRegistriesCount || 0;
+    const activeFranchises = stats?.activeFranchisesCount || 0;
+    const pendingReleasing = stats?.pendingReleasingCount || 0;
+
     // Mock Chart Data for MTOP Issuance Trend
     const chartData = [
         { day: 'Mon', issued: 12 }, { day: 'Tue', issued: 19 },
@@ -183,22 +187,22 @@ export default function BPLODashboard() {
                 {/* ── PREMIUM KPI METRICS ── */}
                 <div className="bd-kpi-grid">
                     <KpiCard
-                        title="Active Registry" value="842" unit="UNITS"
+                        title="Active Registry" value={activeRegistry} unit="UNITS"
                         icon={Hash} iconClass="bd-kpi-icon-blue"
                         trend="Live Data" trendClass="bd-kpi-trend-synced" delay="bd-d1"
                     />
                     <KpiCard
-                        title="Pending Releasing" value="14" unit="QUEUED"
+                        title="Pending Releasing" value={pendingReleasing} unit="QUEUED"
                         icon={Clock} iconClass="bd-kpi-icon-amber"
                         trend="Action Needed" trendClass="bd-kpi-trend-pending" delay="bd-d1"
                     />
                     <KpiCard
-                        title="Issued This Week" value="28" unit="APPROVED"
+                        title="Active Franchises" value={activeFranchises} unit="APPROVED"
                         icon={Award} iconClass="bd-kpi-icon-emerald"
                         trend="On Track" trendClass="bd-kpi-trend-live" delay="bd-d2"
                     />
                     <KpiCard
-                        title="Revoked Franchises" value="3" unit="SUSPENDED"
+                        title="Revoked Franchises" value="0" unit="SUSPENDED"
                         icon={ShieldAlert} iconClass="bd-kpi-icon-rose"
                         trend="Alert" trendClass="bd-kpi-trend-alert" delay="bd-d2"
                     />

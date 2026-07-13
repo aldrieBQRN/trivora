@@ -316,55 +316,18 @@ const CSS = `
 }
 `;
 
-export default function PhysicalQueue() {
+export default function PhysicalQueue({
+    applications = [],
+    scheduledCount = 0,
+    reinspectionCount = 0,
+    completedTodayCount = 0,
+}) {
     const [query, setQuery] = useState('');
 
-    const applications = [
-        {
-            id: 'NSB-26-4491',
-            operator: 'Ricardo Dalisay',
-            toda: 'TODA D (Papaya)',
-            make: 'Honda TMX 125',
-            scheduled_date: '2026-04-05',
-            time_slot: '09:00 AM',
-        status: 'Scheduled',
-        },
-        {
-            id: 'NSB-26-5521',
-            operator: 'Cardo Santos',
-            toda: 'TODA A (Poblacion)',
-            make: 'Kawasaki Barako 175',
-            scheduled_date: '2026-04-05',
-            time_slot: '10:30 AM',
-        status: 'Scheduled',
-      },
-      {
-        id: 'NSB-26-5884',
-        operator: 'Elena Dela Fuente',
-        toda: 'TODA C (Banilad)',
-        make: 'Yamaha YTX 125',
-        scheduled_date: '2026-04-06',
-        time_slot: '01:00 PM',
-        status: 'Re-inspection',
-      },
-      {
-        id: 'NSB-26-5927',
-        operator: 'Marco Villanueva',
-        toda: 'TODA B (Wawa)',
-        make: 'Rusi TC 125',
-        scheduled_date: '2026-04-06',
-        time_slot: '02:30 PM',
-        status: 'Re-inspection',
-        },
-    ];
-
-    const scheduledCount = applications.filter(a => a.status === 'Scheduled').length;
-    const reinspectionCount = applications.filter(a => a.status === 'Re-inspection').length;
-
     const filtered = applications.filter(a =>
-        a.id.toLowerCase().includes(query.toLowerCase()) ||
-      a.operator.toLowerCase().includes(query.toLowerCase()) ||
-      a.status.toLowerCase().includes(query.toLowerCase())
+        String(a.id).toLowerCase().includes(query.toLowerCase()) ||
+        a.operator.toLowerCase().includes(query.toLowerCase()) ||
+        a.status.toLowerCase().includes(query.toLowerCase())
     );
 
     return (
@@ -385,7 +348,7 @@ export default function PhysicalQueue() {
                 {/* ── Stat cards ── */}
                 <div className="pq-stats">
                   <StatCard count={scheduledCount}   label="Scheduled Today" icon={ClipboardCheck} iconClass="pq-stat-indigo" accent />
-                  <StatCard count="5"               label="Completed Today" icon={ClipboardCheck} iconClass="pq-stat-emerald" />
+                  <StatCard count={completedTodayCount} label="Completed Today" icon={ClipboardCheck} iconClass="pq-stat-emerald" />
                   <StatCard count={reinspectionCount} label="Re-inspection"  icon={Clock}         iconClass="pq-stat-amber" />
                 </div>
 

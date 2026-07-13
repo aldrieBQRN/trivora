@@ -88,20 +88,21 @@ const CSS = `
 }
 `;
 
-export default function Receipt({ transactionId }) {
-    // Mock Paid Transaction Data based on the ID passed
+export default function Receipt({ receipt: payment, auth }) {
+    const operatorName = auth?.user?.name || "Driver";
+
     const receipt = {
-        orNumber: transactionId || 'OR-TRV-99824',
-        paymentDate: 'April 04, 2026',
-        paymentTime: '02:15 PM',
-        referenceId: 'VIO-2026-8750', // Original Violation ID
-        operatorName: 'Mario Dela Cruz',
-        unit: 'NSB-123 (Honda TMX)',
-        description: 'Color Coding: Operating on Restricted Day',
-        paymentMethod: 'GCash (Online)',
-        gatewayRef: 'GC-9912837192',
-        amount: 500.00,
-        processingFee: 15.00
+        orNumber: payment.or_number,
+        paymentDate: payment.date,
+        paymentTime: payment.time,
+        referenceId: payment.id,
+        operatorName: payment.operator,
+        unit: `${payment.unit} (${payment.plate_no})`,
+        description: payment.notes,
+        paymentMethod: payment.method,
+        gatewayRef: payment.or_number,
+        amount: payment.amount,
+        processingFee: 0.00
     };
 
     const totalAmount = receipt.amount + receipt.processingFee;
@@ -111,7 +112,7 @@ export default function Receipt({ transactionId }) {
     };
 
     return (
-        <OperatorLayout title="Official Receipt" operatorName={receipt.operatorName}>
+        <OperatorLayout title="Official Receipt" operatorName={operatorName}>
             <Head title={`Receipt ${receipt.orNumber} | TRIVORA`} />
             <style dangerouslySetInnerHTML={{ __html: CSS }} />
 

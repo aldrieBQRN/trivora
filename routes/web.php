@@ -1,10 +1,10 @@
 <?php
 
-use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\DashboardController;
-use App\Http\Controllers\RegistrationController;
-use App\Http\Controllers\OperatorAuthController;
 use App\Http\Controllers\DocumentController;
+use App\Http\Controllers\OperatorAuthController;
+use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\RegistrationController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -14,290 +14,240 @@ use Inertia\Inertia;
 |--------------------------------------------------------------------------
 */
 
-// The Landing Page
+// Landing Page
 Route::get('/', function () {
     return Inertia::render('Welcome');
 })->name('home');
 
-// Phase 0: Public MTOP Registration Wizard (Account Creation + First Application)
+// Public MTOP Registration Wizard (Account Creation + First Application)
 Route::get('/register-mtop', [RegistrationController::class, 'publicWizard'])->name('register.public');
+Route::post('/register-mtop', [RegistrationController::class, 'store'])->name('register.public.submit');
 
-// Unified System Login (Replaces Operator-only login)
-Route::get('/login', [OperatorAuthController::class, 'showLoginForm'])->name('login');
-Route::post('/login', [OperatorAuthController::class, 'login'])->name('login.submit');
+// Unified Login
+Route::middleware('guest')->group(function () {
+    Route::get('/login', [OperatorAuthController::class, 'showLoginForm'])->name('login');
+    Route::post('/login', [OperatorAuthController::class, 'login'])->name('login.submit');
+});
+
 
 
 /*
 |--------------------------------------------------------------------------
-| 2. PROTECTED MUNICIPAL & OPERATOR ROUTES
+| 2. ADMIN — General Dashboard
 |--------------------------------------------------------------------------
 */
 
-// 🔴 TEMPORARILY DISABLED 'auth' MIDDLEWARE FOR UI DEMO TESTING 🔴
-Route::group([], function () {
-
-    // Default System Dashboard
+Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::get('/dashboard', function () {
         return Inertia::render('Dashboard');
     })->name('dashboard');
-
-    // ==========================================
-    // TMO WORKFLOW (Traffic Management Office)
-    // ==========================================
+});
 
 
-    // TMO Unit Registry (previously Active Fleet)
+/*
+|--------------------------------------------------------------------------
+| 3. TMO — Traffic Management Office
+|--------------------------------------------------------------------------
+*/
+
+Route::middleware(['auth', 'role:tmo_personnel,admin'])->group(function () {
+
+    // Fleet Monitoring Dashboard (Map)
+    Route::get('/tmo-dashboard', [DashboardController::class, 'index'])->name('tmo.dashboard');
+
+    // Unit Registry
     Route::get('/tmo/registry', function () {
         return Inertia::render('TMODashboard/UnitRegistry');
     })->name('tmo.registry');
 
-    // TMO Tricycle Details View
+    // Tricycle Details
     Route::get('/tmo/tricycle/{id}', function ($id) {
-        return Inertia::render('TMODashboard/TricycleDetails', [
-            'tricycleId' => $id
-        ]);
+        return Inertia::render('TMODashboard/TricycleDetails', ['tricycleId' => $id]);
     })->name('tricycle.details');
 
-    // TMO Violation Records
+    // Violation Records
     Route::get('/violations', function () {
         return Inertia::render('TMODashboard/Violations/Violations');
     })->name('tmo.violations');
 
-    // TMO Violation Details
     Route::get('/violations/{id}', function ($id) {
-        return Inertia::render('TMODashboard/Violations/ViolationDetails', [
-            'violationId' => $id
-        ]);
+        return Inertia::render('TMODashboard/Violations/ViolationDetails', ['violationId' => $id]);
     })->name('tmo.violations.details');
 
     // --- PHASE 1: DOCUMENT REVIEW ---
-    Route::get('/tmo/docs', function () {
-        return Inertia::render('TMODashboard/DocumentQueue');
-    })->name('tmo.docs');
+    Route::get('/tmo/docs', [App\Http\Controllers\TMO\ApplicationController::class, 'index'])->name('tmo.docs');
+    Route::get('/tmo/review/docs/{application}', [App\Http\Controllers\TMO\ApplicationController::class, 'show'])->name('tmo.review.docs');
+    Route::post('/tmo/review/docs/{application}', [App\Http\Controllers\TMO\ApplicationController::class, 'review'])->name('tmo.review.submit');
 
-    Route::get('/tmo/review/docs/{id}', function ($id) {
-        return Inertia::render('TMODashboard/DocumentReview', [
-            'application' => [
-                'id' => $id,
-                'operator' => 'Juan Dela Cruz',
-                'contact' => '0917 123 4567',
-                'barangay' => 'Wawa',
-                'toda' => 'TODA A',
-                'make' => 'Honda TMX 125',
-                'status' => 'pending_review'
-            ]
-        ]);
-    })->name('tmo.review.docs');
-
-
-    // --- PHASE 2: PHYSICAL INSPECTION ---
-    Route::get('/tmo/physical', function () {
-        return Inertia::render('TMODashboard/PhysicalQueue');
-    })->name('tmo.physical');
-
-    Route::get('/tmo/review/physical/{id}', function ($id) {
-        return Inertia::render('TMODashboard/PhysicalInspection', [
-            'application' => [
-                'id' => $id,
-                'operator' => 'Ricardo Dalisay',
-                'make' => 'Kawasaki Barako 175',
-                'status' => 'scheduled'
-            ]
-        ]);
-    })->name('tmo.review.physical');
+    // Step 2: Physical Inspection Queue
+    Route::get('/tmo/physical', [App\Http\Controllers\TMO\InspectionController::class, 'index'])->name('tmo.physical');
+    Route::get('/tmo/review/physical/{application}', [App\Http\Controllers\TMO\InspectionController::class, 'show'])->name('tmo.review.physical');
+    Route::post('/tmo/review/physical/{application}', [App\Http\Controllers\TMO\InspectionController::class, 'store'])->name('tmo.review.physical.submit');
 
     // Document Preview Routes
     Route::get('/document/inspection-preview', [DocumentController::class, 'previewDocument'])->name('document.preview');
     Route::get('/document/orcr-preview', [DocumentController::class, 'previewORCR'])->name('document.orcr');
-
-    // Fleet Monitoring (IoT Map Feature)
-    Route::get('/tmo-dashboard', [DashboardController::class, 'index'])->name('tmo.dashboard');
+});
 
 
-    // ==========================================
-    // TREASURER WORKFLOW (Treasurer's Office)
-    // ==========================================
+/*
+|--------------------------------------------------------------------------
+| 4. MUNICIPAL TREASURER
+|--------------------------------------------------------------------------
+*/
 
-    Route::get('/treasurer/dashboard', function () {
-        return Inertia::render('Treasurer/Dashboard');
-    })->name('treasurer.dashboard');
-
-    // Pending Payments Queue
-    Route::get('/treasurer/pending', function () {
-        return Inertia::render('Treasurer/PendingPayments');
-    })->name('treasurer.pending');
-
-    // Verify Specific Payment
-    Route::get('/treasurer/verify/{id}', function ($id) {
-        return Inertia::render('Treasurer/VerifyPayment', [
-            'paymentId' => $id
-        ]);
-    })->name('treasurer.verify');
-
-    // Transaction Ledger (Master list of online payments)
-    Route::get('/treasurer/transactions', function () {
-        return Inertia::render('Treasurer/TransactionRecord');
-    })->name('treasurer.transactions');
-
-    // Official Receipt Generation
-    Route::get('/treasurer/receipt/{id}', function ($id) {
-        return Inertia::render('Treasurer/Receipt', [
-            'transactionId' => $id
-        ]);
-    })->name('treasurer.receipt');
+Route::middleware(['auth', 'role:municipal_treasurer,admin'])->group(function () {
+    Route::get('/treasurer/dashboard', [App\Http\Controllers\Treasurer\PaymentController::class, 'dashboard'])->name('treasurer.dashboard');
+    Route::get('/treasurer/pending', [App\Http\Controllers\Treasurer\PaymentController::class, 'index'])->name('treasurer.pending');
+    Route::get('/treasurer/verify/{application}', [App\Http\Controllers\Treasurer\PaymentController::class, 'show'])->name('treasurer.verify');
+    Route::post('/treasurer/verify/{application}', [App\Http\Controllers\Treasurer\PaymentController::class, 'store'])->name('treasurer.verify.submit');
+    Route::get('/treasurer/transactions', [App\Http\Controllers\Treasurer\PaymentController::class, 'transactions'])->name('treasurer.transactions');
+    Route::get('/treasurer/receipt/{id}', [App\Http\Controllers\Treasurer\PaymentController::class, 'receipt'])->name('treasurer.receipt');
+});
 
 
-    // ==========================================
-    // BPLO WORKFLOW (Business Permits Office)
-    // ==========================================
+/*
+|--------------------------------------------------------------------------
+| 5. BPLO — Business Permits & Licensing Office
+|--------------------------------------------------------------------------
+*/
 
-    // --- BPLO Dashboard ---
-    Route::get('/bplo-dashboard', function () {
-        return Inertia::render('BPLODashboard/Index');
-    })->name('bplo.dashboard');
+Route::middleware(['auth', 'role:bplo_staff,admin'])->group(function () {
 
-    // --- PHASE 4: FINAL ISSUANCE ---
-    Route::get('/bplo/releasing', function () {
-        return Inertia::render('BPLODashboard/ReleasingQueue');
-    })->name('bplo.releasing');
-
-    Route::get('/bplo/issue/{id}', function ($id) {
-        return Inertia::render('BPLODashboard/IssueBodyNumber', [
-            'application' => [
-                'id' => $id,
-                'operator' => 'Juan Dela Cruz',
-                'toda' => 'TODA A',
-                'make' => 'Honda TMX 125',
-                'engine_number' => 'ENG-HON-67890',
-                'chassis_number' => 'CHAS-HON-54321',
-                'status' => 'passed_inspection'
-            ]
-        ]);
-    })->name('bplo.issue');
-
-    // --- Active Registry ---
-    Route::get('/bplo/registry', function () {
-        return Inertia::render('BPLODashboard/ActiveRegistry');
-    })->name('bplo.registry');
-
-    Route::get('/bplo/registry/{plateNo}', function ($plateNo) {
-        return Inertia::render('BPLODashboard/RegistryDetails', [
-            'registry' => [
-                'plate_no' => $plateNo,
-                'body_no' => 'N-142',
-                'tricycle_id' => 'TRX-2026-0847',
-                'operator' => 'Mario Dela Cruz',
-                'contact' => '0917 123 4567',
-                'toda' => 'TODA A (Poblacion)',
-                'make' => 'Honda TMX 125',
-                'engine_number' => 'ENG-HON-67890',
-                'chassis_number' => 'CHAS-HON-54321',
-                'issue_date' => 'April 5, 2026',
-                'coding_day' => 'Monday',
-                'status' => 'active',
-                'requirements' => [
-                    ['name' => 'Xerox Prangkisa (Kung Renew)', 'preview_url' => '/sample-inspection-document.html'],
-                    ['name' => 'Xerox OR/CR', 'preview_url' => '/sample-orcr-document.html'],
-                    ['name' => 'Delivery Receipt (Kung walang OR/CR / New)', 'preview_url' => '/sample-inspection-document.html'],
-                    ['name' => "Driver's License Back-to-back (Prof/Restriction 1/A1)", 'preview_url' => '/sample-inspection-document.html'],
-                    ['name' => 'Barangay Clearance (Original)', 'preview_url' => '/sample-inspection-document.html'],
-                    ['name' => 'TODA/NAFTODA/ACTODAN Clearance (Original)', 'preview_url' => '/sample-inspection-document.html'],
-                    ['name' => "Driver's ID Issued by NAFTODA/ACTODAN", 'preview_url' => '/sample-inspection-document.html'],
-                    ['name' => 'List of Existing Tariff Fee (For sidecar)', 'preview_url' => '/sample-inspection-document.html'],
-                    ['name' => "Authorization Letter & ID (Kung hindi may-ari)", 'preview_url' => '/sample-inspection-document.html'],
-                ],
-            ],
-        ]);
-    })->name('bplo.registry.details');
+    Route::get('/bplo-dashboard', [App\Http\Controllers\BPLO\BPLOController::class, 'dashboard'])->name('bplo.dashboard');
+    Route::get('/bplo/releasing', [App\Http\Controllers\BPLO\BPLOController::class, 'releasingQueue'])->name('bplo.releasing');
+    Route::get('/bplo/issue/{application}', [App\Http\Controllers\BPLO\BPLOController::class, 'showReleaseForm'])->name('bplo.issue');
+    Route::post('/bplo/issue/{application}', [App\Http\Controllers\BPLO\BPLOController::class, 'release'])->name('bplo.release.submit');
+    Route::get('/bplo/registry', [App\Http\Controllers\BPLO\BPLOController::class, 'registry'])->name('bplo.registry');
+    Route::get('/bplo/registry/{plateNo}', [App\Http\Controllers\BPLO\BPLOController::class, 'registryDetails'])->name('bplo.registry.details');
+});
 
 
-    // ==========================================
-    // OPERATOR PORTAL (Tricycle Drivers)
-    // ==========================================
+/*
+|--------------------------------------------------------------------------
+| 6. TRICYCLE DRIVER / OPERATOR PORTAL
+|--------------------------------------------------------------------------
+*/
 
-    // --- Group 1: My Account ---
+Route::middleware(['auth', 'role:tricycle_driver,admin'])->group(function () {
+
     Route::get('/operator/dashboard', [App\Http\Controllers\Operator\DashboardController::class, 'index'])
         ->name('operator.dashboard');
 
-    Route::get('/operator/fleet', function () {
-        return Inertia::render('Operator/Fleet');
+    Route::get('/operator/fleet', function (Request $request) {
+        $user = $request->user();
+        $operator = $user->operator;
+
+        $tricycle = null;
+        if ($operator) {
+            $tri = \App\Models\Tricycle::where('operator_id', $operator->id)
+                ->with(['franchiseScheme.colorCodingScheme', 'locations'])
+                ->first();
+
+            if ($tri) {
+                $latestLocation = $tri->locations()->latest('recorded_at')->first();
+                $tricycle = [
+                    'id'            => $tri->body_number ?: 'Pending Body No',
+                    'applicationId' => $tri->franchiseScheme?->application_id ? 'APP-2026-' . str_pad($tri->franchiseScheme->application_id, 5, '0', STR_PAD_LEFT) : 'N/A',
+                    'makeModel'     => "{$tri->make} {$tri->model}",
+                    'plateNo'       => $tri->plate_number,
+                    'driver'        => $operator->full_name,
+                    'zone'          => $tri->todaZone ? $tri->todaZone->name : 'N/A',
+                    'colorCode'     => $tri->franchiseScheme?->colorCodingScheme ? $tri->franchiseScheme->colorCodingScheme->name : 'N/A',
+                    'colorHex'      => $tri->franchiseScheme?->colorCodingScheme ? $tri->franchiseScheme->colorCodingScheme->color_hex : '#94A3B8',
+                    'status'        => $tri->status === 'active' ? 'online' : 'offline',
+                    'lastPing'      => $latestLocation ? $latestLocation->recorded_at->diffForHumans() : 'Never',
+                    'iotBattery'    => '100%',
+                    'mtopStatus'    => $tri->status === 'active' ? 'Valid' : 'Pending',
+                    'mtopExpiry'    => $tri->franchiseScheme?->expiry_date ? $tri->franchiseScheme->expiry_date->format('M d, Y') : 'N/A',
+                ];
+            }
+        }
+
+        return Inertia::render('Operator/Fleet', [
+            'tricycle' => $tricycle,
+        ]);
     })->name('operator.fleet');
 
-    Route::get('/operator/tracking', function () {
-        return Inertia::render('Operator/LiveTracking');
+    Route::get('/operator/tracking', function (Request $request) {
+        $user = $request->user();
+        $operator = $user->operator;
+
+        $tricycleData = null;
+        $positions = [];
+        if ($operator) {
+            $tri = \App\Models\Tricycle::where('operator_id', $operator->id)->first();
+            if ($tri) {
+                // Get all tracking locations for this tricycle
+                $locs = $tri->locations()->orderBy('recorded_at', 'asc')->get();
+                foreach ($locs as $l) {
+                    $positions[] = [(float)$l->latitude, (float)$l->longitude];
+                }
+
+                // Default fallback if no locations recorded yet
+                if (empty($positions)) {
+                    $positions[] = [14.0725, 120.6355];
+                }
+
+                $latestLocation = $tri->locations()->latest('recorded_at')->first();
+
+                $tricycleData = [
+                    'body_no'    => $tri->body_number ?: 'Pending',
+                    'make_model' => "{$tri->make} {$tri->model}",
+                    'plate_no'   => $tri->plate_number,
+                    'zone'       => $tri->todaZone ? $tri->todaZone->name : 'N/A',
+                    'battery'    => '92%',
+                    'speed'      => $latestLocation ? (float)$latestLocation->speed_kmh : 0,
+                    'heading'    => $latestLocation ? (int)$latestLocation->heading_deg : 0,
+                    'accuracy'   => $latestLocation ? (float)$latestLocation->accuracy_m : 5.0,
+                    'last_ping'  => $latestLocation ? $latestLocation->recorded_at->diffForHumans() : 'Never',
+                ];
+            }
+        }
+
+        return Inertia::render('Operator/LiveTracking', [
+            'tricycle'         => $tricycleData,
+            'pathCoordinates'  => $positions,
+        ]);
     })->name('operator.tracking');
 
     Route::get('/operator/settings', function () {
         return Inertia::render('Operator/UnitSettings');
     })->name('operator.settings');
 
+    // MTOP Franchise Compliance
+    Route::get('/operator/mtop', [App\Http\Controllers\Operator\MTOPController::class, 'index'])->name('operator.mtop');
 
-    // --- Group 2: MTOP Franchise Compliance ---
-
-    // MTOP Tracker List
-    Route::get('/operator/mtop', function () {
-        return Inertia::render('Operator/Compliance/MTOP', [
-            'operatorName' => 'Mario Dela Cruz'
-        ]);
-    })->name('operator.mtop');
-
-    // New Unit Wizard
     Route::get('/operator/mtop/create', function () {
         return Inertia::render('Operator/Compliance/MTOPWizard');
     })->name('operator.mtop.create');
 
-    // Application Details
-    Route::get('/operator/mtop/{id}', function ($id) {
-        return Inertia::render('Operator/Compliance/MTOPDetails', [
-            'applicationId' => $id
-        ]);
-    })->name('operator.mtop.details');
+    Route::get('/operator/mtop/{id}', [App\Http\Controllers\Operator\MTOPController::class, 'show'])->name('operator.mtop.details');
 
-    // Fix Rejected Application
     Route::get('/operator/mtop/{id}/fix', function ($id) {
-        return Inertia::render('Operator/Compliance/MTOPFix', [
-            'applicationId' => $id
-        ]);
+        return Inertia::render('Operator/Compliance/MTOPFix', ['applicationId' => $id]);
     })->name('operator.mtop.fix');
 
-    // Operator Online Checkout Page
     Route::get('/operator/mtop/{id}/pay', function ($id) {
-        return Inertia::render('Operator/Compliance/Checkout', [
-            'applicationId' => $id
-        ]);
+        return Inertia::render('Operator/Compliance/Checkout', ['applicationId' => $id]);
     })->name('operator.mtop.pay');
 
+    // Violations & Payments
+    Route::get('/operator/violations', [App\Http\Controllers\Operator\ViolationController::class, 'index'])->name('operator.violations');
+    Route::get('/operator/violations/{id}/pay', [App\Http\Controllers\Operator\ViolationController::class, 'show'])->name('operator.violations.pay');
 
-    // --- Group 3: Violations & Payments ---
-
-    // IoT Active Violation Records
-    Route::get('/operator/violations', function () {
-        return Inertia::render('Operator/Violations/Violations');
-    })->name('operator.violations');
-
-    // Settle Specific Violation (Payment Page)
-    Route::get('/operator/violations/{id}/pay', function ($id) {
-        return Inertia::render('Operator/Violations/SettleViolation', [
-            'violationId' => $id
-        ]);
-    })->name('operator.violations.pay');
-
-    // Payment/Billing History Ledger
-    Route::get('/operator/payments', function () {
-        return Inertia::render('Operator/Payments/PaymentHistory');
-    })->name('operator.payments');
-
-    // View Official Receipt (From Payment History)
-    Route::get('/operator/payments/{id}/receipt', function ($id) {
-        return Inertia::render('Operator/Payments/Receipt', [
-            'transactionId' => $id
-        ]);
-    })->name('operator.payments.receipt');
+    Route::get('/operator/payments', [App\Http\Controllers\Operator\PaymentController::class, 'index'])->name('operator.payments');
+    Route::get('/operator/payments/{id}/receipt', [App\Http\Controllers\Operator\PaymentController::class, 'receipt'])->name('operator.payments.receipt');
+});
 
 
-    // ==========================================
-    // PROFILE & SYSTEM SETTINGS
-    // ==========================================
+/*
+|--------------------------------------------------------------------------
+| 7. PROFILE & ACCOUNT SETTINGS (any authenticated role)
+|--------------------------------------------------------------------------
+*/
+
+Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');

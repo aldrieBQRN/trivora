@@ -182,45 +182,21 @@ const CSS = `
 .ph-empty-sub { font-family: 'Inter', sans-serif; font-size: 13px; color: #5A6488; max-width: 400px; margin: 0 auto; }
 `;
 
-export default function PaymentHistory() {
+export default function PaymentHistory({ payments = [], auth }) {
     const [searchTerm, setSearchTerm] = useState('');
+    const operatorName = auth?.user?.name || "Driver";
 
-    // Mock Payment Ledger Data (Fully settled transactions only)
-    const ledger = [
-        {
-            id: 'TXN-99824',
-            refNo: 'OR-TRV-99824',
-            type: 'Violation',
-            description: 'Color Coding: Restricted Day (VIO-2026-8750)',
-            date: 'April 04, 2026',
-            amount: 515.00,
-            method: 'GCash',
-            status: 'paid',
-            link: route('operator.payments.receipt', { id: 'OR-TRV-99824' })
-        },
-        {
-            id: 'TXN-99511',
-            refNo: 'OR-TRV-99511',
-            type: 'MTOP',
-            description: 'New Franchise Application (NSB-123)',
-            date: 'March 10, 2026',
-            amount: 495.00,
-            method: 'Maya',
-            status: 'paid',
-            link: route('operator.payments.receipt', { id: 'OR-TRV-99511' })
-        },
-        {
-            id: 'TXN-99512',
-            refNo: 'OR-TRV-99512',
-            type: 'IoT',
-            description: 'IoT Tracking Device (Required Hardware)',
-            date: 'March 10, 2026',
-            amount: 1200.00,
-            method: 'Maya',
-            status: 'paid',
-            link: route('operator.payments.receipt', { id: 'OR-TRV-99512' })
-        }
-    ];
+    const ledger = payments.map(p => ({
+        id: p.id,
+        refNo: p.reference,
+        type: 'MTOP',
+        description: `Franchise Fee for Unit ${p.unit}`,
+        date: p.date,
+        amount: p.amount,
+        method: p.method,
+        status: p.status === 'completed' ? 'paid' : 'pending',
+        link: route('operator.payments.receipt', { id: p.db_id })
+    }));
 
     // Filter Logic
     const filteredLedger = ledger.filter(txn =>
@@ -239,8 +215,12 @@ export default function PaymentHistory() {
         }
     };
 
+    const totalPaid = ledger.filter(t => t.status === 'paid').reduce((sum, t) => sum + t.amount, 0);
+    const totalTransactions = ledger.length;
+    const clearedViolations = ledger.filter(t => t.type === 'Violation' && t.status === 'paid').length;
+
     return (
-        <OperatorLayout title="Payment History" operatorName="Mario Dela Cruz">
+        <OperatorLayout title="Payment History" operatorName={operatorName}>
             <Head title="Payment History | TRIVORA" />
             <style dangerouslySetInnerHTML={{ __html: CSS }} />
 
@@ -256,15 +236,15 @@ export default function PaymentHistory() {
                 {/* ── FLEET-STYLE HORIZONTAL KPI GRID ── */}
                 <div className="ph-stats-grid">
                     <StatCard
-                        value="₱2,210.00" label="Total Paid (2026)"
+                        value={`₱${totalPaid.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} label="Total Paid (2026)"
                         icon={Wallet} iconClass="ph-stat-teal" accentColor="#059669"
                     />
                     <StatCard
-                        value="3" label="Total Transactions"
+                        value={totalTransactions} label="Total Transactions"
                         icon={Receipt} iconClass="ph-stat-blue"
                     />
                     <StatCard
-                        value="1" label="Cleared Violations"
+                        value={clearedViolations} label="Cleared Violations"
                         icon={ShieldAlert} iconClass="ph-stat-rose"
                     />
                 </div>

@@ -405,7 +405,7 @@ export default function OperatorLayout({ children, title, operatorName = "Driver
     const handleLogout = () => {
         setIsExiting(true);
         setTimeout(() => {
-            window.location.href = '/login';
+            router.post('/logout');
         }, 400);
     };
 

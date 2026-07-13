@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, router, useForm } from '@inertiajs/react';
 import TreasurerLayout from '@/Layouts/TreasurerLayout';
 import Swal from 'sweetalert2';
 import {
@@ -166,27 +166,33 @@ const CSS = `
 .vp-btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none !important; }
 `;
 
-export default function VerifyPayment({ paymentId = 'TXN-2026-0994' }) {
+export default function VerifyPayment({ paymentId, record }) {
     const [isProcessing, setIsProcessing] = useState(false);
 
-    // Mock data for the online payment
-    const record = {
-        id: paymentId,
-        appId: 'APP-2026-0622',
-        driver: 'Mario Dela Cruz',
-        toda: 'TODA A (Poblacion)',
-        type: 'New Franchise Application Fee',
-        amount: 515.00,
-        method: 'GCash WebPay API',
-        refNo: 'pay_mc12345_auth',
-        date: 'April 6, 2026 - 10:15 AM',
-        gatewayStatus: 'AUTHORIZED'
-    };
+    const { data, setData, post, processing, errors } = useForm({
+        action: 'verify',
+        official_receipt_number: 'OR-2026-' + Math.floor(100000 + Math.random() * 900000),
+        amount: record.amount || 750.00,
+        payment_method: 'cash',
+        notes: 'Over-the-counter payment received.',
+    });
 
-    const handleVerify = () => {
+    const handleVerify = (e) => {
+        if (e) e.preventDefault();
+
+        if (!data.official_receipt_number) {
+            Swal.fire({
+                title: 'O.R. Number Required',
+                text: 'Please input the physical booklet O.R. Number to confirm payment.',
+                icon: 'warning',
+                confirmButtonColor: '#1C2340'
+            });
+            return;
+        }
+
         Swal.fire({
-            title: 'Confirm Payment',
-            html: `Capture funds and confirm <b>₱${record.amount.toFixed(2)}</b> for reference <b>${record.refNo}</b>? This will generate the Official Receipt.`,
+            title: 'Confirm Cash Collection',
+            html: `Confirm receipt of <b>₱${Number(data.amount).toFixed(2)}</b>? This will record O.R. Number <b>${data.official_receipt_number}</b> in the database.`,
             icon: 'question',
             showCancelButton: true,
             confirmButtonColor: '#059669',
@@ -195,50 +201,52 @@ export default function VerifyPayment({ paymentId = 'TXN-2026-0994' }) {
             customClass: { title: 'font-jakarta', popup: 'font-inter' }
         }).then((result) => {
             if (result.isConfirmed) {
-                setIsProcessing(true);
-                setTimeout(() => {
-                    setIsProcessing(false);
-                    Swal.fire({
-                        title: 'Payment Verified!',
-                        text: 'Official Receipt has been generated and sent to the driver.',
-                        icon: 'success',
-                        confirmButtonColor: '#1C2340',
-                        timer: 2500,
-                        showConfirmButton: false
-                    }).then(() => {
-                        window.location.href = '/treasurer/pending'; // Route back to pending list
-                    });
-                }, 1500);
+                // Ensure action is verify
+                setData('action', 'verify');
+                post(`/treasurer/verify/${record.id}`, {
+                    onSuccess: () => {
+                        Swal.fire({
+                            title: 'Payment Verified!',
+                            text: 'Official Receipt has been recorded.',
+                            icon: 'success',
+                            confirmButtonColor: '#1C2340',
+                            timer: 2000,
+                            showConfirmButton: false
+                        });
+                    }
+                });
             }
         });
     };
 
     const handleReject = () => {
         Swal.fire({
-            title: 'Reject Payment',
-            text: "Are you sure you want to reject this online payment? The authorization will be voided.",
+            title: 'Void Payment Request',
+            text: "Are you sure you want to void this collection request? The application will return to TMO inspection queue.",
             icon: 'warning',
             showCancelButton: true,
             confirmButtonColor: '#DC2626',
             cancelButtonColor: '#8A96BC',
-            confirmButtonText: 'Void Payment',
+            confirmButtonText: 'Void Collection',
             customClass: { title: 'font-jakarta', popup: 'font-inter' },
         }).then((result) => {
             if (result.isConfirmed) {
-                setIsProcessing(true);
-                setTimeout(() => {
-                    setIsProcessing(false);
-                    Swal.fire({
-                        title: 'Payment Voided',
-                        text: 'The transaction has been cancelled. The driver has been notified.',
-                        icon: 'info',
-                        confirmButtonColor: '#1C2340',
-                        timer: 2500,
-                        showConfirmButton: false
-                    }).then(() => {
-                        window.location.href = '/treasurer/pending';
-                    });
-                }, 1200);
+                router.post(`/treasurer/verify/${record.id}`, {
+                    action: 'reject',
+                    amount: data.amount,
+                    payment_method: data.payment_method,
+                }, {
+                    onSuccess: () => {
+                        Swal.fire({
+                            title: 'Collection Voided',
+                            text: 'Application returned to physical inspection.',
+                            icon: 'info',
+                            confirmButtonColor: '#1C2340',
+                            timer: 2000,
+                            showConfirmButton: false
+                        });
+                    }
+                });
             }
         });
     };
@@ -324,59 +332,87 @@ export default function VerifyPayment({ paymentId = 'TXN-2026-0994' }) {
                         <div className="vp-card-pad" style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
 
                             <h3 className="vp-group-title" style={{ marginBottom: 16 }}>
-                                <ShieldCheck size={18} color="#4F5BCB" /> Online Gateway Verification
+                                <ShieldCheck size={18} color="#4F5BCB" /> Cashier Collection Entry
                             </h3>
 
-                            <div className="vp-gateway-box">
-                                <div className="vp-gw-head">
-                                    <div className="vp-gw-icon"><Activity size={24} /></div>
+                            <form onSubmit={handleVerify} style={{ display: 'flex', flexDirection: 'column', gap: 20, marginBottom: 24 }}>
+                                <div>
+                                    <label style={{ display: 'block', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: '#8A96BC', marginBottom: 6 }}>Official Receipt (O.R.) Number</label>
+                                    <input
+                                        type="text"
+                                        style={{ width: '100%', height: 44, borderRadius: 10, border: '1px solid rgba(28,35,64,.15)', padding: '0 14px', fontSize: 13.5, fontWeight: 600, color: '#1C2340' }}
+                                        placeholder="e.g. OR-2026-123456"
+                                        value={data.official_receipt_number}
+                                        onChange={e => setData('official_receipt_number', e.target.value)}
+                                        required
+                                    />
+                                    {errors.official_receipt_number && (
+                                        <p style={{ color: '#DC2626', fontSize: 11, marginTop: 4, fontWeight: 500 }}>{errors.official_receipt_number}</p>
+                                    )}
+                                </div>
+
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
                                     <div>
-                                        <p className="vp-gw-title">Gateway API Response</p>
-                                        <p className="vp-gw-sub">Real-time webhook data</p>
+                                        <label style={{ display: 'block', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: '#8A96BC', marginBottom: 6 }}>Payment Method</label>
+                                        <select
+                                            style={{ width: '100%', height: 44, borderRadius: 10, border: '1px solid rgba(28,35,64,.15)', padding: '0 14px', fontSize: 13.5, fontWeight: 600, color: '#1C2340', backgroundColor: '#FFF' }}
+                                            value={data.payment_method}
+                                            onChange={e => setData('payment_method', e.target.value)}
+                                        >
+                                            <option value="cash">Cash</option>
+                                            <option value="check">Check</option>
+                                            <option value="gcash">GCash</option>
+                                            <option value="bank_transfer">Bank Transfer</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label style={{ display: 'block', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: '#8A96BC', marginBottom: 6 }}>Amount Collected (₱)</label>
+                                        <input
+                                            type="number"
+                                            step="0.01"
+                                            style={{ width: '100%', height: 44, borderRadius: 10, border: '1px solid rgba(28,35,64,.15)', padding: '0 14px', fontSize: 13.5, fontWeight: 600, color: '#1C2340' }}
+                                            value={data.amount}
+                                            onChange={e => setData('amount', e.target.value)}
+                                            required
+                                        />
                                     </div>
                                 </div>
 
-                                <div className="vp-gw-log">
-                                    <div className="vp-log-item">
-                                        <span>Reference No.</span>
-                                        <span>{record.refNo}</span>
-                                    </div>
-                                    <div className="vp-log-item">
-                                        <span>Authorization</span>
-                                        <span className="vp-log-success">SUCCESS</span>
-                                    </div>
-                                    <div className="vp-log-item">
-                                        <span>Amount Held</span>
-                                        <span>PHP {record.amount.toFixed(2)}</span>
-                                    </div>
-                                    <div className="vp-log-item">
-                                        <span>Current Status</span>
-                                        <span className="vp-log-success">{record.gatewayStatus}</span>
-                                    </div>
+                                <div>
+                                    <label style={{ display: 'block', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: '#8A96BC', marginBottom: 6 }}>Collector Remarks</label>
+                                    <textarea
+                                        rows={3}
+                                        style={{ width: '100%', borderRadius: 10, border: '1px solid rgba(28,35,64,.15)', padding: '12px 14px', fontSize: 13.5, fontWeight: 500, color: '#1C2340' }}
+                                        placeholder="Add check number, bank details, or counter notes..."
+                                        value={data.notes}
+                                        onChange={e => setData('notes', e.target.value)}
+                                    />
                                 </div>
-                            </div>
+                            </form>
 
                             <div style={{ marginTop: 'auto' }}>
                                 <div className="vp-action-zone">
                                     <button
+                                        type="button"
                                         className="vp-btn vp-btn-reject"
                                         onClick={handleReject}
-                                        disabled={isProcessing}
+                                        disabled={processing}
                                     >
                                         <XCircle size={16} strokeWidth={2.5} />
                                         Void Request
                                     </button>
 
                                     <button
+                                        type="button"
                                         className="vp-btn vp-btn-approve"
                                         onClick={handleVerify}
-                                        disabled={isProcessing}
+                                        disabled={processing}
                                     >
-                                        {isProcessing
+                                        {processing
                                             ? <Loader2 size={16} strokeWidth={2} className="animate-spin" />
                                             : <CheckCircle2 size={16} strokeWidth={2.5} />
                                         }
-                                        Confirm & Issue Receipt
+                                        Confirm & Issue OR
                                     </button>
                                 </div>
                             </div>

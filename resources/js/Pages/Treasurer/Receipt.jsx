@@ -95,28 +95,22 @@ const CSS = `
 }
 `;
 
-export default function Receipt({ transactionId = 'TXN-001' }) {
-
-    // Mock Data based on the ID
-    const receipt = {
-        or_number: 'TRV-8821099',
-        date: 'April 4, 2026',
-        payor: 'Ricardo Dalisay',
-        app_id: 'APP-2026-0418',
-        payment_method: 'PayMongo (GCash)',
-        ref_no: 'pay_mc12345',
-        nature_of_collection: 'New Franchise Application',
-        fees: [
-            { desc: 'Application & Filing Fee', code: '40201010', amount: 250.00 },
-            { desc: 'Police Clearance / OR from LGU', code: '40201020', amount: 150.00 },
-            { desc: 'Health Certificate', code: '40201030', amount: 55.00 },
-            { desc: 'Cedula', code: '40201040', amount: 40.00 },
-            { desc: 'IoT Tracking Device (GPS Unit)', code: '40201050', amount: 500.00 },
-        ],
-        treasurer: 'Maria Santos'
+export default function Receipt({ receipt }) {
+    const activeReceipt = receipt || {
+        receipt_number: 'OR-2026-99999',
+        payment_date: 'April 4, 2026',
+        operator: 'Ricardo Dalisay',
+        reference_no: 'APP-2026-0418',
+        payment_method: 'Cash',
+        amount: 750.00,
+        processed_by: 'Maria Santos'
     };
 
-    const total = receipt.fees.reduce((sum, item) => sum + item.amount, 0);
+    const fees = [
+        { desc: 'Franchise Application & Filing Fee', code: '40201010', amount: activeReceipt.amount }
+    ];
+
+    const total = activeReceipt.amount;
 
     return (
         <TreasurerLayout title="Official Receipt">
@@ -150,25 +144,25 @@ export default function Receipt({ transactionId = 'TXN-001' }) {
                         <p className="rcpt-gov-text">Province of Batangas</p>
                         <p className="rcpt-gov-bold">Municipality of Nasugbu</p>
                         <h1 className="rcpt-or-title">OFFICIAL RECEIPT</h1>
-                        <p className="rcpt-or-number">No. {receipt.or_number}</p>
+                        <p className="rcpt-or-number">No. {activeReceipt.receipt_number}</p>
                     </div>
 
                     <div className="rcpt-details">
                         <div>
                             <p className="rcpt-label">Date</p>
-                            <p className="rcpt-value">{receipt.date}</p>
+                            <p className="rcpt-value">{activeReceipt.payment_date} {activeReceipt.payment_time && <span style={{ fontSize: 11, color: '#8A96BC' }}>at {activeReceipt.payment_time}</span>}</p>
                         </div>
                         <div>
                             <p className="rcpt-label">Application / Reference ID</p>
-                            <p className="rcpt-value mono">{receipt.app_id}</p>
+                            <p className="rcpt-value mono">{activeReceipt.reference_no}</p>
                         </div>
                         <div>
                             <p className="rcpt-label">Payor</p>
-                            <p className="rcpt-value" style={{ fontSize: 16, fontWeight: 700 }}>{receipt.payor}</p>
+                            <p className="rcpt-value" style={{ fontSize: 16, fontWeight: 700 }}>{activeReceipt.operator}</p>
                         </div>
                         <div>
-                            <p className="rcpt-label">Payment Method & Reference</p>
-                            <p className="rcpt-value">{receipt.payment_method} <span style={{ color: '#8A96BC', fontWeight: 400 }}>({receipt.ref_no})</span></p>
+                            <p className="rcpt-label">Payment Method</p>
+                            <p className="rcpt-value">{activeReceipt.payment_method}</p>
                         </div>
                     </div>
 
@@ -181,7 +175,7 @@ export default function Receipt({ transactionId = 'TXN-001' }) {
                             </tr>
                         </thead>
                         <tbody>
-                            {receipt.fees.map((fee, idx) => (
+                            {fees.map((fee, idx) => (
                                 <tr key={idx}>
                                     <td className="rcpt-td">{fee.desc}</td>
                                     <td className="rcpt-td mono" style={{ textAlign: 'center', color: '#8A96BC' }}>{fee.code}</td>
@@ -202,7 +196,7 @@ export default function Receipt({ transactionId = 'TXN-001' }) {
                         </div>
                         <div className="rcpt-sign-box">
                             <div className="rcpt-sign-line"></div>
-                            <p className="rcpt-sign-name">{receipt.treasurer}</p>
+                            <p className="rcpt-sign-name">{activeReceipt.processed_by}</p>
                             <p className="rcpt-sign-title">Municipal Treasurer / Cashier</p>
                         </div>
                     </div>

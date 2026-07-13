@@ -51,21 +51,18 @@ const CSS = `
 .tr-view-btn:hover { background: #1C2340; color: #FFFFFF; border-color: #1C2340; box-shadow: 0 4px 12px rgba(28,35,64,.15); }
 `;
 
-export default function TransactionRecord() {
+export default function TransactionRecord({ transactions = [] }) {
     const [query, setQuery] = useState('');
 
-    const transactions = [
-        { id: 'TXN-001', app_id: 'APP-2026-0622', operator: 'Mario Dela Cruz', type: 'New Franchise', amount: 515.00, method: 'PayMongo (GCash)', ref: 'pay_mc12345', date: 'Apr 04, 2026 - 08:30 AM', status: 'verified' },
-        { id: 'TXN-002', app_id: 'APP-2026-0501', operator: 'Juanito Perez', type: 'Renewal', amount: 1695.00, method: 'PayMongo (Card)', ref: 'pay_xyz987', date: 'Apr 04, 2026 - 09:15 AM', status: 'verified' },
-        { id: 'TXN-003', app_id: 'APP-2026-0418', operator: 'Ricardo Dalisay', type: 'Violation Fine', amount: 500.00, method: 'PayMongo (Maya)', ref: 'pay_maya810', date: 'Apr 04, 2026 - 10:05 AM', status: 'verified' },
-        { id: 'TXN-004', app_id: 'APP-2026-0399', operator: 'Antonio Luna', type: 'Renewal', amount: 495.00, method: 'PayMongo (GCash)', ref: 'pay_gc11299', date: 'Apr 03, 2026 - 03:45 PM', status: 'verified' },
-        { id: 'TXN-005', app_id: 'APP-2026-0210', operator: 'Leonor Rivera', type: 'Violation Fine', amount: 1000.00, method: 'PayMongo (Card)', ref: 'pay_card001', date: 'Apr 02, 2026 - 11:20 AM', status: 'verified' }
-    ];
-
     const filteredTxns = transactions.filter(txn => {
-        return txn.ref.toLowerCase().includes(query.toLowerCase()) ||
-               txn.operator.toLowerCase().includes(query.toLowerCase()) ||
-               txn.app_id.toLowerCase().includes(query.toLowerCase());
+        const refStr = txn.ref ? String(txn.ref).toLowerCase() : '';
+        const opStr = txn.operator ? String(txn.operator).toLowerCase() : '';
+        const appStr = txn.app_id ? String(txn.app_id).toLowerCase() : '';
+        const queryStr = query.toLowerCase();
+
+        return refStr.includes(queryStr) ||
+               opStr.includes(queryStr) ||
+               appStr.includes(queryStr);
     });
 
     return (

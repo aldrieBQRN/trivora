@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, usePage } from '@inertiajs/react';
+import { Link, usePage, router } from '@inertiajs/react';
 import {
     Bell, Menu, Search, Settings, LogOut,
     ChevronDown, Command,
@@ -364,7 +364,7 @@ export default function BPLOLayout({ children, title, role = "BPLO Officer" }) {
     const handleLogout = () => {
         setIsExiting(true);
         setTimeout(() => {
-            window.location.href = '/login';
+            router.post('/logout');
         }, 400);
     };
 

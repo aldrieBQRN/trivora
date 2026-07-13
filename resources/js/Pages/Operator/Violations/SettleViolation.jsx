@@ -98,22 +98,11 @@ const CSS = `
 .sv-success-icon { width: 96px; height: 96px; border-radius: 50%; background: rgba(5,150,105,.08); border: 2px solid rgba(5,150,105,.2); display: flex; align-items: center; justify-content: center; color: #059669; margin: 0 auto 32px; }
 `;
 
-export default function SettleViolation({ violationId }) {
+export default function SettleViolation({ violation, auth }) {
     const [paymentMethod, setPaymentMethod] = useState(null);
     const [isProcessing, setIsProcessing] = useState(false);
     const [isSuccess, setIsSuccess] = useState(false);
-
-    // Mock Violation Data specific to Color Coding
-    const violation = {
-        id: violationId || 'VIO-2026-8812',
-        type: 'Color Coding: Operating on Restricted Day',
-        date: 'April 02, 2026',
-        time: '10:45 AM',
-        location: 'Poblacion Boundary',
-        unit: 'NSB-123',
-        fine: 500.00,
-        processingFee: 15.00
-    };
+    const operatorName = auth?.user?.name || "Driver";
 
     const totalAmount = violation.fine + violation.processingFee;
 
@@ -126,7 +115,7 @@ export default function SettleViolation({ violationId }) {
     };
 
     return (
-        <OperatorLayout title="Settle Fine" operatorName="Mario Dela Cruz">
+        <OperatorLayout title="Settle Fine" operatorName={operatorName}>
             <Head title="Settle Violation | TRIVORA" />
             <style dangerouslySetInnerHTML={{ __html: CSS }} />
 

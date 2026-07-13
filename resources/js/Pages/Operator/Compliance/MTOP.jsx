@@ -196,57 +196,9 @@ const CSS = `
 .mtop-card:hover .mtop-view-text { color: #4F5BCB; }
 `;
 
-export default function MTOPTracker({ operatorName = "Mario Dela Cruz" }) {
+export default function MTOPTracker({ applications = [], auth }) {
     const [query, setQuery] = useState('');
-
-    // Mock data reflecting the TMO/BPLO pipeline exactly as in MTOPDetails.jsx
-    const applications = [
-        {
-            id: 'APP-2026-0812',
-            type: 'Renewal',
-            unit: 'Honda TMX 125',
-            date: 'March 28, 2026',
-            status: 'action-req',
-            phase: 'tmo-docs',
-            message: 'OR/CR is blurred. Please re-upload a clear copy.'
-        },
-        {
-            id: 'APP-2026-0900',
-            type: 'Renewal',
-            unit: 'Honda TMX 125',
-            date: 'March 30, 2026',
-            status: 'action-req',
-            phase: 'tmo-phys',
-            message: 'Physical Inspection failed. Mechanical repairs required.'
-        },
-        {
-            id: 'APP-2026-0622',
-            type: 'New Franchise',
-            unit: 'TVS Max 125',
-            date: 'April 02, 2026',
-            status: 'in-progress',
-            phase: 'cashier-pay',
-            message: 'Awaiting Cashier verification of your payment.'
-        },
-        {
-            id: 'APP-2026-0501',
-            type: 'New Franchise',
-            unit: 'Kawasaki Barako 175',
-            date: 'March 15, 2026',
-            status: 'in-progress',
-            phase: 'bplo-release',
-            message: 'Awaiting BPLO final issuance and Body Number.'
-        },
-        {
-            id: 'APP-2025-1102',
-            type: 'Renewal',
-            unit: 'Yamaha YTX 125',
-            date: 'Feb 10, 2025',
-            status: 'completed',
-            phase: 'completed',
-            message: 'Franchise active until Feb 2027.'
-        }
-    ];
+    const operatorName = auth?.user?.name || "Driver";
 
     const filtered = applications.filter(a =>
         a.id.toLowerCase().includes(query.toLowerCase()) ||

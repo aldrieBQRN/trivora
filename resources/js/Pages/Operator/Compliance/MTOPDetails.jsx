@@ -323,10 +323,8 @@ const BPLOCard = ({ bplo }) => (
     </div>
 );
 
-export default function MTOPDetails({ applicationId }) {
-    const urlId = applicationId
-        || (typeof window !== 'undefined' ? window.location.pathname.split('/').pop() : 'APP-2026-0622'); // Default to payment phase for demo
-    const app = mockApplicationsData[urlId] || mockApplicationsData['APP-2026-0812'];
+export default function MTOPDetails({ application }) {
+    const app = application;
 
     const phaseOrder = ['tmo-docs', 'tmo-phys', 'cashier-pay', 'bplo-release', 'completed'];
     const phaseIdx   = phaseOrder.indexOf(app.phase);

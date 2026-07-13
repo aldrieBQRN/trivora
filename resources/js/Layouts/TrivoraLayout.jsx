@@ -381,15 +381,10 @@ export default function TrivoraLayout({ children, title, role = "TMO Personnel" 
     // Fallback matching to determine active state visually
     const activePage = allLinks.find(l => url.startsWith(l.route))?.name || title;
 
-   // 🔴 DEMO LOGOUT LOGIC 🔴
     const handleLogout = () => {
         setIsExiting(true);
         setTimeout(() => {
-            // For now, just instantly redirect to the login page
-            window.location.href = '/login';
-
-            // NOTE: Once we connect the real database authentication,
-            // you will swap this back to: router.post('/logout')
+            router.post('/logout');
         }, 400);
     };
 

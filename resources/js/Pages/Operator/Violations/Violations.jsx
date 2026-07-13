@@ -190,38 +190,11 @@ const CSS = `
 .v-empty-sub { font-family: 'Inter', sans-serif; font-size: 13px; color: #5A6488; max-width: 400px; margin: 0 auto; }
 `;
 
-export default function Violations() {
+export default function Violations({ violations = [], auth }) {
     const [searchTerm, setSearchTerm] = useState('');
+    const operatorName = auth?.user?.name || "Driver";
 
-    // Mock IoT-detected Color Coding violations data (ONLY UNPAID)
-    const activeViolations = [
-        {
-            id: 'VIO-2026-8812',
-            type: 'Color Coding: Operating on Restricted Day',
-            isIot: true,
-            date: 'April 02, 2026',
-            time: '10:45 AM',
-            location: 'Poblacion Boundary',
-            unit: 'NSB-123',
-            colorCode: 'Green (Wawa)',
-            colorHex: '#059669',
-            fine: 500.00,
-            status: 'unpaid'
-        },
-        {
-            id: 'VIO-2026-8621',
-            type: 'Color Coding: Operating on Restricted Day',
-            isIot: true,
-            date: 'March 15, 2026',
-            time: '09:00 AM',
-            location: 'Lumbangan Intersection',
-            unit: 'NSB-456',
-            colorCode: 'Yellow (Poblacion)',
-            colorHex: '#D97706',
-            fine: 500.00,
-            status: 'unpaid'
-        }
-    ];
+    const activeViolations = violations;
 
     // Filter Logic
     const filteredViolations = activeViolations.filter(v =>
@@ -230,8 +203,12 @@ export default function Violations() {
         v.location.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
+    const totalFines = activeViolations.reduce((sum, v) => sum + v.fine, 0);
+    const activeCount = activeViolations.length;
+    const uniqueUnits = [...new Set(activeViolations.map(v => v.unit))].length;
+
     return (
-        <OperatorLayout title="Active Violations" operatorName="Mario Dela Cruz">
+        <OperatorLayout title="Active Violations" operatorName={operatorName}>
             <Head title="Active Violations | TRIVORA" />
             <style dangerouslySetInnerHTML={{ __html: CSS }} />
 
@@ -247,15 +224,15 @@ export default function Violations() {
                 {/* ── FLEET-STYLE HORIZONTAL KPI GRID ── */}
                 <div className="v-stats-grid">
                     <StatCard
-                        value="₱1,000.00" label="Total Unsettled Fines"
+                        value={`₱${totalFines.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} label="Total Unsettled Fines"
                         icon={ShieldAlert} iconClass="v-stat-rose" accentColor="#DC2626"
                     />
                     <StatCard
-                        value="2" label="Active Violations"
+                        value={activeCount} label="Active Violations"
                         icon={FileText} iconClass="v-stat-amber"
                     />
                     <StatCard
-                        value="2 Units" label="Units Flagged"
+                        value={`${uniqueUnits} Unit${uniqueUnits !== 1 ? 's' : ''}`} label="Units Flagged"
                         icon={Bike} iconClass="v-stat-blue"
                     />
                 </div>

@@ -145,26 +145,35 @@ const CSS = `
 }
 `;
 
-export default function MyTricycle() {
-    // Single Tricycle Data for the logged-in Driver
-    const tricycle = {
-        id: 'NSB-123',
-        applicationId: 'APP-2026-0812',
-        makeModel: 'Honda TMX 125 Alpha',
-        plateNo: '123-ABC',
-        driver: 'Mario Dela Cruz',
-        zone: 'Poblacion Zone (TODA A)',
-        colorCode: 'Green',
-        colorHex: '#059669',
-        status: 'online',
-        lastPing: 'Just now',
-        iotBattery: '89%',
-        mtopStatus: 'Valid',
-        mtopExpiry: 'Oct 12, 2026'
-    };
+export default function MyTricycle({ tricycle, auth }) {
+    const operatorName = auth?.user?.name || "Driver";
+
+    if (!tricycle) {
+        return (
+            <OperatorLayout title="My Tricycle" operatorName={operatorName}>
+                <Head title="My Tricycle | TRIVORA" />
+                <style dangerouslySetInnerHTML={{ __html: CSS }} />
+                <div className="f-root">
+                    <div>
+                        <p className="f-eyebrow">Unit Management</p>
+                        <h1 className="f-title">My Tricycle</h1>
+                        <p className="f-subtitle">View your assigned tricycle unit details and real-time IoT tracker status.</p>
+                    </div>
+                    <div style={{ textAlign: 'center', padding: '80px 0', background: '#FFF', borderRadius: '24px', border: '1px dashed #E2E8F0', marginTop: 32 }}>
+                        <Bike size={48} strokeWidth={1} style={{ margin: '0 auto 16px', color: '#94A3B8', opacity: 0.5 }} />
+                        <p style={{ fontFamily: 'Plus Jakarta Sans', fontSize: 18, fontWeight: 800, color: '#1E293B' }}>No registered tricycle</p>
+                        <p style={{ fontFamily: 'Inter', fontSize: 14, color: '#64748B', marginTop: 4 }}>You don't have an active tricycle unit linked to your account yet.</p>
+                        <Link href={route('operator.mtop')} className="f-btn-primary" style={{ display: 'inline-flex', maxWidth: 240, margin: '24px auto 0' }}>
+                            View Permit Status
+                        </Link>
+                    </div>
+                </div>
+            </OperatorLayout>
+        );
+    }
 
     return (
-        <OperatorLayout title="My Tricycle" operatorName="Mario Dela Cruz">
+        <OperatorLayout title="My Tricycle" operatorName={operatorName}>
             <Head title="My Tricycle | TRIVORA" />
             <style dangerouslySetInnerHTML={{ __html: CSS }} />
 

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Head, useForm, Link } from '@inertiajs/react';
+import { Head, useForm, Link, usePage } from '@inertiajs/react';
+import Swal from 'sweetalert2';
 import {
     Upload, Info, CheckCircle2, MapPin, Check
 } from 'lucide-react';
@@ -475,6 +476,7 @@ const CSS = `
 `;
 
 export default function PublicApply() {
+    const { url } = usePage();
     const [step, setStep] = useState(1);
     const [agreed, setAgreed] = useState(false);
     const [scrolledTerms, setScrolledTerms] = useState(false);
@@ -497,11 +499,24 @@ export default function PublicApply() {
         { id: 'auth',      label: "Authorization Letter & ID (Kung hindi may-ari)",       conditional: true  },
     ];
 
-    const { data, setData } = useForm({
+    const { data, setData, post, processing, errors } = useForm({
         first_name: '', last_name: '', contact: '', barangay: 'Wawa',
-        make_model: '', engine_number: '', chassis_number: '', toda: 'A',
+        email: '', password: '',
+        plate_number: '', make_model: '', engine_number: '', chassis_number: '', toda: 'A',
         documents: {},
     });
+
+    useEffect(() => {
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('success') === '1' && params.get('reference')) {
+            setStep(5);
+        }
+    }, [url]);
+
+    const getReferenceNo = () => {
+        const params = new URLSearchParams(window.location.search);
+        return params.get('reference') || 'NSB-26-8812';
+    };
 
     const next = () => { window.scrollTo({ top: 0, behavior: 'smooth' }); setStep(s => s + 1); };
     const back = () => { window.scrollTo({ top: 0, behavior: 'smooth' }); setStep(s => s - 1); };
@@ -517,10 +532,33 @@ export default function PublicApply() {
         }
     };
 
-    const submitApplication = () => {
+    const submitApplication = (e) => {
+        if (e) e.preventDefault();
+        
+        if (!hasAllRequired) {
+            Swal.fire({
+                title: 'Missing Requirements',
+                text: 'Pakisumite ang lahat ng required na dokumento bago magpatuloy.',
+                icon: 'warning',
+                confirmButtonColor: '#1C2340'
+            });
+            return;
+        }
+
         setIsSubmitting(true);
-        // Simulate API call
-        setTimeout(() => { setIsSubmitting(false); next(); }, 2000);
+        post('/register-mtop', {
+            forceFormData: true,
+            onFinish: () => setIsSubmitting(false),
+            onError: (errs) => {
+                const firstErr = Object.values(errs)[0];
+                Swal.fire({
+                    title: 'Submission Failed',
+                    text: firstErr || 'Please check your inputs and try again.',
+                    icon: 'error',
+                    confirmButtonColor: '#1C2340'
+                });
+            }
+        });
     };
 
     const steps = ['Agreement', 'Tricycle Driver', 'Vehicle', 'Documents'];
@@ -705,6 +743,14 @@ export default function PublicApply() {
                                         <MapPin size={15} strokeWidth={2} />
                                     </div>
                                 </Field>
+                                <Field label="Email Address">
+                                    <input className="pa-input" type="email" placeholder="e.g. driver.pramos@trivora.ph"
+                                        value={data.email} onChange={e => setData('email', e.target.value)} />
+                                </Field>
+                                <Field label="Account Password">
+                                    <input className="pa-input" type="password" placeholder="Min. 8 characters"
+                                        value={data.password} onChange={e => setData('password', e.target.value)} />
+                                </Field>
                             </div>
 
                             <div className="pa-actions">
@@ -740,6 +786,12 @@ export default function PublicApply() {
                                         </select>
                                     </div>
                                 </Field>
+                                <div className="pa-field-full">
+                                    <Field label="LTO Plate Number">
+                                        <input className="pa-input" placeholder="e.g. AAA-1234 or 123-ABC"
+                                            value={data.plate_number} onChange={e => setData('plate_number', e.target.value)} />
+                                    </Field>
+                                </div>
                                 <div className="pa-field-full">
                                     <Field label="Motorcycle Make & Model">
                                         <input className="pa-input" placeholder="e.g. Kawasaki Barako 175"
@@ -822,7 +874,7 @@ export default function PublicApply() {
 
                             <div className="pa-tracking-box">
                                 <p className="pa-tracking-eyebrow">Your Tracking Number</p>
-                                <p className="pa-tracking-number">NSB-26-8812</p>
+                                <p className="pa-tracking-number">{getReferenceNo()}</p>
                             </div>
 
                             <p className="pa-success-desc">
@@ -831,7 +883,7 @@ export default function PublicApply() {
                                 and <span>GPS device installation.</span> Payment will be collected after passing inspection.
                             </p>
 
-                            <Link href="/"
+                                                        <Link href="/operator/dashboard"
                                 style={{
                                     display: 'inline-flex', alignItems: 'center', gap: 9,
                                     height: 52, padding: '0 36px', borderRadius: 12,
@@ -841,7 +893,7 @@ export default function PublicApply() {
                                     boxShadow: '0 4px 14px rgba(28,35,64,.25)',
                                 }}
                             >
-                                Return to Home
+                                Go to Dashboard
                             </Link>
                         </div>
                     )}

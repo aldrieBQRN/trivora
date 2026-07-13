@@ -148,44 +148,17 @@ const CSS = `
 .ar-empty-sub { font-family: 'DM Sans', sans-serif; font-size: 9px; font-weight: 700; letter-spacing: .13em; text-transform: uppercase; color: #8A96BC; }
 `;
 
-export default function ActiveRegistry() {
+export default function ActiveRegistry({ registryList = [], activeCount = 0, revokedCount = 0 }) {
     const [query, setQuery] = useState('');
     const [isExporting, setIsExporting] = useState(false);
 
-    const registryList = [
-        {
-            plate_no: '8812',
-            operator: 'Mario Dela Cruz',
-            toda: 'TODA A (Poblacion)',
-            make: 'Honda TMX 125',
-            issue_date: 'April 5, 2026',
-            status: 'active'
-        },
-        {
-            plate_no: '4491',
-            operator: 'Juanito Perez',
-            toda: 'TODA B (Wawa)',
-            make: 'Kawasaki Barako 175',
-            issue_date: 'Jan 10, 2026',
-            status: 'active'
-        },
-        {
-            plate_no: '1100',
-            operator: 'Antonio Luna',
-            toda: 'TODA C (Bucana)',
-            make: 'Yamaha YTX 125',
-            issue_date: 'May 14, 2025',
-            status: 'revoked'
-        },
-    ];
-
-    const filtered = registryList.filter(a =>
-        a.operator.toLowerCase().includes(query.toLowerCase()) ||
-        a.plate_no.includes(query)
-    );
-
-    const activeCount = registryList.filter(r => r.status === 'active').length;
-    const revokedCount = registryList.filter(r => r.status === 'revoked').length;
+    const filtered = registryList.filter(a => {
+        const opStr = a.operator ? String(a.operator).toLowerCase() : '';
+        const plateStr = a.plate_no ? String(a.plate_no).toLowerCase() : '';
+        const bodyStr = a.body_no ? String(a.body_no).toLowerCase() : '';
+        const q = query.toLowerCase();
+        return opStr.includes(q) || plateStr.includes(q) || bodyStr.includes(q);
+    });
 
     const handleExport = () => {
         setIsExporting(true);
@@ -323,7 +296,8 @@ function RegistryRow({ unit }) {
         <tr className="ar-row">
             {/* Identifier */}
             <td className="ar-td">
-                <p className="ar-body-no">PLT-{unit.plate_no}</p>
+                <p className="ar-body-no">No. {unit.body_no || 'N/A'}</p>
+                <span className="ar-plate-no">PLT-{unit.plate_no}</span>
             </td>
 
             {/* Operator */}

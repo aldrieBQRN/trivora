@@ -58,20 +58,14 @@ const CSS = `
 .pp-empty p { font-family: 'DM Sans', sans-serif; font-size: 11px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: #8A96BC; margin-top: 12px; }
 `;
 
-export default function PendingPayments() {
+export default function PendingPayments({ transactions = [] }) {
     const [searchTerm, setSearchTerm] = useState('');
 
-    const rawTransactions = [
-        { id: 'TXN-2026-0994', app_id: 'APP-2026-0622', operator: 'Mario Dela Cruz', type: 'New Franchise Fee', amount: 515.00, method: 'GCash WebPay', ref: 'pay_mc12345', date: 'Apr 06, 2026 - 10:15 AM' },
-        { id: 'TXN-2026-0995', app_id: 'APP-2026-0625', operator: 'Julio Reyes', type: 'MTOP Renewal Fee', amount: 1695.00, method: 'Maya Gateway', ref: 'pay_xyz987', date: 'Apr 06, 2026 - 11:30 AM' },
-        { id: 'TXN-2026-0996', app_id: 'TRV-88210', operator: 'Ricardo Dalisay', type: 'Traffic Violation Fine', amount: 500.00, method: 'BPI Online', ref: 'pay_bpi810', date: 'Apr 06, 2026 - 01:05 PM' },
-        { id: 'TXN-2026-0997', app_id: 'APP-2026-0628', operator: 'Lito Fernandez', type: 'MTOP Renewal Fee', amount: 1695.00, method: 'GCash WebPay', ref: 'pay_gc99123', date: 'Apr 06, 2026 - 02:40 PM' },
-    ];
-
     // Filter logic
-    const transactions = rawTransactions.filter(txn => {
+    const filteredTransactions = transactions.filter(txn => {
         return txn.operator.toLowerCase().includes(searchTerm.toLowerCase()) ||
                txn.ref.toLowerCase().includes(searchTerm.toLowerCase()) ||
+               String(txn.id).toLowerCase().includes(searchTerm.toLowerCase()) ||
                txn.app_id.toLowerCase().includes(searchTerm.toLowerCase());
     });
 
@@ -82,8 +76,8 @@ export default function PendingPayments() {
 
             <div className="pp-root">
                 <p className="pp-eyebrow">Action Required</p>
-                <h1 className="pp-title">Pending Online Payments</h1>
-                <p className="pp-subtitle">Review and confirm payments made via online gateways before generating official receipts.</p>
+                <h1 className="pp-title">Awaiting Counter Collection</h1>
+                <p className="pp-subtitle">Process physical cash and check payments made over the counter before advancing applications.</p>
 
                 {/* ── Search & Filter Controls ── */}
                 <div className="pp-toolbar">
@@ -92,7 +86,7 @@ export default function PendingPayments() {
                             <Search size={16} strokeWidth={2.5} color="#8A96BC" />
                             <input
                                 type="text"
-                                placeholder="Search by Gateway Ref, Driver, or Application ID..."
+                                placeholder="Search by Driver Name or Application ID..."
                                 value={searchTerm}
                                 onChange={e => setSearchTerm(e.target.value)}
                             />
@@ -113,15 +107,15 @@ export default function PendingPayments() {
                             <thead>
                                 <tr>
                                     <th className="pp-th">Driver & Payment Type</th>
-                                    <th className="pp-th">Payment Gateway</th>
+                                    <th className="pp-th">Collection Status</th>
                                     <th className="pp-th">Amount & Date</th>
                                     <th className="pp-th">Status</th>
                                     <th className="pp-th" style={{ textAlign: 'right' }}>Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                {transactions.length > 0 ? (
-                                    transactions.map((txn) => (
+                                {filteredTransactions.length > 0 ? (
+                                    filteredTransactions.map((txn) => (
                                         <tr key={txn.id} className="pp-tr">
                                             <td className="pp-td">
                                                 <p className="pp-td-primary">{txn.operator}</p>
@@ -131,7 +125,7 @@ export default function PendingPayments() {
                                                 <p className="pp-td-secondary" style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#1C2340', fontWeight: 600 }}>
                                                     <CreditCard size={13} color="#4F5BCB"/> {txn.method}
                                                 </p>
-                                                <span className="pp-ref">Ref: {txn.ref}</span>
+                                                <span className="pp-ref">{txn.ref}</span>
                                             </td>
                                             <td className="pp-td">
                                                 <p className="pp-amount">₱{txn.amount.toFixed(2)}</p>

@@ -179,9 +179,10 @@ function MapController({ position, isFollowing }) {
     return null;
 }
 
-export default function LiveTracking() {
-    // Simulated path data (Circling around Poblacion, Nasugbu)
-    const pathCoordinates = [
+export default function LiveTracking({ tricycle, pathCoordinates: dbCoordinates = [], auth }) {
+    const operatorName = auth?.user?.name || "Driver";
+    
+    const pathCoordinates = dbCoordinates.length > 0 ? dbCoordinates : [
         [14.0733, 120.6320], [14.0738, 120.6322], [14.0744, 120.6325],
         [14.0748, 120.6330], [14.0745, 120.6336], [14.0740, 120.6338],
         [14.0735, 120.6335], [14.0730, 120.6330], [14.0728, 120.6325]
@@ -189,11 +190,11 @@ export default function LiveTracking() {
 
     const [pathIndex, setPathIndex] = useState(0);
     const [position, setPosition] = useState(pathCoordinates[0]);
-    const [speed, setSpeed] = useState(24);
+    const [speed, setSpeed] = useState(tricycle?.speed || 24);
     const [isFollowing, setIsFollowing] = useState(true);
 
-    // Simulate Movement & Telemetry updates
     useEffect(() => {
+        if (pathCoordinates.length <= 1) return;
         const interval = setInterval(() => {
             setPathIndex(prev => {
                 const nextIdx = (prev + 1) % pathCoordinates.length;
@@ -202,21 +203,30 @@ export default function LiveTracking() {
             });
 
             setSpeed(prev => {
-                const variance = Math.floor(Math.random() * 5) - 2; // -2 to +2
+                const variance = Math.floor(Math.random() * 5) - 2;
                 const newSpeed = prev + variance;
                 return newSpeed < 10 ? 10 : (newSpeed > 45 ? 45 : newSpeed);
             });
-        }, 3000); // Updates every 3 seconds
+        }, 3000);
 
         return () => clearInterval(interval);
-    }, []);
+    }, [pathCoordinates]);
 
     const handleRecenter = () => {
         setIsFollowing(true);
     };
 
+    const details = tricycle || {
+        body_no: 'Pending',
+        make_model: 'Honda TMX 125 Alpha',
+        plate_no: 'Pending',
+        zone: 'Poblacion (TODA A)',
+        battery: '89%',
+        last_ping: 'Just now',
+    };
+
     return (
-        <OperatorLayout title="Live Tracking" operatorName="Mario Dela Cruz">
+        <OperatorLayout title="Live Tracking" operatorName={operatorName}>
             <Head title="Live GPS Tracking | TRIVORA" />
             <style dangerouslySetInnerHTML={{ __html: CSS }} />
 
@@ -238,8 +248,8 @@ export default function LiveTracking() {
                     {/* Left: Telemetry Sidebar */}
                     <div className="trk-sidebar">
                         <div className="trk-sb-header">
-                            <h2 className="trk-sb-title">NSB-123</h2>
-                            <p className="trk-sb-subtitle">Honda TMX 125 Alpha &bull; 123-ABC</p>
+                            <h2 className="trk-sb-title">{details.body_no}</h2>
+                            <p className="trk-sb-subtitle">{details.make_model} &bull; Plate: {details.plate_no}</p>
                         </div>
 
                         <div className="trk-telemetry">
@@ -261,7 +271,7 @@ export default function LiveTracking() {
                                 </div>
                                 <div className="trk-stat-info">
                                     <p className="trk-stat-lbl">IoT Battery Level</p>
-                                    <p className="trk-stat-val">89<span className="trk-stat-unit">%</span></p>
+                                    <p className="trk-stat-val">{details.battery}<span className="trk-stat-unit"></span></p>
                                 </div>
                             </div>
 
@@ -280,15 +290,15 @@ export default function LiveTracking() {
                             <div className="trk-info-list">
                                 <div className="trk-info-item">
                                     <span className="trk-info-item-lbl"><MapPin size={12}/> Current Zone</span>
-                                    <span className="trk-info-item-val">Poblacion (TODA A)</span>
+                                    <span className="trk-info-item-val">{details.zone}</span>
                                 </div>
                                 <div className="trk-info-item">
                                     <span className="trk-info-item-lbl"><Clock size={12}/> Last Ping</span>
-                                    <span className="trk-info-item-val" style={{ color: '#059669' }}>Just now</span>
+                                    <span className="trk-info-item-val" style={{ color: '#059669' }}>{details.last_ping}</span>
                                 </div>
                                 <div className="trk-info-item">
                                     <span className="trk-info-item-lbl"><Zap size={12}/> System Status</span>
-                                    <span className="trk-info-item-val">Active / Moving</span>
+                                    <span className="trk-info-item-val">{tricycle ? 'Active / Moving' : 'Offline / Inactive'}</span>
                                 </div>
                             </div>
                         </div>
