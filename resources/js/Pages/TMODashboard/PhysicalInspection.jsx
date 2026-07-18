@@ -442,7 +442,7 @@ export default function PhysicalInspection({ application }) {
         setDraftNote('');
     };
 
-    const allItemsChecked = items.every(item => inspectionStatuses[item.id] !== undefined);
+    const allItemsChecked = items.every(item => inspectionStatuses[item.id] === 'passed' || inspectionStatuses[item.id] === 'failed');
     const anyFailed       = Object.values(inspectionStatuses).some(s => s === 'failed');
     const allPassed       = items.every(item => inspectionStatuses[item.id] === 'passed');
 
@@ -452,8 +452,8 @@ export default function PhysicalInspection({ application }) {
         Swal.fire({
             title: isPass ? 'Confirm Passed Inspection' : 'Confirm Failed Inspection',
             html: isPass
-                ? `Are you sure you want to mark <b>${appData.id}</b> as passed? It will be forwarded to the Cashier.`
-                : `Are you sure you want to fail <b>${appData.id}</b>? The operator will be notified to repair the defects.`,
+                ? `Are you sure you want to mark <b>${appData.reference}</b> as passed? It will be forwarded to the Cashier.`
+                : `Are you sure you want to fail <b>${appData.reference}</b>? The operator will be notified to repair the defects.`,
             icon: isPass ? 'question' : 'warning',
             showCancelButton: true,
             confirmButtonColor: isPass ? '#059669' : '#DC2626',
@@ -494,7 +494,7 @@ export default function PhysicalInspection({ application }) {
 
     return (
         <TrivoraLayout title="Physical Inspection" role="TMO Officer">
-            <Head title={`Physical Test: ${appData.operator} | TRIVORA`} />
+            <Head title={`Physical Test: ${appData.reference} | TRIVORA`} />
 
             <style dangerouslySetInnerHTML={{ __html: CSS }} />
 
@@ -530,7 +530,7 @@ export default function PhysicalInspection({ application }) {
                         <ChevronLeft size={14} strokeWidth={3} />
                         Cancel & Return to Queue
                     </Link>
-                    <span className="pi-phase-badge">Inspecting: {appData.id}</span>
+                    <span className="pi-phase-badge">Inspecting: {appData.reference}</span>
                 </div>
 
                 <div className="pi-grid">

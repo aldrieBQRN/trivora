@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Head, Link, router } from '@inertiajs/react';
 import TrivoraLayout from '@/Layouts/TrivoraLayout';
@@ -455,11 +455,23 @@ export default function DocumentReview({ application }) {
     const [isProcessing, setIsProcessing] = useState(false);
     const [docStatuses, setDocStatuses] = useState(appData.docStatuses || {});
     const [rejectionReasons, setRejectionReasons] = useState(appData.rejectionReasons || {});
-    const [previewOpen, setPreviewOpen] = useState(false);
+    const [activePreviewDoc, setActivePreviewDoc] = useState(null);
+    const [activeSubDocIndex, setActiveSubDocIndex] = useState(0);
 
     // Rejection modal state
     const [pendingRejectId, setPendingRejectId] = useState(null);
     const [draftReason, setDraftReason] = useState('');
+
+    useEffect(() => {
+        if (activePreviewDoc !== null || pendingRejectId !== null) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = '';
+        }
+        return () => {
+            document.body.style.overflow = '';
+        };
+    }, [activePreviewDoc, pendingRejectId]);
 
     // Ensure all vehicle properties have values
     const vehicleData = {
@@ -517,8 +529,8 @@ export default function DocumentReview({ application }) {
         Swal.fire({
             title: isApprove ? 'Confirm Approval' : 'Confirm Rejection',
             html: isApprove
-                ? `Are you sure you want to approve <b>${appData.id}</b>? It will be moved to Phase 2 (Physical Inspection).`
-                : `Are you sure you want to reject <b>${appData.id}</b>? The operator will be notified to re-upload the rejected documents.`,
+                ? `Are you sure you want to approve <b>${appData.reference}</b>? It will be moved to Phase 2 (Physical Inspection).`
+                : `Are you sure you want to reject <b>${appData.reference}</b>? The operator will be notified to re-upload the rejected documents.`,
             icon: isApprove ? 'question' : 'warning',
             showCancelButton: true,
             confirmButtonColor: isApprove ? '#059669' : '#DC2626',
@@ -559,29 +571,75 @@ export default function DocumentReview({ application }) {
 
     return (
         <TrivoraLayout title="Document Review" role="TMO Officer">
-            <Head title={`Review: ${appData.id} | TRIVORA`} />
+            <Head title={`Review: ${appData.reference} | TRIVORA`} />
 
             <style dangerouslySetInnerHTML={{ __html: CSS }} />
 
             {/* ── File Preview Modal (Portaled to body) ── */}
-            {previewOpen && createPortal(
-                <div className="dr-modal-preview-overlay" onClick={() => setPreviewOpen(false)}>
-                    <div className="dr-modal-preview" onClick={e => e.stopPropagation()}>
-                        <div className="dr-modal-preview-header">
-                            <p className="dr-modal-preview-title">Document Preview - OR/CR</p>
-                            <button className="dr-modal-preview-close" onClick={() => setPreviewOpen(false)}>
-                                <X size={20} strokeWidth={2} />
-                            </button>
+            {activePreviewDoc !== null && createPortal(
+                (() => {
+                    const categoryDocs = appData.documents?.filter(d => d.category === activePreviewDoc) || [];
+                    const currentSubDoc = categoryDocs[activeSubDocIndex];
+                    const docLabel = requirements.find(r => r.id === activePreviewDoc)?.label || 'Document';
+
+                    return (
+                        <div className="dr-modal-preview-overlay" style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'none' }} onClick={() => setActivePreviewDoc(null)}>
+                            <div className="dr-modal-preview" style={{ maxWidth: '800px' }} onClick={e => e.stopPropagation()}>
+                                <div className="dr-modal-preview-header">
+                                    <p className="dr-modal-preview-title">
+                                        {docLabel} {categoryDocs.length > 1 ? `(${activeSubDocIndex + 1} of ${categoryDocs.length})` : ''}
+                                    </p>
+                                    <button className="dr-modal-preview-close" onClick={() => setActivePreviewDoc(null)}>
+                                        <X size={20} strokeWidth={2} />
+                                    </button>
+                                </div>
+
+                                {/* Tabs/Selector for multiple files under this slot */}
+                                {categoryDocs.length > 1 && (
+                                    <div style={{ display: 'flex', gap: '8px', padding: '12px 24px', borderBottom: '1px solid rgba(28,35,64,.05)', background: '#F9FAFB', overflowX: 'auto' }}>
+                                        {categoryDocs.map((doc, idx) => (
+                                            <button
+                                                key={doc.id}
+                                                onClick={() => setActiveSubDocIndex(idx)}
+                                                style={{
+                                                    padding: '6px 12px', borderRadius: '6px', fontSize: '11px', fontWeight: 600,
+                                                    border: idx === activeSubDocIndex ? '1.5px solid #4F5BCB' : '1px solid rgba(28,35,64,.1)',
+                                                    background: idx === activeSubDocIndex ? 'rgba(79,91,203,.08)' : '#FFFFFF',
+                                                    color: idx === activeSubDocIndex ? '#4F5BCB' : '#5A6488',
+                                                    cursor: 'pointer', whiteSpace: 'nowrap'
+                                                }}
+                                            >
+                                                {doc.file_name.length > 25 ? doc.file_name.substring(0, 22) + '...' : doc.file_name}
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
+
+                                <div className="dr-modal-preview-body" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#FAFAFA' }}>
+                                    {currentSubDoc ? (
+                                        currentSubDoc.mime_type?.startsWith('image/') ? (
+                                            <img
+                                                src={currentSubDoc.file_path}
+                                                className="dr-modal-preview-image"
+                                                alt={currentSubDoc.file_name}
+                                                style={{ maxWidth: '100%', maxHeight: '60vh', objectFit: 'contain', border: '1px solid rgba(0,0,0,.08)' }}
+                                            />
+                                        ) : (
+                                            <iframe
+                                                src={currentSubDoc.file_path}
+                                                className="dr-modal-preview-frame"
+                                                title={currentSubDoc.file_name}
+                                                style={{ width: '100%', height: '60vh' }}
+                                            />
+                                        )
+                                    ) : (
+                                        <p style={{ fontSize: '13px', color: '#8A96BC', padding: '40px 0' }}>No file to display.</p>
+                                    )}
+                                </div>
+                            </div>
                         </div>
-                        <div className="dr-modal-preview-body">
-                            <iframe
-                                src="/document/orcr-preview"
-                                className="dr-modal-preview-frame"
-                                title="OR/CR Document Preview"
-                            />
-                        </div>
-                    </div>
-                </div>,
+                    );
+                })(),
                 document.body
             )}
 
@@ -617,7 +675,7 @@ export default function DocumentReview({ application }) {
                         <ChevronLeft size={14} strokeWidth={3} />
                         Back to Document Queue
                     </Link>
-                    <span className="dr-reviewing-badge">Reviewing {appData.id}</span>
+                    <span className="dr-reviewing-badge">Reviewing {appData.reference}</span>
                 </div>
 
                 <div className="dr-grid">
@@ -685,10 +743,24 @@ export default function DocumentReview({ application }) {
                                                                 {rejectionReasons[doc.id]}
                                                             </p>
                                                         ) : (
-                                                            <button className="dr-doc-preview-btn" onClick={() => setPreviewOpen(true)}>
-                                                                <Eye size={10} strokeWidth={2} />
-                                                                Preview file
-                                                            </button>
+                                                            (() => {
+                                                                const categoryDocs = appData.documents?.filter(d => d.category === doc.id) || [];
+                                                                if (categoryDocs.length === 0) {
+                                                                    return <span style={{ fontSize: '10px', color: '#8A96BC', fontWeight: 500 }}>No file uploaded</span>;
+                                                                }
+                                                                return (
+                                                                    <button
+                                                                        className="dr-doc-preview-btn"
+                                                                        onClick={() => {
+                                                                            setActivePreviewDoc(doc.id);
+                                                                            setActiveSubDocIndex(0);
+                                                                        }}
+                                                                    >
+                                                                        <Eye size={10} strokeWidth={2} />
+                                                                        {categoryDocs.length > 1 ? `Preview files (${categoryDocs.length})` : 'Preview file'}
+                                                                    </button>
+                                                                );
+                                                            })()
                                                         )}
                                                     </div>
                                                 </div>

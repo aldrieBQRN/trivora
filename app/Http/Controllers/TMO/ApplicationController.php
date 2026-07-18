@@ -80,13 +80,30 @@ class ApplicationController extends Controller
 
         $docStatuses = [];
         $rejectionReasons = [];
+        $mappedDocs = [];
 
         foreach ($application->documents as $doc) {
             $frontendId = $requirementsMap[$doc->document_type] ?? 'other';
+            if ($frontendId === 'other') {
+                // Try to extract original category from filename prefix
+                $parts = explode('_', $doc->file_name, 2);
+                if (count($parts) > 1 && in_array($parts[0], ['prangkisa', 'receipt', 'tariff', 'auth'])) {
+                    $frontendId = $parts[0];
+                }
+            }
+
             $docStatuses[$frontendId] = $doc->review_status;
             if ($doc->review_status === 'rejected') {
                 $rejectionReasons[$frontendId] = $doc->rejection_reason;
             }
+            $mappedDocs[] = [
+                'id'            => $doc->id,
+                'category'      => $frontendId,
+                'file_name'     => $doc->file_name,
+                'file_path'     => asset('storage/' . $doc->file_path),
+                'mime_type'     => $doc->mime_type,
+                'review_status' => $doc->review_status,
+            ];
         }
 
         $appData = [
@@ -103,6 +120,7 @@ class ApplicationController extends Controller
             'status'         => $application->status,
             'docStatuses'    => $docStatuses,
             'rejectionReasons' => $rejectionReasons,
+            'documents'      => $mappedDocs,
         ];
 
         return Inertia::render('TMODashboard/DocumentReview', [
@@ -141,6 +159,13 @@ class ApplicationController extends Controller
             foreach ($application->documents as $doc) {
                 // Find matching frontend key
                 $frontendKey = array_search($doc->document_type, $requirementsMap, true);
+                if (!$frontendKey && $doc->document_type === 'other') {
+                    $parts = explode('_', $doc->file_name, 2);
+                    if (count($parts) > 1 && in_array($parts[0], ['prangkisa', 'receipt', 'tariff', 'auth'])) {
+                        $frontendKey = $parts[0];
+                    }
+                }
+
                 if ($frontendKey && isset($docStatuses[$frontendKey])) {
                     $status = $docStatuses[$frontendKey];
                     $doc->update([

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Head, useForm, Link, usePage } from '@inertiajs/react';
 import Swal from 'sweetalert2';
 import {
@@ -473,6 +474,76 @@ const CSS = `
   font-family: 'DM Sans', sans-serif; font-size: 9px; font-weight: 700;
   letter-spacing: .14em; text-transform: uppercase; color: #9AA3CC;
 }
+
+/* ── Multi-file uploads style overrides ── */
+.pa-file-tile-container {
+  display: flex; flex-direction: column; gap: 8px;
+  background: #FAFAFA; border: 1.5px dashed rgba(28,35,64,.15);
+  border-radius: 12px; padding: 14px 16px; min-height: 90px;
+  transition: all .18s;
+}
+.pa-file-tile-container.done {
+  border-style: solid;
+  border-color: rgba(5,150,105,.25); background: rgba(5,150,105,.02);
+}
+.pa-file-tile-header {
+  display: flex; align-items: center; justify-content: space-between;
+  width: 100%; margin-bottom: 6px;
+}
+.pa-file-title-text {
+  font-family: 'Inter', sans-serif;
+  font-size: 11.5px; font-weight: 600; color: #1C2340;
+  line-height: 1.3;
+}
+.pa-file-tile-container.done .pa-file-title-text { color: #065F46; }
+
+.pa-upload-btn-label {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 6px 12px; border-radius: 8px;
+  background: rgba(79,91,203,.08); border: 1px solid rgba(79,91,203,.15);
+  color: #4F5BCB; font-family: 'DM Sans', sans-serif;
+  font-size: 9px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .08em; cursor: pointer; transition: all .18s;
+  width: fit-content;
+}
+.pa-upload-btn-label:hover {
+  background: #4F5BCB; color: #FFFFFF; border-color: #4F5BCB;
+}
+
+.pa-file-list {
+  display: flex; flex-direction: column; gap: 6px; width: 100%;
+  margin-top: 4px;
+}
+.pa-uploaded-item {
+  display: flex; align-items: center; justify-content: space-between;
+  background: #FFFFFF; border: 1px solid rgba(28,35,64,.08);
+  border-radius: 8px; padding: 6px 10px;
+}
+.pa-uploaded-item-left {
+  display: flex; align-items: center; gap: 8px; min-width: 0;
+}
+.pa-uploaded-thumb {
+  width: 28px; height: 28px; border-radius: 6px; object-fit: cover;
+  border: 1px solid rgba(0,0,0,.08); flex-shrink: 0;
+}
+.pa-uploaded-icon-fallback {
+  width: 28px; height: 28px; border-radius: 6px;
+  background: rgba(28,35,64,.05); border: 1px solid rgba(28,35,64,.08);
+  display: flex; align-items: center; justify-content: center;
+  color: #8A96BC; flex-shrink: 0;
+}
+.pa-uploaded-name {
+  font-family: 'Inter', sans-serif; font-size: 11px; font-weight: 500;
+  color: #4A5070; text-overflow: ellipsis; overflow: hidden; white-space: nowrap;
+}
+.pa-remove-btn {
+  background: none; border: none; color: #9CA3AF; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  padding: 4px; border-radius: 50%; transition: all .15s;
+}
+.pa-remove-btn:hover {
+  background: rgba(220,38,38,.08); color: #DC2626;
+}
 `;
 
 export default function PublicApply() {
@@ -521,9 +592,33 @@ export default function PublicApply() {
     const next = () => { window.scrollTo({ top: 0, behavior: 'smooth' }); setStep(s => s + 1); };
     const back = () => { window.scrollTo({ top: 0, behavior: 'smooth' }); setStep(s => s - 1); };
 
-    const handleFileUpload  = (docId, file) => setData('documents', { ...data.documents, [docId]: file });
+    const handleFileUpload = (docId, fileOrFiles) => {
+        const currentFiles = data.documents[docId] || [];
+        const filesToAdd = fileOrFiles instanceof FileList || Array.isArray(fileOrFiles)
+            ? Array.from(fileOrFiles)
+            : [fileOrFiles];
+
+        const updated = [...currentFiles, ...filesToAdd];
+        setData('documents', {
+            ...data.documents,
+            [docId]: updated
+        });
+    };
+
+    const handleRemoveFile = (docId, indexToRemove) => {
+        const currentFiles = data.documents[docId] || [];
+        const updated = currentFiles.filter((_, i) => i !== indexToRemove);
+        setData('documents', {
+            ...data.documents,
+            [docId]: updated.length > 0 ? updated : undefined
+        });
+    };
+
     const requiredDocsIds   = documentList.filter(d => d.required).map(d => d.id);
-    const hasAllRequired    = requiredDocsIds.every(id => !!data.documents[id]);
+    const hasAllRequired    = requiredDocsIds.every(id => {
+        const files = data.documents[id];
+        return Array.isArray(files) && files.length > 0;
+    });
 
     const handleTermsScroll = (e) => {
         const el = e.target;
@@ -837,8 +932,9 @@ export default function PublicApply() {
                                         label={doc.label}
                                         required={doc.required}
                                         conditional={doc.conditional}
-                                        file={data.documents[doc.id]}
-                                        onUpload={file => handleFileUpload(doc.id, file)}
+                                        files={data.documents[doc.id] || []}
+                                        onUpload={files => handleFileUpload(doc.id, files)}
+                                        onRemove={idx => handleRemoveFile(doc.id, idx)}
                                     />
                                 ))}
                             </div>
@@ -924,31 +1020,46 @@ function Field({ label, children, className }) {
     );
 }
 
-function FileUpload({ id, label, required, conditional, file, onUpload }) {
-    const [previewUrl, setPreviewUrl] = useState(null);
+function FileUpload({ id, label, required, conditional, files = [], onUpload, onRemove }) {
+    const [previewUrls, setPreviewUrls] = useState([]);
+    const [showGallery, setShowGallery] = useState(false);
+    const [activePreviewUrl, setActivePreviewUrl] = useState(null);
 
     useEffect(() => {
-        if (!file) { setPreviewUrl(null); return; }
-        if (file.type?.startsWith('image/')) {
-            const url = URL.createObjectURL(file);
-            setPreviewUrl(url);
-            return () => URL.revokeObjectURL(url);
+        const urls = files.map(file => {
+            if (file) {
+                return URL.createObjectURL(file);
+            }
+            return null;
+        });
+        setPreviewUrls(urls);
+        return () => {
+            urls.forEach(url => {
+                if (url) URL.revokeObjectURL(url);
+            });
+        };
+    }, [files]);
+
+    useEffect(() => {
+        if (showGallery || activePreviewUrl !== null) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = '';
         }
-        setPreviewUrl(null);
-    }, [file]);
+        return () => {
+            document.body.style.overflow = '';
+        };
+    }, [showGallery, activePreviewUrl]);
+
+    const isUploaded = files.length > 0;
 
     return (
-        <label htmlFor={id} className={`pa-file-tile${file ? ' done' : ''}`}>
-            <input
-                type="file" id={id} accept="image/*,.pdf" className="sr-only"
-                style={{ display: 'none' }}
-                onChange={e => { if (e.target.files?.[0]) onUpload(e.target.files[0]); }}
-            />
-            <div className="pa-file-info">
-                <p className="pa-file-name">{label}</p>
+        <div className={`pa-file-tile-container${isUploaded ? ' done' : ''}`}>
+            <div className="pa-file-tile-header">
+                <span className="pa-file-title-text">{label}</span>
                 <div className="pa-file-tags">
-                    {file
-                        ? <span className="pa-tag-done">✓ Uploaded</span>
+                    {isUploaded
+                        ? <span className="pa-tag-done">✓ {files.length} File(s)</span>
                         : required
                             ? <span className="pa-tag-req">Required</span>
                             : conditional
@@ -957,17 +1068,177 @@ function FileUpload({ id, label, required, conditional, file, onUpload }) {
                     }
                 </div>
             </div>
-            {previewUrl
-                ? <img src={previewUrl} alt="preview" className="pa-file-thumb" />
-                : (
-                    <div className="pa-file-icon-wrap">
-                        {file
-                            ? <Check size={16} strokeWidth={2.5} />
-                            : <Upload size={15} strokeWidth={1.8} />
-                        }
+
+            {/* Action Row containing upload trigger (left) and view gallery icon (right) */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', gap: '8px', marginTop: '4px' }}>
+                <div>
+                    <input
+                        type="file"
+                        id={id}
+                        accept="image/*,.pdf"
+                        multiple
+                        className="sr-only"
+                        style={{ display: 'none' }}
+                        onChange={e => {
+                            if (e.target.files && e.target.files.length > 0) {
+                                onUpload(e.target.files);
+                                // Reset input so that same files can be uploaded again if removed
+                                e.target.value = '';
+                            }
+                        }}
+                    />
+                    <label htmlFor={id} className="pa-upload-btn-label">
+                        <Upload size={10} strokeWidth={2.5} />
+                        Add Photo / PDF
+                    </label>
+                </div>
+
+                {isUploaded && (
+                    <button
+                        type="button"
+                        style={{
+                            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                            padding: '6px', background: 'none', border: 'none',
+                            color: '#4F5BCB', cursor: 'pointer', transition: 'color .18s'
+                        }}
+                        onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setShowGallery(true);
+                        }}
+                        title="View Uploaded Photos"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-eye"><path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0z"/><circle cx="12" cy="12" r="3"/></svg>
+                    </button>
+                )}
+            </div>
+
+            {/* Gallery Modal overlay */}
+            {showGallery && createPortal(
+                <div
+                    style={{
+                        position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 9999,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px',
+                    }}
+                    onClick={() => setShowGallery(false)}
+                >
+                    <div
+                        style={{
+                            background: '#FFFFFF', borderRadius: '16px', width: '100%', maxWidth: '500px',
+                            maxHeight: '80vh', display: 'flex', flexDirection: 'column', overflow: 'hidden',
+                            boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04)',
+                        }}
+                        onClick={e => e.stopPropagation()}
+                    >
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', borderBottom: '1px solid #E5E7EB' }}>
+                            <span style={{ fontSize: '13px', fontWeight: 700, color: '#1C2340', fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
+                                Uploaded Documents ({files.length})
+                            </span>
+                            <button
+                                style={{ background: 'none', border: 'none', color: '#9CA3AF', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+                                onClick={() => setShowGallery(false)}
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                            </button>
+                        </div>
+                        <div style={{ padding: '20px', flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '12px', background: '#F9FAFB' }}>
+                            {files.map((file, idx) => {
+                                const isImg = file.type?.startsWith('image/');
+                                const thumb = previewUrls[idx];
+                                
+                                return (
+                                    <div key={idx} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#FFFFFF', border: '1px solid rgba(28,35,64,.08)', borderRadius: '10px', padding: '10px 12px' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0, flex: 1 }}>
+                                            {isImg && thumb ? (
+                                                <img src={thumb} alt="Preview" style={{ width: '36px', height: '36px', borderRadius: '6px', objectFit: 'cover', border: '1px solid rgba(0,0,0,.08)' }} />
+                                            ) : (
+                                                <div style={{ width: '36px', height: '36px', borderRadius: '6px', background: 'rgba(28,35,64,.05)', border: '1px solid rgba(28,35,64,.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#8A96BC' }}>
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></svg>
+                                                </div>
+                                            )}
+                                            <span style={{ fontSize: '12px', fontWeight: '500', color: '#4A5070', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
+                                                {file.name}
+                                            </span>
+                                        </div>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                            <button
+                                                type="button"
+                                                style={{ background: 'none', border: 'none', color: '#4F5BCB', cursor: 'pointer', padding: '4px' }}
+                                                onClick={() => setActivePreviewUrl(thumb || previewUrls[idx])}
+                                                title="View file"
+                                            >
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0z"/><circle cx="12" cy="12" r="3"/></svg>
+                                            </button>
+                                            <button
+                                                type="button"
+                                                style={{ background: 'none', border: 'none', color: '#DC2626', cursor: 'pointer', padding: '4px' }}
+                                                onClick={() => {
+                                                    onRemove(idx);
+                                                    if (files.length <= 1) {
+                                                        setShowGallery(false);
+                                                    }
+                                                }}
+                                                title="Remove file"
+                                            >
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                                            </button>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
                     </div>
-                )
-            }
-        </label>
+                </div>,
+                document.body
+            )}
+
+            {/* Fullscreen Document Preview Modal */}
+            {activePreviewUrl !== null && createPortal(
+                <div
+                    style={{
+                        position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', zIndex: 10000,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px',
+                    }}
+                    onClick={() => setActivePreviewUrl(null)}
+                >
+                    <div
+                        style={{
+                            background: '#FFFFFF', borderRadius: '16px', width: '100%', maxWidth: '800px',
+                            maxHeight: '90vh', display: 'flex', flexDirection: 'column', overflow: 'hidden',
+                            boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04)',
+                        }}
+                        onClick={e => e.stopPropagation()}
+                    >
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', borderBottom: '1px solid #E5E7EB' }}>
+                            <span style={{ fontSize: '13px', fontWeight: 700, color: '#1C2340', fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
+                                Document Preview
+                            </span>
+                            <button
+                                style={{ background: 'none', border: 'none', color: '#9CA3AF', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+                                onClick={() => setActivePreviewUrl(null)}
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                            </button>
+                        </div>
+                        <div style={{ padding: '20px', flex: 1, overflowY: 'auto', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#F9FAFB' }}>
+                            {activePreviewUrl.includes('application/pdf') || files.find(f => previewUrls.indexOf(activePreviewUrl) !== -1)?.type === 'application/pdf' ? (
+                                <iframe
+                                    src={activePreviewUrl}
+                                    style={{ width: '100%', height: '70vh', borderRadius: '8px', border: '1px solid #E5E7EB' }}
+                                    title="PDF Preview"
+                                />
+                            ) : (
+                                <img
+                                    src={activePreviewUrl}
+                                    alt="Preview"
+                                    style={{ maxWidth: '100%', maxHeight: '70vh', objectFit: 'contain', borderRadius: '8px', border: '1px solid #E5E7EB' }}
+                                />
+                            )}
+                        </div>
+                    </div>
+                </div>,
+                document.body
+            )}
+        </div>
     );
 }

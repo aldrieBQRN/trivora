@@ -323,7 +323,7 @@ export default function ReleasingQueue({ applications = [], pendingCount = 0, is
                 <div style={{ marginBottom: 32 }}>
                     <p className="rq-eyebrow">Issuance Hub</p>
                     <h1 className="rq-title">Releasing Queue</h1>
-                    <p className="rq-subtitle">Final phase · Body number assignment</p>
+                    <p className="rq-subtitle">Final phase · Tricycle Number Coding Scheme assignment</p>
                 </div>
 
                 {/* ── Stat cards ── */}

@@ -110,7 +110,6 @@ const CSS = `
 
 /* Upload Row (Rejected) - Spans full width for better focus */
 .mf-row-rejected {
-  grid-column: 1 / -1;
   border: 1.5px solid rgba(220,38,38,.2); border-radius: 16px;
   background: #FFFFFF; overflow: hidden; margin-bottom: 8px;
 }
@@ -274,9 +273,8 @@ const mockApplicationsData = {
     }
 };
 
-export default function MTOPFix({ applicationId }) {
-    const urlId = applicationId || (typeof window !== 'undefined' ? window.location.pathname.split('/')[3] : 'APP-2026-0812');
-    const app = mockApplicationsData[urlId] || mockApplicationsData['APP-2026-0812'];
+export default function MTOPFix({ application }) {
+    const app = application || mockApplicationsData['APP-2026-0812'];
 
     const isPhysFix = app.phase === 'tmo-phys';
     const rejectedDocs = app.documents ? app.documents.filter(d => d.status === 'rejected') : [];
@@ -286,11 +284,11 @@ export default function MTOPFix({ applicationId }) {
     const [repairsConfirmed, setRepairsConfirmed] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    // Capture the actual file selected by the user
-    const handleFileSelect = (docId, file) => {
+    // Capture the files selected by the user
+    const handleFileSelect = (docId, files) => {
         setNewFiles(prev => ({
             ...prev,
-            [docId]: file
+            [docId]: files
         }));
     };
 
@@ -308,25 +306,47 @@ export default function MTOPFix({ applicationId }) {
             customClass: { title: 'font-jakarta', popup: 'font-inter' }
         }).then((result) => {
             if (result.isConfirmed) {
-                setIsSubmitting(true);
-                setTimeout(() => {
-                    setIsSubmitting(false);
-                    Swal.fire({
-                        title: 'Submitted Successfully!',
-                        text: isPhysFix ? 'Your re-inspection request has been sent to the TMO.' : 'Your updated documents have been sent to the TMO for review.',
-                        icon: 'success',
-                        confirmButtonColor: '#059669',
-                        timer: 2500,
-                        showConfirmButton: false
-                    }).then(() => {
-                        window.location.href = '/operator/mtop'; // Routes back to the tracker
+                if (isPhysFix) {
+                    router.post(`/operator/mtop/${app.id}/fix`, {
+                        repairs_confirmed: true,
+                    }, {
+                        onStart: () => setIsSubmitting(true),
+                        onFinish: () => setIsSubmitting(false),
+                        onSuccess: () => {
+                            Swal.fire({
+                                title: 'Submitted Successfully!',
+                                text: 'Your re-inspection request has been sent to the TMO.',
+                                icon: 'success',
+                                confirmButtonColor: '#059669',
+                                timer: 2500,
+                                showConfirmButton: false
+                            });
+                        }
                     });
-                }, 1500);
+                } else {
+                    router.post(`/operator/mtop/${app.id}/fix`, {
+                        documents: newFiles,
+                    }, {
+                        forceFormData: true,
+                        onStart: () => setIsSubmitting(true),
+                        onFinish: () => setIsSubmitting(false),
+                        onSuccess: () => {
+                            Swal.fire({
+                                title: 'Submitted Successfully!',
+                                text: 'Your updated documents have been sent to the TMO for review.',
+                                icon: 'success',
+                                confirmButtonColor: '#059669',
+                                timer: 2500,
+                                showConfirmButton: false
+                            });
+                        }
+                    });
+                }
             }
         });
     };
 
-    const isSubmitDisabled = isSubmitting || (!isPhysFix && rejectedDocs.length > 0 && !rejectedDocs.every(d => newFiles[d.id])) || (isPhysFix && !repairsConfirmed);
+    const isSubmitDisabled = isSubmitting || (!isPhysFix && rejectedDocs.length > 0 && !rejectedDocs.every(d => newFiles[d.id] && newFiles[d.id].length > 0)) || (isPhysFix && !repairsConfirmed);
 
     return (
         <OperatorLayout title={isPhysFix ? "Request Re-inspection" : "Fix Application"} operatorName={app.operatorName}>
@@ -375,7 +395,7 @@ export default function MTOPFix({ applicationId }) {
                         <div className="mf-doc-grid">
                             {(isPhysFix ? app.inspections : app.documents).map((item) => {
                                 if (item.status === 'rejected') {
-                                    const hasFile = newFiles[item.id];
+                                    const hasFiles = newFiles[item.id];
                                     return (
                                         <div key={item.id} className="mf-row-rejected">
                                             <div className="mf-row-rejected-header">
@@ -390,22 +410,28 @@ export default function MTOPFix({ applicationId }) {
                                             </div>
 
                                             {!isPhysFix && (
-                                                <label className={`mf-dropzone ${hasFile ? 'has-file' : ''}`}>
+                                                <label className={`mf-dropzone ${hasFiles ? 'has-file' : ''}`}>
                                                     <input
                                                         type="file"
+                                                        multiple
                                                         accept="image/*,.pdf"
                                                         style={{ display: 'none' }}
                                                         onChange={(e) => {
-                                                            if (e.target.files?.[0]) {
-                                                                handleFileSelect(item.id, e.target.files[0]);
+                                                            if (e.target.files?.length > 0) {
+                                                                handleFileSelect(item.id, Array.from(e.target.files));
                                                             }
                                                         }}
                                                     />
                                                     <div className="mf-drop-icon">
-                                                        {hasFile ? <Check size={22} /> : <UploadCloud size={22} />}
+                                                        {hasFiles ? <Check size={22} /> : <UploadCloud size={22} />}
                                                     </div>
-                                                    <p className="mf-drop-title">{hasFile ? hasFile.name : 'Click to upload replacement file'}</p>
-                                                    <p className="mf-drop-sub">{hasFile ? 'File ready' : 'PDF, JPG, or PNG (Max 5MB)'}</p>
+                                                    <p className="mf-drop-title">
+                                                        {hasFiles 
+                                                            ? `${hasFiles.length} file(s) selected: ${hasFiles.map(f => f.name).join(', ')}`
+                                                            : 'Click to upload replacement file(s)'
+                                                        }
+                                                    </p>
+                                                    <p className="mf-drop-sub">{hasFiles ? 'Files ready' : 'PDF, JPG, or PNG (Max 5MB)'}</p>
                                                 </label>
                                             )}
                                         </div>

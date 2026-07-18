@@ -5,7 +5,8 @@ import {
     ChevronLeft, FileText, CheckCircle2, Clock, AlertCircle,
     Bike, FileSearch, ClipboardCheck, Stamp, AlertTriangle,
     UploadCloud, XCircle, Info, Download, Wrench, Settings,
-    Wallet, Receipt, CreditCard, ArrowRight
+    Wallet, Receipt, CreditCard, ArrowRight, Calendar, ShieldCheck,
+    MapPin
 } from 'lucide-react';
 
 /* ─────────────────────────────────────────────────────────────────────────
@@ -54,10 +55,11 @@ const CSS = `
 /* ── Full document / inspection grid ────────────────────────────────── */
 .ad-doc-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 14px; }
 
-.ad-doc-row { display: flex; align-items: flex-start; justify-content: space-between; padding: 16px; border-radius: 12px; border: 1px solid rgba(28,35,64,.08); background: #FFFFFF; transition: all .2s; }
+.ad-doc-row { display: flex; align-items: center; justify-content: space-between; padding: 16px; border-radius: 12px; border: 1px solid rgba(28,35,64,.08); background: #FFFFFF; transition: all .2s; }
 .ad-doc-row:hover { border-color: rgba(79,91,203,.2); background: #F8F9FC; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(28,35,64,.03); }
-.ad-doc-row.rejected { border-color: rgba(220,38,38,.3); background: rgba(220,38,38,.03); }
-.ad-doc-left { display: flex; gap: 12px; flex: 1; min-width: 0; }
+.ad-doc-row.rejected { border-color: rgba(220,38,38,.3); background: rgba(220,38,38,.03); align-items: flex-start; }
+.ad-doc-left { display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0; }
+.ad-doc-row.rejected .ad-doc-left { align-items: flex-start; }
 .ad-doc-icon-wrap { width: 40px; height: 40px; border-radius: 10px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; background: #F2F4FA; color: #8A96BC; }
 .ad-doc-row.rejected .ad-doc-icon-wrap { background: rgba(220,38,38,.08); color: #DC2626; }
 .ad-doc-name { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 13px; font-weight: 700; color: #1C2340; margin-bottom: 3px; line-height: 1.4; }
@@ -304,24 +306,81 @@ const SettlementCard = ({ payment }) => (
     </div>
 );
 
-const BPLOCard = ({ bplo }) => (
-    <div className="ad-card" style={{ border: '1px solid rgba(5,150,105,.2)' }}>
-        <div className="ad-card-header" style={{ background: 'rgba(5,150,105,.04)' }}>
-            <div className="ad-card-icon" style={{ background: 'rgba(5,150,105,.1)', color: '#059669' }}>
-                <Stamp size={17} />
+const BPLOCard = ({ bplo }) => {
+    const restrictDaysStr = bplo.colorCoding?.restrictedDays?.join(', ') || 'N/A';
+    const notesStr = bplo.notes || 'No tracker details';
+
+    return (
+        <div className="ad-card" style={{ border: '1px solid rgba(5,150,105,.2)' }}>
+            <div className="ad-card-header" style={{ background: 'rgba(5,150,105,.04)' }}>
+                <div className="ad-card-icon" style={{ background: 'rgba(5,150,105,.1)', color: '#059669' }}>
+                    <Stamp size={17} />
+                </div>
+                <h2 className="ad-card-title" style={{ color: '#059669' }}>BPLO Issuance & Coding</h2>
             </div>
-            <h2 className="ad-card-title" style={{ color: '#059669' }}>BPLO Issuance</h2>
-        </div>
-        <div className="ad-card-body">
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                <span className="ad-info-label" style={{ color: '#059669' }}>Assigned Body Number</span>
-                <span className="ad-info-value" style={{ fontSize: 22, fontWeight: 800, color: '#059669', letterSpacing: '-.01em' }}>
-                    {bplo.assignedBody}
-                </span>
+            <div className="ad-card-body" style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+                {/* Body Number Stamp Block */}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px', borderRadius: '12px', background: 'rgba(5,150,105,.05)', border: '1px dashed rgba(5,150,105,.3)' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                        <span style={{ color: '#059669', fontSize: '10px', textTransform: 'uppercase', fontWeight: 700, display: 'block', lineHeight: '1.2' }}>
+                            Assigned Tricycle Number<br />Coding Scheme
+                        </span>
+                        <span style={{ fontSize: '26px', fontWeight: 900, color: '#059669', letterSpacing: '-.02em', fontFamily: 'Plus Jakarta Sans, sans-serif' }}>
+                            {bplo.assignedBody}
+                        </span>
+                    </div>
+                    {bplo.colorCoding && (
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
+                            <span style={{ fontSize: '10px', textTransform: 'uppercase', color: '#6B7280', fontWeight: 600 }}>Coding Scheme</span>
+                            <span style={{ 
+                                display: 'inline-flex', 
+                                alignItems: 'center', 
+                                gap: 6,
+                                padding: '4px 10px', 
+                                borderRadius: '99px', 
+                                fontSize: '12px', 
+                                fontWeight: 700, 
+                                backgroundColor: `${bplo.colorCoding.colorHex}15`, 
+                                color: bplo.colorCoding.colorHex 
+                            }}>
+                                <span style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: bplo.colorCoding.colorHex }} />
+                                {bplo.colorCoding.name}
+                            </span>
+                        </div>
+                    )}
+                </div>
+
+                {/* Info Fields Grid */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 14 }}>
+                    {/* Validity Period */}
+                    <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+                        <div style={{ color: '#4B5563', marginTop: 2 }}><Calendar size={16} /></div>
+                        <div>
+                            <p style={{ margin: 0, fontSize: '11px', textTransform: 'uppercase', color: '#9CA3AF', fontWeight: 600, letterSpacing: '0.05em' }}>Validity Period</p>
+                            <p style={{ margin: '2px 0 0', fontSize: '13px', color: '#1F2937', fontWeight: 500 }}>
+                                {bplo.issueDate} &mdash; {bplo.expiryDate}
+                            </p>
+                        </div>
+                    </div>
+
+                    {/* Restricted Day */}
+                    {bplo.colorCoding && (
+                        <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+                            <div style={{ color: '#4B5563', marginTop: 2 }}><AlertTriangle size={16} /></div>
+                            <div>
+                                <p style={{ margin: 0, fontSize: '11px', textTransform: 'uppercase', color: '#9CA3AF', fontWeight: 600, letterSpacing: '0.05em' }}>Restricted Travel Day</p>
+                                <p style={{ margin: '2px 0 0', fontSize: '13px', color: '#EF4444', fontWeight: 600 }}>
+                                    No Travel on <span style={{ textDecoration: 'underline' }}>{restrictDaysStr}s</span>
+                                </p>
+                            </div>
+                        </div>
+                    )}
+
+                </div>
             </div>
         </div>
-    </div>
-);
+    );
+};
 
 export default function MTOPDetails({ application }) {
     const app = application;
@@ -338,7 +397,7 @@ export default function MTOPDetails({ application }) {
         { id: 'tmo-docs',      title: 'Document Verification', desc: 'TMO review of requirements.',    icon: FileSearch    },
         { id: 'tmo-phys',      title: 'Physical Inspection',   desc: 'Unit roadworthiness check.',     icon: ClipboardCheck },
         { id: 'cashier-pay',   title: 'Payment Processing',    desc: 'Municipal fee settlement.',      icon: Wallet        },
-        { id: 'bplo-release',  title: 'BPLO Processing',       desc: 'Issuance of Body Number.',       icon: Stamp         },
+        { id: 'bplo-release',  title: 'BPLO Processing',       desc: 'Issuance of Tricycle Number Coding Scheme.', icon: Stamp },
     ];
 
     const getStepStatus = (index) => {
@@ -415,11 +474,35 @@ export default function MTOPDetails({ application }) {
                             </div>
                         )}
 
+                        {app.status === 'in-progress' && app.phase === 'tmo-docs' && (
+                            <div className="ad-action-box info">
+                                <div className="ad-action-icon"><FileSearch size={22} color="#4F5BCB" /></div>
+                                <h3 className="ad-action-title">Documents Under Review</h3>
+                                <p className="ad-action-desc">Your submitted documents are currently being checked by TMO personnel. You will be notified here if any corrections or re-uploads are required.</p>
+                            </div>
+                        )}
+
+                        {app.status === 'in-progress' && app.phase === 'tmo-phys' && (
+                            <div className="ad-action-box info">
+                                <div className="ad-action-icon"><ClipboardCheck size={22} color="#4F5BCB" /></div>
+                                <h3 className="ad-action-title">Awaiting Physical Inspection</h3>
+                                <p className="ad-action-desc">Your documents have been verified successfully! Please present your tricycle unit at the TMO compound for the physical roadworthiness and safety check.</p>
+                            </div>
+                        )}
+
+                        {app.status === 'in-progress' && app.phase === 'cashier-pay' && (
+                            <div className="ad-action-box info">
+                                <div className="ad-action-icon"><Wallet size={22} color="#4F5BCB" /></div>
+                                <h3 className="ad-action-title">Payment Pending</h3>
+                                <p className="ad-action-desc">Please proceed to the Municipal Treasurer's Cashier counter to settle your franchise fee. Present your Reference Number <strong>{app.reference_number}</strong> when paying at the counter.</p>
+                            </div>
+                        )}
+
                         {app.status === 'in-progress' && app.phase === 'bplo-release' && (
                             <div className="ad-action-box info">
                                 <div className="ad-action-icon"><Stamp size={22} color="#4F5BCB" /></div>
                                 <h3 className="ad-action-title">BPLO Final Processing</h3>
-                                <p className="ad-action-desc">Application approved and payment verified! The BPLO is issuing your franchise certificate and assigning your official tricycle Body Number sticker.</p>
+                                <p className="ad-action-desc">Application approved and payment verified! The BPLO is issuing your franchise certificate and assigning your official tricycle Tricycle Number Coding Scheme sticker.</p>
                             </div>
                         )}
 
@@ -534,6 +617,13 @@ export default function MTOPDetails({ application }) {
                             </div>
                         )}
 
+                        {showDocsSummary && showPhysSummary && (
+                            <div className="ad-split-grid">
+                                <CompactChecklist title="Document Verification" icon={FileText} items={app.documents} />
+                                <CompactChecklist title="Physical Inspection" icon={Settings} items={app.inspections} />
+                            </div>
+                        )}
+
                         {/* Shows Completed Payment Card */}
                         {app.payment && !app.bplo && (
                             <SettlementCard payment={app.payment} />
@@ -543,13 +633,6 @@ export default function MTOPDetails({ application }) {
                             <div className="ad-split-grid">
                                 <SettlementCard payment={app.payment} />
                                 <BPLOCard bplo={app.bplo} />
-                            </div>
-                        )}
-
-                        {showDocsSummary && showPhysSummary && (
-                            <div className="ad-split-grid">
-                                <CompactChecklist title="Document Verification" icon={FileText} items={app.documents} />
-                                <CompactChecklist title="Physical Inspection" icon={Settings} items={app.inspections} />
                             </div>
                         )}
 

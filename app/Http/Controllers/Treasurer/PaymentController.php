@@ -192,10 +192,10 @@ class PaymentController extends Controller
                     'notes'                   => $request->input('notes'),
                 ]);
             } else {
-                // If payment was rejected / voided, return back to review or inspection
-                $toStatus = 'pending_inspection';
-                $toStep = 3;
-                $notes = 'Payment transaction voided by Treasurer. Forwarded back to physical inspection.';
+                // If payment was rejected / voided, return back to pending payment
+                $toStatus = 'pending_payment';
+                $toStep = 4;
+                $notes = 'Payment transaction voided by Treasurer. Re-submission required.';
             }
 
             $application->update([

@@ -222,7 +222,7 @@ export default function VerifyPayment({ paymentId, record }) {
     const handleReject = () => {
         Swal.fire({
             title: 'Void Payment Request',
-            text: "Are you sure you want to void this collection request? The application will return to TMO inspection queue.",
+            text: "Are you sure you want to void this collection request? The application status will be reset, requiring the operator to re-submit payment details.",
             icon: 'warning',
             showCancelButton: true,
             confirmButtonColor: '#DC2626',
@@ -239,7 +239,7 @@ export default function VerifyPayment({ paymentId, record }) {
                     onSuccess: () => {
                         Swal.fire({
                             title: 'Collection Voided',
-                            text: 'Application returned to physical inspection.',
+                            text: 'Application returned to pending payment queue.',
                             icon: 'info',
                             confirmButtonColor: '#1C2340',
                             timer: 2000,
@@ -392,15 +392,14 @@ export default function VerifyPayment({ paymentId, record }) {
 
                             <div style={{ marginTop: 'auto' }}>
                                 <div className="vp-action-zone">
-                                    <button
-                                        type="button"
+                                    <Link
+                                        href="/treasurer/pending"
                                         className="vp-btn vp-btn-reject"
-                                        onClick={handleReject}
-                                        disabled={processing}
+                                        style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                                     >
                                         <XCircle size={16} strokeWidth={2.5} />
-                                        Void Request
-                                    </button>
+                                        Cancel
+                                    </Link>
 
                                     <button
                                         type="button"

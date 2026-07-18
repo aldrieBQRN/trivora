@@ -329,6 +329,7 @@ export default function DocumentQueue({
 
     const filtered = applications.filter(a =>
         String(a.id).toLowerCase().includes(query.toLowerCase()) ||
+        (a.reference && a.reference.toLowerCase().includes(query.toLowerCase())) ||
         a.operator.toLowerCase().includes(query.toLowerCase()) ||
         a.status.toLowerCase().includes(query.toLowerCase())
     );
@@ -361,7 +362,7 @@ export default function DocumentQueue({
                         <Search size={14} strokeWidth={2} className="dq-search-icon" />
                         <input
                             type="text"
-                            placeholder="Search by name or ID…"
+                            placeholder="Search by name or reference number…"
                             value={query}
                             onChange={e => setQuery(e.target.value)}
                         />
@@ -389,7 +390,7 @@ export default function DocumentQueue({
                         <table className="dq-table">
                             <thead>
                                 <tr className="dq-thead-row">
-                                    <th className="dq-th">Application ID</th>
+                                    <th className="dq-th">Reference Number</th>
                                     <th className="dq-th">Trycicle Driver</th>
                                     <th className="dq-th">Files</th>
                                     <th className="dq-th">Submission</th>
@@ -463,7 +464,7 @@ function QueueRow({ app }) {
     return (
         <tr className="dq-row">
             <td className="dq-td">
-                <span className="dq-id-chip">{app.id}</span>
+                <span className="dq-id-chip">{app.reference}</span>
             </td>
             <td className="dq-td">
                 <p className="dq-op-name">{app.operator}</p>

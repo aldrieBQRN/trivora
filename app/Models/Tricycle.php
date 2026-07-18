@@ -27,6 +27,7 @@ class Tricycle extends Model
 
     protected $appends = [
         'body_number',
+        'tricycle_number',
     ];
 
     protected function casts(): array
@@ -40,6 +41,14 @@ class Tricycle extends Model
      * Get the body number dynamically from the active franchise scheme.
      */
     public function getBodyNumberAttribute()
+    {
+        return $this->franchiseScheme?->franchise_number;
+    }
+
+    /**
+     * Get the tricycle number dynamically from the active franchise scheme.
+     */
+    public function getTricycleNumberAttribute()
     {
         return $this->franchiseScheme?->franchise_number;
     }

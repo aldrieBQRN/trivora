@@ -43,10 +43,15 @@ class RegistrationController extends Controller
             'toda'           => 'required|string|max:20',
             
             // Documents
-            'documents.orcr'    => 'required|file|mimes:pdf,jpg,jpeg,png,webp|max:5120',
-            'documents.license' => 'required|file|mimes:pdf,jpg,jpeg,png,webp|max:5120',
-            'documents.brgy'    => 'required|file|mimes:pdf,jpg,jpeg,png,webp|max:5120',
-            'documents.toda'    => 'required|file|mimes:pdf,jpg,jpeg,png,webp|max:5120',
+            'documents'           => 'required|array',
+            'documents.orcr'      => 'required|array|min:1',
+            'documents.orcr.*'    => 'required|file|mimes:pdf,jpg,jpeg,png,webp|max:5120',
+            'documents.license'   => 'required|array|min:1',
+            'documents.license.*' => 'required|file|mimes:pdf,jpg,jpeg,png,webp|max:5120',
+            'documents.brgy'      => 'required|array|min:1',
+            'documents.brgy.*'    => 'required|file|mimes:pdf,jpg,jpeg,png,webp|max:5120',
+            'documents.toda'      => 'required|array|min:1',
+            'documents.toda.*'    => 'required|file|mimes:pdf,jpg,jpeg,png,webp|max:5120',
         ]);
 
         [$user, $reference] = DB::transaction(function () use ($request) {
@@ -128,19 +133,22 @@ class RegistrationController extends Controller
                 'auth'      => 'other',
             ];
 
-            if ($request->hasFile('documents')) {
-                foreach ($request->file('documents') as $key => $file) {
+            if ($request->file('documents')) {
+                foreach ($request->file('documents') as $key => $fileOrFiles) {
                     if (isset($docKeys[$key])) {
-                        $path = $file->store('applications/documents', 'public');
-                        \App\Models\ApplicationDocument::create([
-                            'application_id' => $application->id,
-                            'document_type'  => $docKeys[$key],
-                            'file_name'      => $file->getClientOriginalName(),
-                            'file_path'      => $path,
-                            'file_size_kb'   => round($file->getSize() / 1024),
-                            'mime_type'      => $file->getMimeType(),
-                            'review_status'  => 'pending',
-                        ]);
+                        $files = is_array($fileOrFiles) ? $fileOrFiles : [$fileOrFiles];
+                        foreach ($files as $file) {
+                            $path = $file->store('applications/documents', 'public');
+                            \App\Models\ApplicationDocument::create([
+                                'application_id' => $application->id,
+                                'document_type'  => $docKeys[$key],
+                                'file_name'      => $key . '_' . $file->getClientOriginalName(),
+                                'file_path'      => $path,
+                                'file_size_kb'   => round($file->getSize() / 1024),
+                                'mime_type'      => $file->getMimeType(),
+                                'review_status'  => 'pending',
+                            ]);
+                        }
                     }
                 }
             }

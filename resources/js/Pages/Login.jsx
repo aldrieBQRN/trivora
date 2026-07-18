@@ -257,10 +257,10 @@ export default function Login() {
     // Auto-fill form fields for quick demo access
     const setDemoAccount = (role) => {
         const credentials = {
-            tmo: { login_id: 'tmo@nasugbu.gov.ph', password: 'password' },
-            cashier: { login_id: 'cashier@nasugbu.gov.ph', password: 'password' },
-            bplo: { login_id: 'bplo@nasugbu.gov.ph', password: 'password' },
-            operator: { login_id: 'mario.delacruz@operator.ph', password: 'password' }
+            tmo: { login_id: 'tmo.jdelacruz@trivora.gov.ph', password: 'TmoUser@123' },
+            cashier: { login_id: 'treasurer@trivora.gov.ph', password: 'Treasurer@123' },
+            bplo: { login_id: 'bplo.areyes@trivora.gov.ph', password: 'BploUser@123' },
+            operator: { login_id: 'driver.pramos@trivora.ph', password: 'Driver@123' }
         };
 
         setData({

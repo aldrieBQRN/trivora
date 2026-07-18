@@ -326,6 +326,7 @@ export default function PhysicalQueue({
 
     const filtered = applications.filter(a =>
         String(a.id).toLowerCase().includes(query.toLowerCase()) ||
+        (a.reference && a.reference.toLowerCase().includes(query.toLowerCase())) ||
         a.operator.toLowerCase().includes(query.toLowerCase()) ||
         a.status.toLowerCase().includes(query.toLowerCase())
     );
@@ -357,10 +358,10 @@ export default function PhysicalQueue({
                     <div className="pq-search">
                         <Search size={14} strokeWidth={2} className="pq-search-icon" />
                         <input
-                            type="text"
-                            placeholder="Search by name or ID…"
-                            value={query}
-                            onChange={e => setQuery(e.target.value)}
+                             type="text"
+                             placeholder="Search by name or reference number…"
+                             value={query}
+                             onChange={e => setQuery(e.target.value)}
                         />
                         {query && (
                             <button className="pq-clear-btn" onClick={() => setQuery('')}>
@@ -386,7 +387,7 @@ export default function PhysicalQueue({
                         <table className="pq-table">
                             <thead>
                                 <tr className="pq-thead-row">
-                                    <th className="pq-th">Application ID</th>
+                                    <th className="pq-th">Reference Number</th>
                                     <th className="pq-th">Trycicle Driver</th>
                                     <th className="pq-th">Schedule</th>
                                     <th className="pq-th">Status</th>
@@ -459,7 +460,7 @@ function QueueRow({ app }) {
     return (
         <tr className="pq-row">
             <td className="pq-td">
-                <span className="pq-id-chip">{app.id}</span>
+                <span className="pq-id-chip">{app.reference}</span>
             </td>
             <td className="pq-td">
                 <p className="pq-op-name">{app.operator}</p>

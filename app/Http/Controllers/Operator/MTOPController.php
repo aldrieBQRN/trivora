@@ -74,7 +74,7 @@ class MTOPController extends Controller
                     case 'paid':
                         $phase = 'bplo-release';
                         $status = 'in-progress';
-                        $message = 'Awaiting BPLO final releasing and Body Number assignment.';
+                        $message = 'Awaiting BPLO final releasing and Tricycle Number Coding Scheme assignment.';
                         break;
                     case 'completed':
                     case 'scheme_issued':
@@ -114,70 +114,166 @@ class MTOPController extends Controller
         }
 
         $app = Application::where('operator_id', $operator->id)
-            ->where('reference_number', $refNo)
+            ->where(function ($query) use ($refNo) {
+                $query->where('id', $refNo)
+                      ->orWhere('reference_number', $refNo);
+            })
             ->with(['tricycle.todaZone', 'statusHistories', 'documents', 'inspections'])
             ->firstOrFail();
 
         // 1. Process documents mapping
-        $docLabels = [
-            'drivers_license'    => "Driver's License Copy",
-            'or_cr'              => 'OR/CR Registration Copy',
-            'proof_of_residence' => 'Barangay Clearance Certificate',
-            'toda_clearance'     => 'TODA Clearance Certificate',
-            'photo_id'           => "Driver's Photo ID",
-            'other'              => 'Supporting Files',
+        $requirementsMap = [
+            'drivers_license'    => 'license',
+            'or_cr'              => 'orcr',
+            'proof_of_residence' => 'brgy',
+            'toda_clearance'     => 'toda',
+            'photo_id'           => 'driver_id',
         ];
-        $documents = $app->documents->map(function ($doc) use ($docLabels) {
-            return [
-                'id'     => $doc->id,
-                'name'   => $docLabels[$doc->document_type] ?? 'Document',
-                'status' => $doc->review_status, // approved, pending, rejected
-                'note'   => $doc->rejection_reason ?: '',
-            ];
-        })->toArray();
+
+        $docLabels = [
+            'license'   => "Driver's License Back-to-back (Prof/Restriction 1/A1)",
+            'orcr'      => 'Xerox OR/CR',
+            'brgy'      => 'Barangay Clearance (Original)',
+            'toda'      => 'TODA/NAFTODA/ACTODAN Clearance (Original)',
+            'driver_id' => "Driver's ID Issued by NAFTODA/ACTODAN",
+            'prangkisa' => 'Xerox Prangkisa (Kung Renew)',
+            'receipt'   => 'Delivery Receipt (Kung walang OR/CR / New)',
+            'tariff'    => 'List of Existing Tariff Fee (For sidecar)',
+            'auth'      => 'Authorization Letter & ID (Kung hindi may-ari)',
+        ];
+
+        $categoryStatuses = [];
+        $categoryNotes = [];
+
+        foreach ($app->documents as $doc) {
+            $category = $requirementsMap[$doc->document_type] ?? 'other';
+            if ($category === 'other') {
+                $parts = explode('_', $doc->file_name, 2);
+                if (count($parts) > 1 && in_array($parts[0], ['prangkisa', 'receipt', 'tariff', 'auth'])) {
+                    $category = $parts[0];
+                }
+            }
+
+            if (!isset($categoryStatuses[$category]) || $categoryStatuses[$category] !== 'rejected') {
+                $categoryStatuses[$category] = $doc->review_status;
+            }
+            if ($doc->review_status === 'rejected') {
+                $categoryNotes[$category] = $doc->rejection_reason;
+            }
+        }
+
+        $documents = [];
+        foreach ($docLabels as $catId => $label) {
+            $hasAny = $app->documents->contains(function ($doc) use ($requirementsMap, $catId) {
+                $category = $requirementsMap[$doc->document_type] ?? 'other';
+                if ($category === 'other') {
+                    $parts = explode('_', $doc->file_name, 2);
+                    if (count($parts) > 1 && in_array($parts[0], ['prangkisa', 'receipt', 'tariff', 'auth'])) {
+                        $category = $parts[0];
+                    }
+                }
+                return $category === $catId;
+            });
+
+            if ($hasAny) {
+                $status = $categoryStatuses[$catId] ?? 'pending';
+                $documents[] = [
+                    'id'     => $catId,
+                    'name'   => $label,
+                    'status' => $status,
+                    'note'   => $categoryNotes[$catId] ?? '',
+                ];
+            }
+        }
 
         // 2. Process inspection details mapping
         $inspections = [];
-        $latestInspection = $app->inspections()->orderByDesc('attempt_number')->first();
-        if ($latestInspection) {
-            $checklist = [
-                'safety_equipment'  => 'Safety Equipment',
-                'brakes_steering'   => 'Brakes & Steering',
-                'lights_reflectors' => 'Lights & Reflectors',
-                'tires_suspension'  => 'Tires & Suspension',
-                'emissions_test'    => 'Emissions Test',
-                'license_toda_docs' => 'License & TODA Docs',
-            ];
+        $checklist = [
+            'headlights' => 'Headlights (High/Low Beam)',
+            'taillights' => 'Tail Lights & Brake Lights',
+            'signals'    => 'Signal Lights (Left/Right)',
+            'horn'       => 'Horn (Working/Loud)',
+            'mirrors'    => 'Side Mirrors (Complete Pair)',
+            'brakes'     => 'Brakes & Drive Chain',
+            'plate'      => 'Body Plate Attachment',
+            'sidecar'    => 'Sidecar Structural Integrity',
+        ];
 
-            foreach ($checklist as $col => $label) {
-                $passed = (bool)$latestInspection->$col;
-                $inspections[] = [
-                    'id'     => $col,
-                    'name'   => $label,
-                    'status' => $passed ? 'approved' : 'rejected',
-                    'note'   => $passed ? '' : 'Defective component identified.',
-                ];
+        $latestInspection = $app->inspections()->orderByDesc('attempt_number')->first();
+        $decoded = null;
+        if ($latestInspection) {
+            $decoded = json_decode($latestInspection->inspector_notes, true);
+        }
+
+        foreach ($checklist as $key => $label) {
+            $status = 'pending';
+            $note = '';
+            
+            if ($latestInspection) {
+                if ($decoded && isset($decoded['statuses'])) {
+                    // Real dynamic details from TMO inspection
+                    $itemStatus = $decoded['statuses'][$key] ?? 'passed';
+                    $status = $itemStatus === 'passed' ? 'approved' : ($itemStatus === 'failed' ? 'rejected' : 'pending');
+                    $note = $decoded['defects'][$key] ?? '';
+                } else {
+                    // Seeded fallback / Legacy fallback using aggregated columns
+                    if ($key === 'headlights' || $key === 'taillights' || $key === 'signals') {
+                        $passed = (bool)$latestInspection->lights_reflectors;
+                    } elseif ($key === 'mirrors' || $key === 'horn' || $key === 'plate') {
+                        $passed = (bool)$latestInspection->safety_equipment;
+                    } elseif ($key === 'brakes') {
+                        $passed = (bool)$latestInspection->brakes_steering;
+                    } else { // sidecar
+                        $passed = (bool)$latestInspection->tires_suspension;
+                    }
+                    $status = $passed ? 'approved' : 'rejected';
+                    $note = $passed ? '' : 'Defective component identified.';
+                }
             }
+
+            $inspections[] = [
+                'id'     => $key,
+                'name'   => $label,
+                'status' => $status,
+                'note'   => $note,
+            ];
         }
 
         // 3. Process payment mapping
         $payment = null;
         $paymentRecord = Payment::where('application_id', $app->id)->first();
         if ($paymentRecord && $paymentRecord->is_verified) {
+            $dateStr = '';
+            if ($paymentRecord->verified_at) {
+                $dateStr = $paymentRecord->verified_at->format('M d, Y - h:i A');
+            } else {
+                $dateStr = $paymentRecord->payment_date->format('M d, Y');
+                if ($paymentRecord->payment_time) {
+                    $dateStr .= ' - ' . date('h:i A', strtotime($paymentRecord->payment_time));
+                }
+            }
             $payment = [
                 'method' => ucwords($paymentRecord->payment_method),
                 'ref'    => $paymentRecord->official_receipt_number ?: 'OR-PENDING',
                 'amount' => (float)$paymentRecord->amount,
-                'date'   => $paymentRecord->verified_at ? $paymentRecord->verified_at->format('M d, Y') : $paymentRecord->payment_date->format('M d, Y'),
+                'date'   => $dateStr,
             ];
         }
 
         // 4. BPLO Assigned Body mapping
         $bplo = null;
-        $franchiseScheme = FranchiseScheme::where('application_id', $app->id)->first();
+        $franchiseScheme = FranchiseScheme::with('colorCodingScheme')->where('application_id', $app->id)->first();
         if ($franchiseScheme) {
             $bplo = [
                 'assignedBody' => $franchiseScheme->franchise_number,
+                'issueDate'    => $franchiseScheme->issue_date ? $franchiseScheme->issue_date->format('M d, Y') : null,
+                'expiryDate'   => $franchiseScheme->expiry_date ? $franchiseScheme->expiry_date->format('M d, Y') : null,
+                'colorCoding'  => $franchiseScheme->colorCodingScheme ? [
+                    'name'            => $franchiseScheme->colorCodingScheme->name,
+                    'colorHex'        => $franchiseScheme->colorCodingScheme->color_hex,
+                    'restrictedDays'  => $franchiseScheme->colorCodingScheme->restricted_days,
+                ] : null,
+                'notes'        => $franchiseScheme->notes,
             ];
         }
 
@@ -231,9 +327,311 @@ class MTOPController extends Controller
             'payment_due'  => $paymentRecord ? (float)$paymentRecord->amount : 1500.00,
             'bplo'         => $bplo,
         ];
-
+ 
         return Inertia::render('Operator/Compliance/MTOPDetails', [
             'application' => $appData,
         ]);
+    }
+
+    /**
+     * Display the fix application screen.
+     */
+    public function fix(Request $request, $id)
+    {
+        $user = $request->user();
+        $operator = $user->operator;
+
+        if (!$operator) {
+            abort(403);
+        }
+
+        $app = \App\Models\Application::where('operator_id', $operator->id)
+            ->where(function ($query) use ($id) {
+                $query->where('id', $id)
+                      ->orWhere('reference_number', $id);
+            })
+            ->with(['tricycle.todaZone', 'statusHistories', 'documents', 'inspections'])
+            ->firstOrFail();
+
+        $requirementsMap = [
+            'drivers_license'    => 'license',
+            'or_cr'              => 'orcr',
+            'proof_of_residence' => 'brgy',
+            'toda_clearance'     => 'toda',
+            'photo_id'           => 'driver_id',
+        ];
+
+        $docLabels = [
+            'license'   => "Driver's License Back-to-back (Prof/Restriction 1/A1)",
+            'orcr'      => 'Xerox OR/CR',
+            'brgy'      => 'Barangay Clearance (Original)',
+            'toda'      => 'TODA/NAFTODA/ACTODAN Clearance (Original)',
+            'driver_id' => "Driver's ID Issued by NAFTODA/ACTODAN",
+            'prangkisa' => 'Xerox Prangkisa (Kung Renew)',
+            'receipt'   => 'Delivery Receipt (Kung walang OR/CR / New)',
+            'tariff'    => 'List of Existing Tariff Fee (For sidecar)',
+            'auth'      => 'Authorization Letter & ID (Kung hindi may-ari)',
+        ];
+
+        $categoryStatuses = [];
+        $categoryNotes = [];
+
+        foreach ($app->documents as $doc) {
+            $category = $requirementsMap[$doc->document_type] ?? 'other';
+            if ($category === 'other') {
+                $parts = explode('_', $doc->file_name, 2);
+                if (count($parts) > 1 && in_array($parts[0], ['prangkisa', 'receipt', 'tariff', 'auth'])) {
+                    $category = $parts[0];
+                }
+            }
+
+            if (!isset($categoryStatuses[$category]) || $categoryStatuses[$category] !== 'rejected') {
+                $categoryStatuses[$category] = $doc->review_status;
+            }
+            if ($doc->review_status === 'rejected') {
+                $categoryNotes[$category] = $doc->rejection_reason;
+            }
+        }
+
+        $mappedDocs = [];
+        foreach ($docLabels as $catId => $label) {
+            $hasAny = $app->documents->contains(function ($doc) use ($requirementsMap, $catId) {
+                $category = $requirementsMap[$doc->document_type] ?? 'other';
+                if ($category === 'other') {
+                    $parts = explode('_', $doc->file_name, 2);
+                    if (count($parts) > 1 && in_array($parts[0], ['prangkisa', 'receipt', 'tariff', 'auth'])) {
+                        $category = $parts[0];
+                    }
+                }
+                return $category === $catId;
+            });
+
+            if ($hasAny) {
+                $status = $categoryStatuses[$catId] ?? 'pending';
+                $mappedDocs[] = [
+                    'id'     => $catId,
+                    'name'   => $label,
+                    'status' => $status,
+                    'note'   => $categoryNotes[$catId] ?? '',
+                ];
+            }
+        }
+
+        $inspections = [];
+        $checklist = [
+            'headlights' => 'Headlights (High/Low Beam)',
+            'taillights' => 'Tail Lights & Brake Lights',
+            'signals'    => 'Signal Lights (Left/Right)',
+            'horn'       => 'Horn (Working/Loud)',
+            'mirrors'    => 'Side Mirrors (Complete Pair)',
+            'brakes'     => 'Brakes & Drive Chain',
+            'plate'      => 'Body Plate Attachment',
+            'sidecar'    => 'Sidecar Structural Integrity',
+        ];
+
+        $latestInspection = $app->inspections->sortByDesc('attempt_number')->first();
+        $decoded = null;
+        if ($latestInspection) {
+            $decoded = json_decode($latestInspection->inspector_notes, true);
+        }
+
+        foreach ($checklist as $key => $label) {
+            $status = 'pending';
+            $note = '';
+            
+            if ($latestInspection) {
+                if ($decoded && isset($decoded['statuses'])) {
+                    $itemStatus = $decoded['statuses'][$key] ?? 'passed';
+                    $status = $itemStatus === 'passed' ? 'approved' : ($itemStatus === 'failed' ? 'rejected' : 'pending');
+                    $note = $decoded['defects'][$key] ?? '';
+                } else {
+                    if ($key === 'headlights' || $key === 'taillights' || $key === 'signals') {
+                        $passed = (bool)$latestInspection->lights_reflectors;
+                    } elseif ($key === 'mirrors' || $key === 'horn' || $key === 'plate') {
+                        $passed = (bool)$latestInspection->safety_equipment;
+                    } elseif ($key === 'brakes') {
+                        $passed = (bool)$latestInspection->brakes_steering;
+                    } else { // sidecar
+                        $passed = (bool)$latestInspection->tires_suspension;
+                    }
+                    $status = $passed ? 'approved' : 'rejected';
+                    $note = $passed ? '' : 'Defective component identified.';
+                }
+            }
+
+            $inspections[] = [
+                'id'     => $key,
+                'name'   => $label,
+                'status' => $status,
+                'note'   => $note,
+            ];
+        }
+
+        $appData = [
+            'id'             => $app->id,
+            'reference'      => $app->reference_number,
+            'operatorName'   => $operator->full_name,
+            'phase'          => in_array($app->status, ['failed_inspection']) ? 'tmo-phys' : 'tmo-docs',
+            'documents'      => $mappedDocs,
+            'inspections'    => $inspections,
+        ];
+
+        return Inertia::render('Operator/Compliance/MTOPFix', [
+            'application' => $appData,
+        ]);
+    }
+
+    /**
+     * Handle the correction submission from the operator portal.
+     */
+    public function submitFix(Request $request, $id)
+    {
+        $user = $request->user();
+        $operator = $user->operator;
+
+        if (!$operator) {
+            abort(403);
+        }
+
+        $app = \App\Models\Application::where('operator_id', $operator->id)
+            ->where(function ($query) use ($id) {
+                $query->where('id', $id)
+                      ->orWhere('reference_number', $id);
+            })
+            ->with(['documents', 'inspections'])
+            ->firstOrFail();
+
+        $isPhysFix = in_array($app->status, ['failed_inspection']);
+
+        \Illuminate\Support\Facades\DB::transaction(function () use ($request, $app, $isPhysFix, $user) {
+            $fromStatus = $app->status;
+
+            if ($isPhysFix) {
+                // Update the latest inspection's rejected items to pending
+                $latestInspection = $app->inspections->sortByDesc('attempt_number')->first();
+                if ($latestInspection) {
+                    $decoded = json_decode($latestInspection->inspector_notes, true);
+                    if ($decoded && isset($decoded['statuses'])) {
+                        $updatedStatuses = $decoded['statuses'];
+                        $updatedDefects = $decoded['defects'] ?? [];
+
+                        // Reset lights
+                        if (($updatedStatuses['headlights'] ?? '') === 'failed' || ($updatedStatuses['taillights'] ?? '') === 'failed' || ($updatedStatuses['signals'] ?? '') === 'failed') {
+                            $latestInspection->lights_reflectors = null;
+                        }
+                        // Reset safety
+                        if (($updatedStatuses['mirrors'] ?? '') === 'failed' || ($updatedStatuses['horn'] ?? '') === 'failed' || ($updatedStatuses['plate'] ?? '') === 'failed') {
+                            $latestInspection->safety_equipment = null;
+                        }
+                        // Reset brakes
+                        if (($updatedStatuses['brakes'] ?? '') === 'failed') {
+                            $latestInspection->brakes_steering = null;
+                        }
+                        // Reset sidecar
+                        if (($updatedStatuses['sidecar'] ?? '') === 'failed') {
+                            $latestInspection->tires_suspension = null;
+                        }
+
+                        // Set item statuses in JSON to pending (which clears the red and displays them as pending recheck)
+                        foreach ($updatedStatuses as $key => $status) {
+                            if ($status === 'failed') {
+                                $updatedStatuses[$key] = 'pending';
+                                unset($updatedDefects[$key]);
+                            }
+                        }
+
+                        $latestInspection->inspector_notes = json_encode([
+                            'statuses' => $updatedStatuses,
+                            'defects'  => $updatedDefects,
+                        ]);
+                        $latestInspection->save();
+                    }
+                }
+
+                $toStatus = 'pending_inspection';
+                $app->update([
+                    'status'       => $toStatus,
+                    'current_step' => 2,
+                    'remarks'      => 'Operator requested re-inspection after fixing safety defects.',
+                ]);
+
+                \App\Models\ApplicationStatusHistory::create([
+                    'application_id' => $app->id,
+                    'changed_by'     => $user->id,
+                    'from_status'    => $fromStatus,
+                    'to_status'      => $toStatus,
+                    'notes'          => 'Operator confirmed defect repairs and requested re-inspection.',
+                ]);
+            } else {
+                // Document review fix
+                $requirementsMap = [
+                    'license'   => 'drivers_license',
+                    'orcr'      => 'or_cr',
+                    'brgy'      => 'proof_of_residence',
+                    'toda'      => 'toda_clearance',
+                    'driver_id' => 'photo_id',
+                    'prangkisa' => 'other',
+                    'receipt'   => 'other',
+                    'tariff'    => 'other',
+                    'auth'      => 'other',
+                ];
+
+                if ($request->file('documents')) {
+                    foreach ($request->file('documents') as $key => $fileOrFiles) {
+                        if (isset($requirementsMap[$key])) {
+                            // 1. Find and delete the old rejected files in this category
+                            $oldDocs = $app->documents->filter(function ($doc) use ($requirementsMap, $key) {
+                                $category = $requirementsMap[$doc->document_type] ?? 'other';
+                                if ($category === 'other') {
+                                    $parts = explode('_', $doc->file_name, 2);
+                                    if (count($parts) > 1 && in_array($parts[0], ['prangkisa', 'receipt', 'tariff', 'auth'])) {
+                                        $category = $parts[0];
+                                    }
+                                }
+                                return $category === $key;
+                            });
+
+                            foreach ($oldDocs as $oldDoc) {
+                                // Optional: Delete physical file if exists
+                                \Illuminate\Support\Facades\Storage::disk('public')->delete($oldDoc->file_path);
+                                $oldDoc->delete();
+                            }
+
+                            // 2. Store the new files under this category
+                            $files = is_array($fileOrFiles) ? $fileOrFiles : [$fileOrFiles];
+                            foreach ($files as $file) {
+                                $path = $file->store('applications/documents', 'public');
+                                \App\Models\ApplicationDocument::create([
+                                    'application_id' => $app->id,
+                                    'document_type'  => $requirementsMap[$key],
+                                    'file_name'      => $key . '_' . $file->getClientOriginalName(),
+                                    'file_path'      => $path,
+                                    'file_size_kb'   => round($file->getSize() / 1024),
+                                    'mime_type'      => $file->getMimeType(),
+                                    'review_status'  => 'pending',
+                                ]);
+                            }
+                        }
+                    }
+                }
+
+                $toStatus = 'pending_review';
+                $app->update([
+                    'status'       => $toStatus,
+                    'current_step' => 1,
+                    'remarks'      => 'Operator submitted replacement files for rejected documents.',
+                ]);
+
+                \App\Models\ApplicationStatusHistory::create([
+                    'application_id' => $app->id,
+                    'changed_by'     => $user->id,
+                    'from_status'    => $fromStatus,
+                    'to_status'      => $toStatus,
+                    'notes'          => 'Operator submitted corrected/replacement documents.',
+                ]);
+            }
+        });
+
+        return redirect()->route('operator.mtop.details', ['id' => $app->id]);
     }
 }

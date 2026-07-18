@@ -7,6 +7,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RegistrationController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
+use Illuminate\Http\Request;
 
 /*
 |--------------------------------------------------------------------------
@@ -224,9 +225,8 @@ Route::middleware(['auth', 'role:tricycle_driver,admin'])->group(function () {
 
     Route::get('/operator/mtop/{id}', [App\Http\Controllers\Operator\MTOPController::class, 'show'])->name('operator.mtop.details');
 
-    Route::get('/operator/mtop/{id}/fix', function ($id) {
-        return Inertia::render('Operator/Compliance/MTOPFix', ['applicationId' => $id]);
-    })->name('operator.mtop.fix');
+    Route::get('/operator/mtop/{id}/fix', [App\Http\Controllers\Operator\MTOPController::class, 'fix'])->name('operator.mtop.fix');
+    Route::post('/operator/mtop/{id}/fix', [App\Http\Controllers\Operator\MTOPController::class, 'submitFix'])->name('operator.mtop.submit-fix');
 
     Route::get('/operator/mtop/{id}/pay', function ($id) {
         return Inertia::render('Operator/Compliance/Checkout', ['applicationId' => $id]);
