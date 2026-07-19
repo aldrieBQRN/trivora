@@ -153,12 +153,18 @@ const CSS = `
 /* Table Container */
 .v-card { background: #FFFFFF; border: 1px solid rgba(28,35,64,.08); border-radius: 20px; overflow: hidden; box-shadow: 0 4px 20px rgba(28,35,64,.03); }
 .v-table-wrap { overflow-x: auto; }
-.v-table { width: 100%; border-collapse: collapse; text-align: left; min-width: 900px; }
+.v-table { width: 100%; border-collapse: collapse; text-align: left; min-width: 1000px; table-layout: fixed; }
 .v-thead { background: #FAFAFC; border-bottom: 1px solid rgba(28,35,64,.06); }
 .v-th { padding: 18px 24px; font-family: 'DM Sans', sans-serif; font-size: 9px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: #8A96BC; }
 .v-tr { border-bottom: 1px solid rgba(28,35,64,.04); transition: background .18s; }
 .v-tr:hover { background: #F8F9FC; }
 .v-td { padding: 20px 24px; vertical-align: middle; }
+
+/* Column Width Specifications */
+.v-col-offense { width: 28%; }
+.v-col-unit { width: 22%; }
+.v-col-detection { width: 35%; }
+.v-col-fine-status { width: 15%; }
 
 /* Status Badges */
 .v-badge {
@@ -275,55 +281,57 @@ export default function Violations({ violations = [], auth }) {
                             <table className="v-table">
                                 <thead className="v-thead">
                                     <tr>
-                                        <th className="v-th">Offense Details</th>
-                                        <th className="v-th">Tricycle Unit & Zone</th>
-                                        <th className="v-th">Detected Location</th>
-                                        <th className="v-th">Fine</th>
-                                        <th className="v-th">Status</th>
-                                        <th className="v-th">Actions</th>
+                                        <th className="v-th v-col-offense">Offense Details</th>
+                                        <th className="v-th v-col-unit">Tricycle Unit</th>
+                                        <th className="v-th v-col-detection">Detection Info</th>
+                                        <th className="v-th v-col-fine-status" style={{ textAlign: 'right' }}>Fine & Status</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {filteredViolations.map((v) => (
                                         <tr key={v.id} className="v-tr">
-                                            <td className="v-td">
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                                                    <p style={{ fontWeight: 700, fontSize: 13.5 }}>{v.type}</p>
-                                                    {v.isIot && <span className="v-iot-tag"><Activity size={8}/> IoT Detected</span>}
+                                            <td className="v-td v-col-offense">
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                                                    <p style={{ fontWeight: 700, fontSize: 13.5, color: '#1C2340' }}>{v.type}</p>
+                                                    {v.isIot ? (
+                                                        <span className="v-iot-tag" style={{ background: 'rgba(79,91,203,.08)', color: '#4F5BCB', padding: '2px 6px', borderRadius: 4, fontSize: 9, fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                                                            <Activity size={8}/> IoT Auto
+                                                        </span>
+                                                    ) : (
+                                                        <span className="v-iot-tag" style={{ background: 'rgba(217,119,6,.08)', color: '#B45309', padding: '2px 6px', borderRadius: 4, fontSize: 9, fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                                                            Manual
+                                                        </span>
+                                                    )}
                                                 </div>
-                                                <p style={{ fontSize: 11, color: '#8A96BC', display: 'flex', alignItems: 'center', gap: 4 }}>
-                                                    <Calendar size={11} /> {v.date} • {v.time}
+                                                <p style={{ fontSize: 11, color: '#5A6488', fontWeight: 700, fontFamily: 'monospace' }}>
+                                                    {v.id}
                                                 </p>
                                             </td>
-                                            <td className="v-td">
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                                                    <div style={{ padding: 6, background: '#F2F4FA', borderRadius: 8, color: '#4F5BCB' }}>
-                                                        <Bike size={14} />
-                                                    </div>
-                                                    <span style={{ fontWeight: 600, fontSize: 13 }}>{v.unit}</span>
+                                            <td className="v-td v-col-unit">
+                                                <p style={{ fontWeight: 700, fontSize: 13, color: '#1C2340', marginBottom: 4 }}>
+                                                    Unit #{v.unit}
+                                                </p>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                                    <span className="v-color-dot" style={{ background: v.colorHex, width: 8, height: 8, borderRadius: '50%', display: 'inline-block' }}></span>
+                                                    <span style={{ fontSize: 11, color: '#8A96BC', fontWeight: 600 }}>{v.colorCode} Coding</span>
                                                 </div>
-                                                <p style={{ fontSize: 11, color: '#5A6488', display: 'flex', alignItems: 'center', gap: 6 }}>
-                                                    <span className="v-color-dot" style={{ background: v.colorHex }}></span>
-                                                    {v.colorCode}
+                                            </td>
+                                            <td className="v-td v-col-detection">
+                                                <p style={{ fontSize: 12, color: '#1C2340', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+                                                    <MapPin size={12} color="#8A96BC" style={{ flexShrink: 0 }} />
+                                                    <span style={{ wordBreak: 'break-word', whiteSpace: 'normal', lineHeight: '1.4' }}>{v.location}</span>
+                                                </p>
+                                                <p style={{ fontSize: 11, color: '#8A96BC', display: 'flex', alignItems: 'center', gap: 4, paddingLeft: 18 }}>
+                                                    <Clock size={11} /> {v.date} • {v.time}
                                                 </p>
                                             </td>
-                                            <td className="v-td">
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: '#5A6488' }}>
-                                                    <MapPin size={11} /> {v.location}
-                                                </div>
-                                            </td>
-                                            <td className="v-td">
-                                                <span style={{ fontWeight: 800, fontSize: 14 }}>₱{v.fine.toFixed(2)}</span>
-                                            </td>
-                                            <td className="v-td">
-                                                <span className="v-badge v-badge-unpaid">
-                                                    <Clock size={10} /> Pending
+                                            <td className="v-td v-col-fine-status" style={{ textAlign: 'right' }}>
+                                                <p style={{ fontWeight: 800, fontSize: 15, color: '#DC2626', marginBottom: 6 }}>
+                                                    ₱{v.fine.toFixed(2)}
+                                                </p>
+                                                <span className="v-badge v-badge-unpaid" style={{ background: 'rgba(220,38,38,.08)', color: '#DC2626', border: '1px solid rgba(220,38,38,.15)' }}>
+                                                    <Clock size={9} strokeWidth={3}/> Unpaid
                                                 </span>
-                                            </td>
-                                            <td className="v-td">
-                                                <Link href={route('operator.violations.pay', { id: v.id })} className="v-pay-btn">
-                                                    <CreditCard size={12} /> Pay Now
-                                                </Link>
                                             </td>
                                         </tr>
                                     ))}

@@ -253,9 +253,9 @@ const CSS = `
 }
 `;
 
-export default function ViolationDetails({ violationId = 'VIO-26-8841' }) {
+export default function ViolationDetails({ violationId = 'VIO-26-8841', initialRecord = null }) {
     // Simulated Mock Data for the specific violation
-    const record = {
+    const record = initialRecord || {
         id: violationId,
         date: 'April 5, 2026',
         time: '08:45 AM',

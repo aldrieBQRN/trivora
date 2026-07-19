@@ -27,10 +27,17 @@ class ViolationController extends Controller
         $triIds = Tricycle::where('operator_id', $operator->id)->pluck('id');
 
         $violations = Violation::whereIn('tricycle_id', $triIds)
-            ->with(['tricycle.franchiseScheme.colorCodingScheme'])
+            ->with(['tricycle.franchiseScheme.colorCodingScheme', 'locationSnapshot'])
             ->orderByDesc('detected_at')
             ->get()
             ->map(function ($v) {
+                $location = 'Nasugbu Poblacion Area';
+                if ($v->locationSnapshot) {
+                    $location = "Nasugbu Poblacion Zone ({$v->locationSnapshot->latitude}, {$v->locationSnapshot->longitude})";
+                } elseif ($v->violation_type === 'route_violation') {
+                    $location = 'TODA Route Boundary — Border Gate';
+                }
+
                 return [
                     'id'         => 'VIO-2026-' . str_pad($v->id, 4, '0', STR_PAD_LEFT),
                     'db_id'      => $v->id,
@@ -38,7 +45,8 @@ class ViolationController extends Controller
                     'isIot'      => $v->detection_method === 'automated',
                     'date'       => $v->detected_at->format('M d, Y'),
                     'time'       => $v->detected_at->format('h:i A'),
-                    'location'   => $v->notes ?: 'Municipal Center',
+                    'location'   => $location,
+                    'notes'      => $v->notes,
                     'unit'       => $v->tricycle?->body_number ?: 'Pending',
                     'colorCode'  => $v->tricycle?->franchiseScheme?->colorCodingScheme ? $v->tricycle->franchiseScheme->colorCodingScheme->name : 'N/A',
                     'colorHex'   => $v->tricycle?->franchiseScheme?->colorCodingScheme ? $v->tricycle->franchiseScheme->colorCodingScheme->color_hex : '#94A3B8',
@@ -65,8 +73,15 @@ class ViolationController extends Controller
         }
 
         $v = Violation::where('id', $id)
-            ->with(['tricycle.franchiseScheme.colorCodingScheme'])
+            ->with(['tricycle.franchiseScheme.colorCodingScheme', 'locationSnapshot'])
             ->firstOrFail();
+
+        $location = 'Nasugbu Poblacion Area';
+        if ($v->locationSnapshot) {
+            $location = "Nasugbu Poblacion Zone ({$v->locationSnapshot->latitude}, {$v->locationSnapshot->longitude})";
+        } elseif ($v->violation_type === 'route_violation') {
+            $location = 'TODA Route Boundary — Border Gate';
+        }
 
         $violationData = [
             'id'            => 'VIO-2026-' . str_pad($v->id, 4, '0', STR_PAD_LEFT),
@@ -74,7 +89,8 @@ class ViolationController extends Controller
             'type'          => ucwords(str_replace('_', ' ', $v->violation_type)),
             'date'          => $v->detected_at->format('M d, Y'),
             'time'          => $v->detected_at->format('h:i A'),
-            'location'      => $v->notes ?: 'Municipal Center',
+            'location'      => $location,
+            'notes'         => $v->notes,
             'unit'          => $v->tricycle?->body_number ?: 'Pending',
             'fine'          => (float)$v->fine_amount,
             'processingFee' => 15.00,

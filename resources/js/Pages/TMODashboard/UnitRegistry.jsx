@@ -269,7 +269,7 @@ const CSS = `
 }
 `;
 
-export default function TricycleRegistry() {
+export default function TricycleRegistry({ initialUnits = [] }) {
     const [query, setQuery] = useState('');
 
     // Export handler
@@ -294,8 +294,8 @@ export default function TricycleRegistry() {
         document.body.removeChild(link);
     };
 
-    // Mock Registry Data (Strictly Active or Suspended)
-    const units = [
+    // Registry Data (Dynamic with Mock Registry Data fallback)
+    const units = initialUnits.length > 0 ? initialUnits : [
         {
             id: 'NSB-26-8812',
             body_no: 'N-142',

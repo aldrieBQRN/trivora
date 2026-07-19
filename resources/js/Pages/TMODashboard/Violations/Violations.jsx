@@ -274,9 +274,10 @@ const CSS = `
   letter-spacing: .1em; text-transform: uppercase;
   color: #8A96BC;
 }
+.vr-file-btn:hover { background: #B91C1C !important; transform: translateY(-1px); box-shadow: 0 6px 18px rgba(220,38,38,.28); }
 `;
 
-export default function Violations() {
+export default function Violations({ initialViolations = [] }) {
     const [query, setQuery] = useState('');
 
     // Export handler
@@ -301,8 +302,8 @@ export default function Violations() {
         document.body.removeChild(link);
     };
 
-    // Mock Coding Violations Data
-    const violations = [
+    // Violations Data (Dynamic with Mock fallback)
+    const violations = initialViolations.length > 0 ? initialViolations : [
         {
             id: 'VIO-26-8841',
             date: '2026-04-05',
@@ -359,10 +360,15 @@ export default function Violations() {
             <div className="vr-root" style={{ maxWidth: 1500, margin: '0 auto', paddingBottom: 48 }}>
 
                 {/* ── Page heading ── */}
-                <div style={{ marginBottom: 32 }}>
-                    <p className="vr-eyebrow">Enforcement Records</p>
-                    <h1 className="vr-title">Coding Violations</h1>
-                    <p className="vr-subtitle">Database of detected coding scheme violations</p>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 32 }}>
+                    <div>
+                        <p className="vr-eyebrow">Enforcement Records</p>
+                        <h1 className="vr-title">Coding Violations</h1>
+                        <p className="vr-subtitle">Database of detected coding scheme violations</p>
+                    </div>
+                    <Link href={route('tmo.violations.create')} className="vr-file-btn" style={{ height: 44, padding: '0 20px', borderRadius: 10, background: '#DC2626', color: '#FFFFFF', display: 'inline-flex', alignItems: 'center', gap: 8, fontFamily: 'DM Sans, sans-serif', fontSize: 10, fontWeight: 700, letterSpacing: '.12em', textTransform: 'uppercase', textDecoration: 'none', border: 'none', cursor: 'pointer', boxShadow: '0 4px 12px rgba(220,38,38,.2)', transition: 'all .2s' }}>
+                        <ShieldAlert size={14} /> File Violation Ticket
+                    </Link>
                 </div>
 
                 {/* ── Stat cards ── */}
@@ -496,7 +502,7 @@ function ViolationRow({ record }) {
                 )}
             </td>
             <td className="vr-td vr-td-right">
-                <Link href={`/violations/${record.id}`} className="vr-action-btn">
+                <Link href={`/violations/${record.db_id}`} className="vr-action-btn">
                     View Details
                     <ChevronRight size={13} strokeWidth={2.5} />
                 </Link>

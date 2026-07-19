@@ -17,6 +17,8 @@ class TricyclesSeeder extends Seeder
         $operator1 = Operator::whereHas('user', fn ($q) => $q->where('email', 'driver.pramos@trivora.ph'))->first();
         $operator2 = Operator::whereHas('user', fn ($q) => $q->where('email', 'driver.jbautista@trivora.ph'))->first();
         $operator3 = Operator::whereHas('user', fn ($q) => $q->where('email', 'driver.evillanueva@trivora.ph'))->first();
+        $operator4 = Operator::whereHas('user', fn ($q) => $q->where('email', 'driver.mclara@trivora.ph'))->first();
+        $operator5 = Operator::whereHas('user', fn ($q) => $q->where('email', 'driver.rsantos@trivora.ph'))->first();
 
         $toda1 = TodaZone::where('code', 'TODA-01')->first();
         $toda2 = TodaZone::where('code', 'TODA-02')->first();
@@ -67,6 +69,36 @@ class TricyclesSeeder extends Seeder
                 'or_number'      => 'OR-2018-003003',
                 'cr_number'      => 'CR-2018-003003',
                 'status'         => 'unregistered',
+            ],
+            [
+                'operator_id'    => $operator4?->id,
+                'toda_zone_id'   => $toda1?->id,
+                'plate_number'   => 'DDD-3456',
+                'engine_number'  => 'HFE125E-0045678',
+                'chassis_number' => 'MRHJE1200LA045678',
+                'make'           => 'Honda',
+                'model'          => 'TMX 125 Alpha',
+                'year_model'     => 2020,
+                'body_color'     => 'Black',
+                'body_type'      => 'Standard Side Car',
+                'or_number'      => 'OR-2020-004004',
+                'cr_number'      => 'CR-2020-004004',
+                'status'         => 'active',
+            ],
+            [
+                'operator_id'    => $operator5?->id,
+                'toda_zone_id'   => $toda2?->id,
+                'plate_number'   => 'EEE-7890',
+                'engine_number'  => 'KBE175E-0056789',
+                'chassis_number' => 'JKABKE10AAA056789',
+                'make'           => 'Kawasaki',
+                'model'          => 'Barako 175',
+                'year_model'     => 2022,
+                'body_color'     => 'Blue',
+                'body_type'      => 'Deluxe Side Car',
+                'or_number'      => 'OR-2022-005005',
+                'cr_number'      => 'CR-2022-005005',
+                'status'         => 'active',
             ],
         ];
 

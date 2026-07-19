@@ -103,7 +103,7 @@ class PaymentController extends Controller
     }
 
     /**
-     * List applications currently pending payment.
+     * List applications and violations currently pending payment.
      */
     public function index(): Response
     {
@@ -123,9 +123,84 @@ class PaymentController extends Controller
                 ];
             });
 
+        $violations = Violation::with(['tricycle.operator'])
+            ->where('status', 'open')
+            ->orderByDesc('detected_at')
+            ->get()
+            ->map(function ($v) {
+                return [
+                    'id'       => $v->id,
+                    'ticket'   => 'VIO-26-' . str_pad($v->id, 4, '0', STR_PAD_LEFT),
+                    'operator' => $v->tricycle?->operator ? $v->tricycle->operator->full_name : 'N/A',
+                    'unit'     => $v->tricycle?->body_number ?: 'Pending',
+                    'plate_no' => $v->tricycle?->plate_number ?: 'N/A',
+                    'type'     => ucwords(str_replace('_', ' ', $v->violation_type)),
+                    'amount'   => (float)$v->fine_amount,
+                    'date'     => $v->detected_at->format('M d, Y - h:i A'),
+                ];
+            });
+
         return Inertia::render('Treasurer/PendingPayments', [
             'transactions' => $transactions,
+            'violations'   => $violations,
         ]);
+    }
+
+    /**
+     * Show verification form for a specific violation ticket.
+     */
+    public function showViolation(Violation $violation): Response
+    {
+        $violation->load(['tricycle.operator.todaZone', 'locationSnapshot']);
+
+        $location = 'Nasugbu Poblacion Area';
+        if ($violation->locationSnapshot) {
+            $location = "Nasugbu Poblacion Zone ({$violation->locationSnapshot->latitude}, {$violation->locationSnapshot->longitude})";
+        } elseif ($violation->violation_type === 'route_violation') {
+            $location = 'TODA Route Boundary — Border Gate';
+        }
+
+        $record = [
+            'id'            => $violation->id,
+            'ticket'        => 'VIO-26-' . str_pad($violation->id, 4, '0', STR_PAD_LEFT),
+            'operator'      => $violation->tricycle?->operator ? $violation->tricycle->operator->full_name : 'N/A',
+            'contact'       => $violation->tricycle?->operator ? $violation->tricycle->operator->contact_number : 'N/A',
+            'toda'          => $violation->tricycle?->todaZone ? $violation->tricycle->todaZone->name : 'Unassigned',
+            'unit'          => $violation->tricycle?->body_number ?: 'Pending',
+            'plate_no'      => $violation->tricycle?->plate_number ?: 'N/A',
+            'type'          => ucwords(str_replace('_', ' ', $violation->violation_type)),
+            'amount'        => (float)$violation->fine_amount,
+            'date'          => $violation->detected_at->format('M d, Y - h:i A'),
+            'location_desc' => $location,
+        ];
+
+        return Inertia::render('Treasurer/VerifyViolation', [
+            'violationId' => $violation->id,
+            'record'      => $record,
+        ]);
+    }
+
+    /**
+     * Confirm walk-in payment and resolve a violation.
+     */
+    public function settleViolation(Request $request, Violation $violation): RedirectResponse
+    {
+        $request->validate([
+            'official_receipt_number' => 'required|string|max:50',
+            'amount'                  => 'required|numeric|min:0',
+            'payment_method'          => 'required|in:cash,gcash,bank_transfer,check',
+            'notes'                   => 'nullable|string',
+        ]);
+
+        DB::transaction(function () use ($violation, $request) {
+            $violation->update([
+                'status'       => 'resolved',
+                'fine_paid_at' => now(),
+                'notes'        => $request->input('notes') ?: 'Settle counter payment.',
+            ]);
+        });
+
+        return redirect()->route('treasurer.pending')->with('success', 'Violation fine successfully paid and resolved.');
     }
 
     /**

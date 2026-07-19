@@ -142,6 +142,94 @@ class ViolationsSeeder extends Seeder
             ]);
         }
 
-        $this->command->info('✔ Violations seeded (1 resolved automated, 1 open automated, 1 manual route violation) + location pings.');
+        // -----------------------------------------------------------------
+        // Seed franchise schemes & violations for newly active tricycles
+        // to populate the cashier and operator compliance queues rich data
+        // -----------------------------------------------------------------
+        $tri4 = Tricycle::where('plate_number', 'DDD-3456')->first();
+        $tri5 = Tricycle::where('plate_number', 'EEE-7890')->first();
+        $blueScheme = ColorCodingScheme::where('name', 'Blue')->first();
+
+        $app4 = \App\Models\Application::where('reference_number', 'APP-2026-00004')->first();
+        $app5 = \App\Models\Application::where('reference_number', 'APP-2026-00005')->first();
+
+        if ($tri4 && $tri5 && $blueScheme) {
+            $fs4 = FranchiseScheme::firstOrCreate(
+                ['franchise_number' => 'FS-2026-00004'],
+                [
+                    'application_id'         => $app4 ? $app4->id : 4,
+                    'tricycle_id'            => $tri4->id,
+                    'color_coding_scheme_id' => $redScheme->id,
+                    'issued_by'              => $tmo->id,
+                    'issue_date'             => now()->subYear()->toDateString(),
+                    'expiry_date'            => now()->addMonths(6)->toDateString(),
+                    'is_active'              => true,
+                ]
+            );
+
+            $fs5 = FranchiseScheme::firstOrCreate(
+                ['franchise_number' => 'FS-2026-00005'],
+                [
+                    'application_id'         => $app5 ? $app5->id : 5,
+                    'tricycle_id'            => $tri5->id,
+                    'color_coding_scheme_id' => $blueScheme->id,
+                    'issued_by'              => $tmo->id,
+                    'issue_date'             => now()->subYear()->toDateString(),
+                    'expiry_date'            => now()->addMonths(4)->toDateString(),
+                    'is_active'              => true,
+                ]
+            );
+
+            // Open manual violation for Maria Clara (DDD-3456)
+            if (! Violation::where('tricycle_id', $tri4->id)->exists()) {
+                Violation::create([
+                    'tricycle_id'             => $tri4->id,
+                    'franchise_scheme_id'     => $fs4->id,
+                    'color_coding_scheme_id'  => $redScheme->id,
+                    'location_snapshot_id'    => null,
+                    'detected_by'             => $tmo->id,
+                    'violation_type'          => 'route_violation',
+                    'detected_at'             => now()->subDays(2)->setTime(14, 15, 0),
+                    'day_of_week'             => now()->subDays(2)->format('l'),
+                    'detection_method'        => 'manual',
+                    'status'                  => 'open',
+                    'fine_amount'             => 300.00,
+                    'fine_paid_at'            => null,
+                    'notes'                   => 'TODA Boundary Checkpoint — Operator operating inside unauthorized TODA-02 zone.',
+                ]);
+            }
+
+            // Open automated violation for Ricardo Santos (EEE-7890)
+            $pingLocation = TricycleLocation::create([
+                'tricycle_id' => $tri5->id,
+                'latitude'    => 14.0740,
+                'longitude'   => 120.6380,
+                'speed_kmh'   => 28.0,
+                'heading_deg' => 180,
+                'accuracy_m'  => 4.5,
+                'source'      => 'mobile_app',
+                'recorded_at' => now()->subMinutes(12),
+            ]);
+
+            if (! Violation::where('tricycle_id', $tri5->id)->exists()) {
+                Violation::create([
+                    'tricycle_id'             => $tri5->id,
+                    'franchise_scheme_id'     => $fs5->id,
+                    'color_coding_scheme_id'  => $blueScheme->id,
+                    'location_snapshot_id'    => $pingLocation->id,
+                    'detected_by'             => null,
+                    'violation_type'          => 'color_coding',
+                    'detected_at'             => now()->subMinutes(12),
+                    'day_of_week'             => 'Tuesday',
+                    'detection_method'        => 'automated',
+                    'status'                  => 'open',
+                    'fine_amount'             => 500.00,
+                    'fine_paid_at'            => null,
+                    'notes'                   => 'Color coding detection logic warning. Blue coding scheme operating on Tuesday.',
+                ]);
+            }
+        }
+
+        $this->command->info('✔ Violations seeded (1 resolved automated, 3 open violations, 1 manual route violation) + location pings.');
     }
 }

@@ -153,9 +153,9 @@ class BPLOController extends Controller
                     ]
                 );
 
-                // 3. Setup Franchise Scheme (Default Coding color scheme based on Plate last digit)
-                $lastDigit = (int)substr($tricycle->plate_number, -1);
-                // Map last digit of plate to standard color coding scheme day
+                // 3. Setup Franchise Scheme (Default Coding color scheme based on Assigned Tricycle Number last digit)
+                $lastDigit = (int)substr(trim($bodyNumber), -1);
+                // Map last digit of Assigned Tricycle Number to standard color coding scheme day
                 $codingDay = $this->getCodingDay($lastDigit);
                 $scheme = ColorCodingScheme::whereJsonContains('restricted_days', $codingDay)->first();
                 $schemeId = $scheme ? $scheme->id : ColorCodingScheme::first()->id;

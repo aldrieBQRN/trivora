@@ -33,10 +33,14 @@ class ApplicationsSeeder extends Seeder
         $op1       = Operator::whereHas('user', fn ($q) => $q->where('email', 'driver.pramos@trivora.ph'))->first();
         $op2       = Operator::whereHas('user', fn ($q) => $q->where('email', 'driver.jbautista@trivora.ph'))->first();
         $op3       = Operator::whereHas('user', fn ($q) => $q->where('email', 'driver.evillanueva@trivora.ph'))->first();
+        $op4       = Operator::whereHas('user', fn ($q) => $q->where('email', 'driver.mclara@trivora.ph'))->first();
+        $op5       = Operator::whereHas('user', fn ($q) => $q->where('email', 'driver.rsantos@trivora.ph'))->first();
 
         $tri1      = Tricycle::where('plate_number', 'AAA-1234')->first();
         $tri2      = Tricycle::where('plate_number', 'BBB-5678')->first();
         $tri3      = Tricycle::where('plate_number', 'CCC-9012')->first();
+        $tri4      = Tricycle::where('plate_number', 'DDD-3456')->first();
+        $tri5      = Tricycle::where('plate_number', 'EEE-7890')->first();
 
         $redScheme  = ColorCodingScheme::where('name', 'Red')->first();
         $blueScheme = ColorCodingScheme::where('name', 'Blue')->first();
@@ -222,7 +226,140 @@ class ApplicationsSeeder extends Seeder
             ]);
         }
 
-        $this->command->info('✔ Applications seeded (3 applications at different workflow stages).');
+        // -----------------------------------------------------------------
+        // APPLICATION 4: Maria Clara — REJECTED (document validation failed)
+        // -----------------------------------------------------------------
+        if ($op4 && $tri4 && ! Application::where('reference_number', 'APP-2026-00004')->exists()) {
+            $app4 = Application::create([
+                'reference_number' => 'APP-2026-00004',
+                'operator_id'      => $op4->id,
+                'tricycle_id'      => $tri4->id,
+                'application_type' => 'new',
+                'current_step'     => 1,
+                'status'           => 'rejected',
+                'submitted_at'     => now()->subDays(6),
+                'completed_at'     => null,
+                'remarks'          => 'Requirements rejected. Driver\'s license copy is blurry.',
+            ]);
+
+            // Seed documents with 1 rejected doc
+            $this->seedDocuments($app4, 'approved', $tmo);
+
+            // Explicitly reject the driver's license
+            $licenseDoc = $app4->documents()->where('document_type', 'drivers_license')->first();
+            if ($licenseDoc) {
+                $licenseDoc->update([
+                    'review_status'    => 'rejected',
+                    'rejection_reason' => 'The uploaded Driver\'s License photo is blurry and illegible. Please upload a clear scan.',
+                ]);
+            }
+
+            ApplicationStatusHistory::create([
+                'application_id' => $app4->id,
+                'changed_by'     => $op4->user_id,
+                'from_status'    => null,
+                'to_status'      => 'pending_review',
+                'from_step'      => null,
+                'to_step'        => 1,
+                'notes'          => 'Application submitted.',
+                'created_at'     => now()->subDays(6),
+            ]);
+            ApplicationStatusHistory::create([
+                'application_id' => $app4->id,
+                'changed_by'     => $tmo?->id,
+                'from_status'    => 'pending_review',
+                'to_status'      => 'rejected',
+                'from_step'      => 1,
+                'to_step'        => 1,
+                'notes'          => 'Driver\'s License document rejected due to blurriness.',
+                'created_at'     => now()->subDays(4),
+            ]);
+        }
+
+        // -----------------------------------------------------------------
+        // APPLICATION 5: Ricardo Santos — FAILED INSPECTION (safety defects)
+        // -----------------------------------------------------------------
+        if ($op5 && $tri5 && ! Application::where('reference_number', 'APP-2026-00005')->exists()) {
+            $app5 = Application::create([
+                'reference_number' => 'APP-2026-00005',
+                'operator_id'      => $op5->id,
+                'tricycle_id'      => $tri5->id,
+                'application_type' => 'new',
+                'current_step'     => 2,
+                'status'           => 'failed_inspection',
+                'submitted_at'     => now()->subDays(10),
+                'completed_at'     => null,
+                'remarks'          => 'Physical inspection failed. Safety defects detected.',
+            ]);
+
+            $this->seedDocuments($app5, 'approved', $tmo);
+
+            ApplicationStatusHistory::create([
+                'application_id' => $app5->id,
+                'changed_by'     => $op5->user_id,
+                'from_status'    => null,
+                'to_status'      => 'pending_review',
+                'from_step'      => null,
+                'to_step'        => 1,
+                'notes'          => 'Application submitted.',
+                'created_at'     => now()->subDays(10),
+            ]);
+            ApplicationStatusHistory::create([
+                'application_id' => $app5->id,
+                'changed_by'     => $tmo?->id,
+                'from_status'    => 'pending_review',
+                'to_status'      => 'pending_inspection',
+                'from_step'      => 1,
+                'to_step'        => 2,
+                'notes'          => 'Documents verified. Proceed to inspection.',
+                'created_at'     => now()->subDays(8),
+            ]);
+            ApplicationStatusHistory::create([
+                'application_id' => $app5->id,
+                'changed_by'     => $tmo?->id,
+                'from_status'    => 'pending_inspection',
+                'to_status'      => 'failed_inspection',
+                'from_step'      => 2,
+                'to_step'        => 2,
+                'notes'          => 'Physical inspection failed: safety equipment and brakes defects.',
+                'created_at'     => now()->subDays(5),
+            ]);
+
+            // Save inspection report with details
+            Inspection::create([
+                'application_id'    => $app5->id,
+                'inspector_id'      => $tmo?->id,
+                'attempt_number'    => 1,
+                'inspection_date'   => now()->subDays(5)->toDateString(),
+                'inspection_time'   => '10:00:00',
+                'location_address'  => 'TMO Compound, Municipal Hall',
+                'result'            => 'failed',
+                'safety_equipment'  => false,
+                'brakes_steering'   => false,
+                'lights_reflectors' => true,
+                'tires_suspension'  => true,
+                'emissions_test'    => true,
+                'license_toda_docs' => true,
+                'inspector_notes'   => json_encode([
+                    'statuses' => [
+                        'headlights' => 'passed',
+                        'taillights' => 'passed',
+                        'signals'    => 'passed',
+                        'horn'       => 'passed',
+                        'mirrors'    => 'failed',
+                        'brakes'     => 'failed',
+                        'plate'      => 'passed',
+                        'sidecar'    => 'passed',
+                    ],
+                    'defects' => [
+                        'mirrors' => 'Missing right-side mirror.',
+                        'brakes'  => 'Front brake wire loose and unresponsive.',
+                    ]
+                ]),
+            ]);
+        }
+
+        $this->command->info('✔ Applications seeded (5 applications at different workflow stages).');
     }
 
     // -------------------------------------------------------------------------

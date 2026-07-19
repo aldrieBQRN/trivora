@@ -158,6 +158,44 @@ class UsersSeeder extends Seeder
                     'toda_id'                  => $toda3?->id,
                 ],
             ],
+            [
+                'user' => [
+                    'name'  => 'Maria Clara',
+                    'email' => 'driver.mclara@trivora.ph',
+                ],
+                'operator' => [
+                    'first_name'               => 'Maria',
+                    'middle_name'              => 'Luz',
+                    'last_name'                => 'Clara',
+                    'contact_number'           => '09191234504',
+                    'address'                  => '45 Makiling St., Poblacion',
+                    'barangay'                 => 'Poblacion',
+                    'date_of_birth'            => '1995-05-10',
+                    'license_number'           => 'N01-95-456789',
+                    'license_expiry_date'      => '2028-05-10',
+                    'license_restriction_code' => '1',
+                    'toda_id'                  => $toda1?->id,
+                ],
+            ],
+            [
+                'user' => [
+                    'name'  => 'Ricardo Santos',
+                    'email' => 'driver.rsantos@trivora.ph',
+                ],
+                'operator' => [
+                    'first_name'               => 'Ricardo',
+                    'middle_name'              => 'Diaz',
+                    'last_name'                => 'Santos',
+                    'contact_number'           => '09211234505',
+                    'address'                  => '88 Apo St., Bagong Silang',
+                    'barangay'                 => 'Bagong Silang',
+                    'date_of_birth'            => '1988-12-12',
+                    'license_number'           => 'N01-88-567890',
+                    'license_expiry_date'      => '2027-12-12',
+                    'license_restriction_code' => '1,2',
+                    'toda_id'                  => $toda2?->id,
+                ],
+            ],
         ];
 
         foreach ($drivers as $entry) {

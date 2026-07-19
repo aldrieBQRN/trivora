@@ -57,23 +57,16 @@ Route::middleware(['auth', 'role:tmo_personnel,admin'])->group(function () {
     Route::get('/tmo-dashboard', [DashboardController::class, 'index'])->name('tmo.dashboard');
 
     // Unit Registry
-    Route::get('/tmo/registry', function () {
-        return Inertia::render('TMODashboard/UnitRegistry');
-    })->name('tmo.registry');
+    Route::get('/tmo/registry', [DashboardController::class, 'registry'])->name('tmo.registry');
 
     // Tricycle Details
-    Route::get('/tmo/tricycle/{id}', function ($id) {
-        return Inertia::render('TMODashboard/TricycleDetails', ['tricycleId' => $id]);
-    })->name('tricycle.details');
+    Route::get('/tmo/tricycle/{id}', [DashboardController::class, 'tricycleDetails'])->name('tricycle.details');
 
     // Violation Records
-    Route::get('/violations', function () {
-        return Inertia::render('TMODashboard/Violations/Violations');
-    })->name('tmo.violations');
-
-    Route::get('/violations/{id}', function ($id) {
-        return Inertia::render('TMODashboard/Violations/ViolationDetails', ['violationId' => $id]);
-    })->name('tmo.violations.details');
+    Route::get('/violations', [DashboardController::class, 'violations'])->name('tmo.violations');
+    Route::get('/violations/{id}', [DashboardController::class, 'violationDetails'])->name('tmo.violations.details');
+    Route::get('/tmo/violations/create', [DashboardController::class, 'createViolation'])->name('tmo.violations.create');
+    Route::post('/tmo/violations/store', [DashboardController::class, 'storeViolation'])->name('tmo.violations.store');
 
     // --- PHASE 1: DOCUMENT REVIEW ---
     Route::get('/tmo/docs', [App\Http\Controllers\TMO\ApplicationController::class, 'index'])->name('tmo.docs');
@@ -102,6 +95,8 @@ Route::middleware(['auth', 'role:municipal_treasurer,admin'])->group(function ()
     Route::get('/treasurer/pending', [App\Http\Controllers\Treasurer\PaymentController::class, 'index'])->name('treasurer.pending');
     Route::get('/treasurer/verify/{application}', [App\Http\Controllers\Treasurer\PaymentController::class, 'show'])->name('treasurer.verify');
     Route::post('/treasurer/verify/{application}', [App\Http\Controllers\Treasurer\PaymentController::class, 'store'])->name('treasurer.verify.submit');
+    Route::get('/treasurer/verify-violation/{violation}', [App\Http\Controllers\Treasurer\PaymentController::class, 'showViolation'])->name('treasurer.verify-violation');
+    Route::post('/treasurer/verify-violation/{violation}', [App\Http\Controllers\Treasurer\PaymentController::class, 'settleViolation'])->name('treasurer.verify-violation.submit');
     Route::get('/treasurer/transactions', [App\Http\Controllers\Treasurer\PaymentController::class, 'transactions'])->name('treasurer.transactions');
     Route::get('/treasurer/receipt/{id}', [App\Http\Controllers\Treasurer\PaymentController::class, 'receipt'])->name('treasurer.receipt');
 });

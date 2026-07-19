@@ -439,7 +439,7 @@ const CSS = `
 @media (max-width: 640px) { .td-charts-grid { grid-template-columns: 1fr; } }
 `;
 
-export default function TricycleDetails({ tricycleId }) {
+export default function TricycleDetails({ tricycleId, initialTricycle = null, initialDocs = [], initialVios = [], initialMetrics = [] }) {
     // Mock data for the selected tricycle
     const tricycleMap = {
         'NSB-26-8812': {
@@ -500,18 +500,29 @@ export default function TricycleDetails({ tricycleId }) {
         }
     };
 
-    const tricycle = tricycleMap[tricycleId] || tricycleMap['NSB-26-8812'];
+    const tricycle = initialTricycle || tricycleMap[tricycleId] || tricycleMap['NSB-26-8812'];
 
-    // Mock performance data
-    const metrics = [
+    // Dynamic metrics
+    const metrics = initialMetrics.length > 0 ? initialMetrics.map(m => {
+        const iconMap = {
+            'AlertTriangle': AlertTriangle,
+            'TrendingUp': TrendingUp,
+            'FileCheck': FileCheck,
+            'CheckCircle2': CheckCircle2
+        };
+        return {
+            ...m,
+            icon: iconMap[m.icon] || FileCheck
+        };
+    }) : [
         { label: 'Violations Today', value: '0', icon: AlertTriangle, color: 'td-metric-indigo' },
         { label: 'Compliance Score', value: '95%', icon: TrendingUp, color: 'td-metric-emerald' },
         { label: 'Documents', value: '4/5', icon: FileCheck, color: 'td-metric-indigo' },
         { label: 'Inspections Pass', value: '18/20', icon: CheckCircle2, color: 'td-metric-emerald' }
     ];
 
-    // Mock documents
-    const documents = [
+    // Dynamic documents
+    const documents = initialDocs.length > 0 ? initialDocs : [
         { id: 1, name: 'Certificate of Registration', status: 'verified', date: 'OCT 22, 2023' },
         { id: 2, name: 'Barangay Clearance', status: 'verified', date: 'OCT 21, 2023' },
         { id: 3, name: 'Proof of Billing', status: 'verified', date: 'OCT 20, 2023' },
@@ -531,8 +542,8 @@ export default function TricycleDetails({ tricycleId }) {
         { id: 8, name: 'Exhaust System', status: 'passed' }
     ];
 
-    // Mock coding violations
-    const violations = [
+    // Dynamic coding violations
+    const violations = initialVios.length > 0 ? initialVios : [
         { id: 1, title: 'Coding Day Violation', date: 'DEC 10, 2023 at 2:45 PM', paymentStatus: 'unsettled', codingDay: 'Monday', details: 'Operated on coding day' },
         { id: 2, title: 'Coding Day Violation', date: 'NOV 28, 2023 at 8:30 PM', paymentStatus: 'settled', codingDay: 'Tuesday', details: 'Operated on coding day' }
     ];
@@ -593,6 +604,13 @@ export default function TricycleDetails({ tricycleId }) {
                     <Link href={route('tmo.registry')} className="td-back-link">
                         <ChevronLeft size={14} strokeWidth={3} />
                         Back to Registry
+                    </Link>
+                    <Link
+                        href={route('tmo.violations.create', { tricycle_id: tricycle.id })}
+                        className="vr-file-btn"
+                        style={{ height: 38, padding: '0 16px', borderRadius: 8, background: '#DC2626', color: '#FFFFFF', display: 'inline-flex', alignItems: 'center', gap: 6, fontFamily: 'DM Sans, sans-serif', fontSize: 9.5, fontWeight: 700, letterSpacing: '.12em', textTransform: 'uppercase', textDecoration: 'none', border: 'none', cursor: 'pointer', boxShadow: '0 4px 12px rgba(220,38,38,.2)', transition: 'all .2s' }}
+                    >
+                        <AlertTriangle size={12} /> Report Infraction
                     </Link>
                 </div>
 

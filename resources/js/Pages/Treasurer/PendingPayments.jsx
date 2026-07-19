@@ -56,10 +56,16 @@ const CSS = `
 /* Empty state */
 .pp-empty { padding: 48px 24px; text-align: center; }
 .pp-empty p { font-family: 'DM Sans', sans-serif; font-size: 11px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: #8A96BC; margin-top: 12px; }
+
+.pp-tabs { display: flex; gap: 8px; margin-bottom: 24px; border-bottom: 1px solid rgba(28,35,64,.08); padding-bottom: 8px; }
+.pp-tab-btn { background: none; border: none; padding: 8px 16px; font-family: 'DM Sans', sans-serif; font-size: 10px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: #8A96BC; cursor: pointer; border-radius: 8px; transition: all .2s; }
+.pp-tab-btn:hover { color: #1C2340; background: rgba(28,35,64,.03); }
+.pp-tab-btn.active { color: #4F5BCB; background: rgba(79,91,203,.08); }
 `;
 
-export default function PendingPayments({ transactions = [] }) {
+export default function PendingPayments({ transactions = [], violations = [] }) {
     const [searchTerm, setSearchTerm] = useState('');
+    const [activeTab, setActiveTab] = useState('franchise'); // 'franchise' | 'violations'
 
     // Filter logic
     const filteredTransactions = transactions.filter(txn => {
@@ -67,6 +73,13 @@ export default function PendingPayments({ transactions = [] }) {
                txn.ref.toLowerCase().includes(searchTerm.toLowerCase()) ||
                String(txn.id).toLowerCase().includes(searchTerm.toLowerCase()) ||
                txn.app_id.toLowerCase().includes(searchTerm.toLowerCase());
+    });
+
+    const filteredViolations = violations.filter(v => {
+        return v.operator.toLowerCase().includes(searchTerm.toLowerCase()) ||
+               v.ticket.toLowerCase().includes(searchTerm.toLowerCase()) ||
+               v.unit.toLowerCase().includes(searchTerm.toLowerCase()) ||
+               v.plate_no.toLowerCase().includes(searchTerm.toLowerCase());
     });
 
     return (
@@ -79,6 +92,22 @@ export default function PendingPayments({ transactions = [] }) {
                 <h1 className="pp-title">Awaiting Counter Collection</h1>
                 <p className="pp-subtitle">Process physical cash and check payments made over the counter before advancing applications.</p>
 
+                {/* ── Tabs Tab Switcher ── */}
+                <div className="pp-tabs">
+                    <button
+                        className={`pp-tab-btn ${activeTab === 'franchise' ? 'active' : ''}`}
+                        onClick={() => { setActiveTab('franchise'); setSearchTerm(''); }}
+                    >
+                        Franchise Fees ({transactions.length})
+                    </button>
+                    <button
+                        className={`pp-tab-btn ${activeTab === 'violations' ? 'active' : ''}`}
+                        onClick={() => { setActiveTab('violations'); setSearchTerm(''); }}
+                    >
+                        Violation Fines ({violations.length})
+                    </button>
+                </div>
+
                 {/* ── Search & Filter Controls ── */}
                 <div className="pp-toolbar">
                     <div className="pp-toolbar-left">
@@ -86,7 +115,7 @@ export default function PendingPayments({ transactions = [] }) {
                             <Search size={16} strokeWidth={2.5} color="#8A96BC" />
                             <input
                                 type="text"
-                                placeholder="Search by Driver Name or Application ID..."
+                                placeholder={activeTab === 'franchise' ? "Search by Driver Name or Application ID..." : "Search by Driver Name or Ticket ID..."}
                                 value={searchTerm}
                                 onChange={e => setSearchTerm(e.target.value)}
                             />
@@ -103,54 +132,105 @@ export default function PendingPayments({ transactions = [] }) {
 
                 <div className="pp-card">
                     <div style={{ overflowX: 'auto' }}>
-                        <table className="pp-table">
-                            <thead>
-                                <tr>
-                                    <th className="pp-th">Driver & Payment Type</th>
-                                    <th className="pp-th">Collection Status</th>
-                                    <th className="pp-th">Amount & Date</th>
-                                    <th className="pp-th">Status</th>
-                                    <th className="pp-th" style={{ textAlign: 'right' }}>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {filteredTransactions.length > 0 ? (
-                                    filteredTransactions.map((txn) => (
-                                        <tr key={txn.id} className="pp-tr">
-                                            <td className="pp-td">
-                                                <p className="pp-td-primary">{txn.operator}</p>
-                                                <p className="pp-td-secondary">{txn.type} &bull; {txn.app_id}</p>
-                                            </td>
-                                            <td className="pp-td">
-                                                <p className="pp-td-secondary" style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#1C2340', fontWeight: 600 }}>
-                                                    <CreditCard size={13} color="#4F5BCB"/> {txn.method}
-                                                </p>
-                                                <span className="pp-ref">{txn.ref}</span>
-                                            </td>
-                                            <td className="pp-td">
-                                                <p className="pp-amount">₱{txn.amount.toFixed(2)}</p>
-                                                <p className="pp-td-secondary" style={{ fontSize: 10.5, marginTop: 4 }}>{txn.date}</p>
-                                            </td>
-                                            <td className="pp-td">
-                                                <span className="pp-badge pending"><Clock size={10} strokeWidth={3}/> Pending Approval</span>
-                                            </td>
-                                            <td className="pp-td" style={{ textAlign: 'right' }}>
-                                                <Link href={`/treasurer/verify/${txn.id}`} className="pp-action-btn">
-                                                    Verify
-                                                </Link>
+                        {activeTab === 'franchise' ? (
+                            <table className="pp-table">
+                                <thead>
+                                    <tr>
+                                        <th className="pp-th">Driver & Payment Type</th>
+                                        <th className="pp-th">Collection Status</th>
+                                        <th className="pp-th">Amount & Date</th>
+                                        <th className="pp-th">Status</th>
+                                        <th className="pp-th" style={{ textAlign: 'right' }}>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {filteredTransactions.length > 0 ? (
+                                        filteredTransactions.map((txn) => (
+                                            <tr key={txn.id} className="pp-tr">
+                                                <td className="pp-td">
+                                                    <p className="pp-td-primary">{txn.operator}</p>
+                                                    <p className="pp-td-secondary">{txn.type} &bull; {txn.app_id}</p>
+                                                </td>
+                                                <td className="pp-td">
+                                                    <p className="pp-td-secondary" style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#1C2340', fontWeight: 600 }}>
+                                                        <CreditCard size={13} color="#4F5BCB"/> {txn.method}
+                                                    </p>
+                                                    <span className="pp-ref">{txn.ref}</span>
+                                                </td>
+                                                <td className="pp-td">
+                                                    <p className="pp-amount">₱{txn.amount.toFixed(2)}</p>
+                                                    <p className="pp-td-secondary" style={{ fontSize: 10.5, marginTop: 4 }}>{txn.date}</p>
+                                                </td>
+                                                <td className="pp-td">
+                                                    <span className="pp-badge pending"><Clock size={10} strokeWidth={3}/> Pending Approval</span>
+                                                </td>
+                                                <td className="pp-td" style={{ textAlign: 'right' }}>
+                                                    <Link href={route('treasurer.verify', txn.id)} className="pp-action-btn">
+                                                        Verify
+                                                    </Link>
+                                                </td>
+                                            </tr>
+                                        ))
+                                    ) : (
+                                        <tr>
+                                            <td colSpan="5" className="pp-empty">
+                                                <ShieldAlert size={32} color="#C5CBE5" strokeWidth={1.5} style={{ margin: '0 auto' }}/>
+                                                <p>No pending payments match your search</p>
                                             </td>
                                         </tr>
-                                    ))
-                                ) : (
+                                    )}
+                                </tbody>
+                            </table>
+                        ) : (
+                            <table className="pp-table">
+                                <thead>
                                     <tr>
-                                        <td colSpan="5" className="pp-empty">
-                                            <ShieldAlert size={32} color="#C5CBE5" strokeWidth={1.5} style={{ margin: '0 auto' }}/>
-                                            <p>No pending payments match your search</p>
-                                        </td>
+                                        <th className="pp-th">Ticket ID & Driver</th>
+                                        <th className="pp-th">Tricycle Unit</th>
+                                        <th className="pp-th">Fine Amount & Date</th>
+                                        <th className="pp-th">Status</th>
+                                        <th className="pp-th" style={{ textAlign: 'right' }}>Actions</th>
                                     </tr>
-                                )}
-                            </tbody>
-                        </table>
+                                </thead>
+                                <tbody>
+                                    {filteredViolations.length > 0 ? (
+                                        filteredViolations.map((v) => (
+                                            <tr key={v.id} className="pp-tr">
+                                                <td className="pp-td">
+                                                    <p className="pp-td-primary">{v.ticket}</p>
+                                                    <p className="pp-td-secondary">{v.operator}</p>
+                                                </td>
+                                                <td className="pp-td">
+                                                    <p className="pp-td-primary" style={{ fontSize: 13 }}>{v.unit}</p>
+                                                    <p className="pp-td-secondary">Plate: {v.plate_no}</p>
+                                                </td>
+                                                <td className="pp-td">
+                                                    <p className="pp-amount" style={{ color: '#DC2626' }}>₱{v.amount.toFixed(2)}</p>
+                                                    <p className="pp-td-secondary" style={{ fontSize: 10.5, marginTop: 4 }}>{v.date}</p>
+                                                </td>
+                                                <td className="pp-td">
+                                                    <span className="pp-badge pending" style={{ background: 'rgba(220,38,38,.08)', color: '#DC2626', borderColor: 'rgba(220,38,38,.15)' }}>
+                                                        <Clock size={10} strokeWidth={3}/> Unpaid Fine
+                                                    </span>
+                                                </td>
+                                                <td className="pp-td" style={{ textAlign: 'right' }}>
+                                                    <Link href={route('treasurer.verify-violation', v.id)} className="pp-action-btn">
+                                                        Settle Fine
+                                                    </Link>
+                                                </td>
+                                            </tr>
+                                        ))
+                                    ) : (
+                                        <tr>
+                                            <td colSpan="5" className="pp-empty">
+                                                <ShieldAlert size={32} color="#C5CBE5" strokeWidth={1.5} style={{ margin: '0 auto' }}/>
+                                                <p>No unpaid violation tickets match your search</p>
+                                            </td>
+                                        </tr>
+                                    )}
+                                </tbody>
+                            </table>
+                        )}
                     </div>
                 </div>
             </div>
