@@ -360,15 +360,10 @@ export default function Violations({ initialViolations = [] }) {
             <div className="vr-root" style={{ maxWidth: 1500, margin: '0 auto', paddingBottom: 48 }}>
 
                 {/* ── Page heading ── */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 32 }}>
-                    <div>
-                        <p className="vr-eyebrow">Enforcement Records</p>
-                        <h1 className="vr-title">Coding Violations</h1>
-                        <p className="vr-subtitle">Database of detected coding scheme violations</p>
-                    </div>
-                    <Link href={route('tmo.violations.create')} className="vr-file-btn" style={{ height: 44, padding: '0 20px', borderRadius: 10, background: '#DC2626', color: '#FFFFFF', display: 'inline-flex', alignItems: 'center', gap: 8, fontFamily: 'DM Sans, sans-serif', fontSize: 10, fontWeight: 700, letterSpacing: '.12em', textTransform: 'uppercase', textDecoration: 'none', border: 'none', cursor: 'pointer', boxShadow: '0 4px 12px rgba(220,38,38,.2)', transition: 'all .2s' }}>
-                        <ShieldAlert size={14} /> File Violation Ticket
-                    </Link>
+                <div style={{ marginBottom: 32 }}>
+                    <p className="vr-eyebrow">Enforcement Records</p>
+                    <h1 className="vr-title">Coding Violations</h1>
+                    <p className="vr-subtitle">Database of detected coding scheme violations</p>
                 </div>
 
                 {/* ── Stat cards ── */}
@@ -403,6 +398,9 @@ export default function Violations({ initialViolations = [] }) {
                             <Filter size={14} strokeWidth={2} />
                             Filter Status
                         </button>
+                        <Link href={route('tmo.violations.create')} className="vr-file-btn" style={{ height: 42, padding: '0 18px', borderRadius: 50, background: '#DC2626', color: '#FFFFFF', display: 'inline-flex', alignItems: 'center', gap: 7, fontFamily: 'DM Sans, sans-serif', fontSize: 10, fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase', textDecoration: 'none', border: 'none', cursor: 'pointer', boxShadow: '0 4px 12px rgba(220,38,38,.2)', transition: 'all .2s' }}>
+                            <ShieldAlert size={14} /> File Violation Ticket
+                        </Link>
                     </div>
                 </div>
 

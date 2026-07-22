@@ -14,9 +14,10 @@ return new class extends Migration
         Schema::create('operators', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')
+                ->nullable()
                 ->unique()
                 ->constrained('users')
-                ->cascadeOnDelete();
+                ->nullOnDelete();
             $table->foreignId('toda_id')
                 ->nullable()
                 ->constrained('toda_zones')

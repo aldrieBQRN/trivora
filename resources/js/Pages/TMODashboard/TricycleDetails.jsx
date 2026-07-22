@@ -605,13 +605,6 @@ export default function TricycleDetails({ tricycleId, initialTricycle = null, in
                         <ChevronLeft size={14} strokeWidth={3} />
                         Back to Registry
                     </Link>
-                    <Link
-                        href={route('tmo.violations.create', { tricycle_id: tricycle.id })}
-                        className="vr-file-btn"
-                        style={{ height: 38, padding: '0 16px', borderRadius: 8, background: '#DC2626', color: '#FFFFFF', display: 'inline-flex', alignItems: 'center', gap: 6, fontFamily: 'DM Sans, sans-serif', fontSize: 9.5, fontWeight: 700, letterSpacing: '.12em', textTransform: 'uppercase', textDecoration: 'none', border: 'none', cursor: 'pointer', boxShadow: '0 4px 12px rgba(220,38,38,.2)', transition: 'all .2s' }}
-                    >
-                        <AlertTriangle size={12} /> Report Infraction
-                    </Link>
                 </div>
 
                 {/* ── Hero Section + Operator Info ── */}
