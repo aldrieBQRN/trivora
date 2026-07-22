@@ -10,9 +10,9 @@
 * **Course / Defense:** Capstone Project
 * **Team Members:**
   * **John Aldrie Baquiran** — Lead System Architect & Full-Stack Web Developer
-  * **Jessen** — Mobile App Backend & Hardware Integration
-  * **Aeron** — QA Analyst
-  * **Emman** — UI/UX Designer (Mobile App)
+  * **Jessen Salaysay** — Mobile App Backend & Hardware Integration
+  * **Aeron Cedric Ortega** — QA Analyst
+  * **Eman Esguerra** — UI/UX Designer (Mobile App)
 
 ---
 
