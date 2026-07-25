@@ -295,9 +295,10 @@ export default function MTOPWizard({ applicationType = 'new', tricycleUnit = nul
                             <div className="mw-input-group" style={{ gridColumn: '1 / -1' }}>
                                 <label className="mw-label">TODA Assignment</label>
                                 <select className="mw-select" value={data.toda} onChange={e => setData('toda', e.target.value)}>
-                                    <option>A (Poblacion)</option>
-                                    <option>B (Wawa)</option>
-                                    <option>C (Bucana)</option>
+                                    <option value="TODA Bucana">TODA Bucana</option>
+                                    <option value="TODA Brgy. 10">TODA Brgy. 10</option>
+                                    <option value="TODA Brgy. 8">TODA Brgy. 8</option>
+                                    <option value="TODA Brgy. 14">TODA Brgy. 14</option>
                                 </select>
                             </div>
                             <div className="mw-input-group" style={{ gridColumn: '1 / -1' }}>

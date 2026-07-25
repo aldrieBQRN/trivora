@@ -874,10 +874,10 @@ export default function PublicApply() {
                                     <div className="pa-select-wrap">
                                         <select className="pa-select" value={data.toda}
                                             onChange={e => setData('toda', e.target.value)}>
-                                            <option value="A">TODA A (Poblacion)</option>
-                                            <option value="B">TODA B (Wawa)</option>
-                                            <option value="C">TODA C (Bucana)</option>
-                                            <option value="D">TODA D (Papaya)</option>
+                                            <option value="TODA Bucana">TODA Bucana</option>
+                                            <option value="TODA Brgy. 10">TODA Brgy. 10</option>
+                                            <option value="TODA Brgy. 8">TODA Brgy. 8</option>
+                                            <option value="TODA Brgy. 14">TODA Brgy. 14</option>
                                         </select>
                                     </div>
                                 </Field>

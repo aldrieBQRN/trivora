@@ -20,9 +20,9 @@ class TricyclesSeeder extends Seeder
         $operator4 = Operator::whereHas('user', fn ($q) => $q->where('email', 'driver.mclara@trivora.ph'))->first();
         $operator5 = Operator::whereHas('user', fn ($q) => $q->where('email', 'driver.rsantos@trivora.ph'))->first();
 
-        $toda1 = TodaZone::where('code', 'TODA-01')->first();
-        $toda2 = TodaZone::where('code', 'TODA-02')->first();
-        $toda3 = TodaZone::where('code', 'TODA-03')->first();
+        $toda1 = TodaZone::where('code', 'TODA-BRGY8')->first();
+        $toda2 = TodaZone::where('code', 'TODA-BRGY10')->first();
+        $toda3 = TodaZone::where('code', 'TODA-BUCANA')->first();
 
         $tricycles = [
             [
