@@ -12,6 +12,7 @@ class Tricycle extends Model
     protected $fillable = [
         'operator_id',
         'toda_zone_id',
+        'coding_scheme_number',
         'plate_number',
         'engine_number',
         'chassis_number',
@@ -29,6 +30,7 @@ class Tricycle extends Model
     ];
 
     protected $appends = [
+        'coding_scheme_number',
         'body_number',
         'tricycle_number',
     ];
@@ -41,11 +43,19 @@ class Tricycle extends Model
     }
 
     /**
-     * Get the body number dynamically from the active franchise scheme.
+     * Get the Tricycle Number Coding Scheme dynamically.
+     */
+    public function getCodingSchemeNumberAttribute($value)
+    {
+        return $value ?: $this->franchiseScheme?->franchise_number;
+    }
+
+    /**
+     * Legacy accessor alias for backward compatibility.
      */
     public function getBodyNumberAttribute()
     {
-        return $this->franchiseScheme?->franchise_number;
+        return $this->attributes['coding_scheme_number'] ?? $this->franchiseScheme?->franchise_number;
     }
 
     /**

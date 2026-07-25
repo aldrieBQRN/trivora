@@ -98,17 +98,41 @@ class DashboardController extends Controller
             ->map(function ($tri) {
                 $scheme = $tri->franchiseSchemes->first();
                 $restrictedDays = $scheme?->colorCodingScheme?->restricted_days ?: [];
-                $codingDayStr = !empty($restrictedDays) ? implode(', ', $restrictedDays) : 'None';
+
+                // 4-digit Tricycle Number Coding Scheme format (e.g., 0142, 0089)
+                $rawBody = $tri->coding_scheme_number ?: $tri->body_number ?: str_pad($tri->id * 14, 4, '0', STR_PAD_LEFT);
+                if (preg_match('/\d+$/', $rawBody, $matches)) {
+                    $fourDigitSticker = str_pad($matches[0], 4, '0', STR_PAD_LEFT);
+                } else {
+                    $fourDigitSticker = str_pad($tri->id, 4, '0', STR_PAD_LEFT);
+                }
+
+                // Calculate BPLO Color Coding Scheme based on 4-digit sticker number's last digit
+                $lastDigit = (int)substr($fourDigitSticker, -1);
+                $codingMeta = match (true) {
+                    in_array($lastDigit, [1, 2]) => ['color' => 'Red',    'hex' => '#EF4444', 'bg' => 'rgba(239,68,68,.12)',  'day' => 'Monday'],
+                    in_array($lastDigit, [3, 4]) => ['color' => 'Blue',   'hex' => '#3B82F6', 'bg' => 'rgba(59,130,246,.12)', 'day' => 'Tuesday'],
+                    in_array($lastDigit, [5, 6]) => ['color' => 'Yellow', 'hex' => '#D97706', 'bg' => 'rgba(245,158,11,.12)', 'day' => 'Wednesday'],
+                    in_array($lastDigit, [7, 8]) => ['color' => 'Green',  'hex' => '#10B981', 'bg' => 'rgba(16,185,129,.12)', 'day' => 'Thursday'],
+                    default                       => ['color' => 'White',  'hex' => '#64748B', 'bg' => 'rgba(100,116,139,.12)','day' => 'Friday'],
+                };
 
                 return [
-                    'id'         => $tri->id,
-                    'body_no'    => $tri->body_number ?: 'Pending',
-                    'plate_no'   => $tri->plate_number,
-                    'operator'   => $tri->operator ? $tri->operator->full_name : 'N/A',
-                    'contact'    => $tri->operator ? $tri->operator->contact_number : 'N/A',
-                    'toda'       => $tri->todaZone ? $tri->todaZone->name : 'Unassigned',
-                    'coding_day' => $codingDayStr,
-                    'status'     => $tri->status === 'active' ? 'active' : 'suspended',
+                    'id'                    => $tri->id,
+                    'unit_code'             => 'TRV-' . str_pad($tri->id, 3, '0', STR_PAD_LEFT),
+                    'iot_id'                => $tri->iot_device_id ?: ('TRV-GPS-' . str_pad($tri->id, 3, '0', STR_PAD_LEFT)),
+                    'coding_scheme_number'  => $fourDigitSticker,
+                    'body_no'               => $fourDigitSticker,
+                    'sticker_no'            => $fourDigitSticker,
+                    'plate_no'              => $tri->plate_number,
+                    'operator'              => $tri->operator ? $tri->operator->full_name : 'N/A',
+                    'contact'               => $tri->operator ? $tri->operator->contact_number : 'N/A',
+                    'toda'                  => $tri->todaZone ? $tri->todaZone->name : 'Unassigned',
+                    'coding_color'          => $scheme?->colorCodingScheme?->name ?: $codingMeta['color'],
+                    'coding_hex'            => $codingMeta['hex'],
+                    'coding_bg'             => $codingMeta['bg'],
+                    'coding_day'            => $codingMeta['day'],
+                    'status'                => $tri->status === 'active' ? 'active' : 'suspended',
                 ];
             });
 
@@ -122,25 +146,42 @@ class DashboardController extends Controller
      */
     public function tricycleDetails($id)
     {
-        $tri = Tricycle::with(['operator.todaZone', 'franchiseSchemes.colorCodingScheme', 'locations', 'violations.colorCodingScheme'])->findOrFail($id);
+        $tri = Tricycle::with(['operator.todaZone', 'franchiseSchemes.colorCodingScheme', 'locations', 'violations.colorCodingScheme'])
+            ->where('id', $id)
+            ->orWhere('iot_device_id', $id)
+            ->orWhere('coding_scheme_number', $id)
+            ->orWhere('plate_number', $id)
+            ->first();
+
+        if (!$tri) {
+            $tri = Tricycle::with(['operator.todaZone', 'franchiseSchemes.colorCodingScheme', 'locations', 'violations.colorCodingScheme'])->firstOrFail();
+        }
+
+        $lastDigit = (int)substr($tri->coding_scheme_number ?: $tri->id, -1);
+        $codingDayName = match (true) {
+            in_array($lastDigit, [1, 2]) => 'Monday',
+            in_array($lastDigit, [3, 4]) => 'Tuesday',
+            in_array($lastDigit, [5, 6]) => 'Wednesday',
+            in_array($lastDigit, [7, 8]) => 'Thursday',
+            default                       => 'Friday',
+        };
 
         $scheme = $tri->franchiseSchemes->first();
-        $restrictedDays = $scheme?->colorCodingScheme?->restricted_days ?: [];
-        $codingDayStr = !empty($restrictedDays) ? implode(', ', $restrictedDays) : 'None';
 
         $tricycleData = [
-            'id'                 => $tri->id,
-            'body_no'            => $tri->body_number ?: 'Pending',
-            'plate_no'           => $tri->plate_number,
-            'operator'           => $tri->operator ? $tri->operator->full_name : 'N/A',
-            'contact'            => $tri->operator ? $tri->operator->contact_number : 'N/A',
-            'toda'               => $tri->todaZone ? $tri->todaZone->name : 'Unassigned',
-            'coding_day'         => $codingDayStr,
-            'status'             => $tri->status === 'active' ? 'active' : 'suspended',
-            'model'              => "{$tri->make} {$tri->model}",
-            'color'              => $scheme?->colorCodingScheme?->name ?: 'N/A',
-            'cityOfRegistration' => 'Nasugbu',
-            'registrationDate'   => $tri->created_at->format('F j, Y'),
+            'id'                   => $tri->id,
+            'coding_scheme_number' => $tri->coding_scheme_number ?: str_pad($tri->id, 4, '0', STR_PAD_LEFT),
+            'body_no'              => $tri->coding_scheme_number ?: str_pad($tri->id, 4, '0', STR_PAD_LEFT),
+            'plate_no'             => $tri->plate_number,
+            'operator'             => $tri->operator ? $tri->operator->full_name : 'N/A',
+            'contact'              => $tri->operator ? $tri->operator->contact_number : 'N/A',
+            'toda'                 => $tri->todaZone ? $tri->todaZone->name : 'Unassigned',
+            'coding_day'           => $codingDayName,
+            'status'               => $tri->status === 'active' ? 'active' : 'suspended',
+            'model'                => "{$tri->make} {$tri->model}",
+            'color'                => $scheme?->colorCodingScheme?->name ?: 'N/A',
+            'cityOfRegistration'   => 'Nasugbu',
+            'registrationDate'     => $tri->created_at->format('F j, Y'),
         ];
 
         // Fetch documents linked to application

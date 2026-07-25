@@ -20,6 +20,7 @@ return new class extends Migration
                 ->nullable()
                 ->constrained('toda_zones')
                 ->nullOnDelete();
+            $table->string('coding_scheme_number', 20)->nullable()->comment('4-digit BPLO Tricycle Number Coding Scheme');
             $table->string('plate_number', 20)->unique();
             $table->string('engine_number', 50)->unique();
             $table->string('chassis_number', 50)->unique();

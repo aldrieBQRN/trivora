@@ -140,6 +140,7 @@ class BPLOController extends Controller
                 // 1. Update Tricycle status and telemetry setup
                 $hasIoT = !empty($trackerId) && $trackerId !== 'N/A' && $trackerId !== 'Mobile App GPS';
                 $tricycle->update([
+                    'coding_scheme_number' => str_pad($bodyNumber, 4, '0', STR_PAD_LEFT), // 4-digit Tricycle Number Coding Scheme
                     'status'               => 'active',
                     'iot_device_id'        => $hasIoT ? $trackerId : null,
                     'tracking_capability'  => $hasIoT ? 'iot_enabled' : 'mobile_only',
@@ -182,8 +183,8 @@ class BPLOController extends Controller
                     'application_id'         => $application->id,
                     'tricycle_id'            => $tricycle->id,
                     'color_coding_scheme_id' => $schemeId,
-                    'issued_by'              => Auth::id(),
-                    'franchise_number'       => $franchiseNo,
+                    'issued_by'              => Auth::id() ?: 1,
+                    'franchise_number'       => str_pad($bodyNumber, 4, '0', STR_PAD_LEFT), // 4-digit Tricycle Number Coding Scheme
                     'route_details'          => 'Nasugbu Poblacion & Border Routes',
                     'issue_date'             => now()->toDateString(),
                     'expiry_date'            => now()->addYears(3)->toDateString(),

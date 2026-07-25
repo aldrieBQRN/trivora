@@ -613,8 +613,10 @@ export default function TricycleDetails({ tricycleId, initialTricycle = null, in
                         <Bike size={64} className="td-hero-bg-icon" style={{ opacity: 0.08, color: '#1C2340' }} />
                         <div className="td-hero-inner">
                             <div className="td-hero-content">
-                                <p className="td-hero-label" style={{ color: '#FFFFFF' }}>Tricycle Unit ID</p>
-                                <h1 className="td-hero-title" style={{ color: '#FFFFFF' }}>{tricycle.body_no}</h1>
+                                <p className="td-hero-label" style={{ color: '#FFFFFF' }}>Tricycle Number Coding Scheme</p>
+                                <h1 className="td-hero-title" style={{ color: '#FFFFFF' }}>
+                                    #{tricycle.coding_scheme_number || tricycle.body_no || tricycle.plate_no}
+                                </h1>
                                 <div className="td-hero-meta">
                                     <span className="td-hero-meta-item" style={{ color: '#FFFFFF' }}>
                                         <span>Plate: {tricycle.plate_no}</span>
