@@ -425,61 +425,6 @@ export default function IssueBodyNumber({ application }) {
                                     </p>
                                 </div>
 
-                                {/* Device Assignment Zone */}
-                                <div className="ibn-device-zone">
-                                    <div className="ibn-device-header">
-                                        Assign GPS Telemetry Method
-                                    </div>
-                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginTop: '10px', marginBottom: '12px' }}>
-                                        <button
-                                            type="button"
-                                            onClick={() => setData('tracker_id', 'TRV-GPS-992')}
-                                            style={{
-                                                padding: '12px 14px', borderRadius: '10px', textAlign: 'left', cursor: 'pointer',
-                                                background: data.tracker_id !== 'Mobile App GPS' ? '#EEF2FF' : '#F8FAFC',
-                                                border: data.tracker_id !== 'Mobile App GPS' ? '2px solid #4F5BCB' : '1px solid rgba(28,35,64,.12)',
-                                            }}
-                                        >
-                                            <div style={{ fontWeight: 800, fontSize: '12px', color: '#1C2340' }}>📡 Physical Smart GPS Box</div>
-                                            <div style={{ fontSize: '10.5px', color: '#64748B', marginTop: '2px' }}>Scan LGU-issued hardware tracker</div>
-                                        </button>
-
-                                        <button
-                                            type="button"
-                                            onClick={() => setData('tracker_id', 'Mobile App GPS')}
-                                            style={{
-                                                padding: '12px 14px', borderRadius: '10px', textAlign: 'left', cursor: 'pointer',
-                                                background: data.tracker_id === 'Mobile App GPS' ? '#ECFDF5' : '#F8FAFC',
-                                                border: data.tracker_id === 'Mobile App GPS' ? '2px solid #059669' : '1px solid rgba(28,35,64,.12)',
-                                            }}
-                                        >
-                                            <div style={{ fontWeight: 800, fontSize: '12px', color: '#059669' }}>📱 Driver Mobile App GPS</div>
-                                            <div style={{ fontSize: '10.5px', color: '#64748B', marginTop: '2px' }}>Uses Driver Smartphone GPS</div>
-                                        </button>
-                                    </div>
-
-                                    {data.tracker_id !== 'Mobile App GPS' && (
-                                        <div className="ibn-device-input-wrap">
-                                            <div className="ibn-device-icon">
-                                                <Wifi size={18} strokeWidth={2.5} />
-                                            </div>
-                                            <input
-                                                type="text"
-                                                className="ibn-device-input"
-                                                placeholder="Scan or enter Device ID (e.g. TRV-992)"
-                                                value={data.tracker_id}
-                                                onChange={e => setData('tracker_id', e.target.value.toUpperCase())}
-                                            />
-                                            <div className="ibn-device-scan">
-                                                <ScanLine size={18} strokeWidth={2} />
-                                            </div>
-                                        </div>
-                                    )}
-                                    {errors.tracker_id && (
-                                        <p style={{ color: '#DC2626', fontSize: 11, marginTop: 4, fontWeight: 500 }}>{errors.tracker_id}</p>
-                                    )}
-                                </div>
-
                                 {/* Actions */}
                                 <div className="ibn-actions">
                                     <button className="ibn-btn ibn-btn-secondary" type="button">
@@ -510,9 +455,7 @@ export default function IssueBodyNumber({ application }) {
                             <div>
                                 <p className="ibn-notice-title">Administrative Notice</p>
                                 <p className="ibn-notice-body">
-                                    Linking the Smart GPS Tracker is required. Confirmation activates the
-                                    device's telemetry and initiates the automated billing record for the
-                                    current fiscal year. Final activation is permanent.
+                                    Final confirmation officially activates the MTOP Franchise Permit and issues the assigned Tricycle Number Coding Scheme. The driver will configure location telemetry directly in the Driver Mobile App.
                                 </p>
                             </div>
                         </div>

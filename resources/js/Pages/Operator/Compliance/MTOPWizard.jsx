@@ -154,8 +154,6 @@ export default function MTOPWizard({ applicationType = 'new', tricycleUnit = nul
         chassis_number: tricycleUnit?.chassis_number || '',
         plate: tricycleUnit?.plate_number || '',
         toda: tricycleUnit?.toda || 'A (Poblacion)',
-        telemetry_source: tricycleUnit?.iot_device_id ? 'iot_device' : 'mobile_app',
-        iot_device_id: tricycleUnit?.iot_device_id || '',
         documents: {},
     });
 
@@ -317,64 +315,6 @@ export default function MTOPWizard({ applicationType = 'new', tricycleUnit = nul
                             <div className="mw-input-group">
                                 <label className="mw-label">Chassis Number</label>
                                 <input className="mw-input" placeholder="CHAS-XXXXXX" value={data.chassis_number} onChange={e => setData('chassis_number', e.target.value)} />
-                            </div>
-
-                            <div style={{ gridColumn: '1 / -1', marginTop: 16, paddingTop: 16, borderTop: '1px solid rgba(28,35,64,.08)' }}>
-                                <label className="mw-label" style={{ fontWeight: 800, fontSize: '13px', color: '#1C2340', marginBottom: 8, display: 'block' }}>
-                                    GPS Telemetry Setup (Location Sharing)
-                                </label>
-                                <p style={{ fontFamily: 'Inter', fontSize: '12px', color: '#5A6488', marginBottom: 12 }}>
-                                    Select how you prefer to transmit real-time location data for municipal fleet monitoring:
-                                </p>
-                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                                    <button
-                                        type="button"
-                                        onClick={() => setData('telemetry_source', 'mobile_app')}
-                                        style={{
-                                            padding: '14px 16px', borderRadius: '12px', textAlign: 'left', cursor: 'pointer',
-                                            background: data.telemetry_source === 'mobile_app' ? '#EEF2FF' : '#F8FAFC',
-                                            border: data.telemetry_source === 'mobile_app' ? '2px solid #4F5BCB' : '1px solid rgba(28,35,64,.12)',
-                                            transition: 'all .15s'
-                                        }}
-                                    >
-                                        <div style={{ fontFamily: 'Plus Jakarta Sans', fontWeight: 800, fontSize: '13px', color: '#1C2340' }}>
-                                            📱 Driver Mobile App GPS
-                                        </div>
-                                        <div style={{ fontFamily: 'Inter', fontSize: '11px', color: '#64748B', marginTop: 4 }}>
-                                            Use smartphone native location. No hardware box required.
-                                        </div>
-                                    </button>
-
-                                    <button
-                                        type="button"
-                                        onClick={() => setData('telemetry_source', 'iot_device')}
-                                        style={{
-                                            padding: '14px 16px', borderRadius: '12px', textAlign: 'left', cursor: 'pointer',
-                                            background: data.telemetry_source === 'iot_device' ? '#ECFDF5' : '#F8FAFC',
-                                            border: data.telemetry_source === 'iot_device' ? '2px solid #059669' : '1px solid rgba(28,35,64,.12)',
-                                            transition: 'all .15s'
-                                        }}
-                                    >
-                                        <div style={{ fontFamily: 'Plus Jakarta Sans', fontWeight: 800, fontSize: '13px', color: '#1C2340' }}>
-                                            📡 Smart GPS Tracker (IoT Box)
-                                        </div>
-                                        <div style={{ fontFamily: 'Inter', fontSize: '11px', color: '#64748B', marginTop: 4 }}>
-                                            Pair with onboard physical tracker device installed on unit.
-                                        </div>
-                                    </button>
-                                </div>
-
-                                {data.telemetry_source === 'iot_device' && (
-                                    <div style={{ marginTop: 14 }}>
-                                        <label className="mw-label">IoT Device Tracker Serial ID</label>
-                                        <input
-                                            className="mw-input"
-                                            placeholder="Enter Device ID (e.g. TRV-GPS-992)"
-                                            value={data.iot_device_id}
-                                            onChange={e => setData('iot_device_id', e.target.value)}
-                                        />
-                                    </div>
-                                )}
                             </div>
                         </div>
                         <div className="mw-footer">
