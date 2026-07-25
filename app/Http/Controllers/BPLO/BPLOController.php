@@ -137,19 +137,23 @@ class BPLOController extends Controller
             $tricycle = $application->tricycle;
 
             if ($tricycle) {
-                // 1. Update Tricycle status to active
+                // 1. Update Tricycle status and telemetry setup
+                $hasIoT = !empty($trackerId) && $trackerId !== 'N/A' && $trackerId !== 'Mobile App GPS';
                 $tricycle->update([
-                    'status' => 'active',
+                    'status'               => 'active',
+                    'iot_device_id'        => $hasIoT ? $trackerId : null,
+                    'tracking_capability'  => $hasIoT ? 'iot_enabled' : 'mobile_only',
+                    'active_tracking_mode' => $hasIoT ? 'iot_device' : 'mobile_app',
                 ]);
 
-                // 2. Pair GPS Tracker
+                // 2. Pair GPS Tracker / Initial Ping
                 TricycleLocation::updateOrCreate(
                     ['tricycle_id' => $tricycle->id],
                     [
                         'latitude'     => 14.0725, // Default Nasugbu coordinates
                         'longitude'    => 120.6355,
                         'recorded_at'  => now(),
-                        'source'       => 'gps_device',
+                        'source'       => $hasIoT ? 'gps_device' : 'mobile_app',
                     ]
                 );
 

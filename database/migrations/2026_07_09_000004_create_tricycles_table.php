@@ -36,6 +36,9 @@ return new class extends Migration
                 'suspended',
                 'revoked',
             ])->default('unregistered');
+            $table->string('iot_device_id', 50)->nullable()->unique();
+            $table->enum('tracking_capability', ['iot_enabled', 'mobile_only'])->default('mobile_only');
+            $table->enum('active_tracking_mode', ['iot_device', 'mobile_app'])->default('mobile_app');
             $table->timestamps();
         });
     }

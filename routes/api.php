@@ -25,5 +25,9 @@ Route::prefix('v1/driver')->group(function () {
         // Real-Time & Offline GPS Telematics Ingestion
         Route::post('/telematics', [DriverTelematicsController::class, 'store']);
         Route::post('/telematics/batch', [DriverTelematicsController::class, 'batchStore']);
+
+        // Dual Telemetry Control (IoT vs Mobile App GPS)
+        Route::get('/telemetry-status', [DriverTelematicsController::class, 'getTrackingStatus']);
+        Route::post('/telemetry-mode', [DriverTelematicsController::class, 'setTrackingMode']);
     });
 });

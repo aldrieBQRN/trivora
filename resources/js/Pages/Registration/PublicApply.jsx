@@ -574,6 +574,7 @@ export default function PublicApply() {
         first_name: '', last_name: '', contact: '', barangay: 'Wawa',
         email: '', password: '',
         plate_number: '', make_model: '', engine_number: '', chassis_number: '', toda: 'A',
+        telemetry_source: 'mobile_app', iot_device_id: '',
         documents: {},
     });
 
@@ -901,6 +902,65 @@ export default function PublicApply() {
                                     <input className="pa-input" placeholder="CHAS-XXXXXX"
                                         value={data.chassis_number} onChange={e => setData('chassis_number', e.target.value)} />
                                 </Field>
+
+                                <div className="pa-field-full" style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px solid rgba(28,35,64,.08)' }}>
+                                    <label className="pa-label" style={{ fontWeight: 800, fontSize: '13px', color: '#1C2340', marginBottom: '8px', display: 'block' }}>
+                                        GPS Telemetry Setup (Location Sharing)
+                                    </label>
+                                    <p style={{ fontSize: '12px', color: '#5A6488', marginBottom: '12px' }}>
+                                        Select how you prefer to transmit real-time location data for municipal fleet monitoring:
+                                    </p>
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                                        <button
+                                            type="button"
+                                            onClick={() => setData(prev => ({ ...prev, telemetry_source: 'mobile_app' }))}
+                                            style={{
+                                                padding: '14px 16px', borderRadius: '12px', textAlign: 'left', cursor: 'pointer',
+                                                background: data.telemetry_source === 'mobile_app' ? '#EEF2FF' : '#F8FAFC',
+                                                border: data.telemetry_source === 'mobile_app' ? '2px solid #4F5BCB' : '1px solid rgba(28,35,64,.12)',
+                                                transition: 'all .15s'
+                                            }}
+                                        >
+                                            <div style={{ fontWeight: 800, fontSize: '13px', color: '#1C2340', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                📱 Driver Mobile App GPS
+                                            </div>
+                                            <div style={{ fontSize: '11px', color: '#64748B', marginTop: '4px' }}>
+                                                Use smartphone native location. No hardware box required.
+                                            </div>
+                                        </button>
+
+                                        <button
+                                            type="button"
+                                            onClick={() => setData(prev => ({ ...prev, telemetry_source: 'iot_device' }))}
+                                            style={{
+                                                padding: '14px 16px', borderRadius: '12px', textAlign: 'left', cursor: 'pointer',
+                                                background: data.telemetry_source === 'iot_device' ? '#ECFDF5' : '#F8FAFC',
+                                                border: data.telemetry_source === 'iot_device' ? '2px solid #059669' : '1px solid rgba(28,35,64,.12)',
+                                                transition: 'all .15s'
+                                            }}
+                                        >
+                                            <div style={{ fontWeight: 800, fontSize: '13px', color: '#1C2340', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                📡 Smart GPS Tracker (IoT Box)
+                                            </div>
+                                            <div style={{ fontSize: '11px', color: '#64748B', marginTop: '4px' }}>
+                                                Pair with onboard physical tracker device installed on unit.
+                                            </div>
+                                        </button>
+                                    </div>
+
+                                    {data.telemetry_source === 'iot_device' && (
+                                        <div style={{ marginTop: '14px' }}>
+                                            <Field label="IoT Device Tracker Serial ID">
+                                                <input
+                                                    className="pa-input"
+                                                    placeholder="Enter Device ID (e.g. TRV-GPS-992)"
+                                                    value={data.iot_device_id}
+                                                    onChange={e => setData('iot_device_id', e.target.value)}
+                                                />
+                                            </Field>
+                                        </div>
+                                    )}
+                                </div>
                             </div>
 
                             <div className="pa-actions">

@@ -219,4 +219,66 @@ class DriverTelematicsController extends Controller
             default     => [], // Saturday & Sunday no coding restriction
         };
     }
+
+    /**
+     * Get current driver tracking setup and mode status
+     */
+    public function getTrackingStatus(Request $request)
+    {
+        $user = $request->user();
+        $operator = $user?->operator;
+        $tricycle = $operator ? Tricycle::where('operator_id', $operator->id)->first() : null;
+
+        if (!$tricycle) {
+            return response()->json(['success' => false, 'message' => 'No registered tricycle unit found.'], 404);
+        }
+
+        return response()->json([
+            'success'              => true,
+            'tricycle_id'          => $tricycle->id,
+            'plate_number'         => $tricycle->plate_number,
+            'iot_device_id'        => $tricycle->iot_device_id,
+            'tracking_capability'  => $tricycle->tracking_capability,
+            'active_tracking_mode' => $tricycle->active_tracking_mode,
+        ]);
+    }
+
+    /**
+     * Driver updates active location tracking mode (iot_device vs mobile_app)
+     */
+    public function setTrackingMode(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'mode'          => 'required|in:iot_device,mobile_app',
+            'iot_device_id' => 'nullable|string|max:50',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
+        }
+
+        $user = $request->user();
+        $operator = $user?->operator;
+        $tricycle = $operator ? Tricycle::where('operator_id', $operator->id)->first() : null;
+
+        if (!$tricycle) {
+            return response()->json(['success' => false, 'message' => 'No registered tricycle unit found.'], 404);
+        }
+
+        $mode = $request->mode;
+        $iotId = $request->iot_device_id ?: $tricycle->iot_device_id;
+
+        $tricycle->update([
+            'active_tracking_mode' => $mode,
+            'iot_device_id'        => $mode === 'iot_device' ? $iotId : $tricycle->iot_device_id,
+            'tracking_capability'  => ($mode === 'iot_device' || !empty($iotId)) ? 'iot_enabled' : $tricycle->tracking_capability,
+        ]);
+
+        return response()->json([
+            'success'              => true,
+            'message'              => 'Active tracking mode updated successfully.',
+            'active_tracking_mode' => $tricycle->active_tracking_mode,
+            'iot_device_id'        => $tricycle->iot_device_id,
+        ]);
+    }
 }

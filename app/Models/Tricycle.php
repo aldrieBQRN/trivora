@@ -23,6 +23,9 @@ class Tricycle extends Model
         'or_number',
         'cr_number',
         'status',
+        'iot_device_id',
+        'tracking_capability',
+        'active_tracking_mode',
     ];
 
     protected $appends = [

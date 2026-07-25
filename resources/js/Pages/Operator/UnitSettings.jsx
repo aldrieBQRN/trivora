@@ -124,8 +124,10 @@ const CSS = `
 .us-save-btn:hover { background: #2E3A9E; box-shadow: 0 6px 20px rgba(79,91,203,.3); transform: translateY(-1px); }
 `;
 
-export default function UnitSettings() {
+export default function UnitSettings({ tricycle }) {
     const [activeTab, setActiveTab] = useState('notifications');
+    const [trackingMode, setTrackingMode] = useState(tricycle?.active_tracking_mode || 'mobile_app');
+    const [iotDeviceId, setIotDeviceId] = useState(tricycle?.iot_device_id || 'TRV-GPS-992');
 
     // Toggle States
     const [settings, setSettings] = useState({
@@ -239,36 +241,81 @@ export default function UnitSettings() {
                         {activeTab === 'device' && (
                             <div className="us-card">
                                 <div className="us-card-header">
-                                    <h2 className="us-card-title">GPS Tracker Management</h2>
-                                    <p className="us-card-desc">Check the connection and battery life of the smart tracking device installed on your tricycle.</p>
+                                    <h2 className="us-card-title">GPS Telemetry & Location Setup</h2>
+                                    <p className="us-card-desc">Choose how real-time location data is shared for municipal fleet compliance.</p>
                                 </div>
                                 <div className="us-card-body">
 
-                                    <div className="us-device-box">
-                                        <div className="us-device-left">
-                                            <div className="us-device-icon"><Wifi size={24} /></div>
-                                            <div>
-                                                <p className="us-device-id">Device ID: TRV-GPS-992</p>
-                                                <p className="us-device-name">Status: Connected & Active</p>
+                                    <div style={{ marginBottom: 24 }}>
+                                        <h3 className="us-row-title" style={{ marginBottom: 8 }}>Active Location Source</h3>
+                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                                            <button
+                                                type="button"
+                                                onClick={() => setTrackingMode('mobile_app')}
+                                                style={{
+                                                    padding: '16px', borderRadius: '12px', textAlign: 'left', cursor: 'pointer',
+                                                    background: trackingMode === 'mobile_app' ? '#EEF2FF' : '#F8FAFC',
+                                                    border: trackingMode === 'mobile_app' ? '2px solid #4F5BCB' : '1px solid #E2E8F0',
+                                                    transition: 'all .15s'
+                                                }}
+                                            >
+                                                <div style={{ fontWeight: 800, fontSize: '13px', color: '#1C2340' }}>📱 Driver Mobile App GPS</div>
+                                                <div style={{ fontSize: '11px', color: '#64748B', marginTop: '4px' }}>Transmits via smartphone native GPS when on duty.</div>
+                                            </button>
+
+                                            <button
+                                                type="button"
+                                                onClick={() => setTrackingMode('iot_device')}
+                                                style={{
+                                                    padding: '16px', borderRadius: '12px', textAlign: 'left', cursor: 'pointer',
+                                                    background: trackingMode === 'iot_device' ? '#ECFDF5' : '#F8FAFC',
+                                                    border: trackingMode === 'iot_device' ? '2px solid #059669' : '1px solid #E2E8F0',
+                                                    transition: 'all .15s'
+                                                }}
+                                            >
+                                                <div style={{ fontWeight: 800, fontSize: '13px', color: '#1C2340' }}>📡 Smart GPS Tracker Box</div>
+                                                <div style={{ fontSize: '11px', color: '#64748B', marginTop: '4px' }}>Transmits automatically from onboard hardware box.</div>
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    {trackingMode === 'iot_device' ? (
+                                        <div className="us-device-box">
+                                            <div className="us-device-left">
+                                                <div className="us-device-icon"><Wifi size={24} /></div>
+                                                <div>
+                                                    <p className="us-device-id">Device ID: {iotDeviceId}</p>
+                                                    <p className="us-device-name">Status: Connected & Active</p>
+                                                </div>
+                                            </div>
+                                            <button className="us-restart-btn" onClick={() => {
+                                                Swal.fire({
+                                                    title: 'Syncing...',
+                                                    text: 'Pinging the hardware GPS tracker.',
+                                                    icon: 'info',
+                                                    timer: 1500,
+                                                    showConfirmButton: false
+                                                });
+                                            }}>
+                                                <RefreshCw size={14} /> Refresh Connection
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <div className="us-device-box" style={{ background: 'rgba(79,91,203,.06)', border: '1px solid rgba(79,91,203,.2)' }}>
+                                            <div className="us-device-left">
+                                                <div className="us-device-icon" style={{ background: '#4F5BCB', color: '#fff' }}><Smartphone size={24} /></div>
+                                                <div>
+                                                    <p className="us-device-id" style={{ color: '#1C2340' }}>Mode: Driver Mobile App GPS</p>
+                                                    <p className="us-device-name" style={{ color: '#4F5BCB' }}>Active • Trivora Driver App Installed</p>
+                                                </div>
                                             </div>
                                         </div>
-                                        <button className="us-restart-btn" onClick={() => {
-                                            Swal.fire({
-                                                title: 'Syncing...',
-                                                text: 'Pinging the GPS tracker.',
-                                                icon: 'info',
-                                                timer: 1500,
-                                                showConfirmButton: false
-                                            });
-                                        }}>
-                                            <RefreshCw size={14} /> Refresh Connection
-                                        </button>
-                                    </div>
+                                    )}
 
                                     <div className="us-row">
                                         <div className="us-row-info">
                                             <h3 className="us-row-title">Low Battery Warning</h3>
-                                            <p className="us-row-desc">Send a text message alert when the GPS tracker's internal battery drops below 15%.</p>
+                                            <p className="us-row-desc">Send a text message alert when the tracking device battery drops below 15%.</p>
                                         </div>
                                         <div className={`us-toggle ${settings.batteryWarning ? 'active' : ''}`} onClick={() => toggleSetting('batteryWarning')} />
                                     </div>
