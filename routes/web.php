@@ -142,20 +142,59 @@ Route::middleware(['auth', 'role:tricycle_driver,admin'])->group(function () {
 
             if ($tri) {
                 $latestLocation = $tri->locations()->latest('recorded_at')->first();
+
+                $franchiseSchemes = \App\Models\FranchiseScheme::where('tricycle_id', $tri->id)
+                    ->orderByDesc('created_at')
+                    ->get();
+
+                $activeFs = $franchiseSchemes->firstWhere('is_active', true) ?? $franchiseSchemes->first();
+                $isExpired = $activeFs ? ($activeFs->expiry_date ? $activeFs->expiry_date->isPast() : false) : false;
+
+                $hasActiveValidFranchise = \App\Models\FranchiseScheme::where('tricycle_id', $tri->id)
+                    ->where('is_active', true)
+                    ->where('expiry_date', '>', now())
+                    ->exists();
+
+                $hasPendingRenewal = \App\Models\Application::where('tricycle_id', $tri->id)
+                    ->where('application_type', 'renewal')
+                    ->whereNotIn('status', ['completed', 'rejected'])
+                    ->exists();
+
+                $canRenew = $isExpired && !$hasActiveValidFranchise && !$hasPendingRenewal;
+
+                $history = $franchiseSchemes->map(function ($fs) {
+                    $isPast = $fs->expiry_date ? $fs->expiry_date->isPast() : false;
+                    $status = ($fs->is_active && !$isPast) ? 'Active' : 'Expired';
+                    return [
+                        'id'               => $fs->id,
+                        'franchise_number' => $fs->franchise_number,
+                        'issue_date'       => $fs->issue_date ? $fs->issue_date->format('M d, Y') : 'N/A',
+                        'expiry_date'      => $fs->expiry_date ? $fs->expiry_date->format('M d, Y') : 'N/A',
+                        'is_active'        => $fs->is_active && !$isPast,
+                        'status'           => $status,
+                        'notes'            => $fs->notes,
+                    ];
+                })->toArray();
+
                 $tricycle = [
-                    'id'            => $tri->body_number ?: 'Pending Body No',
-                    'applicationId' => $tri->franchiseScheme?->application_id ? 'APP-2026-' . str_pad($tri->franchiseScheme->application_id, 5, '0', STR_PAD_LEFT) : 'N/A',
-                    'makeModel'     => "{$tri->make} {$tri->model}",
-                    'plateNo'       => $tri->plate_number,
-                    'driver'        => $operator->full_name,
-                    'zone'          => $tri->todaZone ? $tri->todaZone->name : 'N/A',
-                    'colorCode'     => $tri->franchiseScheme?->colorCodingScheme ? $tri->franchiseScheme->colorCodingScheme->name : 'N/A',
-                    'colorHex'      => $tri->franchiseScheme?->colorCodingScheme ? $tri->franchiseScheme->colorCodingScheme->color_hex : '#94A3B8',
-                    'status'        => $tri->status === 'active' ? 'online' : 'offline',
-                    'lastPing'      => $latestLocation ? $latestLocation->recorded_at->diffForHumans() : 'Never',
-                    'iotBattery'    => '100%',
-                    'mtopStatus'    => $tri->status === 'active' ? 'Valid' : 'Pending',
-                    'mtopExpiry'    => $tri->franchiseScheme?->expiry_date ? $tri->franchiseScheme->expiry_date->format('M d, Y') : 'N/A',
+                    'id'                => $tri->body_number ?: 'Pending Body No',
+                    'db_id'             => $tri->id,
+                    'applicationId'     => $activeFs?->application_id ? 'APP-2026-' . str_pad($activeFs->application_id, 5, '0', STR_PAD_LEFT) : 'N/A',
+                    'makeModel'         => "{$tri->make} {$tri->model}",
+                    'plateNo'           => $tri->plate_number,
+                    'driver'            => $operator->full_name,
+                    'zone'              => $tri->todaZone ? $tri->todaZone->name : 'N/A',
+                    'colorCode'         => $activeFs?->colorCodingScheme ? $activeFs->colorCodingScheme->name : 'N/A',
+                    'colorHex'          => $activeFs?->colorCodingScheme ? $activeFs->colorCodingScheme->color_hex : '#94A3B8',
+                    'status'            => $tri->status === 'active' ? 'online' : 'offline',
+                    'lastPing'          => $latestLocation ? $latestLocation->recorded_at->diffForHumans() : 'Never',
+                    'iotBattery'        => '100%',
+                    'isExpired'         => $isExpired,
+                    'canRenew'          => $canRenew,
+                    'hasPendingRenewal' => $hasPendingRenewal,
+                    'mtopStatus'        => $hasPendingRenewal ? 'Renewal In Progress' : ($isExpired ? 'Expired' : ($tri->status === 'active' ? 'Valid' : 'Pending')),
+                    'mtopExpiry'        => $activeFs?->expiry_date ? $activeFs->expiry_date->format('M d, Y') : 'N/A',
+                    'franchiseHistory'  => $history,
                 ];
             }
         }
@@ -214,9 +253,8 @@ Route::middleware(['auth', 'role:tricycle_driver,admin'])->group(function () {
     // MTOP Franchise Compliance
     Route::get('/operator/mtop', [App\Http\Controllers\Operator\MTOPController::class, 'index'])->name('operator.mtop');
 
-    Route::get('/operator/mtop/create', function () {
-        return Inertia::render('Operator/Compliance/MTOPWizard');
-    })->name('operator.mtop.create');
+    Route::get('/operator/mtop/create', [App\Http\Controllers\Operator\MTOPController::class, 'create'])->name('operator.mtop.create');
+    Route::post('/operator/mtop/store', [App\Http\Controllers\Operator\MTOPController::class, 'store'])->name('operator.mtop.store');
 
     Route::get('/operator/mtop/{id}', [App\Http\Controllers\Operator\MTOPController::class, 'show'])->name('operator.mtop.details');
 

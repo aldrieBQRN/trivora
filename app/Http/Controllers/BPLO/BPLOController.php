@@ -160,17 +160,31 @@ class BPLOController extends Controller
                 $scheme = ColorCodingScheme::whereJsonContains('restricted_days', $codingDay)->first();
                 $schemeId = $scheme ? $scheme->id : ColorCodingScheme::first()->id;
 
+                // Deactivate any previous active franchise for this unit so it remains in history as expired/renewed
+                FranchiseScheme::where('tricycle_id', $tricycle->id)
+                    ->where('is_active', true)
+                    ->update([
+                        'is_active' => false,
+                        'notes'     => \Illuminate\Support\Facades\DB::raw("CONCAT(COALESCE(notes, ''), ' [Expired & Renewed on " . now()->toDateString() . "]')"),
+                    ]);
+
+                // Generate new unique Franchise Number if bodyNumber is duplicate
+                $franchiseNo = 'FS-2026-' . str_pad($tricycle->id, 5, '0', STR_PAD_LEFT);
+                if ($application->application_type === 'renewal') {
+                    $franchiseNo .= '-R' . (FranchiseScheme::where('tricycle_id', $tricycle->id)->count() + 1);
+                }
+
                 FranchiseScheme::create([
                     'application_id'         => $application->id,
                     'tricycle_id'            => $tricycle->id,
                     'color_coding_scheme_id' => $schemeId,
                     'issued_by'              => Auth::id(),
-                    'franchise_number'       => $bodyNumber,
+                    'franchise_number'       => $franchiseNo,
                     'route_details'          => 'Nasugbu Poblacion & Border Routes',
                     'issue_date'             => now()->toDateString(),
-                    'expiry_date'            => now()->addYear()->toDateString(),
+                    'expiry_date'            => now()->addYears(3)->toDateString(),
                     'is_active'              => true,
-                    'notes'                  => "Smart GPS Tracker Linked: {$trackerId}.",
+                    'notes'                  => "Franchise " . ($application->application_type === 'renewal' ? 'Renewed' : 'Issued') . ". Smart GPS Tracker Linked: {$trackerId}.",
                 ]);
             }
 

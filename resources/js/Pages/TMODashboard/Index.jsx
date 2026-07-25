@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Head } from '@inertiajs/react';
+import { Head, router } from '@inertiajs/react';
 import TrivoraLayout from '@/Layouts/TrivoraLayout';
 import TricycleMap from '@/Components/TricycleMap';
 import {
@@ -127,57 +127,23 @@ export default function Dashboard({ initialTricycles = [] }) {
     const codingInfo = getCodingDetails();
     const geoJsonRoutes = { A: routeA, B: routeB, C: routeC, D: routeD };
 
-    const paths = useMemo(() => ({
-        A: extractRouteCoordinates(routeA),
-        B: extractRouteCoordinates(routeB),
-        C: extractRouteCoordinates(routeC),
-        D: extractRouteCoordinates(routeD),
-    }), []);
-
-    const [tricycles, setTricycles] = useState(() => {
-        const sourceData = initialTricycles.length > 0 ? initialTricycles : [
-            { id: 'TRV-992', plate: '8812', operator: 'Juan Dela Cruz', toda: 'TODA A (Brgy. 2)', lat: 14.0730, lng: 120.6350, status: 'violator' },
-            { id: 'TRV-810', plate: '4491', operator: 'Ricardo Dalisay', toda: 'TODA B (Brgy. 10)', lat: 14.0745, lng: 120.6380, status: 'violator' },
-            { id: 'TRV-445', plate: '1102', operator: 'Arnaldo Baquiran', toda: 'TODA C (Brgy. 11)', lat: 14.0710, lng: 120.6320, status: 'coding_no_operation' },
-            { id: 'TRV-106', plate: '2210', operator: 'Ana Reyes', toda: 'TODA D (Bucana)', lat: 14.0720, lng: 120.6330, status: 'compliant' },
-            { id: 'TRV-104', plate: '9933', operator: 'Maria Santos', toda: 'TODA A (Brgy. 2)', lat: 14.0690, lng: 120.6300, status: 'compliant' },
-            { id: 'TRV-105', plate: '5541', operator: 'Pedro Penduko', toda: 'TODA B (Brgy. 10)', lat: 14.0760, lng: 120.6400, status: 'compliant' },
-            { id: 'TRV-107', plate: '3344', operator: 'Carlos Mateo', toda: 'TODA C (Brgy. 11)', lat: 14.0750, lng: 120.6290, status: 'compliant' }
-        ];
-
-        return sourceData.map((trike, index) => {
-            const todaLetter = trike.toda.match(/TODA ([A-D])/)?.[1] || 'A';
-            const myPath = paths[todaLetter] || [];
-            const startIdx = myPath.length > 0 ? (index * 37) % myPath.length : 0;
-            return {
-                ...trike,
-                todaLetter,
-                routeIndex: startIdx,
-                lat: myPath.length > 0 ? myPath[startIdx][0] : trike.lat,
-                lng: myPath.length > 0 ? myPath[startIdx][1] : trike.lng,
-            };
-        });
-    });
+    const [tricycles, setTricycles] = useState(initialTricycles);
 
     useEffect(() => {
-        const interval = setInterval(() => {
-            setTricycles(curr =>
-                curr.map(trike => {
-                    if (trike.status === 'coding_no_operation') return trike;
-                    const myPath = paths[trike.todaLetter] || [];
-                    if (myPath.length === 0) return trike;
-                    const nextIndex = (trike.routeIndex + 1) % myPath.length;
-                    return {
-                        ...trike,
-                        routeIndex: nextIndex,
-                        lat: myPath[nextIndex][0],
-                        lng: myPath[nextIndex][1],
-                    };
-                })
-            );
-        }, 1000);
-        return () => clearInterval(interval);
-    }, [paths]);
+        setTricycles(initialTricycles);
+    }, [initialTricycles]);
+
+    // Live backend telematics polling every 1 minute for active driver phones
+    useEffect(() => {
+        const pollInterval = setInterval(() => {
+            router.reload({
+                only: ['initialTricycles', 'stats'],
+                preserveScroll: true,
+                preserveState: true,
+            });
+        }, 60000);
+        return () => clearInterval(pollInterval);
+    }, []);
 
     useEffect(() => {
         const timer = setInterval(() => setCurrentTime(new Date()), 1000);

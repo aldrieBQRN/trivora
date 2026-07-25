@@ -62,12 +62,32 @@ class DashboardController extends Controller
 
         // 4. Fleet Data (Tricycles)
         $tricycles = $operatorTricycles->map(function ($tri) {
+            $fs = $tri->franchiseScheme;
+            $isExpired = $fs && $fs->expiry_date ? $fs->expiry_date->isPast() : false;
+
+            $hasActiveValidFranchise = \App\Models\FranchiseScheme::where('tricycle_id', $tri->id)
+                ->where('is_active', true)
+                ->where('expiry_date', '>', now())
+                ->exists();
+
+            $hasPendingRenewal = \App\Models\Application::where('tricycle_id', $tri->id)
+                ->where('application_type', 'renewal')
+                ->whereNotIn('status', ['completed', 'rejected'])
+                ->exists();
+
+            $canRenew = $isExpired && !$hasActiveValidFranchise && !$hasPendingRenewal;
+
             return [
-                'id'           => $tri->id,
-                'body_number'  => $tri->body_number ?: 'N/A',
-                'plate_number' => $tri->plate_number,
-                'status'       => ucfirst($tri->status),
-                'driver'       => 'Self / Unassigned',
+                'id'                  => $tri->id,
+                'body_number'         => $tri->body_number ?: 'N/A',
+                'plate_number'        => $tri->plate_number,
+                'status'              => ucfirst($tri->status),
+                'driver'              => 'Self / Unassigned',
+                'is_expired'          => $isExpired,
+                'can_renew'           => $canRenew,
+                'has_pending_renewal' => $hasPendingRenewal,
+                'mtop_status'         => $hasPendingRenewal ? 'Renewal In Progress' : ($isExpired ? 'Expired' : ($tri->status === 'active' ? 'Valid' : 'Pending')),
+                'mtop_expiry'         => $fs && $fs->expiry_date ? $fs->expiry_date->format('M d, Y') : 'N/A',
             ];
         });
 

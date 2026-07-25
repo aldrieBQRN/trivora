@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { Head, useForm, Link, usePage } from '@inertiajs/react';
 import Swal from 'sweetalert2';
 import {
-    Upload, Info, CheckCircle2, MapPin, Check
+    Upload, Info, CheckCircle2, MapPin, Check, Camera, Eye, X
 } from 'lucide-react';
 
 /* ─────────────────────────────────────────────────────────────────────────
@@ -1024,6 +1024,13 @@ function FileUpload({ id, label, required, conditional, files = [], onUpload, on
     const [previewUrls, setPreviewUrls] = useState([]);
     const [showGallery, setShowGallery] = useState(false);
     const [activePreviewUrl, setActivePreviewUrl] = useState(null);
+    const [showChoiceModal, setShowChoiceModal] = useState(false);
+    const [showCameraModal, setShowCameraModal] = useState(false);
+    const [cameraError, setCameraError] = useState(null);
+
+    const fileInputRef = useRef(null);
+    const videoRef = useRef(null);
+    const streamRef = useRef(null);
 
     useEffect(() => {
         const urls = files.map(file => {
@@ -1041,7 +1048,7 @@ function FileUpload({ id, label, required, conditional, files = [], onUpload, on
     }, [files]);
 
     useEffect(() => {
-        if (showGallery || activePreviewUrl !== null) {
+        if (showGallery || activePreviewUrl !== null || showChoiceModal || showCameraModal) {
             document.body.style.overflow = 'hidden';
         } else {
             document.body.style.overflow = '';
@@ -1049,7 +1056,55 @@ function FileUpload({ id, label, required, conditional, files = [], onUpload, on
         return () => {
             document.body.style.overflow = '';
         };
-    }, [showGallery, activePreviewUrl]);
+    }, [showGallery, activePreviewUrl, showChoiceModal, showCameraModal]);
+
+    const startCamera = async () => {
+        setCameraError(null);
+        setShowChoiceModal(false);
+        setShowCameraModal(true);
+
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({
+                video: { facingMode: { ideal: 'environment' } }
+            });
+            streamRef.current = stream;
+            if (videoRef.current) {
+                videoRef.current.srcObject = stream;
+            }
+        } catch (err) {
+            console.error("Camera access error:", err);
+            setCameraError("Camera access permission denied or camera not available on this device.");
+        }
+    };
+
+    const stopCamera = () => {
+        if (streamRef.current) {
+            streamRef.current.getTracks().forEach(track => track.stop());
+            streamRef.current = null;
+        }
+        setShowCameraModal(false);
+        setCameraError(null);
+    };
+
+    const capturePhoto = () => {
+        if (!videoRef.current) return;
+
+        const video = videoRef.current;
+        const canvas = document.createElement('canvas');
+        canvas.width = video.videoWidth || 640;
+        canvas.height = video.videoHeight || 480;
+
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+        canvas.toBlob((blob) => {
+            if (blob) {
+                const capturedFile = new File([blob], `captured_doc_${Date.now()}.jpg`, { type: 'image/jpeg' });
+                onUpload([capturedFile]);
+                stopCamera();
+            }
+        }, 'image/jpeg', 0.9);
+    };
 
     const isUploaded = files.length > 0;
 
@@ -1073,6 +1128,7 @@ function FileUpload({ id, label, required, conditional, files = [], onUpload, on
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', gap: '8px', marginTop: '4px' }}>
                 <div>
                     <input
+                        ref={fileInputRef}
                         type="file"
                         id={id}
                         accept="image/*,.pdf"
@@ -1082,15 +1138,19 @@ function FileUpload({ id, label, required, conditional, files = [], onUpload, on
                         onChange={e => {
                             if (e.target.files && e.target.files.length > 0) {
                                 onUpload(e.target.files);
-                                // Reset input so that same files can be uploaded again if removed
                                 e.target.value = '';
                             }
                         }}
                     />
-                    <label htmlFor={id} className="pa-upload-btn-label">
+                    <button
+                        type="button"
+                        className="pa-upload-btn-label"
+                        onClick={() => setShowChoiceModal(true)}
+                        style={{ cursor: 'pointer' }}
+                    >
                         <Upload size={10} strokeWidth={2.5} />
                         Add Photo / PDF
-                    </label>
+                    </button>
                 </div>
 
                 {isUploaded && (
@@ -1108,10 +1168,176 @@ function FileUpload({ id, label, required, conditional, files = [], onUpload, on
                         }}
                         title="View Uploaded Photos"
                     >
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-eye"><path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0z"/><circle cx="12" cy="12" r="3"/></svg>
+                        <Eye size={16} strokeWidth={2.5} />
                     </button>
                 )}
             </div>
+
+            {/* Choice Modal (Upload vs Take Picture) */}
+            {showChoiceModal && createPortal(
+                <div
+                    style={{
+                        position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 9999,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px'
+                    }}
+                    onClick={() => setShowChoiceModal(false)}
+                >
+                    <div
+                        style={{
+                            background: '#FFFFFF', borderRadius: '16px', padding: '24px', width: '100%', maxWidth: '380px',
+                            boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)', display: 'flex', flexDirection: 'column', gap: '16px'
+                        }}
+                        onClick={e => e.stopPropagation()}
+                    >
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <h4 style={{ margin: 0, fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: '15px', fontWeight: 800, color: '#1C2340' }}>
+                                Select Attachment Method
+                            </h4>
+                            <button type="button" onClick={() => setShowChoiceModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9CA3AF' }}>
+                                <X size={18} />
+                            </button>
+                        </div>
+
+                        <p style={{ margin: 0, fontSize: '12.5px', color: '#5A6488', fontFamily: "'Inter', sans-serif" }}>
+                            Choose how you would like to attach <strong>{label}</strong>:
+                        </p>
+
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '4px' }}>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setShowChoiceModal(false);
+                                    if (fileInputRef.current) fileInputRef.current.click();
+                                }}
+                                style={{
+                                    display: 'flex', alignItems: 'center', gap: '12px', padding: '14px 16px',
+                                    borderRadius: '12px', background: '#F8F9FC', border: '1.5px solid rgba(28,35,64,.08)',
+                                    cursor: 'pointer', fontFamily: "'DM Sans', sans-serif", fontSize: '13px', fontWeight: 700, color: '#1C2340',
+                                    transition: 'all .15s'
+                                }}
+                            >
+                                <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'rgba(79,91,203,.1)', color: '#4F5BCB', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                    <Upload size={18} />
+                                </div>
+                                <div style={{ textAlign: 'left' }}>
+                                    <div>Upload File / Document</div>
+                                    <div style={{ fontSize: '11px', fontWeight: 500, color: '#8A96BC', marginTop: '2px' }}>Browse photo or PDF from device</div>
+                                </div>
+                            </button>
+
+                            <button
+                                type="button"
+                                onClick={startCamera}
+                                style={{
+                                    display: 'flex', alignItems: 'center', gap: '12px', padding: '14px 16px',
+                                    borderRadius: '12px', background: '#F8F9FC', border: '1.5px solid rgba(28,35,64,.08)',
+                                    cursor: 'pointer', fontFamily: "'DM Sans', sans-serif", fontSize: '13px', fontWeight: 700, color: '#1C2340',
+                                    transition: 'all .15s'
+                                }}
+                            >
+                                <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'rgba(5,150,105,.1)', color: '#059669', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                    <Camera size={18} />
+                                </div>
+                                <div style={{ textAlign: 'left' }}>
+                                    <div>Take a Picture</div>
+                                    <div style={{ fontSize: '11px', fontWeight: 500, color: '#8A96BC', marginTop: '2px' }}>Snap photo directly using camera</div>
+                                </div>
+                            </button>
+                        </div>
+                    </div>
+                </div>,
+                document.body
+            )}
+
+            {/* Live Camera Modal */}
+            {showCameraModal && createPortal(
+                <div
+                    style={{
+                        position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', zIndex: 10000,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px'
+                    }}
+                    onClick={stopCamera}
+                >
+                    <div
+                        style={{
+                            background: '#FFFFFF', borderRadius: '20px', width: '100%', maxWidth: '520px',
+                            overflow: 'hidden', display: 'flex', flexDirection: 'column', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)'
+                        }}
+                        onClick={e => e.stopPropagation()}
+                    >
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 20px', borderBottom: '1px solid #E5E7EB' }}>
+                            <span style={{ fontSize: '14px', fontWeight: 800, color: '#1C2340', fontFamily: "'Plus Jakarta Sans', sans-serif", display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <Camera size={18} color="#059669" /> Capture Photo ({label})
+                            </span>
+                            <button type="button" onClick={stopCamera} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9CA3AF' }}>
+                                <X size={20} />
+                            </button>
+                        </div>
+
+                        <div style={{ position: 'relative', background: '#000', width: '100%', minHeight: '300px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            {cameraError ? (
+                                <div style={{ padding: '32px', textAlign: 'center', color: '#EF4444' }}>
+                                    <p style={{ fontSize: '14px', fontWeight: 600, marginBottom: '16px' }}>{cameraError}</p>
+                                    <label
+                                        htmlFor={`cam_pub_fallback_${id}`}
+                                        style={{
+                                            padding: '10px 20px', borderRadius: '10px', background: '#DC2626', color: '#FFF',
+                                            fontSize: '12px', fontWeight: 700, cursor: 'pointer', display: 'inline-block'
+                                        }}
+                                    >
+                                        Open Device Camera App
+                                    </label>
+                                    <input
+                                        type="file"
+                                        id={`cam_pub_fallback_${id}`}
+                                        accept="image/*"
+                                        capture="environment"
+                                        style={{ display: 'none' }}
+                                        onChange={e => {
+                                            if (e.target.files && e.target.files.length > 0) {
+                                                onUpload(e.target.files);
+                                                stopCamera();
+                                            }
+                                        }}
+                                    />
+                                </div>
+                            ) : (
+                                <video
+                                    ref={videoRef}
+                                    autoPlay
+                                    playsInline
+                                    style={{ width: '100%', maxHeight: '420px', objectFit: 'cover' }}
+                                />
+                            )}
+                        </div>
+
+                        {!cameraError && (
+                            <div style={{ padding: '16px 20px', background: '#F9FAFB', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <button
+                                    type="button"
+                                    onClick={stopCamera}
+                                    style={{ padding: '10px 20px', borderRadius: '10px', background: '#E2E8F0', color: '#475569', border: 'none', fontWeight: 700, cursor: 'pointer', fontSize: '12px' }}
+                                >
+                                    Cancel
+                                </button>
+
+                                <button
+                                    type="button"
+                                    onClick={capturePhoto}
+                                    style={{
+                                        padding: '12px 28px', borderRadius: '12px', background: '#059669', color: '#FFFFFF',
+                                        border: 'none', fontWeight: 800, cursor: 'pointer', fontSize: '13px',
+                                        display: 'flex', alignItems: 'center', gap: '8px', boxShadow: '0 4px 14px rgba(5,150,105,.3)'
+                                    }}
+                                >
+                                    <Camera size={16} /> Snap Photo
+                                </button>
+                            </div>
+                        )}
+                    </div>
+                </div>,
+                document.body
+            )}
 
             {/* Gallery Modal overlay */}
             {showGallery && createPortal(

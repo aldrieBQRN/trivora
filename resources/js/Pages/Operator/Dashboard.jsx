@@ -3,6 +3,7 @@ import { Head, Link } from '@inertiajs/react';
 import OperatorLayout from '@/Layouts/OperatorLayout';
 import {
     AlertTriangle,
+    AlertCircle,
     CheckCircle2,
     Clock,
     Bike,
@@ -18,6 +19,7 @@ import {
     FileText,
     MapPin,
     Wrench,
+    RefreshCw,
     ClipboardCheck
 } from 'lucide-react';
 
@@ -469,6 +471,56 @@ export default function OperatorDashboard({ operator, stats, tricycles, recentVi
                     </div>
                 </header>
 
+                {/* ── FRANCHISE EXPIRED UX ALERT BANNER ── */}
+                {tricycles.some(t => t.is_expired) && (
+                    <div style={{
+                        background: 'linear-gradient(135deg, rgba(220,38,38,.08) 0%, rgba(220,38,38,.03) 100%)',
+                        border: '1.5px solid rgba(220,38,38,.25)',
+                        borderRadius: 16,
+                        padding: '20px 24px',
+                        marginBottom: 28,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        gap: 16,
+                        boxShadow: '0 4px 18px rgba(220,38,38,.06)'
+                    }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                            <div style={{
+                                width: 44, height: 44, borderRadius: 12,
+                                background: '#DC2626', color: '#FFFFFF',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                flexShrink: 0
+                            }}>
+                                <AlertCircle size={24} strokeWidth={2.5} />
+                            </div>
+                            <div>
+                                <p style={{ fontFamily: 'Plus Jakarta Sans, sans-serif', fontSize: 15, fontWeight: 800, color: '#991B1B', margin: 0 }}>
+                                    Compliance Alert: Tricycle MTOP Franchise Permit Expired
+                                </p>
+                                <p style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: '#B91C1C', marginTop: 3, margin: 0 }}>
+                                    {tricycles.find(t => t.is_expired)?.has_pending_renewal
+                                        ? `The franchise permit for Unit #${tricycles.find(t => t.is_expired)?.body_number} expired on ${tricycles.find(t => t.is_expired)?.mtop_expiry}. Renewal application is currently in progress.`
+                                        : `The franchise permit for Unit #${tricycles.find(t => t.is_expired)?.body_number || '1'} expired on ${tricycles.find(t => t.is_expired)?.mtop_expiry}. Inspect application status in Application Tracker.`}
+                                </p>
+                            </div>
+                        </div>
+                        <Link
+                            href={route('operator.mtop')}
+                            style={{
+                                height: 40, padding: '0 20px', borderRadius: 10,
+                                background: '#DC2626', color: '#FFFFFF',
+                                display: 'inline-flex', alignItems: 'center', gap: 8,
+                                fontFamily: 'DM Sans, sans-serif', fontSize: 10, fontWeight: 700,
+                                letterSpacing: '.12em', textTransform: 'uppercase', textDecoration: 'none',
+                                boxShadow: '0 4px 12px rgba(220,38,38,.3)', whiteSpace: 'nowrap', flexShrink: 0
+                            }}
+                        >
+                            <FileText size={13} strokeWidth={2.5} /> Track Application Status
+                        </Link>
+                    </div>
+                )}
+
                 {/* ── KPI GRID ── */}
                 <section className="op-kpi-grid">
                     <KpiCard title="Assigned Unit" value="1" unit="Unit" icon={Bike} iconClass="op-kpi-icon-stone" trend="Synced" trendClass="op-kpi-trend-synced" />
@@ -518,13 +570,23 @@ export default function OperatorDashboard({ operator, stats, tricycles, recentVi
                                         </div>
                                         <div className="op-trike-data">
                                             <span className="op-trike-lbl"><FileText size={10} /> MTOP Franchise</span>
-                                            <span className="op-trike-val" style={{ color: '#059669' }}>Valid (Oct 12, 2026)</span>
+                                            <span className="op-trike-val" style={{ color: trike.is_expired ? '#DC2626' : '#059669', fontWeight: 700 }}>
+                                                {trike.mtop_status || 'Valid'} ({trike.mtop_expiry || 'Oct 12, 2026'})
+                                            </span>
                                         </div>
                                         <div className="op-trike-data">
                                             <span className="op-trike-lbl"><ClipboardCheck size={10} /> TMO Application</span>
                                             <span className="op-trike-val" style={{ color: '#059669' }}>Approved</span>
                                         </div>
                                     </div>
+
+                                    {!trike.is_expired && (
+                                        <div style={{ marginTop: 20, paddingTop: 16, borderTop: '1px dashed rgba(28,35,64,.1)', display: 'flex', justifyContent: 'flex-end' }}>
+                                            <span style={{ height: 36, padding: '0 16px', borderRadius: 8, background: 'rgba(5,150,105,.1)', color: '#059669', border: '1px solid rgba(5,150,105,.2)', display: 'inline-flex', alignItems: 'center', gap: 6, fontFamily: 'DM Sans, sans-serif', fontSize: 9.5, fontWeight: 700, letterSpacing: '.12em', textTransform: 'uppercase' }}>
+                                                ✓ Franchise Active
+                                            </span>
+                                        </div>
+                                    )}
                                 </div>
                             ))}
                         </div>

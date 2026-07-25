@@ -14,6 +14,184 @@ use App\Models\FranchiseScheme;
 class MTOPController extends Controller
 {
     /**
+     * Show the wizard for filing a new application or renewing an existing franchise.
+     */
+    public function create(Request $request)
+    {
+        $user = $request->user();
+        $operator = $user ? $user->operator : null;
+        $type = $request->query('type', 'new');
+        $unitId = $request->query('unit_id');
+
+        $tricycleData = null;
+
+        if ($unitId && $operator) {
+            $tri = \App\Models\Tricycle::where('id', $unitId)
+                ->where('operator_id', $operator->id)
+                ->with('todaZone')
+                ->first();
+
+            if ($tri) {
+                $tricycleData = [
+                    'id'             => $tri->id,
+                    'plate_number'   => $tri->plate_number,
+                    'engine_number'  => $tri->engine_number,
+                    'chassis_number' => $tri->chassis_number,
+                    'make'           => $tri->make,
+                    'model'          => $tri->model,
+                    'make_model'     => "{$tri->make} {$tri->model}",
+                    'toda'           => $tri->todaZone ? "Zone {$tri->todaZone->code} ({$tri->todaZone->name})" : 'A (Poblacion)',
+                ];
+            }
+        }
+
+        return Inertia::render('Operator/Compliance/MTOPWizard', [
+            'applicationType' => $type,
+            'tricycleUnit'    => $tricycleData,
+        ]);
+    }
+
+    /**
+     * Store a new or renewal MTOP application.
+     */
+    public function store(Request $request)
+    {
+        $user = $request->user();
+        $operator = $user ? $user->operator : null;
+
+        if (!$operator) {
+            return redirect()->back()->withErrors(['operator' => 'No operator profile found.']);
+        }
+
+        $appType = $request->input('application_type', 'new');
+        $unitId  = $request->input('unit_id');
+
+        return \Illuminate\Support\Facades\DB::transaction(function () use ($request, $user, $operator, $appType, $unitId) {
+            $tricycle = null;
+
+            // 1. Resolve Tricycle Unit
+            if ($unitId) {
+                $tricycle = \App\Models\Tricycle::where('id', $unitId)
+                    ->where('operator_id', $operator->id)
+                    ->first();
+            }
+
+            if (!$tricycle) {
+                // Find by plate or engine if already registered
+                $plate = $request->input('plate');
+                $engine = $request->input('engine_number');
+
+                if ($plate) {
+                    $tricycle = \App\Models\Tricycle::where('plate_number', $plate)->first();
+                }
+
+                if (!$tricycle && $engine) {
+                    $tricycle = \App\Models\Tricycle::where('engine_number', $engine)->first();
+                }
+            }
+
+            if (!$tricycle) {
+                // Create a new Tricycle record
+                $makeModel = $request->input('make_model', 'Generic Tricycle');
+                $parts = explode(' ', $makeModel, 2);
+                $make = $parts[0] ?? 'Generic';
+                $model = $parts[1] ?? 'Tricycle';
+
+                $todaCode = $request->input('toda', 'A (Poblacion)');
+                $todaZone = \App\Models\TodaZone::where('name', 'LIKE', "%{$todaCode}%")
+                    ->orWhere('code', 'LIKE', "%{$todaCode}%")
+                    ->first();
+
+                $plate   = $request->input('plate') ?: ('TEMP-' . rand(1000, 9999));
+                $engine  = $request->input('engine_number') ?: ('ENG-' . rand(10000, 99999));
+                $chassis = $request->input('chassis_number') ?: ('CHAS-' . rand(10000, 99999));
+
+                $tricycle = \App\Models\Tricycle::create([
+                    'operator_id'    => $operator->id,
+                    'toda_zone_id'   => $todaZone ? $todaZone->id : null,
+                    'plate_number'   => $plate,
+                    'engine_number'  => $engine,
+                    'chassis_number' => $chassis,
+                    'make'           => $make,
+                    'model'          => $model,
+                    'year_model'     => 2024,
+                    'body_color'     => 'Red',
+                    'status'         => 'unregistered',
+                ]);
+            }
+
+            // 2. Create Application
+            $appCount = \App\Models\Application::count();
+            $refNo = 'APP-2026-' . str_pad($appCount + 1, 5, '0', STR_PAD_LEFT);
+
+            $application = \App\Models\Application::create([
+                'reference_number' => $refNo,
+                'operator_id'      => $operator->id,
+                'tricycle_id'      => $tricycle->id,
+                'application_type' => $appType === 'renewal' ? 'renewal' : 'new',
+                'current_step'     => 1, // Step 1: Document review (TMO)
+                'status'           => 'pending_review',
+                'submitted_at'     => now(),
+                'remarks'          => $appType === 'renewal'
+                    ? 'Franchise Renewal Application submitted online by Operator.'
+                    : 'New Unit Registration Application submitted online by Operator.',
+            ]);
+
+            // 3. Save Uploaded Documents
+            $docKeys = [
+                'receipt'   => 'other',
+                'prangkisa' => 'other',
+                'police'    => 'other',
+                'health'    => 'other',
+                'orcr'      => 'or_cr',
+                'license'   => 'drivers_license',
+                'brgy'      => 'proof_of_residence',
+                'toda'      => 'toda_clearance',
+                'cedula'    => 'other',
+                'driver_id' => 'photo_id',
+                'tariff'    => 'other',
+                'auth'      => 'other',
+            ];
+
+            if ($request->file('documents')) {
+                foreach ($request->file('documents') as $key => $fileOrFiles) {
+                    if (isset($docKeys[$key])) {
+                        $files = is_array($fileOrFiles) ? $fileOrFiles : [$fileOrFiles];
+                        foreach ($files as $file) {
+                            $path = $file->store('applications/documents', 'public');
+                            \App\Models\ApplicationDocument::create([
+                                'application_id' => $application->id,
+                                'document_type'  => $docKeys[$key],
+                                'file_name'      => $key . '_' . $file->getClientOriginalName(),
+                                'file_path'      => $path,
+                                'file_size_kb'   => round($file->getSize() / 1024),
+                                'mime_type'      => $file->getMimeType(),
+                                'review_status'  => 'pending',
+                            ]);
+                        }
+                    }
+                }
+            }
+
+            // 4. Log Status History for Document Review Phase
+            \App\Models\ApplicationStatusHistory::create([
+                'application_id' => $application->id,
+                'changed_by'     => $user->id,
+                'from_status'    => 'draft',
+                'to_status'      => 'pending_review',
+                'from_step'      => 1,
+                'to_step'        => 1,
+                'notes'          => $appType === 'renewal'
+                    ? 'Franchise Renewal application submitted. Phase 1: Document Review.'
+                    : 'New Unit Registration application submitted. Phase 1: Document Review.',
+                'created_at'     => now(),
+            ]);
+
+            return redirect()->route('operator.mtop.details', ['id' => $application->id]);
+        });
+    }
+
+    /**
      * Display all applications for the logged in operator.
      */
     public function index(Request $request)
@@ -28,13 +206,17 @@ class MTOPController extends Controller
         }
 
         $applications = Application::where('operator_id', $operator->id)
-            ->with(['tricycle', 'statusHistories'])
+            ->with(['tricycle.franchiseScheme', 'statusHistories'])
             ->orderByDesc('created_at')
             ->get()
             ->map(function ($app) {
                 $phase = 'tmo-docs';
                 $status = 'in-progress';
                 $message = 'Undergoing document review.';
+
+                $fs = $app->tricycle?->franchiseScheme;
+                $isCompletedApp = in_array($app->status, ['completed', 'scheme_issued']);
+                $isExpired = $isCompletedApp && $fs && $fs->expiry_date ? $fs->expiry_date->isPast() : false;
 
                 switch ($app->status) {
                     case 'draft':
@@ -79,20 +261,68 @@ class MTOPController extends Controller
                     case 'completed':
                     case 'scheme_issued':
                         $phase = 'completed';
-                        $status = 'completed';
-                        $message = 'Franchise issued and active.';
+                        if ($isExpired) {
+                            $status = 'expired';
+                            $message = 'Franchise Expired on ' . ($fs->expiry_date ? $fs->expiry_date->format('M d, Y') : 'N/A') . '. Renewal required.';
+                        } else {
+                            $status = 'completed';
+                            $message = 'Franchise issued and active (Valid until ' . ($fs->expiry_date ? $fs->expiry_date->format('M d, Y') : 'N/A') . ').';
+                        }
                         break;
                 }
 
+                $hasActiveValidFranchise = false;
+                $hasPendingRenewal = false;
+
+                if ($app->tricycle_id) {
+                    $hasActiveValidFranchise = \App\Models\FranchiseScheme::where('tricycle_id', $app->tricycle_id)
+                        ->where('is_active', true)
+                        ->where('expiry_date', '>', now())
+                        ->exists();
+
+                    $hasPendingRenewal = \App\Models\Application::where('tricycle_id', $app->tricycle_id)
+                        ->where('application_type', 'renewal')
+                        ->whereNotIn('status', ['completed', 'rejected'])
+                        ->where('id', '!=', $app->id)
+                        ->exists();
+                }
+
+                $canRenew = $isExpired && !$hasActiveValidFranchise && !$hasPendingRenewal;
+
+                $cardColor = 'standard';
+                if ($app->status === 'completed' || $app->status === 'scheme_issued') {
+                    if ($isExpired) {
+                        if ($hasPendingRenewal || $hasActiveValidFranchise) {
+                            $cardColor = 'yellow';
+                            $status = 'expired-renewed';
+                            $message = $hasPendingRenewal
+                                ? 'Franchise Expired. Renewal application is currently in progress.'
+                                : 'Franchise Expired (Already renewed with active permit).';
+                        } else {
+                            $cardColor = 'red';
+                            $status = 'expired-unrenewed';
+                            $message = 'Franchise Expired on ' . ($fs->expiry_date ? $fs->expiry_date->format('M d, Y') : 'N/A') . '. Renewal required.';
+                        }
+                    } else {
+                        $cardColor = 'green';
+                    }
+                }
+
                 return [
-                    'id'      => $app->reference_number,
-                    'db_id'   => $app->id,
-                    'type'    => $app->application_type === 'new' ? 'New Franchise' : 'Renewal',
-                    'unit'    => $app->tricycle ? "{$app->tricycle->make} {$app->tricycle->model}" : 'N/A',
-                    'date'    => $app->created_at->format('M d, Y'),
-                    'status'  => $status,
-                    'phase'   => $phase,
-                    'message' => $message,
+                    'id'                     => $app->reference_number,
+                    'db_id'                  => $app->id,
+                    'tricycle_id'            => $app->tricycle_id,
+                    'type'                   => $app->application_type === 'new' ? 'New Franchise' : 'Franchise Renewal',
+                    'unit'                   => $app->tricycle ? "{$app->tricycle->make} {$app->tricycle->model} (Plate: {$app->tricycle->plate_number})" : 'N/A',
+                    'date'                   => $app->created_at->format('M d, Y'),
+                    'status'                 => $status,
+                    'phase'                  => $phase,
+                    'message'                => $message,
+                    'is_expired'             => $isExpired,
+                    'can_renew'              => $canRenew,
+                    'card_color'             => $cardColor,
+                    'has_pending_renewal'    => $hasPendingRenewal,
+                    'has_active_valid'       => $hasActiveValidFranchise,
                 ];
             });
 
@@ -309,25 +539,65 @@ class MTOPController extends Controller
                 break;
         }
 
+        $fs = $app->tricycle?->franchiseScheme;
+        $isCompletedApp = in_array($app->status, ['completed', 'scheme_issued']);
+        $isExpired = $isCompletedApp && $fs && $fs->expiry_date ? $fs->expiry_date->isPast() : false;
+
+        $hasActiveValidFranchise = false;
+        $hasPendingRenewal = false;
+
+        if ($app->tricycle_id) {
+            $hasActiveValidFranchise = \App\Models\FranchiseScheme::where('tricycle_id', $app->tricycle_id)
+                ->where('is_active', true)
+                ->where('expiry_date', '>', now())
+                ->exists();
+
+            $hasPendingRenewal = \App\Models\Application::where('tricycle_id', $app->tricycle_id)
+                ->where('application_type', 'renewal')
+                ->whereNotIn('status', ['completed', 'rejected'])
+                ->where('id', '!=', $app->id)
+                ->exists();
+        }
+
+        $canRenew = $isExpired && !$hasActiveValidFranchise && !$hasPendingRenewal;
+
+        if ($isCompletedApp) {
+            $phase = 'completed';
+            if ($isExpired) {
+                if ($hasPendingRenewal || $hasActiveValidFranchise) {
+                    $status = 'expired-renewed';
+                } else {
+                    $status = 'expired-unrenewed';
+                }
+            } else {
+                $status = 'completed';
+            }
+        }
+
         $appData = [
-            'id'           => $app->reference_number,
-            'type'         => $app->application_type === 'new' ? 'New Franchise' : 'Renewal',
-            'status'       => $status,
-            'phase'        => $phase,
-            'date'         => $app->created_at->format('F d, Y'),
-            'toda'         => $app->tricycle?->todaZone ? $app->tricycle->todaZone->name : 'N/A',
-            'make'         => $app->tricycle ? "{$app->tricycle->make} {$app->tricycle->model}" : 'N/A',
-            'plate'        => $app->tricycle ? $app->tricycle->plate_number : 'N/A',
-            'engine'       => $app->tricycle ? $app->tricycle->engine_number : 'N/A',
-            'chassis'      => $app->tricycle ? $app->tricycle->chassis_number : 'N/A',
-            'operatorName' => $operator->full_name,
-            'documents'    => $documents,
-            'inspections'  => $inspections,
-            'payment'      => $payment,
-            'payment_due'  => $paymentRecord ? (float)$paymentRecord->amount : 1500.00,
-            'bplo'         => $bplo,
+            'id'                     => $app->reference_number,
+            'type'                   => $app->application_type === 'new' ? 'New Franchise' : 'Renewal',
+            'status'                 => $status,
+            'phase'                  => $phase,
+            'date'                   => $app->created_at->format('F d, Y'),
+            'toda'                   => $app->tricycle?->todaZone ? $app->tricycle->todaZone->name : 'N/A',
+            'make'                   => $app->tricycle ? "{$app->tricycle->make} {$app->tricycle->model}" : 'N/A',
+            'plate'                  => $app->tricycle ? $app->tricycle->plate_number : 'N/A',
+            'engine'                 => $app->tricycle ? $app->tricycle->engine_number : 'N/A',
+            'chassis'                => $app->tricycle ? $app->tricycle->chassis_number : 'N/A',
+            'operatorName'           => $operator->full_name,
+            'documents'              => $documents,
+            'inspections'            => $inspections,
+            'payment'                => $payment,
+            'payment_due'            => $paymentRecord ? (float)$paymentRecord->amount : 1500.00,
+            'bplo'                   => $bplo,
+            'tricycle_id'            => $app->tricycle_id,
+            'is_expired'             => $isExpired,
+            'can_renew'              => $canRenew,
+            'has_pending_renewal'    => $hasPendingRenewal,
+            'has_active_valid'       => $hasActiveValidFranchise,
         ];
- 
+
         return Inertia::render('Operator/Compliance/MTOPDetails', [
             'application' => $appData,
         ]);

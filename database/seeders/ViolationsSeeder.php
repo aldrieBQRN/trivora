@@ -19,7 +19,7 @@ class ViolationsSeeder extends Seeder
     public function run(): void
     {
         $tricycle = Tricycle::where('plate_number', 'AAA-1234')->first();
-        $franchise = FranchiseScheme::where('franchise_number', 'FS-2026-00001')->first();
+        $franchise = FranchiseScheme::where('franchise_number', 'FS-2023-00001')->first() ?: FranchiseScheme::first();
         $redScheme = ColorCodingScheme::where('name', 'Red')->first();
         $tmo = User::where('email', 'tmo.msantos@trivora.gov.ph')->first();
 

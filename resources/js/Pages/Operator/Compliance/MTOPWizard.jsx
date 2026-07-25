@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { Head, Link, useForm } from '@inertiajs/react';
+import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
+import { Head, Link, useForm, router } from '@inertiajs/react';
 import OperatorLayout from '@/Layouts/OperatorLayout';
 import {
     ChevronLeft,
@@ -13,7 +14,11 @@ import {
     ShieldCheck,
     ArrowLeft,
     ArrowRight,
-    Info
+    Info,
+    Upload,
+    Eye,
+    X,
+    Camera
 } from 'lucide-react';
 
 /* ─────────────────────────────────────────────────────────────────────────
@@ -132,56 +137,105 @@ const CSS = `
 }
 .mw-btn-primary:hover:not(:disabled) { background: #2E3A9E; transform: translateY(-1px); box-shadow: 0 8px 24px rgba(79,91,203, .25); }
 .mw-btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
-.mw-btn-secondary { background: #FFF; border: 1.5px solid rgba(28,35,64,.12); color: #5A6488; }
-.mw-btn-secondary:hover { background: #F8F9FC; color: #1C2340; border-color: rgba(28,35,64,.3); }
+.mw-btn-secondary { background: #FFFFFF; border: 1px solid #E2E8F0; color: #475569; box-shadow: none !important; }
+.mw-btn-secondary:hover, .mw-btn-secondary:hover:not(:disabled) { background: #F8FAFC !important; color: #1E293B !important; border-color: #CBD5E1 !important; transform: none !important; box-shadow: none !important; }
 `;
 
-export default function MTOPWizard() {
+export default function MTOPWizard({ applicationType = 'new', tricycleUnit = null }) {
     // We only need 3 steps now: 1. Vehicle, 2. Documents, 3. Success
     const [step, setStep] = useState(1);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
+    const isRenewal = applicationType === 'renewal';
+
     const { data, setData } = useForm({
-        make_model: '',
-        engine_number: '',
-        chassis_number: '',
-        plate: '',
-        toda: 'A (Poblacion)',
+        make_model: tricycleUnit?.make_model || '',
+        engine_number: tricycleUnit?.engine_number || '',
+        chassis_number: tricycleUnit?.chassis_number || '',
+        plate: tricycleUnit?.plate_number || '',
+        toda: tricycleUnit?.toda || 'A (Poblacion)',
         documents: {},
     });
 
     const documentList = [
-        { id: 'receipt',   label: 'Delivery Receipt (New)', required: true },
-        { id: 'police',    label: 'Police Clearance', required: true },
-        { id: 'health',    label: 'Health Certificate', required: true },
-        { id: 'orcr',      label: 'Xerox OR/CR', required: false },
-        { id: 'license',   label: "Driver's License", required: true },
-        { id: 'brgy',      label: 'Barangay Clearance', required: true },
-        { id: 'toda',      label: 'TODA/Association Clearance', required: true },
-        { id: 'cedula',    label: 'Cedula (Municipal)', required: true },
-        { id: 'driver_id', label: "Driver's ID (Association)", required: true },
-        { id: 'tariff',    label: 'Existing Tariff Fee', required: true },
-        { id: 'auth',      label: "Authorization Letter", optional: true },
+        { id: 'prangkisa', label: 'Xerox Prangkisa (Kung Renew)',                         conditional: isRenewal, required: isRenewal },
+        { id: 'orcr',      label: 'Xerox OR/CR',                                          required: true },
+        { id: 'receipt',   label: 'Delivery Receipt (Kung walang OR/CR / New)',            conditional: !isRenewal, required: !isRenewal },
+        { id: 'license',   label: "Driver's License Back-to-back (Prof/Restriction 1/A1)", required: true },
+        { id: 'brgy',      label: 'Barangay Clearance (Original)',                         required: true },
+        { id: 'toda',      label: 'TODA/NAFTODA/ACTODAN Clearance (Original)',             required: true },
+        { id: 'driver_id', label: "Driver's ID Issued by NAFTODA/ACTODAN",                required: true },
+        { id: 'tariff',    label: 'List of Existing Tariff Fee (For sidecar)',             conditional: true },
+        { id: 'auth',      label: "Authorization Letter & ID (Kung hindi may-ari)",       conditional: true },
     ];
 
-    const handleFileUpload = (docId, file) => setData('documents', { ...data.documents, [docId]: file });
+    const handleFileUpload = (docId, fileOrFiles) => {
+        const currentFiles = data.documents[docId] || [];
+        const filesToAdd = fileOrFiles instanceof FileList || Array.isArray(fileOrFiles)
+            ? Array.from(fileOrFiles)
+            : [fileOrFiles];
+
+        const updated = [...currentFiles, ...filesToAdd];
+        setData('documents', {
+            ...data.documents,
+            [docId]: updated
+        });
+    };
+
+    const handleRemoveFile = (docId, indexToRemove) => {
+        const currentFiles = data.documents[docId] || [];
+        const updated = currentFiles.filter((_, i) => i !== indexToRemove);
+        setData('documents', {
+            ...data.documents,
+            [docId]: updated.length > 0 ? updated : undefined
+        });
+    };
+
     const next = () => { window.scrollTo({ top: 0, behavior: 'smooth' }); setStep(s => s + 1); };
     const back = () => { window.scrollTo({ top: 0, behavior: 'smooth' }); setStep(s => s - 1); };
 
     const handleFinalSubmit = () => {
         setIsSubmitting(true);
-        setTimeout(() => {
-            setIsSubmitting(false);
-            setStep(3); // Move to Success Page
-        }, 2000);
+
+        const formData = new FormData();
+        formData.append('application_type', isRenewal ? 'renewal' : 'new');
+        if (tricycleUnit?.id) {
+            formData.append('unit_id', tricycleUnit.id);
+        }
+        formData.append('make_model', data.make_model);
+        formData.append('engine_number', data.engine_number);
+        formData.append('chassis_number', data.chassis_number);
+        formData.append('plate', data.plate);
+        formData.append('toda', data.toda);
+
+        if (data.documents) {
+            Object.entries(data.documents).forEach(([key, fileList]) => {
+                if (Array.isArray(fileList)) {
+                    fileList.forEach(file => {
+                        formData.append(`documents[${key}][]`, file);
+                    });
+                } else if (fileList) {
+                    formData.append(`documents[${key}]`, fileList);
+                }
+            });
+        }
+
+        router.post(route('operator.mtop.store'), formData, {
+            preserveScroll: true,
+            onFinish: () => setIsSubmitting(false),
+        });
     };
 
     const isStep1Valid = data.make_model && data.engine_number && data.chassis_number;
-    const isStep2Valid = documentList.filter(d => d.required).every(d => data.documents[d.id]);
+    const requiredDocsIds = documentList.filter(d => d.required).map(d => d.id);
+    const isStep2Valid = requiredDocsIds.every(id => {
+        const files = data.documents[id];
+        return Array.isArray(files) && files.length > 0;
+    });
 
     return (
-        <OperatorLayout title="New Unit Registration" operatorName="Mario Dela Cruz">
-            <Head title="New Unit Registration | TRIVORA" />
+        <OperatorLayout title={isRenewal ? "Franchise Renewal" : "New Unit Registration"} operatorName="Mario Dela Cruz">
+            <Head title={`${isRenewal ? "Franchise Renewal" : "New Unit Registration"} | TRIVORA`} />
             <style dangerouslySetInnerHTML={{ __html: CSS }} />
 
             <div className="mw-root">
@@ -190,14 +244,18 @@ export default function MTOPWizard() {
                     <>
                         <div className="mw-nav">
                             <Link href={route('operator.mtop')} className="mw-back-link">
-                                <ChevronLeft size={14} strokeWidth={3} /> Cancel Registration
+                                <ChevronLeft size={14} strokeWidth={3} /> Cancel {isRenewal ? "Renewal" : "Registration"}
                             </Link>
                         </div>
 
                         <div style={{ marginBottom: 40 }}>
                             <p className="mw-eyebrow">Franchise & Compliance</p>
-                            <h1 className="mw-title">New Unit Registration</h1>
-                            <p className="mw-subtitle">Complete the steps below to submit your application for a new tricycle unit.</p>
+                            <h1 className="mw-title">{isRenewal ? "Franchise Renewal Application" : "New Unit Registration"}</h1>
+                            <p className="mw-subtitle">
+                                {isRenewal
+                                    ? `Submit your application to renew the municipal MTOP franchise certificate for unit ${data.plate ? `(${data.plate})` : ''}.`
+                                    : "Complete the steps below to submit your application for a new tricycle unit."}
+                            </p>
                         </div>
 
                         {/* ── Progress Tracker ── */}
@@ -214,8 +272,25 @@ export default function MTOPWizard() {
                     <div className="mw-form-card">
                         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 32 }}>
                             <div style={{ padding: 12, background: 'rgba(79,91,203,.1)', borderRadius: 12, color: '#4F5BCB' }}><Bike size={24} /></div>
-                            <h2 style={{ fontFamily: 'Plus Jakarta Sans', fontSize: 22, fontWeight: 800 }}>Tricycle Specifications</h2>
+                            <h2 style={{ fontFamily: 'Plus Jakarta Sans', fontSize: 22, fontWeight: 800 }}>
+                                {isRenewal ? "Verified Tricycle Specs (Renewal)" : "Tricycle Specifications"}
+                            </h2>
                         </div>
+
+                        {isRenewal && (
+                            <div style={{ padding: '16px 20px', borderRadius: 14, background: 'rgba(79,91,203,.08)', border: '1px solid rgba(79,91,203,.2)', marginBottom: 28, display: 'flex', alignItems: 'center', gap: 12 }}>
+                                <Info size={20} color="#4F5BCB" style={{ flexShrink: 0 }} />
+                                <div>
+                                    <p style={{ fontFamily: 'Plus Jakarta Sans', fontSize: 13, fontWeight: 700, color: '#1C2340' }}>
+                                        Pre-Filled Municipal Record {tricycleUnit?.plate_number ? `(${tricycleUnit.plate_number})` : ''}
+                                    </p>
+                                    <p style={{ fontFamily: 'Inter', fontSize: 12, color: '#5A6488', marginTop: 2 }}>
+                                        Vehicle specs are pre-loaded from your registered unit archives for fast-track franchise renewal.
+                                    </p>
+                                </div>
+                            </div>
+                        )}
+
                         <div className="mw-grid">
                             <div className="mw-input-group" style={{ gridColumn: '1 / -1' }}>
                                 <label className="mw-label">TODA Assignment</label>
@@ -228,6 +303,10 @@ export default function MTOPWizard() {
                             <div className="mw-input-group" style={{ gridColumn: '1 / -1' }}>
                                 <label className="mw-label">Motorcycle Make & Model</label>
                                 <input className="mw-input" placeholder="e.g. Kawasaki Barako 175" value={data.make_model} onChange={e => setData('make_model', e.target.value)} />
+                            </div>
+                            <div className="mw-input-group">
+                                <label className="mw-label">LTO Plate / Body Number</label>
+                                <input className="mw-input" placeholder="e.g. 123-ABC or 0412" value={data.plate} onChange={e => setData('plate', e.target.value)} />
                             </div>
                             <div className="mw-input-group">
                                 <label className="mw-label">Engine Number</label>
@@ -260,9 +339,13 @@ export default function MTOPWizard() {
                             {documentList.map(doc => (
                                 <FileUploadTile
                                     key={doc.id}
-                                    doc={doc}
-                                    file={data.documents[doc.id]}
-                                    onUpload={file => handleFileUpload(doc.id, file)}
+                                    id={doc.id}
+                                    label={doc.label}
+                                    required={doc.required}
+                                    conditional={doc.conditional}
+                                    files={data.documents[doc.id] || []}
+                                    onUpload={files => handleFileUpload(doc.id, files)}
+                                    onRemove={index => handleRemoveFile(doc.id, index)}
                                 />
                             ))}
                         </div>
@@ -344,27 +427,465 @@ function StepNode({ num, label, active, done }) {
     );
 }
 
-function FileUploadTile({ doc, file, onUpload }) {
-    const [preview, setPreview] = useState(null);
+function FileUploadTile({ id, label, required, conditional, files, onUpload, onRemove }) {
+    const [previewUrls, setPreviewUrls] = useState([]);
+    const [showGallery, setShowGallery] = useState(false);
+    const [activePreviewUrl, setActivePreviewUrl] = useState(null);
+    const [showChoiceModal, setShowChoiceModal] = useState(false);
+    const [showCameraModal, setShowCameraModal] = useState(false);
+    const [cameraError, setCameraError] = useState(null);
+
+    const fileInputRef = useRef(null);
+    const videoRef = useRef(null);
+    const streamRef = useRef(null);
+
     useEffect(() => {
-        if (!file) { setPreview(null); return; }
-        if (file.type?.startsWith('image/')) {
-            const url = URL.createObjectURL(file);
-            setPreview(url);
-            return () => URL.revokeObjectURL(url);
+        if (!files || files.length === 0) {
+            setPreviewUrls([]);
+            return;
         }
-    }, [file]);
+
+        const urls = files.map(file => {
+            if (file instanceof File || file instanceof Blob) {
+                return URL.createObjectURL(file);
+            }
+            return file;
+        });
+
+        setPreviewUrls(urls);
+
+        return () => {
+            urls.forEach(url => {
+                if (url && url.startsWith('blob:')) {
+                    URL.revokeObjectURL(url);
+                }
+            });
+        };
+    }, [files]);
+
+    useEffect(() => {
+        if (showGallery || activePreviewUrl !== null || showChoiceModal || showCameraModal) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = '';
+        }
+        return () => {
+            document.body.style.overflow = '';
+        };
+    }, [showGallery, activePreviewUrl, showChoiceModal, showCameraModal]);
+
+    const startCamera = async () => {
+        setCameraError(null);
+        setShowChoiceModal(false);
+        setShowCameraModal(true);
+
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({
+                video: { facingMode: { ideal: 'environment' } }
+            });
+            streamRef.current = stream;
+            if (videoRef.current) {
+                videoRef.current.srcObject = stream;
+            }
+        } catch (err) {
+            console.error("Camera access error:", err);
+            setCameraError("Camera access permission denied or camera not available on this device.");
+        }
+    };
+
+    const stopCamera = () => {
+        if (streamRef.current) {
+            streamRef.current.getTracks().forEach(track => track.stop());
+            streamRef.current = null;
+        }
+        setShowCameraModal(false);
+        setCameraError(null);
+    };
+
+    const capturePhoto = () => {
+        if (!videoRef.current) return;
+
+        const video = videoRef.current;
+        const canvas = document.createElement('canvas');
+        canvas.width = video.videoWidth || 640;
+        canvas.height = video.videoHeight || 480;
+
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+        canvas.toBlob((blob) => {
+            if (blob) {
+                const capturedFile = new File([blob], `captured_doc_${Date.now()}.jpg`, { type: 'image/jpeg' });
+                onUpload([capturedFile]);
+                stopCamera();
+            }
+        }, 'image/jpeg', 0.9);
+    };
+
+    const isUploaded = files.length > 0;
 
     return (
-        <label className={`mw-file-tile ${file ? 'done' : ''}`}>
-            <input type="file" style={{ display: 'none' }} onChange={e => e.target.files[0] && onUpload(e.target.files[0])} />
-            <div style={{ flex: 1, minWidth: 0 }}>
-                <p className="mw-file-name" title={doc.label}>{doc.label}</p>
-                <div style={{display:'flex', gap: 6}}>
-                    {file ? <span className="mw-tag-done">✓ Attached</span> : doc.required ? <span className="mw-tag-req">Required</span> : <span style={{fontSize: '8.5px', color: '#8A96BC', textTransform:'uppercase', fontWeight: 800}}>Optional</span>}
+        <div className={`mw-file-tile ${isUploaded ? 'done' : ''}`} style={{ flexDirection: 'column', alignItems: 'flex-start', minHeight: 96, padding: '16px 20px', gap: 8 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+                <p className="mw-file-name" title={label} style={{ margin: 0, fontSize: '13px' }}>{label}</p>
+                <div style={{ display: 'flex', gap: 6 }}>
+                    {isUploaded
+                        ? <span className="mw-tag-done">✓ {files.length} File(s)</span>
+                        : required
+                            ? <span className="mw-tag-req">Required</span>
+                            : conditional
+                                ? <span style={{ fontSize: '8.5px', color: '#8A96BC', textTransform: 'uppercase', fontWeight: 800 }}>Optional</span>
+                                : null
+                    }
                 </div>
             </div>
-            {preview ? <img src={preview} className="mw-file-thumb" /> : <div className="mw-file-icon-wrap">{file ? <Check size={18} color="#059669" /> : <UploadCloud size={18} />}</div>}
-        </label>
+
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', marginTop: 4 }}>
+                <div>
+                    <input
+                        ref={fileInputRef}
+                        type="file"
+                        id={id}
+                        accept="image/*,.pdf"
+                        multiple
+                        style={{ display: 'none' }}
+                        onChange={e => {
+                            if (e.target.files && e.target.files.length > 0) {
+                                onUpload(e.target.files);
+                                e.target.value = '';
+                            }
+                        }}
+                    />
+                    <button
+                        type="button"
+                        onClick={() => setShowChoiceModal(true)}
+                        style={{
+                            display: 'inline-flex', alignItems: 'center', gap: 6,
+                            padding: '6px 14px', borderRadius: 8,
+                            background: 'rgba(79,91,203,.08)', border: '1px solid rgba(79,91,203,.18)',
+                            color: '#4F5BCB', fontFamily: "'DM Sans', sans-serif",
+                            fontSize: '9.5px', fontWeight: 700, textTransform: 'uppercase',
+                            letterSpacing: '.08em', cursor: 'pointer', transition: 'all .18s',
+                        }}
+                    >
+                        <Upload size={11} strokeWidth={2.5} />
+                        Add Photo / PDF
+                    </button>
+                </div>
+
+                {isUploaded && (
+                    <button
+                        type="button"
+                        style={{
+                            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                            background: 'transparent', border: 'none', color: '#4F5BCB',
+                            cursor: 'pointer', padding: '6px', borderRadius: '6px',
+                            transition: 'color .18s',
+                        }}
+                        onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setShowGallery(true);
+                        }}
+                        title="View Uploaded Photos"
+                    >
+                        <Eye size={18} strokeWidth={2} />
+                    </button>
+                )}
+            </div>
+
+            {/* Choice Modal (Upload vs Take Picture) */}
+            {showChoiceModal && createPortal(
+                <div
+                    style={{
+                        position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 9999,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px'
+                    }}
+                    onClick={() => setShowChoiceModal(false)}
+                >
+                    <div
+                        style={{
+                            background: '#FFFFFF', borderRadius: '16px', padding: '24px', width: '100%', maxWidth: '380px',
+                            boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)', display: 'flex', flexDirection: 'column', gap: '16px'
+                        }}
+                        onClick={e => e.stopPropagation()}
+                    >
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <h4 style={{ margin: 0, fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: '15px', fontWeight: 800, color: '#1C2340' }}>
+                                Select Attachment Method
+                            </h4>
+                            <button type="button" onClick={() => setShowChoiceModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9CA3AF' }}>
+                                <X size={18} />
+                            </button>
+                        </div>
+
+                        <p style={{ margin: 0, fontSize: '12.5px', color: '#5A6488', fontFamily: "'Inter', sans-serif" }}>
+                            Choose how you would like to attach <strong>{label}</strong>:
+                        </p>
+
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '4px' }}>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setShowChoiceModal(false);
+                                    if (fileInputRef.current) fileInputRef.current.click();
+                                }}
+                                style={{
+                                    display: 'flex', alignItems: 'center', gap: '12px', padding: '14px 16px',
+                                    borderRadius: '12px', background: '#F8F9FC', border: '1.5px solid rgba(28,35,64,.08)',
+                                    cursor: 'pointer', fontFamily: "'DM Sans', sans-serif", fontSize: '13px', fontWeight: 700, color: '#1C2340',
+                                    transition: 'all .15s'
+                                }}
+                            >
+                                <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'rgba(79,91,203,.1)', color: '#4F5BCB', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                    <Upload size={18} />
+                                </div>
+                                <div style={{ textAlign: 'left' }}>
+                                    <div>Upload File / Document</div>
+                                    <div style={{ fontSize: '11px', fontWeight: 500, color: '#8A96BC', marginTop: '2px' }}>Browse photo or PDF from device</div>
+                                </div>
+                            </button>
+
+                            <button
+                                type="button"
+                                onClick={startCamera}
+                                style={{
+                                    display: 'flex', alignItems: 'center', gap: '12px', padding: '14px 16px',
+                                    borderRadius: '12px', background: '#F8F9FC', border: '1.5px solid rgba(28,35,64,.08)',
+                                    cursor: 'pointer', fontFamily: "'DM Sans', sans-serif", fontSize: '13px', fontWeight: 700, color: '#1C2340',
+                                    transition: 'all .15s'
+                                }}
+                            >
+                                <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'rgba(5,150,105,.1)', color: '#059669', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                    <Camera size={18} />
+                                </div>
+                                <div style={{ textAlign: 'left' }}>
+                                    <div>Take a Picture</div>
+                                    <div style={{ fontSize: '11px', fontWeight: 500, color: '#8A96BC', marginTop: '2px' }}>Snap photo directly using camera</div>
+                                </div>
+                            </button>
+                        </div>
+                    </div>
+                </div>,
+                document.body
+            )}
+
+            {/* Live Camera Modal */}
+            {showCameraModal && createPortal(
+                <div
+                    style={{
+                        position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', zIndex: 10000,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px'
+                    }}
+                    onClick={stopCamera}
+                >
+                    <div
+                        style={{
+                            background: '#FFFFFF', borderRadius: '20px', width: '100%', maxWidth: '520px',
+                            overflow: 'hidden', display: 'flex', flexDirection: 'column', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)'
+                        }}
+                        onClick={e => e.stopPropagation()}
+                    >
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 20px', borderBottom: '1px solid #E5E7EB' }}>
+                            <span style={{ fontSize: '14px', fontWeight: 800, color: '#1C2340', fontFamily: "'Plus Jakarta Sans', sans-serif", display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <Camera size={18} color="#059669" /> Capture Photo ({label})
+                            </span>
+                            <button type="button" onClick={stopCamera} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9CA3AF' }}>
+                                <X size={20} />
+                            </button>
+                        </div>
+
+                        <div style={{ position: 'relative', background: '#000', width: '100%', minHeight: '300px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            {cameraError ? (
+                                <div style={{ padding: '32px', textAlign: 'center', color: '#EF4444' }}>
+                                    <p style={{ fontSize: '14px', fontWeight: 600, marginBottom: '16px' }}>{cameraError}</p>
+                                    <label
+                                        htmlFor={`cam_fallback_${id}`}
+                                        style={{
+                                            padding: '10px 20px', borderRadius: '10px', background: '#DC2626', color: '#FFF',
+                                            fontSize: '12px', fontWeight: 700, cursor: 'pointer', display: 'inline-block'
+                                        }}
+                                    >
+                                        Open Device Camera App
+                                    </label>
+                                    <input
+                                        type="file"
+                                        id={`cam_fallback_${id}`}
+                                        accept="image/*"
+                                        capture="environment"
+                                        style={{ display: 'none' }}
+                                        onChange={e => {
+                                            if (e.target.files && e.target.files.length > 0) {
+                                                onUpload(e.target.files);
+                                                stopCamera();
+                                            }
+                                        }}
+                                    />
+                                </div>
+                            ) : (
+                                <video
+                                    ref={videoRef}
+                                    autoPlay
+                                    playsInline
+                                    style={{ width: '100%', maxHeight: '420px', objectFit: 'cover' }}
+                                />
+                            )}
+                        </div>
+
+                        {!cameraError && (
+                            <div style={{ padding: '16px 20px', background: '#F9FAFB', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <button
+                                    type="button"
+                                    onClick={stopCamera}
+                                    style={{ padding: '10px 20px', borderRadius: '10px', background: '#E2E8F0', color: '#475569', border: 'none', fontWeight: 700, cursor: 'pointer', fontSize: '12px' }}
+                                >
+                                    Cancel
+                                </button>
+
+                                <button
+                                    type="button"
+                                    onClick={capturePhoto}
+                                    style={{
+                                        padding: '12px 28px', borderRadius: '12px', background: '#059669', color: '#FFFFFF',
+                                        border: 'none', fontWeight: 800, cursor: 'pointer', fontSize: '13px',
+                                        display: 'flex', alignItems: 'center', gap: '8px', boxShadow: '0 4px 14px rgba(5,150,105,.3)'
+                                    }}
+                                >
+                                    <Camera size={16} /> Snap Photo
+                                </button>
+                            </div>
+                        )}
+                    </div>
+                </div>,
+                document.body
+            )}
+
+            {/* Gallery Modal overlay */}
+            {showGallery && createPortal(
+                <div
+                    style={{
+                        position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 9999,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px',
+                    }}
+                    onClick={() => setShowGallery(false)}
+                >
+                    <div
+                        style={{
+                            background: '#FFFFFF', borderRadius: '16px', width: '100%', maxWidth: '500px',
+                            maxHeight: '80vh', display: 'flex', flexDirection: 'column', overflow: 'hidden',
+                            boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04)',
+                        }}
+                        onClick={e => e.stopPropagation()}
+                    >
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', borderBottom: '1px solid #E5E7EB' }}>
+                            <span style={{ fontSize: '13px', fontWeight: 700, color: '#1C2340', fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
+                                Uploaded Documents ({files.length})
+                            </span>
+                            <button
+                                style={{ background: 'none', border: 'none', color: '#9CA3AF', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+                                onClick={() => setShowGallery(false)}
+                            >
+                                <X size={18} />
+                            </button>
+                        </div>
+                        <div style={{ padding: '20px', flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '12px', background: '#F9FAFB' }}>
+                            {files.map((file, idx) => {
+                                const isImg = file.type?.startsWith('image/');
+                                const thumb = previewUrls[idx];
+
+                                return (
+                                    <div key={idx} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#FFFFFF', border: '1px solid rgba(28,35,64,.08)', borderRadius: '10px', padding: '10px 12px' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0, flex: 1 }}>
+                                            {isImg && thumb ? (
+                                                <img src={thumb} alt="Preview" style={{ width: '36px', height: '36px', borderRadius: '6px', objectFit: 'cover', border: '1px solid rgba(0,0,0,.08)' }} />
+                                            ) : (
+                                                <div style={{ width: '36px', height: '36px', borderRadius: '6px', background: 'rgba(28,35,64,.05)', border: '1px solid rgba(28,35,64,.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#8A96BC' }}>
+                                                    <FileText size={16} />
+                                                </div>
+                                            )}
+                                            <span style={{ fontSize: '12px', fontWeight: '500', color: '#4A5070', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
+                                                {file.name}
+                                            </span>
+                                        </div>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                            <button
+                                                type="button"
+                                                style={{ background: 'none', border: 'none', color: '#4F5BCB', cursor: 'pointer', padding: '4px' }}
+                                                onClick={() => setActivePreviewUrl(thumb || previewUrls[idx])}
+                                                title="View file"
+                                            >
+                                                <Eye size={16} />
+                                            </button>
+                                            <button
+                                                type="button"
+                                                style={{ background: 'none', border: 'none', color: '#DC2626', cursor: 'pointer', padding: '4px' }}
+                                                onClick={() => {
+                                                    onRemove(idx);
+                                                    if (files.length <= 1) {
+                                                        setShowGallery(false);
+                                                    }
+                                                }}
+                                                title="Remove file"
+                                            >
+                                                <X size={16} />
+                                            </button>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+                </div>,
+                document.body
+            )}
+
+            {/* Fullscreen Document Preview Modal */}
+            {activePreviewUrl !== null && createPortal(
+                <div
+                    style={{
+                        position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', zIndex: 10000,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px',
+                    }}
+                    onClick={() => setActivePreviewUrl(null)}
+                >
+                    <div
+                        style={{
+                            background: '#FFFFFF', borderRadius: '16px', width: '100%', maxWidth: '800px',
+                            maxHeight: '90vh', display: 'flex', flexDirection: 'column', overflow: 'hidden',
+                            boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04)',
+                        }}
+                        onClick={e => e.stopPropagation()}
+                    >
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', borderBottom: '1px solid #E5E7EB' }}>
+                            <span style={{ fontSize: '13px', fontWeight: 700, color: '#1C2340', fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
+                                Document Preview
+                            </span>
+                            <button
+                                style={{ background: 'none', border: 'none', color: '#9CA3AF', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+                                onClick={() => setActivePreviewUrl(null)}
+                            >
+                                <X size={20} />
+                            </button>
+                        </div>
+                        <div style={{ padding: '20px', flex: 1, overflowY: 'auto', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#F9FAFB' }}>
+                            {activePreviewUrl.includes('application/pdf') || files.find(f => previewUrls.indexOf(activePreviewUrl) !== -1)?.type === 'application/pdf' ? (
+                                <iframe
+                                    src={activePreviewUrl}
+                                    style={{ width: '100%', height: '70vh', borderRadius: '8px', border: '1px solid #E5E7EB' }}
+                                    title="PDF Preview"
+                                />
+                            ) : (
+                                <img
+                                    src={activePreviewUrl}
+                                    alt="Preview"
+                                    style={{ maxWidth: '100%', maxHeight: '70vh', objectFit: 'contain', borderRadius: '8px', border: '1px solid #E5E7EB' }}
+                                />
+                            )}
+                        </div>
+                    </div>
+                </div>,
+                document.body
+            )}
+        </div>
     );
 }

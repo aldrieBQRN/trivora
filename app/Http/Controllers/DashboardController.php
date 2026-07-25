@@ -39,11 +39,12 @@ class DashboardController extends Controller
                 })->count();
         }
 
-        // Map tricycles for the enforcement map
+        // Map tricycles for the enforcement map (Only tricycles with real location telemetry from mobile app)
         $tricyclesData = $activeTricycles->map(function ($tri) use ($restrictedEndings) {
             $latestLoc = $tri->locations()->latest('recorded_at')->first();
-            $lat = $latestLoc ? (float)$latestLoc->latitude : 14.0725;
-            $lng = $latestLoc ? (float)$latestLoc->longitude : 120.6355;
+            if (!$latestLoc) {
+                return null;
+            }
 
             // Check if there is an active violation
             $hasUnresolvedViolation = $tri->violations()->where('status', 'open')->exists();
@@ -61,15 +62,18 @@ class DashboardController extends Controller
             }
 
             return [
-                'id'       => $tri->body_number ?: ('TRV-' . $tri->id),
-                'plate'    => $tri->plate_number,
-                'operator' => $tri->operator ? $tri->operator->full_name : 'N/A',
-                'toda'     => $tri->todaZone ? $tri->todaZone->name : 'Unassigned',
-                'lat'      => $lat,
-                'lng'      => $lng,
-                'status'   => $status,
+                'id'         => $tri->body_number ?: ('TRV-' . $tri->id),
+                'plate'      => $tri->plate_number,
+                'operator'   => $tri->operator ? $tri->operator->full_name : 'N/A',
+                'toda'       => $tri->todaZone ? $tri->todaZone->name : 'Unassigned',
+                'lat'        => (float)$latestLoc->latitude,
+                'lng'        => (float)$latestLoc->longitude,
+                'status'     => $status,
+                'hasRealGPS' => true,
+                'speed_kmh'  => $latestLoc->speed_kmh,
+                'last_seen'  => $latestLoc->recorded_at->diffForHumans(),
             ];
-        })->toArray();
+        })->filter()->values()->toArray();
 
         $stats = [
             'active_fleet'     => Tricycle::where('status', 'active')->count(),

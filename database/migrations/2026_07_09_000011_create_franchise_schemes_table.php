@@ -14,11 +14,10 @@ return new class extends Migration
         Schema::create('franchise_schemes', function (Blueprint $table) {
             $table->id();
             $table->foreignId('application_id')
-                ->unique() // One franchise per application
+                ->nullable()
                 ->constrained('applications')
                 ->cascadeOnDelete();
             $table->foreignId('tricycle_id')
-                ->unique() // One active franchise per tricycle
                 ->constrained('tricycles')
                 ->cascadeOnDelete();
             $table->foreignId('color_coding_scheme_id')

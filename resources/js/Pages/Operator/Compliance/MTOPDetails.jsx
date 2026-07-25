@@ -4,7 +4,7 @@ import OperatorLayout from '@/Layouts/OperatorLayout';
 import {
     ChevronLeft, FileText, CheckCircle2, Clock, AlertCircle,
     Bike, FileSearch, ClipboardCheck, Stamp, AlertTriangle,
-    UploadCloud, XCircle, Info, Download, Wrench, Settings,
+    UploadCloud, XCircle, Info, Download, Wrench, Settings, RefreshCw,
     Wallet, Receipt, CreditCard, ArrowRight, Calendar, ShieldCheck,
     MapPin
 } from 'lucide-react';
@@ -506,7 +506,48 @@ export default function MTOPDetails({ application }) {
                             </div>
                         )}
 
-                        {app.status === 'completed' && (
+                        {(app.status === 'expired' || app.status === 'expired-unrenewed' || app.status === 'expired-renewed') && (
+                            <div className="ad-action-box" style={{
+                                background: (app.status === 'expired-renewed' || app.has_pending_renewal) ? '#FFFBEB' : '#FFF5F5',
+                                border: (app.status === 'expired-renewed' || app.has_pending_renewal) ? '1.5px solid rgba(217,119,6,.25)' : '1.5px solid rgba(220,38,38,.25)'
+                            }}>
+                                <div className="ad-action-icon" style={{
+                                    background: (app.status === 'expired-renewed' || app.has_pending_renewal) ? 'rgba(217,119,6,.12)' : 'rgba(220,38,38,.12)',
+                                    color: (app.status === 'expired-renewed' || app.has_pending_renewal) ? '#D97706' : '#DC2626'
+                                }}>
+                                    {(app.status === 'expired-renewed' || app.has_pending_renewal) ? <Clock size={22} color="#D97706" /> : <AlertCircle size={22} color="#DC2626" />}
+                                </div>
+                                <h3 className="ad-action-title" style={{ color: (app.status === 'expired-renewed' || app.has_pending_renewal) ? '#B45309' : '#991B1B' }}>
+                                    {(app.status === 'expired-renewed' || app.has_pending_renewal) ? 'Franchise Expired (Renewal In Progress)' : 'Franchise Expired'}
+                                </h3>
+                                <p className="ad-action-desc" style={{ color: (app.status === 'expired-renewed' || app.has_pending_renewal) ? '#78350F' : '#B91C1C' }}>
+                                    {(app.status === 'expired-renewed' || app.has_pending_renewal)
+                                        ? 'Your MTOP Franchise Permit has expired. A renewal application has already been submitted and is currently undergoing review.'
+                                        : 'Your MTOP Franchise Permit for this tricycle unit has expired. Submit a renewal application to maintain compliance and keep operating legally.'}
+                                </p>
+
+                                {app.can_renew ? (
+                                    <Link
+                                        href={route('operator.mtop.create', { type: 'renewal', unit_id: app.tricycle_id })}
+                                        className="ad-primary-btn"
+                                        style={{ background: '#DC2626', color: '#FFFFFF', boxShadow: '0 4px 14px rgba(220,38,38,.25)' }}
+                                    >
+                                        <RefreshCw size={15} /> Renew Expired Franchise
+                                    </Link>
+                                ) : (
+                                    <span style={{
+                                        display: 'inline-flex', alignItems: 'center', gap: 6,
+                                        padding: '10px 18px', borderRadius: 10,
+                                        background: 'rgba(217,119,6,.12)', color: '#D97706', border: '1px solid rgba(217,119,6,.25)',
+                                        fontFamily: 'DM Sans, sans-serif', fontSize: 11, fontWeight: 700, letterSpacing: '.08em', textTransform: 'uppercase'
+                                    }}>
+                                        <Clock size={14} /> Renewal Application In Progress
+                                    </span>
+                                )}
+                            </div>
+                        )}
+
+                        {app.status === 'completed' && !app.is_expired && (
                             <div className="ad-action-box success">
                                 <div className="ad-action-icon"><CheckCircle2 size={22} color="#059669" /></div>
                                 <h3 className="ad-action-title">Franchise Active</h3>

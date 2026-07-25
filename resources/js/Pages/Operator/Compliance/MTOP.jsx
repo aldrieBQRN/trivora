@@ -13,6 +13,7 @@ import {
     ClipboardCheck,
     Stamp,
     Wallet,
+    RefreshCw,
     X
 } from 'lucide-react';
 
@@ -186,6 +187,7 @@ const CSS = `
 }
 .mtop-status-badge.in-progress { background: rgba(79,91,203,.08); color: #4F5BCB; border-color: rgba(79,91,203,.1); }
 .mtop-status-badge.completed   { background: rgba(5,150,105,.08); color: #059669; border-color: rgba(5,150,105,.1); }
+.mtop-status-badge.expired     { background: rgba(220,38,38,.08); color: #DC2626; border-color: rgba(220,38,38,.1); }
 .mtop-status-badge.action-req  { background: rgba(217,119,6,.08); color: #D97706; border-color: rgba(217,119,6,.1); } /* Changed to amber for softer alert */
 
 .mtop-view-text {
@@ -247,6 +249,10 @@ export default function MTOPTracker({ applications = [], auth }) {
         );
     };
 
+    const hasExpiredApp = applications.some(a => a.is_expired || a.status === 'expired');
+    const expiredAppWithCanRenew = applications.find(a => a.can_renew);
+    const hasPendingRenewal = applications.some(a => a.type.includes('Renewal') && a.status === 'in-progress');
+
     return (
         <OperatorLayout title="MTOP Applications" operatorName={operatorName}>
             <Head title="MTOP Tracker | TRIVORA" />
@@ -254,13 +260,23 @@ export default function MTOPTracker({ applications = [], auth }) {
 
             <div className="mtop-root">
 
-                <div className="mtop-topbar">
+                <div className="mtop-topbar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: 16 }}>
                     <div>
                         <p className="mtop-eyebrow">Franchise & Compliance</p>
                         <h1 className="mtop-title">Application Tracker</h1>
                         <p className="mtop-subtitle">Monitor and manage your municipal franchise records.</p>
                     </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                        <Link
+                            href={route('operator.mtop.create')}
+                            style={{ height: 42, padding: '0 20px', borderRadius: 10, background: '#4F5BCB', color: '#FFFFFF', display: 'inline-flex', alignItems: 'center', gap: 8, fontFamily: 'DM Sans, sans-serif', fontSize: 10, fontWeight: 700, letterSpacing: '.12em', textTransform: 'uppercase', textDecoration: 'none', boxShadow: '0 4px 14px rgba(79,91,203,.25)', transition: 'all .2s' }}
+                        >
+                            + New Unit Registration
+                        </Link>
+                    </div>
                 </div>
+
+
 
                 <div className="mtop-toolbar">
                     <div className="mtop-search">
@@ -290,50 +306,88 @@ export default function MTOPTracker({ applications = [], auth }) {
                 </div>
 
                 <div className="mtop-grid">
-                    {filtered.map(app => (
-                        <Link
-                            key={app.id}
-                            href={route('operator.mtop.details', { id: app.id })}
-                            className="mtop-card"
-                        >
-                            <div className="mtop-card-left">
-                                <div className={`mtop-icon-box ${
-                                    app.status === 'completed' ? 'mtop-icon-approved' :
-                                    app.status === 'action-req' ? 'mtop-icon-action' : 'mtop-icon-pending'
-                                }`}>
-                                    <FileText size={24} strokeWidth={2} />
-                                </div>
+                    {filtered.map(app => {
+                        const isRedCard = app.card_color === 'red' || (app.is_expired && !app.has_pending_renewal && !app.has_active_valid);
+                        const isYellowCard = app.card_color === 'yellow' || (app.is_expired && (app.has_pending_renewal || app.has_active_valid));
 
-                                <div>
-                                    <h3 className="mtop-details-title">{app.type}: {app.unit}</h3>
-                                    <div className="mtop-details-meta">
-                                        <p>Tracking ID: <span>{app.id}</span></p>
-                                        <p>Submission: <span>{app.date}</span></p>
+                        const cardStyle = isRedCard ? {
+                            background: '#FFF5F5',
+                            border: '1.5px solid rgba(220,38,38,.25)',
+                            boxShadow: '0 4px 16px rgba(220,38,38,.04)'
+                        } : isYellowCard ? {
+                            background: '#FFFBEB',
+                            border: '1.5px solid rgba(217,119,6,.25)',
+                            boxShadow: '0 4px 16px rgba(217,119,6,.04)'
+                        } : {};
+
+                        const iconBoxStyle = isRedCard ? {
+                            background: 'rgba(220,38,38,.12)',
+                            color: '#DC2626'
+                        } : isYellowCard ? {
+                            background: 'rgba(217,119,6,.12)',
+                            color: '#D97706'
+                        } : {};
+
+                        return (
+                            <Link
+                                key={app.id}
+                                href={route('operator.mtop.details', { id: app.id })}
+                                className="mtop-card"
+                                style={cardStyle}
+                            >
+                                <div className="mtop-card-left">
+                                    <div
+                                        className={`mtop-icon-box ${
+                                            app.status === 'completed' ? 'mtop-icon-approved' :
+                                            app.status === 'action-req' ? 'mtop-icon-action' : 'mtop-icon-pending'
+                                        }`}
+                                        style={iconBoxStyle}
+                                    >
+                                        <FileText size={24} strokeWidth={2} />
                                     </div>
 
-                                    {app.status !== 'completed' && renderPipeline(app.phase, app.status)}
+                                    <div>
+                                        <h3 className="mtop-details-title" style={{ margin: 0 }}>{app.type}: {app.unit}</h3>
+                                        <div className="mtop-details-meta" style={{ marginTop: 4 }}>
+                                            <p>Tracking ID: <span>{app.id}</span></p>
+                                            <p>Submission: <span>{app.date}</span></p>
+                                        </div>
 
-                                    <p className="mtop-details-msg" style={{ color: app.status === 'action-req' ? '#D97706' : '#64748B' }}>
-                                        {app.message}
-                                    </p>
-                                </div>
-                            </div>
+                                        {app.status !== 'completed' && !isRedCard && !isYellowCard && renderPipeline(app.phase, app.status)}
 
-                            <div className="mtop-card-right">
-                                <span className={`mtop-status-badge ${app.status}`}>
-                                    {app.status === 'completed' ? <CheckCircle2 size={12} strokeWidth={3}/> :
-                                     app.status === 'action-req' ? <AlertCircle size={12} strokeWidth={3}/> :
-                                     <Clock size={12} strokeWidth={3}/>}
-                                    {/* Updated the status labels here to be more friendly */}
-                                    {app.status === 'completed' ? 'Approved' :
-                                     app.status === 'action-req' ? (app.phase === 'tmo-phys' ? 'Re-inspection' : 'Re-submission') : 'In Progress'}
-                                </span>
-                                <div className="mtop-view-text">
-                                    Track Status <ChevronRight size={14} strokeWidth={3} />
+                                        <p className="mtop-details-msg" style={{
+                                            color: isRedCard ? '#DC2626' : (isYellowCard ? '#B45309' : (app.status === 'action-req' ? '#D97706' : '#64748B')),
+                                            marginTop: (isRedCard || isYellowCard) ? 6 : 0,
+                                            fontWeight: (isRedCard || isYellowCard) ? 700 : 500
+                                        }}>
+                                            {app.message}
+                                        </p>
+                                    </div>
                                 </div>
-                            </div>
-                        </Link>
-                    ))}
+
+                                <div className="mtop-card-right">
+                                    <span className={`mtop-status-badge ${app.status}`} style={
+                                        isRedCard ? { background: 'rgba(220,38,38,.12)', color: '#DC2626', borderColor: 'rgba(220,38,38,.2)' } :
+                                        isYellowCard ? { background: 'rgba(217,119,6,.12)', color: '#D97706', borderColor: 'rgba(217,119,6,.2)' } : {}
+                                    }>
+                                        {app.status === 'completed' ? <CheckCircle2 size={12} strokeWidth={3}/> :
+                                         isRedCard ? <AlertCircle size={12} strokeWidth={3}/> :
+                                         isYellowCard ? <Clock size={12} strokeWidth={3}/> :
+                                         app.status === 'action-req' ? <AlertCircle size={12} strokeWidth={3}/> :
+                                         <Clock size={12} strokeWidth={3}/>}
+                                        {app.status === 'completed' ? 'Approved' :
+                                         isRedCard ? 'Expired' :
+                                         isYellowCard ? 'Expired (Renewed)' :
+                                         app.status === 'action-req' ? (app.phase === 'tmo-phys' ? 'Re-inspection' : 'Re-submission') : 'In Progress'}
+                                    </span>
+
+                                    <div className="mtop-view-text" style={{ color: isRedCard ? '#DC2626' : (isYellowCard ? '#D97706' : undefined) }}>
+                                        Track Status <ChevronRight size={14} strokeWidth={3} />
+                                    </div>
+                                </div>
+                            </Link>
+                        );
+                    })}
 
                     {filtered.length === 0 && (
                         <div style={{ textAlign: 'center', padding: '80px 0', background: '#FFF', borderRadius: '24px', border: '1px dashed #E2E8F0' }}>

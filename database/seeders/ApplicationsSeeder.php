@@ -99,19 +99,19 @@ class ApplicationsSeeder extends Seeder
                 'notes'                   => 'Full payment received.',
             ]);
 
-            // Franchise scheme
+            // Seed expired franchise scheme (FS-2023-00001) for Pedro Ramos to demonstrate expired status
             if ($redScheme && $bplo) {
                 FranchiseScheme::firstOrCreate(
-                    ['franchise_number' => 'FS-2026-00001'],
+                    ['franchise_number' => 'FS-2023-00001'],
                     [
                         'application_id'         => $app1->id,
                         'tricycle_id'            => $tri1->id,
                         'color_coding_scheme_id' => $redScheme->id,
                         'issued_by'              => $bplo->id,
-                        'issue_date'             => now()->subDays(10)->toDateString(),
-                        'expiry_date'            => now()->addYear()->subDays(10)->toDateString(),
-                        'is_active'              => true,
-                        'notes'                  => 'Initial franchise issuance.',
+                        'issue_date'             => now()->subYears(3)->subDays(30)->toDateString(),
+                        'expiry_date'            => now()->subDays(30)->toDateString(),
+                        'is_active'              => true, // Active permit record that is now past expiry date
+                        'notes'                  => 'Franchise permit issued in 2023 (Expired 30 days ago).',
                     ]
                 );
 

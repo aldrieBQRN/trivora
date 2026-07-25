@@ -12,7 +12,8 @@ import {
     FileText,
     BatteryMedium,
     ShieldCheck,
-    Wrench
+    Wrench,
+    RefreshCw
 } from 'lucide-react';
 
 /* ─────────────────────────────────────────────────────────────────────────
@@ -245,11 +246,11 @@ export default function MyTricycle({ tricycle, auth }) {
                         </div>
 
                         <div className="f-info-row">
-                            <div className="f-info-icon emerald"><FileText size={20} /></div>
+                            <div className="f-info-icon" style={{ background: tricycle.isExpired ? 'rgba(220,38,38,.1)' : 'rgba(5,150,105,.1)', color: tricycle.isExpired ? '#DC2626' : '#059669' }}><FileText size={20} /></div>
                             <div className="f-info-text">
                                 <p className="f-info-label">MTOP Franchise Expiry</p>
-                                <p className="f-info-value" style={{ color: '#059669' }}>
-                                    {tricycle.mtopExpiry}
+                                <p className="f-info-value" style={{ color: tricycle.isExpired ? '#DC2626' : '#059669', fontWeight: 700 }}>
+                                    {tricycle.mtopExpiry} {tricycle.isExpired ? '(EXPIRED)' : ''}
                                 </p>
                             </div>
                         </div>
@@ -271,12 +272,81 @@ export default function MyTricycle({ tricycle, auth }) {
                         <Link href={route('operator.tracking')} className="f-btn-primary">
                             <Navigation2 size={16} /> Open Live GPS Tracking
                         </Link>
+
+                        {tricycle.hasPendingRenewal ? (
+                            <span style={{ background: 'rgba(217,119,6,.1)', color: '#D97706', border: '1px solid rgba(217,119,6,.2)', padding: '10px 18px', borderRadius: 10, fontFamily: 'DM Sans, sans-serif', fontSize: 11, fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 6, letterSpacing: '.05em', textTransform: 'uppercase' }}>
+                                <Activity size={14} /> Renewal In Progress
+                            </span>
+                        ) : (tricycle.canRenew || tricycle.isExpired) ? (
+                            <Link
+                                href={route('operator.mtop.create', { type: 'renewal', unit_id: tricycle.db_id || tricycle.id })}
+                                className="f-btn-secondary"
+                                style={{
+                                    background: '#DC2626',
+                                    color: '#FFFFFF',
+                                    borderColor: '#DC2626',
+                                    fontWeight: 700
+                                }}
+                            >
+                                <RefreshCw size={16} /> Renew Expired Franchise
+                            </Link>
+                        ) : (
+                            <span style={{ background: 'rgba(5,150,105,.1)', color: '#059669', border: '1px solid rgba(5,150,105,.2)', padding: '10px 18px', borderRadius: 10, fontFamily: 'DM Sans, sans-serif', fontSize: 11, fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 6, letterSpacing: '.05em', textTransform: 'uppercase' }}>
+                                ✓ Franchise Active
+                            </span>
+                        )}
+
                         <Link href={route('operator.settings')} className="f-btn-secondary" title="Unit Settings">
                             <Settings size={16} /> Unit Settings
                         </Link>
                     </div>
 
                 </div>
+
+                {/* ── FRANCHISE PERMIT HISTORY LIST ── */}
+                {tricycle.franchiseHistory && tricycle.franchiseHistory.length > 0 && (
+                    <div style={{ marginTop: 32, background: '#FFFFFF', border: '1px solid rgba(28,35,64,.08)', borderRadius: 20, padding: 32, boxShadow: '0 4px 20px rgba(28,35,64,.03)' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+                            <h3 style={{ fontFamily: 'Plus Jakarta Sans', fontSize: 18, fontWeight: 800, color: '#1C2340', display: 'flex', alignItems: 'center', gap: 10 }}>
+                                <FileText size={20} color="#4F5BCB" /> Franchise Permit History
+                            </h3>
+                            <span style={{ fontFamily: 'DM Sans', fontSize: 10, fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase', color: '#8A96BC' }}>
+                                Total Permits: {tricycle.franchiseHistory.length}
+                            </span>
+                        </div>
+
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                            {tricycle.franchiseHistory.map((item) => (
+                                <div key={item.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', borderRadius: 14, background: '#FAFAFC', border: '1px solid rgba(28,35,64,.06)' }}>
+                                    <div>
+                                        <p style={{ fontFamily: 'Plus Jakarta Sans', fontSize: 15, fontWeight: 800, color: '#1C2340', margin: 0 }}>
+                                            Franchise #{item.franchise_number}
+                                        </p>
+                                        <p style={{ fontFamily: 'Inter', fontSize: 12, color: '#5A6488', marginTop: 4, margin: 0 }}>
+                                            Issued: <strong>{item.issue_date}</strong> • Expiry: <strong>{item.expiry_date}</strong>
+                                        </p>
+                                        {item.notes && (
+                                            <p style={{ fontFamily: 'Inter', fontSize: 11, color: '#8A96BC', marginTop: 4, fontStyle: 'italic', margin: 0 }}>
+                                                {item.notes}
+                                            </p>
+                                        )}
+                                    </div>
+                                    <div>
+                                        {item.status === 'Active' ? (
+                                            <span style={{ fontFamily: 'DM Sans', fontSize: 10, fontWeight: 800, color: '#059669', background: 'rgba(5,150,105,.1)', padding: '6px 14px', borderRadius: 50, border: '1px solid rgba(5,150,105,.2)', textTransform: 'uppercase', letterSpacing: '.05em' }}>
+                                                ✓ Active Permit
+                                            </span>
+                                        ) : (
+                                            <span style={{ fontFamily: 'DM Sans', fontSize: 10, fontWeight: 800, color: '#DC2626', background: 'rgba(220,38,38,.1)', padding: '6px 14px', borderRadius: 50, border: '1px solid rgba(220,38,38,.2)', textTransform: 'uppercase', letterSpacing: '.05em' }}>
+                                                Expired Permit
+                                            </span>
+                                        )}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
             </div>
         </OperatorLayout>
     );
