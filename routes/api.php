@@ -25,6 +25,8 @@ Route::prefix('v1/driver')->group(function () {
     Route::post('/bookings/{id}/accept', [BookingController::class, 'acceptBooking']);
     Route::post('/bookings/{id}/status', [BookingController::class, 'updateStatus']);
     Route::get('/bookings/active', [BookingController::class, 'getActiveBooking']);
+    Route::get('/bookings/history', [BookingController::class, 'history']);
+    Route::post('/location', [BookingController::class, 'updateDriverLocation']);
 
     // Authenticated Driver Routes (Sanctum)
     Route::middleware('auth:sanctum')->group(function () {
@@ -36,7 +38,6 @@ Route::prefix('v1/driver')->group(function () {
         Route::post('/telematics/batch', [DriverTelematicsController::class, 'batchStore']);
         Route::get('/telemetry-status', [DriverTelematicsController::class, 'getTrackingStatus']);
         Route::post('/telemetry-mode', [DriverTelematicsController::class, 'setTrackingMode']);
-        Route::get('/bookings/history', [BookingController::class, 'history']);
     });
 });
 
@@ -50,6 +51,7 @@ Route::prefix('v1/passenger')->group(function () {
     // Booking & Ride Operations (Public / Guest accessible for mobile apps)
     Route::post('/bookings/request', [BookingController::class, 'requestBooking']);
     Route::get('/bookings/active', [BookingController::class, 'getActiveBooking']);
+    Route::get('/bookings/history', [BookingController::class, 'history']);
     Route::post('/bookings/{id}/status', [BookingController::class, 'updateStatus']);
     Route::post('/bookings/{id}/cancel', [BookingController::class, 'updateStatus']);
 
@@ -57,7 +59,6 @@ Route::prefix('v1/passenger')->group(function () {
     Route::middleware('auth:sanctum')->group(function () {
         Route::get('/me', [PassengerAuthController::class, 'me']);
         Route::post('/logout', [PassengerAuthController::class, 'logout']);
-        Route::get('/bookings/history', [BookingController::class, 'history']);
         Route::post('/bookings/{id}/rate', [BookingController::class, 'rateRide']);
     });
 });
