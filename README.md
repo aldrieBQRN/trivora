@@ -49,11 +49,21 @@ The primary objective of **Trivora** is to modernize and streamline the Motorize
 
 ---
 
+## 📱 Ecosystem Repositories
+
+| Component | Platform | Repository Link |
+|---|---|---|
+| **Web Administrative Platform** | Laravel 12 + React 18 (Inertia.js) | [github.com/aldrieBQRN/trivora](https://github.com/aldrieBQRN/trivora) |
+| **Passenger Mobile Application** | React Native / Expo (iOS & Android) | [github.com/emanconcepcion21/trivora-application-passenger](https://github.com/emanconcepcion21/trivora-application-passenger) |
+| **Driver Mobile Application** | React Native / Expo (iOS & Android) | [github.com/OrtegaAeron/trivora-application-driver](https://github.com/OrtegaAeron/trivora-application-driver) |
+
+---
+
 ## 🏗️ 2. Overall Description & Architecture
 
 ### 2.1 System Architecture Overview
 
-Trivora is engineered as a decoupled, multi-tier system connecting hardware telematics sensors, a Laravel 12 REST/Inertia backend, a MySQL database, and dynamic React 18 web dashboards.
+Trivora is engineered as a decoupled, multi-tier system connecting hardware telematics sensors, a Laravel 12 REST/Inertia backend, a MySQL database, dynamic React 18 web dashboards, and mobile applications for Passengers and Drivers.
 
 <p align="center">
   <img src="./public/images/system-architecture.png.webp" alt="Trivora System Architecture Diagram" width="100%">
@@ -66,18 +76,19 @@ Trivora is engineered as a decoupled, multi-tier system connecting hardware tele
 2. **Backend Application Layer (Laravel 12)**:
    Serves as the core business logic engine. It manages multi-role authentication via Laravel Sanctum, executes the 4-stage MTOP application pipeline, calculates daily color-coding restrictions based on body number digits, processes violation penalties, and calculates spatial route overlaps for TODA zones.
 3. **Database Layer (MySQL 8.0)**:
-   Houses normalized relational data across 15 core tables (including `users`, `operators`, `tricycles`, `toda_zones`, `applications`, `inspections`, `payments`, `violations`, and `tricycle_locations`).
-4. **Frontend Layer (React 18, Inertia.js, Tailwind CSS)**:
-   Renders role-tailored administrative user interfaces without multi-page reloads. Uses **Leaflet & Mapbox GL** to render live map overlays of active units, route boundaries, and color-coding compliance alerts in real time.
+   Houses normalized relational data across 15 core tables (including `users`, `operators`, `tricycles`, `toda_zones`, `applications`, `inspections`, `payments`, `violations`, `bookings`, and `tricycle_locations`).
+4. **Frontend & Mobile Layer (React 18, Inertia.js, React Native / Expo)**:
+   Renders role-tailored administrative web interfaces and native mobile apps. Uses **Leaflet & Mapbox GL** to render live map overlays of active units, route boundaries, real-time driver tracking, and color-coding compliance alerts.
 
 ---
 
 ## ✅ 3. Specific Requirements & Implementation Status
 
-> **Defense Implementation Coverage: >85%** of core functional requirements fully built and operational.
+> **Defense Implementation Coverage: >90%** of core functional requirements across Web Platform, Passenger App, and Driver App are fully built, integrated, and operational for defense presentation.
 
 ### 3.1 Functional Features (Currently Working)
 
+#### 🌐 A. Web Administrative & Regulatory Platform
 * **Multi-Role Authentication & Access Control**:
   * Role-based access control (RBAC) supporting Admin, TMO Personnel, BPLO Staff, Municipal Treasurer, and Tricycle Drivers/Operators.
 * **Public & Operator MTOP Registration Wizard**:
@@ -97,14 +108,45 @@ Trivora is engineered as a decoupled, multi-tier system connecting hardware tele
 * **Violation Management & Citation System**:
   * Violation ticket issuance, penalty fee computation, tracking of unresolved citations, and direct integration with the Treasurer payment workflow.
 * **Driver / Operator Portal & Fleet Dashboard**:
-  * Dedicated portal for tricycle owners to track application progress, view live GPS unit coordinates on a interactive route map, review assigned TODA zones, and settle violation citations.
+  * Dedicated portal for tricycle owners to track application progress, view live GPS unit coordinates on an interactive route map, review assigned TODA zones, and settle violation citations.
+
+#### 🛺 B. Passenger Mobile Application
+* **Interactive Map & Destination Pinning**:
+  * Interactive Leaflet map with tap-to-pin destination selection, current hardware GPS location tracking, and dynamic driving route polyline rendering (OpenRouteService).
+* **Dual-Layer Reverse Geocoding Engine**:
+  * Automatic real-time resolution converting raw GPS coordinates into formatted street addresses, barangay names, and recognized local landmarks (Expo Location + OpenStreetMap Nominatim API).
+* **Dynamic Ride Booking Lifecycle**:
+  * Complete live booking dispatch flow (`pending` $\rightarrow$ `accepted` $\rightarrow$ `arrived` $\rightarrow$ `in_transit` $\rightarrow$ `completed`) connected directly to the backend REST API (`/api/v1/passenger/bookings/...`).
+* **Live Driver Telematics Tracking**:
+  * Live map tracking of assigned driver tricycle position en route to pickup location and destination with dynamic marker heading orientation.
+* **Dynamic Real-Time Notifications Center**:
+  * Live event notification feed for searching drivers, driver acceptance, pickup arrival, trip transit progress, completed ride summaries, and official LGU fare matrix broadcasts.
+* **Passenger Profile & Ride History**:
+  * Direct backend integration retrieving active passenger user profile details, historical trip records, fare breakdowns, and route summaries.
+
+#### 🚘 C. Driver Mobile Application
+* **Real-Time Booking Dispatch & Request Queue**:
+  * Interactive incoming booking request cards with dynamic route visualization, passenger details, pickup distance, estimated fare, and instant accept/decline action triggers.
+* **Driver Status & Shift Online/Offline Toggle**:
+  * Real-time online shift status controller connected to live dispatch availability matching.
+* **Live Trip In Progress Management**:
+  * Step-by-step driver workflow screen supporting trip stages (`ACCEPT RIDE` $\rightarrow$ `ARRIVED AT PICKUP` $\rightarrow$ `START TRIP` $\rightarrow$ `COMPLETE RIDE & COLLECT FARE`).
+* **Live GPS Telematics Broadcasting**:
+  * Driver position telemetry engine broadcasting live GPS coordinates to the backend telematics API (`/api/v1/driver/location`).
+* **Dynamic Driver Notifications Center**:
+  * Instant dispatch notification alerts for incoming ride requests, pickup arrivals, trip progress updates, fare collection, and TODA telematics status.
+* **Driver Earnings & Trip Detail Analytics**:
+  * Real-time metrics breakdown for daily completed rides, fare revenue calculation, and detailed historical trip records (`booking_code`, timestamps, fare amount, passenger names).
 
 ### 3.2 Connected APIs & Protocols
 
-* **Inertia.js Protocol**: Connects Laravel backend controllers directly with React frontend pages without requiring a separate standalone API build.
-* **Leaflet & Mapbox GL Tiles API**: Integrated for rendering spatial vector maps, TODA zone route polygons, and dynamic map markers.
-* **Laravel Sanctum Auth Protocol**: Guards REST API endpoints for secure token-based access.
-* **PDF & Document Preview Engine**: Generates inline HTML/Canvas previews for inspection checklists, OR/CR documents, and official receipts.
+* **Laravel REST API & Sanctum Auth**: Mobile REST API endpoints (`/api/v1/passenger/...` & `/api/v1/driver/...`) handling active bookings, pending dispatches, location telematics, profile data, and ride history.
+* **Inertia.js Protocol**: Connects Laravel backend controllers directly with React web frontend pages without requiring a separate standalone API build.
+* **OpenRouteService Directions API**: Real-time driving distance (`km`), estimated time of arrival (`mins`), and route geometry computation for TODA tricycle fares.
+* **OpenStreetMap Nominatim Reverse Geocoding API**: Converts lat/lng coordinates into formatted Philippine street addresses and recognized landmarks.
+* **Leaflet & Mapbox GL Tiles API**: Integrated for rendering spatial vector maps, TODA zone route polygons, live vehicle markers, and route paths.
+* **Expo Location Sensor API**: Native hardware GPS location tracking on mobile devices.
+* **PDF & Document Preview Engine**: Generates inline previews for inspection checklists, OR/CR documents, and official receipts.
 
 ### 3.3 Hardware Sensors & Simulated Components (Mocked for Defense)
 
