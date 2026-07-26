@@ -118,7 +118,40 @@ class DriverAuthController extends Controller
         $plateNo = strtoupper(trim($request->plate_number ?: 'TRV-001'));
         $trackingCap = $request->tracking_capability ?: 'iot_enabled';
 
-        // 1. Create or Find User
+        // 1. STRICT FRANCHISE PERMIT VERIFICATION: Check if License/Permit exists in Operator database
+        $operator = Operator::where('license_number', $licenseNo)->first();
+
+        if (!$operator) {
+            return response()->json([
+                'success' => false,
+                'message' => "No registered MTOP operator franchise found for permit/license number '{$licenseNo}'. Registration requires a valid MTOP franchise registered at the Municipal Hall.",
+                'code'    => 'INVALID_FRANCHISE_PERMIT',
+            ], 404);
+        }
+
+        // 2. Check for active/approved franchise status
+        $hasApprovedFranchise = $operator->applications()
+            ->whereIn('status', ['completed', 'pending_payment', 'pending_inspection'])
+            ->exists() || $operator->tricycles()->exists();
+
+        if (!$hasApprovedFranchise) {
+            return response()->json([
+                'success' => false,
+                'message' => "The MTOP franchise for license number '{$licenseNo}' is still pending or not yet approved. Registration requires an active MTOP franchise.",
+                'code'    => 'FRANCHISE_NOT_APPROVED',
+            ], 403);
+        }
+
+        // 3. Prevent duplicate account registration under the same permit/license number
+        if ($operator->user_id && $operator->user && $operator->user->is_active && $operator->user->email !== $email) {
+            return response()->json([
+                'success' => false,
+                'message' => "An active driver account is already linked to permit/license number '{$licenseNo}'. Please log in instead.",
+                'code'    => 'ACCOUNT_ALREADY_EXISTS',
+            ], 409);
+        }
+
+        // 4. Create or Find User
         $user = User::where('email', $email)->first();
         if (!$user) {
             $user = User::create([
@@ -130,24 +163,9 @@ class DriverAuthController extends Controller
             ]);
         }
 
-        // 2. Find or Create Operator
-        $operator = Operator::where('license_number', $licenseNo)->first();
-        if (!$operator) {
-            $operator = Operator::create([
-                'user_id'         => $user->id,
-                'first_name'      => explode(' ', $driverName)[0] ?? 'Driver',
-                'last_name'       => explode(' ', $driverName)[1] ?? 'User',
-                'contact_number'  => $mobile,
-                'address'         => 'Nasugbu, Batangas',
-                'barangay'        => 'Poblacion',
-                'date_of_birth'   => '1990-01-01',
-                'license_number'  => $licenseNo,
-                'license_expiry_date' => '2028-12-31',
-            ]);
-        } else {
-            $operator->user_id = $user->id;
-            $operator->save();
-        }
+        // Link user to verified operator
+        $operator->user_id = $user->id;
+        $operator->save();
 
         // 3. Find or Create Tricycle safely
         $iotId = $request->iot_device_id ? trim($request->iot_device_id) : null;
