@@ -1,4 +1,4 @@
-# 🛵 Trivora — Municipal Tricycle Regulatory & Fleet Monitoring Information System
+# 🛵 TriVoRa — Design and Development of an IoT-Enabled Tricycle Monitoring and Automated Violation Detection System
 
 > A comprehensive, real-time web platform for municipal tricycle franchise governance, physical inspection queues, automated color-coding enforcement, payment processing, and GPS telematics fleet tracking.
 
@@ -6,7 +6,7 @@
 
 ## 👥 Group Information
 
-* **Project Title:** Trivora: Municipal Tricycle Regulatory & Fleet Monitoring Information System
+* **Project Title:** TriVoRa: Design and Development of an IoT-Enabled Tricycle Monitoring and Automated Violation Detection System
 * **Course / Defense:** Capstone Project
 * **Team Members:**
   * **John Aldrie Baquiran** — Lead System Architect & Full-Stack Web Developer
