@@ -18,12 +18,13 @@ return new class extends Migration
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
             $table->enum('role', [
+                'passenger',
                 'tricycle_driver',
                 'tmo_personnel',
                 'bplo_staff',
                 'municipal_treasurer',
                 'admin',
-            ])->default('tricycle_driver');
+            ])->default('passenger');
             $table->boolean('is_active')->default(true);
             $table->string('profile_photo_path', 255)->nullable();
             $table->rememberToken();

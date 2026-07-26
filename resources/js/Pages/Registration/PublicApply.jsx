@@ -573,7 +573,8 @@ export default function PublicApply() {
     const { data, setData, post, processing, errors } = useForm({
         first_name: '', last_name: '', contact: '', barangay: 'Wawa',
         email: '', password: '',
-        plate_number: '', make_model: '', engine_number: '', chassis_number: '', toda: 'A',
+        plate_number: '', make_model: '', year_model: '2024', body_color: 'Black/Red', body_type: 'Pass-Thru Sidecar',
+        engine_number: '', chassis_number: '', or_number: '', cr_number: '', toda: 'TODA Bucana',
         documents: {},
     });
 
@@ -870,7 +871,7 @@ export default function PublicApply() {
                             </div>
 
                             <div className="pa-fields">
-                                <Field label="TODA Assignment" className="pa-field-full">
+                                <Field label="TODA Assignment">
                                     <div className="pa-select-wrap">
                                         <select className="pa-select" value={data.toda}
                                             onChange={e => setData('toda', e.target.value)}>
@@ -881,18 +882,26 @@ export default function PublicApply() {
                                         </select>
                                     </div>
                                 </Field>
-                                <div className="pa-field-full">
-                                    <Field label="LTO Plate Number">
-                                        <input className="pa-input" placeholder="e.g. AAA-1234 or 123-ABC"
-                                            value={data.plate_number} onChange={e => setData('plate_number', e.target.value)} />
-                                    </Field>
-                                </div>
-                                <div className="pa-field-full">
-                                    <Field label="Motorcycle Make & Model">
-                                        <input className="pa-input" placeholder="e.g. Kawasaki Barako 175"
-                                            value={data.make_model} onChange={e => setData('make_model', e.target.value)} />
-                                    </Field>
-                                </div>
+                                <Field label="LTO Plate Number">
+                                    <input className="pa-input" placeholder="e.g. AAA-1234"
+                                        value={data.plate_number} onChange={e => setData('plate_number', e.target.value)} />
+                                </Field>
+                                <Field label="Motorcycle Make & Model">
+                                    <input className="pa-input" placeholder="e.g. Kawasaki Barako 175"
+                                        value={data.make_model} onChange={e => setData('make_model', e.target.value)} />
+                                </Field>
+                                <Field label="Year Model">
+                                    <input className="pa-input" placeholder="e.g. 2024"
+                                        value={data.year_model} onChange={e => setData('year_model', e.target.value)} />
+                                </Field>
+                                <Field label="Body Color">
+                                    <input className="pa-input" placeholder="e.g. Red/White"
+                                        value={data.body_color} onChange={e => setData('body_color', e.target.value)} />
+                                </Field>
+                                <Field label="Body Type">
+                                    <input className="pa-input" placeholder="e.g. Pass-Thru Sidecar"
+                                        value={data.body_type} onChange={e => setData('body_type', e.target.value)} />
+                                </Field>
                                 <Field label="Engine Number">
                                     <input className="pa-input" placeholder="ENG-XXXXXX"
                                         value={data.engine_number} onChange={e => setData('engine_number', e.target.value)} />
@@ -900,6 +909,14 @@ export default function PublicApply() {
                                 <Field label="Chassis Number">
                                     <input className="pa-input" placeholder="CHAS-XXXXXX"
                                         value={data.chassis_number} onChange={e => setData('chassis_number', e.target.value)} />
+                                </Field>
+                                <Field label="LTO OR Number">
+                                    <input className="pa-input" placeholder="OR-2026-XXXXX"
+                                        value={data.or_number} onChange={e => setData('or_number', e.target.value)} />
+                                </Field>
+                                <Field label="LTO CR Number">
+                                    <input className="pa-input" placeholder="CR-2026-XXXXX"
+                                        value={data.cr_number} onChange={e => setData('cr_number', e.target.value)} />
                                 </Field>
                             </div>
 

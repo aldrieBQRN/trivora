@@ -157,6 +157,7 @@ class DashboardController extends Controller
             $tri = Tricycle::with(['operator.todaZone', 'franchiseSchemes.colorCodingScheme', 'locations', 'violations.colorCodingScheme'])->firstOrFail();
         }
 
+        $scheme = $tri->franchiseSchemes->first();
         $lastDigit = (int)substr($tri->coding_scheme_number ?: $tri->id, -1);
         $codingDayName = match (true) {
             in_array($lastDigit, [1, 2]) => 'Monday',
@@ -166,10 +167,9 @@ class DashboardController extends Controller
             default                       => 'Friday',
         };
 
-        $scheme = $tri->franchiseSchemes->first();
-
         $tricycleData = [
             'id'                   => $tri->id,
+            'unit_code'            => 'TRV-' . str_pad($tri->id, 3, '0', STR_PAD_LEFT),
             'coding_scheme_number' => $tri->coding_scheme_number ?: str_pad($tri->id, 4, '0', STR_PAD_LEFT),
             'body_no'              => $tri->coding_scheme_number ?: str_pad($tri->id, 4, '0', STR_PAD_LEFT),
             'plate_no'             => $tri->plate_number,
@@ -178,7 +178,17 @@ class DashboardController extends Controller
             'toda'                 => $tri->todaZone ? $tri->todaZone->name : 'Unassigned',
             'coding_day'           => $codingDayName,
             'status'               => $tri->status === 'active' ? 'active' : 'suspended',
-            'model'                => "{$tri->make} {$tri->model}",
+            'make'                 => $tri->make ?: 'Kawasaki',
+            'model'                => $tri->model ?: 'Barako 175',
+            'full_model'           => "{$tri->make} {$tri->model}",
+            'year_model'           => $tri->year_model ?: 2024,
+            'body_color'           => $tri->body_color ?: 'Black/Red',
+            'body_type'            => $tri->body_type ?: 'Pass-Thru / Standard Sidecar',
+            'engine_number'        => $tri->engine_number ?: ('ENG-' . str_pad($tri->id, 6, '0', STR_PAD_LEFT)),
+            'chassis_number'       => $tri->chassis_number ?: ('CHS-' . str_pad($tri->id, 6, '0', STR_PAD_LEFT)),
+            'or_number'            => $tri->or_number ?: ('OR-2026-' . str_pad($tri->id, 5, '0', STR_PAD_LEFT)),
+            'cr_number'            => $tri->cr_number ?: ('CR-2026-' . str_pad($tri->id, 5, '0', STR_PAD_LEFT)),
+            'iot_device_id'        => $tri->iot_device_id ?: ('TRV-GPS-' . str_pad($tri->id, 3, '0', STR_PAD_LEFT)),
             'color'                => $scheme?->colorCodingScheme?->name ?: 'N/A',
             'cityOfRegistration'   => 'Nasugbu',
             'registrationDate'     => $tri->created_at->format('F j, Y'),

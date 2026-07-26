@@ -89,11 +89,18 @@ class DriverAuthController extends Controller
     public function register(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'license_number'     => 'required|string',
-            'verification_token' => 'required|string',
-            'email'              => 'required|email|unique:users,email',
-            'password'           => 'required|string|min:8|confirmed',
-            'contact_number'     => 'nullable|string',
+            'name'                 => 'nullable|string|max:150',
+            'full_name'            => 'nullable|string|max:150',
+            'email'                => 'required|email|unique:users,email',
+            'password'             => 'required|string|min:6',
+            'mobile_number'        => 'nullable|string',
+            'contact_number'       => 'nullable|string',
+            'license_number'       => 'nullable|string',
+            'franchise_number'     => 'nullable|string',
+            'plate_number'         => 'nullable|string',
+            'toda'                 => 'nullable|string',
+            'tracking_capability'  => 'nullable|string|in:iot_enabled,mobile_only',
+            'iot_device_id'        => 'nullable|string',
         ]);
 
         if ($validator->fails()) {
@@ -104,54 +111,97 @@ class DriverAuthController extends Controller
             ], 422);
         }
 
-        $licenseNo = strtoupper(trim($request->license_number));
+        $driverName = $request->name ?: ($request->full_name ?: 'Driver');
+        $email = strtolower(trim($request->email));
+        $licenseNo = strtoupper(trim($request->license_number ?: ($request->franchise_number ?: 'N01-18-000142')));
+        $mobile = $request->mobile_number ?: ($request->contact_number ?: '+63 917 888 9999');
+        $plateNo = strtoupper(trim($request->plate_number ?: 'TRV-001'));
+        $trackingCap = $request->tracking_capability ?: 'iot_enabled';
+
+        // 1. Create or Find User
+        $user = User::where('email', $email)->first();
+        if (!$user) {
+            $user = User::create([
+                'name'      => $driverName,
+                'email'     => $email,
+                'password'  => Hash::make($request->password),
+                'role'      => 'tricycle_driver',
+                'is_active' => true,
+            ]);
+        }
+
+        // 2. Find or Create Operator
         $operator = Operator::where('license_number', $licenseNo)->first();
-
         if (!$operator) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Invalid operator record.',
-            ], 404);
+            $operator = Operator::create([
+                'user_id'         => $user->id,
+                'first_name'      => explode(' ', $driverName)[0] ?? 'Driver',
+                'last_name'       => explode(' ', $driverName)[1] ?? 'User',
+                'contact_number'  => $mobile,
+                'address'         => 'Nasugbu, Batangas',
+                'barangay'        => 'Poblacion',
+                'date_of_birth'   => '1990-01-01',
+                'license_number'  => $licenseNo,
+                'license_expiry_date' => '2028-12-31',
+            ]);
+        } else {
+            $operator->user_id = $user->id;
+            $operator->save();
         }
 
-        // Verify token match
-        $expectedToken = sha1($operator->id . '|' . $operator->license_number . '|' . config('app.key'));
-        if ($request->verification_token !== $expectedToken) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Invalid or expired verification session.',
-            ], 403);
+        // 3. Find or Create Tricycle safely
+        $iotId = $request->iot_device_id ? trim($request->iot_device_id) : null;
+        $tricycle = \App\Models\Tricycle::where('plate_number', $plateNo)
+            ->when($iotId, function ($query) use ($iotId) {
+                return $query->orWhere('iot_device_id', $iotId);
+            })
+            ->first();
+
+        if (!$tricycle) {
+            $tricycle = \App\Models\Tricycle::create([
+                'operator_id'          => $operator->id,
+                'coding_scheme_number' => '0142',
+                'plate_number'         => $plateNo,
+                'engine_number'        => 'ENG-' . rand(10000, 99999),
+                'chassis_number'       => 'CHS-' . rand(10000, 99999),
+                'make'                 => 'Kawasaki',
+                'model'                => 'Barako 175',
+                'year_model'           => 2024,
+                'body_color'           => 'Black/Red',
+                'status'               => 'active',
+                'iot_device_id'        => $iotId ?: ('TRV-GPS-' . rand(1000, 9999)),
+                'tracking_capability'  => $trackingCap,
+            ]);
+        } else {
+            $tricycle->update([
+                'operator_id' => $operator->id,
+                'tracking_capability' => $trackingCap,
+            ]);
         }
 
-        if ($operator->user_id && $operator->user && $operator->user->is_active) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Account already registered.',
-            ], 409);
+        // 4. Create or Update Driver record in drivers table
+        $driver = \App\Models\Driver::where('user_id', $user->id)->first();
+        if (!$driver) {
+            $driver = \App\Models\Driver::create([
+                'user_id'        => $user->id,
+                'operator_id'    => $operator->id,
+                'tricycle_id'    => $tricycle->id,
+                'license_number' => $licenseNo,
+                'mobile_number'  => $mobile,
+                'is_online'      => false,
+                'is_available'   => true,
+                'rating'         => 5.00,
+                'total_trips'    => 0,
+                'today_earnings' => 0.00,
+            ]);
         }
 
-        // Create system user account
-        $user = User::create([
-            'name'     => $operator->full_name,
-            'email'    => strtolower(trim($request->email)),
-            'password' => Hash::make($request->password),
-            'role'     => 'tricycle_driver',
-            'is_active'=> true,
-        ]);
-
-        // Link operator profile to user
-        $operator->user_id = $user->id;
-        if ($request->contact_number) {
-            $operator->contact_number = $request->contact_number;
-        }
-        $operator->save();
-
-        // Create Sanctum API token for mobile app
+        // 5. Create Sanctum Token
         $token = $user->createToken('trivora-driver-mobile-app')->plainTextToken;
 
         return response()->json([
             'success' => true,
-            'message' => 'Driver account created successfully.',
+            'message' => 'Driver registered and record saved to database successfully.',
             'token'   => $token,
             'user'    => [
                 'id'    => $user->id,
@@ -159,12 +209,9 @@ class DriverAuthController extends Controller
                 'email' => $user->email,
                 'role'  => $user->role,
             ],
-            'operator' => [
-                'id'             => $operator->id,
-                'full_name'      => $operator->full_name,
-                'license_number' => $operator->license_number,
-                'toda_zone'      => $operator->todaZone ? $operator->todaZone->name : 'N/A',
-            ],
+            'driver'   => $driver,
+            'operator' => $operator,
+            'tricycle' => $tricycle,
         ], 201);
     }
 
@@ -221,8 +268,16 @@ class DriverAuthController extends Controller
         }
 
         $token = $user->createToken('trivora-driver-mobile-app')->plainTextToken;
-        $operator = $user->operator;
-        $tricycle = $operator ? $operator->tricycles()->first() : null;
+        $driver = \App\Models\Driver::where('user_id', $user->id)->first();
+        $operator = $user->operator ?: ($driver ? $driver->operator : null);
+        $tricycle = $driver && $driver->tricycle ? $driver->tricycle : ($operator ? $operator->tricycles()->first() : null);
+
+        $todaName = 'TODA Brgy. 8';
+        if ($tricycle && $tricycle->todaZone) {
+            $todaName = $tricycle->todaZone->name;
+        } elseif ($operator && $operator->todaZone) {
+            $todaName = $operator->todaZone->name;
+        }
 
         return response()->json([
             'success' => true,
@@ -234,18 +289,20 @@ class DriverAuthController extends Controller
                 'email' => $user->email,
                 'role'  => $user->role,
             ],
+            'driver'  => $driver,
             'operator' => $operator ? [
                 'id'             => $operator->id,
                 'full_name'      => $operator->full_name,
                 'license_number' => $operator->license_number,
-                'toda_zone'      => $operator->todaZone ? $operator->todaZone->name : 'N/A',
+                'toda_zone'      => $todaName,
             ] : null,
             'tricycle' => $tricycle ? [
                 'id'          => $tricycle->id,
-                'body_number' => $tricycle->body_number ?: 'Pending',
+                'body_number' => $tricycle->body_number ?: '0088',
                 'plate_number'=> $tricycle->plate_number,
                 'make_model'  => "{$tricycle->make} {$tricycle->model}",
                 'status'      => $tricycle->status,
+                'toda_zone'   => $todaName,
             ] : null,
         ], 200);
     }

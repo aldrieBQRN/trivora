@@ -651,10 +651,8 @@ function UnitRow({ unit }) {
                         boxShadow: `0 0 0 2px ${codingHex}25`
                     }} />
                     <span style={{
-                        display: 'inline-flex', alignItems: 'center',
                         fontFamily: 'Plus Jakarta Sans', fontSize: 12, fontWeight: 800,
-                        color: '#1C2340', background: '#F3F4F6', padding: '2px 7px', borderRadius: 5,
-                        border: '1px solid rgba(28,35,64,.12)'
+                        color: '#1C2340'
                     }}>
                         #{unit.coding_scheme_number || unit.body_no || unit.sticker_no}
                     </span>

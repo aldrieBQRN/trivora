@@ -288,7 +288,7 @@ export default function Dashboard({ initialTricycles = [] }) {
         { name: 'TODA Bucana',   color: '#7C3AED' }, // Violet
         { name: 'TODA Brgy. 10', color: '#F59E0B' }, // Orange
         { name: 'TODA Brgy. 8',  color: '#4F5BCB' }, // Blue
-        { name: 'TODA Brgy. 14', color: '#059669' }, // Green
+        { name: 'TODA Brgy. 4',  color: '#059669' }, // Green
     ];
 
     return (
