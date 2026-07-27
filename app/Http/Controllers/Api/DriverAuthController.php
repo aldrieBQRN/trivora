@@ -118,6 +118,10 @@ class DriverAuthController extends Controller
         $plateNo = strtoupper(trim($request->plate_number ?: 'TRV-001'));
         $trackingCap = $request->tracking_capability ?: 'iot_enabled';
 
+        $trackingOption = $request->input('tracking_capability', $request->input('tracking_mode', 'mobile_only'));
+        $trackingCap = in_array($trackingOption, ['iot_enabled', 'iot_device', 'iot']) ? 'iot_enabled' : 'mobile_only';
+        $activeMode = $trackingCap === 'iot_enabled' ? 'iot_device' : 'mobile_app';
+
         // 1. STRICT FRANCHISE PERMIT VERIFICATION: Check if License/Permit exists in Operator database
         $operator = Operator::where('license_number', $licenseNo)->first();
 
@@ -189,11 +193,13 @@ class DriverAuthController extends Controller
                 'status'               => 'active',
                 'iot_device_id'        => $iotId ?: ('TRV-GPS-' . rand(1000, 9999)),
                 'tracking_capability'  => $trackingCap,
+                'active_tracking_mode' => $activeMode,
             ]);
         } else {
             $tricycle->update([
-                'operator_id' => $operator->id,
-                'tracking_capability' => $trackingCap,
+                'operator_id'          => $operator->id,
+                'tracking_capability'  => $trackingCap,
+                'active_tracking_mode' => $activeMode,
             ]);
         }
 
@@ -315,12 +321,15 @@ class DriverAuthController extends Controller
                 'toda_zone'      => $todaName,
             ] : null,
             'tricycle' => $tricycle ? [
-                'id'          => $tricycle->id,
-                'body_number' => $tricycle->body_number ?: '0088',
-                'plate_number'=> $tricycle->plate_number,
-                'make_model'  => "{$tricycle->make} {$tricycle->model}",
-                'status'      => $tricycle->status,
-                'toda_zone'   => $todaName,
+                'id'                   => $tricycle->id,
+                'coding_scheme_number' => $tricycle->coding_scheme_number ?: ($tricycle->body_number ?: '0142'),
+                'body_number'          => $tricycle->body_number ?: ($tricycle->coding_scheme_number ?: '0142'),
+                'plate_number'         => $tricycle->plate_number,
+                'make_model'           => "{$tricycle->make} {$tricycle->model}",
+                'status'               => $tricycle->status,
+                'toda_zone'            => $todaName,
+                'tracking_capability'  => $tricycle->tracking_capability ?: 'mobile_only',
+                'active_tracking_mode' => $tricycle->active_tracking_mode ?: ($tricycle->tracking_capability === 'iot_enabled' ? 'iot_device' : 'mobile_app'),
             ] : null,
         ], 200);
     }

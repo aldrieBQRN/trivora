@@ -20,7 +20,7 @@ class PassengerAuthController extends Controller
             'name' => 'required|string|max:150',
             'email' => 'required|email|unique:users,email',
             'password' => 'required|string|min:6',
-            'mobile_number' => 'required|string|max:20',
+            'mobile_number' => 'required|string|max:20|unique:passengers,mobile_number',
         ]);
 
         $user = User::create([

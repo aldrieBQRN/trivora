@@ -94,6 +94,23 @@ class UsersSeeder extends Seeder
         );
 
         // ---------------------------------------------------------------------
+        // 4b. Default Passengers
+        // ---------------------------------------------------------------------
+        $pUser = User::firstOrCreate(
+            ['email' => 'passenger@trivora.ph'],
+            [
+                'name'      => 'Default Passenger',
+                'password'  => Hash::make('Passenger@123'),
+                'role'      => 'passenger',
+                'is_active' => true,
+            ]
+        );
+        \App\Models\Passenger::firstOrCreate(
+            ['user_id' => $pUser->id],
+            ['mobile_number' => '09170001122', 'rating' => 5.00, 'total_rides' => 0]
+        );
+
+        // ---------------------------------------------------------------------
         // 5. Tricycle Drivers (with Operator profiles)
         // ---------------------------------------------------------------------
         $toda1 = TodaZone::where('code', 'TODA-01')->first();
@@ -210,14 +227,104 @@ class UsersSeeder extends Seeder
             );
 
             // Create operator profile only if it doesn't exist yet
-            if (! $user->operator) {
-                Operator::create(array_merge(
+            $op = $user->operator;
+            if (! $op) {
+                $op = Operator::create(array_merge(
                     ['user_id' => $user->id],
                     $entry['operator']
                 ));
             }
+
+            // Ensure Driver record and Tricycle linking
+            $driverRec = \App\Models\Driver::firstOrCreate(
+                ['user_id' => $user->id],
+                [
+                    'operator_id'    => $op->id,
+                    'license_number' => $op->license_number,
+                    'mobile_number'  => $op->contact_number,
+                    'is_online'      => true,
+                    'is_available'   => true,
+                    'rating'         => 5.00,
+                    'total_trips'    => 0,
+                ]
+            );
+
+            // Configure Mobile App GPS for driver.rsantos@trivora.ph
+            if (in_array($user->email, ['driver.rsantos@trivora.ph'])) {
+                $trike = \App\Models\Tricycle::firstOrCreate(
+                    ['plate_number' => 'TRV-MOBGPS'],
+                    [
+                        'operator_id'          => $op->id,
+                        'coding_scheme_number' => '0142',
+                        'engine_number'        => 'ENG-MOBGPS-888',
+                        'chassis_number'       => 'CHS-MOBGPS-888',
+                        'make'                 => 'Honda',
+                        'model'                => 'TMX 125',
+                        'year_model'           => 2022,
+                        'body_color'           => 'Blue',
+                        'body_type'            => 'Standard Side Car',
+                        'status'               => 'active',
+                        'tracking_capability'  => 'mobile_only',
+                        'active_tracking_mode' => 'mobile_app',
+                    ]
+                );
+                $driverRec->update(['tricycle_id' => $trike->id]);
+            }
         }
 
-        $this->command->info('✔ Users seeded (1 admin, 2 TMO, 2 BPLO, 1 treasurer, 3 drivers with operator profiles).');
+        // ---------------------------------------------------------------------
+        // 6. Unlinked MTOP Franchise Operator for New Driver Registration
+        // ---------------------------------------------------------------------
+        $unlinkedOp = Operator::firstOrCreate(
+            ['license_number' => 'N01-99-999999'],
+            [
+                'user_id'                  => null,
+                'first_name'               => 'Juan',
+                'middle_name'              => 'Dela',
+                'last_name'                => 'Cruz',
+                'contact_number'           => '09179998877',
+                'address'                  => '100 Municipal Rd., Poblacion',
+                'barangay'                 => 'Poblacion',
+                'date_of_birth'            => '1992-08-20',
+                'license_expiry_date'      => '2028-08-20',
+                'license_restriction_code' => '1,2',
+                'toda_id'                  => $toda1?->id,
+            ]
+        );
+        $unlinkedOp->applications()->firstOrCreate([
+            'reference_number' => 'APPL-2026-0999',
+        ], [
+            'tricycle_id'      => \App\Models\Tricycle::value('id') ?: 1,
+            'application_type' => 'new',
+            'status'           => 'completed',
+            'submitted_at'     => now(),
+        ]);
+
+        $unlinkedOp2 = Operator::firstOrCreate(
+            ['license_number' => 'N01-88-888888'],
+            [
+                'user_id'                  => null,
+                'first_name'               => 'Mario',
+                'middle_name'              => 'Santos',
+                'last_name'                => 'Dizon',
+                'contact_number'           => '09187776655',
+                'address'                  => '55 Laurel St., Bucana',
+                'barangay'                 => 'Bucana',
+                'date_of_birth'            => '1991-04-15',
+                'license_expiry_date'      => '2028-04-15',
+                'license_restriction_code' => '1,2',
+                'toda_id'                  => $toda1?->id,
+            ]
+        );
+        $unlinkedOp2->applications()->firstOrCreate([
+            'reference_number' => 'APPL-2026-0888',
+        ], [
+            'tricycle_id'      => \App\Models\Tricycle::value('id') ?: 1,
+            'application_type' => 'new',
+            'status'           => 'completed',
+            'submitted_at'     => now(),
+        ]);
+
+        $this->command->info('✔ Users seeded (1 admin, 2 TMO, 2 BPLO, 1 treasurer, 3 drivers, unlinked permits N01-99-999999, N01-88-888888).');
     }
 }

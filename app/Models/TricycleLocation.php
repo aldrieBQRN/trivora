@@ -14,6 +14,7 @@ class TricycleLocation extends Model
 
     protected $fillable = [
         'tricycle_id',
+        'driver_id',
         'latitude',
         'longitude',
         'speed_kmh',

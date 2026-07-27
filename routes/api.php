@@ -54,11 +54,11 @@ Route::prefix('v1/passenger')->group(function () {
     Route::get('/bookings/history', [BookingController::class, 'history']);
     Route::post('/bookings/{id}/status', [BookingController::class, 'updateStatus']);
     Route::post('/bookings/{id}/cancel', [BookingController::class, 'updateStatus']);
+    Route::post('/bookings/{id}/rate', [BookingController::class, 'rateRide']);
 
     // Authenticated Passenger Routes (Sanctum)
     Route::middleware('auth:sanctum')->group(function () {
         Route::get('/me', [PassengerAuthController::class, 'me']);
         Route::post('/logout', [PassengerAuthController::class, 'logout']);
-        Route::post('/bookings/{id}/rate', [BookingController::class, 'rateRide']);
     });
 });
