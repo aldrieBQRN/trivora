@@ -31,6 +31,7 @@ class DatabaseSeeder extends Seeder
             TricyclesSeeder::class,
             ApplicationsSeeder::class,
             ViolationsSeeder::class,
+            MobileAppDataSeeder::class,
         ]);
 
         $this->command->info('');
@@ -48,6 +49,11 @@ class DatabaseSeeder extends Seeder
                 ['Tricycle Driver',     'driver.pramos@trivora.ph',       'Driver@123'],
                 ['Tricycle Driver',     'driver.jbautista@trivora.ph',    'Driver@123'],
                 ['Tricycle Driver',     'driver.evillanueva@trivora.ph',  'Driver@123'],
+                ['Tricycle Driver',     'driver.mclara@trivora.ph',       'Driver@123'],
+                ['Tricycle Driver',     'driver.rsantos@trivora.ph',      'Driver@123'],
+                ['Passenger',           'passenger@trivora.ph',           'Passenger@123'],
+                ['Passenger',           'passenger.maria@trivora.ph',     'Passenger@123'],
+                ['Passenger',           'passenger.juan@trivora.ph',      'Passenger@123'],
             ]
         );
     }

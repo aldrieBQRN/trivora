@@ -51,10 +51,10 @@ class TodaZonesSeeder extends Seeder
                 ],
             ],
             [
-                'name'        => 'TODA Brgy. 14',
-                'code'        => 'TODA-BRGY14',
-                'barangay'    => 'Brgy. 14',
-                'description' => 'Covers Barangay 14 TODA route.',
+                'name'        => 'TODA Brgy. 4',
+                'code'        => 'TODA-BRGY4',
+                'barangay'    => 'Brgy. 4',
+                'description' => 'Covers Barangay 4 TODA route.',
                 'is_active'   => true,
                 'routes'      => [
                     ['lat' => 14.0673, 'lng' => 120.6331],

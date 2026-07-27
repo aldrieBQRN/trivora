@@ -293,7 +293,7 @@ const CSS = `
   box-shadow: 0 0 0 3px rgba(79,91,203,.1);
   background: #FFFFFF;
 }
-.pa-input::placeholder { color: #9AA3CC; font-weight: 400; }
+.pa-input::placeholder { color: #A0AEC0; font-weight: 400; opacity: 0.65; }
 
 .pa-select {
   width: 100%; height: 48px;
@@ -571,10 +571,10 @@ export default function PublicApply() {
     ];
 
     const { data, setData, post, processing, errors } = useForm({
-        first_name: '', last_name: '', contact: '', barangay: 'Wawa',
+        first_name: '', last_name: '', contact: '', barangay: '',
         email: '', password: '',
-        plate_number: '', make_model: '', year_model: '2024', body_color: 'Black/Red', body_type: 'Pass-Thru Sidecar',
-        engine_number: '', chassis_number: '', or_number: '', cr_number: '', toda: 'TODA Bucana',
+        plate_number: '', make_model: '', year_model: '', body_color: '', body_type: '',
+        engine_number: '', chassis_number: '', or_number: '', cr_number: '', toda: '',
         documents: {},
     });
 
@@ -590,7 +590,34 @@ export default function PublicApply() {
         return params.get('reference') || 'NSB-26-8812';
     };
 
-    const next = () => { window.scrollTo({ top: 0, behavior: 'smooth' }); setStep(s => s + 1); };
+    const isStep2Valid =
+        data.first_name.trim() !== '' &&
+        data.last_name.trim()  !== '' &&
+        data.contact.trim()    !== '' &&
+        data.barangay          !== '' &&
+        data.email.trim()      !== '' &&
+        data.password.trim()   !== '';
+
+    const isStep3Valid =
+        data.toda              !== '' &&
+        data.plate_number.trim()   !== '' &&
+        data.make_model.trim()     !== '' &&
+        data.year_model.trim()     !== '' &&
+        data.body_color.trim()     !== '' &&
+        data.body_type.trim()      !== '' &&
+        data.engine_number.trim()  !== '' &&
+        data.chassis_number.trim() !== '' &&
+        data.or_number.trim()      !== '' &&
+        data.cr_number.trim()      !== '';
+
+    const handleNext = () => {
+        if (step === 1) {
+            if (!scrolledTerms || !agreed) return;
+        }
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        setStep(s => s + 1);
+    };
+
     const back = () => { window.scrollTo({ top: 0, behavior: 'smooth' }); setStep(s => s - 1); };
 
     const handleFileUpload = (docId, fileOrFiles) => {
@@ -800,8 +827,13 @@ export default function PublicApply() {
                                 <Link href="/" className="pa-btn-ghost">
                                     Cancel
                                 </Link>
-                                <button className="pa-btn-primary" onClick={next}>
-                                    Continue
+                                <button
+                                    className="pa-btn-primary"
+                                    onClick={handleNext}
+                                    disabled={!scrolledTerms || !agreed}
+                                    style={{ opacity: (!scrolledTerms || !agreed) ? 0.45 : 1, cursor: (!scrolledTerms || !agreed) ? 'not-allowed' : 'pointer' }}
+                                >
+                                    {!scrolledTerms ? 'Scroll to Read' : !agreed ? 'Agree to Continue' : 'Continue'}
                                 </button>
                             </div>
                         </div>
@@ -819,33 +851,34 @@ export default function PublicApply() {
 
                             <div className="pa-fields">
                                 <Field label="First Name">
-                                    <input className="pa-input" placeholder="e.g. Juan"
-                                        value={data.first_name} onChange={e => setData('first_name', e.target.value)} />
+                                    <input className="pa-input" placeholder="First Name" autoComplete="off"
+                                        value={data.first_name || ''} onChange={e => setData('first_name', e.target.value)} />
                                 </Field>
                                 <Field label="Last Name">
-                                    <input className="pa-input" placeholder="e.g. Dela Cruz"
-                                        value={data.last_name} onChange={e => setData('last_name', e.target.value)} />
+                                    <input className="pa-input" placeholder="Last Name" autoComplete="off"
+                                        value={data.last_name || ''} onChange={e => setData('last_name', e.target.value)} />
                                 </Field>
                                 <Field label="Mobile Number">
-                                    <input className="pa-input" placeholder="09XX XXX XXXX"
-                                        value={data.contact} onChange={e => setData('contact', e.target.value)} />
+                                    <input className="pa-input" placeholder="0917 123 4567" autoComplete="off"
+                                        value={data.contact || ''} onChange={e => setData('contact', e.target.value)} />
                                 </Field>
                                 <Field label="Barangay (Nasugbu)">
                                     <div className="pa-select-wrap">
-                                        <select className="pa-select" value={data.barangay}
+                                        <select className="pa-select" value={data.barangay || ''}
                                             onChange={e => setData('barangay', e.target.value)}>
+                                            <option value="">Select Barangay</option>
                                             {nasugbuBarangays.map(b => <option key={b} value={b}>{b}</option>)}
                                         </select>
                                         <MapPin size={15} strokeWidth={2} />
                                     </div>
                                 </Field>
                                 <Field label="Email Address">
-                                    <input className="pa-input" type="email" placeholder="e.g. driver.pramos@trivora.ph"
-                                        value={data.email} onChange={e => setData('email', e.target.value)} />
+                                    <input className="pa-input" type="email" placeholder="name@example.com" autoComplete="off"
+                                        value={data.email || ''} onChange={e => setData('email', e.target.value)} />
                                 </Field>
                                 <Field label="Account Password">
-                                    <input className="pa-input" type="password" placeholder="Min. 8 characters"
-                                        value={data.password} onChange={e => setData('password', e.target.value)} />
+                                    <input className="pa-input" type="password" placeholder="Min. 8 characters" autoComplete="new-password"
+                                        value={data.password || ''} onChange={e => setData('password', e.target.value)} />
                                 </Field>
                             </div>
 
@@ -853,7 +886,12 @@ export default function PublicApply() {
                                 <button className="pa-btn-ghost" onClick={back}>
                                     Back
                                 </button>
-                                <button className="pa-btn-primary" onClick={next}>
+                                <button
+                                    className="pa-btn-primary"
+                                    onClick={handleNext}
+                                    disabled={!isStep2Valid}
+                                    style={{ opacity: isStep2Valid ? 1 : 0.45, cursor: isStep2Valid ? 'pointer' : 'not-allowed' }}
+                                >
                                     Continue
                                 </button>
                             </div>
@@ -873,50 +911,51 @@ export default function PublicApply() {
                             <div className="pa-fields">
                                 <Field label="TODA Assignment">
                                     <div className="pa-select-wrap">
-                                        <select className="pa-select" value={data.toda}
+                                        <select className="pa-select" value={data.toda || ''}
                                             onChange={e => setData('toda', e.target.value)}>
+                                            <option value="">Select TODA Assignment</option>
                                             <option value="TODA Bucana">TODA Bucana</option>
                                             <option value="TODA Brgy. 10">TODA Brgy. 10</option>
                                             <option value="TODA Brgy. 8">TODA Brgy. 8</option>
-                                            <option value="TODA Brgy. 14">TODA Brgy. 14</option>
+                                            <option value="TODA Brgy. 4">TODA Brgy. 4</option>
                                         </select>
                                     </div>
                                 </Field>
                                 <Field label="LTO Plate Number">
-                                    <input className="pa-input" placeholder="e.g. AAA-1234"
-                                        value={data.plate_number} onChange={e => setData('plate_number', e.target.value)} />
+                                    <input className="pa-input" placeholder="LTO Plate Number" autoComplete="off"
+                                        value={data.plate_number || ''} onChange={e => setData('plate_number', e.target.value)} />
                                 </Field>
                                 <Field label="Motorcycle Make & Model">
-                                    <input className="pa-input" placeholder="e.g. Kawasaki Barako 175"
-                                        value={data.make_model} onChange={e => setData('make_model', e.target.value)} />
+                                    <input className="pa-input" placeholder="Make & Model" autoComplete="off"
+                                        value={data.make_model || ''} onChange={e => setData('make_model', e.target.value)} />
                                 </Field>
                                 <Field label="Year Model">
-                                    <input className="pa-input" placeholder="e.g. 2024"
-                                        value={data.year_model} onChange={e => setData('year_model', e.target.value)} />
+                                    <input className="pa-input" placeholder="Year Model" autoComplete="off"
+                                        value={data.year_model || ''} onChange={e => setData('year_model', e.target.value)} />
                                 </Field>
                                 <Field label="Body Color">
-                                    <input className="pa-input" placeholder="e.g. Red/White"
-                                        value={data.body_color} onChange={e => setData('body_color', e.target.value)} />
+                                    <input className="pa-input" placeholder="Body Color" autoComplete="off"
+                                        value={data.body_color || ''} onChange={e => setData('body_color', e.target.value)} />
                                 </Field>
                                 <Field label="Body Type">
-                                    <input className="pa-input" placeholder="e.g. Pass-Thru Sidecar"
-                                        value={data.body_type} onChange={e => setData('body_type', e.target.value)} />
+                                    <input className="pa-input" placeholder="Body Type" autoComplete="off"
+                                        value={data.body_type || ''} onChange={e => setData('body_type', e.target.value)} />
                                 </Field>
                                 <Field label="Engine Number">
-                                    <input className="pa-input" placeholder="ENG-XXXXXX"
-                                        value={data.engine_number} onChange={e => setData('engine_number', e.target.value)} />
+                                    <input className="pa-input" placeholder="Engine Number" autoComplete="off"
+                                        value={data.engine_number || ''} onChange={e => setData('engine_number', e.target.value)} />
                                 </Field>
                                 <Field label="Chassis Number">
-                                    <input className="pa-input" placeholder="CHAS-XXXXXX"
-                                        value={data.chassis_number} onChange={e => setData('chassis_number', e.target.value)} />
+                                    <input className="pa-input" placeholder="Chassis Number" autoComplete="off"
+                                        value={data.chassis_number || ''} onChange={e => setData('chassis_number', e.target.value)} />
                                 </Field>
                                 <Field label="LTO OR Number">
-                                    <input className="pa-input" placeholder="OR-2026-XXXXX"
-                                        value={data.or_number} onChange={e => setData('or_number', e.target.value)} />
+                                    <input className="pa-input" placeholder="LTO OR Number" autoComplete="off"
+                                        value={data.or_number || ''} onChange={e => setData('or_number', e.target.value)} />
                                 </Field>
                                 <Field label="LTO CR Number">
-                                    <input className="pa-input" placeholder="CR-2026-XXXXX"
-                                        value={data.cr_number} onChange={e => setData('cr_number', e.target.value)} />
+                                    <input className="pa-input" placeholder="LTO CR Number" autoComplete="off"
+                                        value={data.cr_number || ''} onChange={e => setData('cr_number', e.target.value)} />
                                 </Field>
                             </div>
 
@@ -924,7 +963,12 @@ export default function PublicApply() {
                                 <button className="pa-btn-ghost" onClick={back}>
                                     Back
                                 </button>
-                                <button className="pa-btn-primary" onClick={next}>
+                                <button
+                                    className="pa-btn-primary"
+                                    onClick={handleNext}
+                                    disabled={!isStep3Valid}
+                                    style={{ opacity: isStep3Valid ? 1 : 0.45, cursor: isStep3Valid ? 'pointer' : 'not-allowed' }}
+                                >
                                     Continue
                                 </button>
                             </div>

@@ -166,11 +166,11 @@ export default function Dashboard({ initialTricycles = [] }) {
         { id: 'TRV-GPS-907', plate: 'NSG-3002', operator: 'Hernan Castillo', toda: 'TODA Brgy. 8', routeKey: 'brgy8', status: 'compliant', speed_kmh: 29 },
         { id: 'TRV-GPS-908', plate: 'NSG-3003', operator: 'Ignazio Alvarez', toda: 'TODA Brgy. 8', routeKey: 'brgy8', status: 'compliant', speed_kmh: 23 },
 
-        // TODA Brgy. 14 (Green)
-        { id: 'TRV-GPS-997', plate: 'EEE-7890', operator: 'Ramon Santos', toda: 'TODA Brgy. 14', routeKey: 'brgy14', status: 'compliant', speed_kmh: 31 },
-        { id: 'TRV-GPS-909', plate: 'NSG-4001', operator: 'Joaquin Torres', toda: 'TODA Brgy. 14', routeKey: 'brgy14', status: 'compliant', speed_kmh: 26 },
-        { id: 'TRV-GPS-910', plate: 'NSG-4002', operator: 'Lando Gutierrez', toda: 'TODA Brgy. 14', routeKey: 'brgy14', status: 'compliant', speed_kmh: 33 },
-        { id: 'TRV-GPS-911', plate: 'NSG-4003', operator: 'Manuel Naval', toda: 'TODA Brgy. 14', routeKey: 'brgy14', status: 'compliant', speed_kmh: 24 },
+        // TODA Brgy. 4 (Green)
+        { id: 'TRV-GPS-997', plate: 'EEE-7890', operator: 'Ramon Santos', toda: 'TODA Brgy. 4', routeKey: 'brgy14', status: 'compliant', speed_kmh: 31 },
+        { id: 'TRV-GPS-909', plate: 'NSG-4001', operator: 'Joaquin Torres', toda: 'TODA Brgy. 4', routeKey: 'brgy14', status: 'compliant', speed_kmh: 26 },
+        { id: 'TRV-GPS-910', plate: 'NSG-4002', operator: 'Lando Gutierrez', toda: 'TODA Brgy. 4', routeKey: 'brgy14', status: 'compliant', speed_kmh: 33 },
+        { id: 'TRV-GPS-911', plate: 'NSG-4003', operator: 'Manuel Naval', toda: 'TODA Brgy. 4', routeKey: 'brgy14', status: 'compliant', speed_kmh: 24 },
     ], []);
 
     // Count units per TODA route key to stagger initial route positions
@@ -329,7 +329,7 @@ export default function Dashboard({ initialTricycles = [] }) {
                             TODA Route Telematics & 25m Buffer Simulator
                         </div>
                         <div className="td-sim-sub">
-                            Live GPS monitoring with 25m tolerance corridor geofencing (Bucana, Brgy. 10, Brgy. 8, Brgy. 14).
+                            Live GPS monitoring with 25m tolerance corridor geofencing (Bucana, Brgy. 10, Brgy. 8, Brgy. 4).
                         </div>
                     </div>
 

@@ -94,21 +94,72 @@ class UsersSeeder extends Seeder
         );
 
         // ---------------------------------------------------------------------
-        // 4b. Default Passengers
+        // 4b. Sample Passengers
         // ---------------------------------------------------------------------
-        $pUser = User::firstOrCreate(
-            ['email' => 'passenger@trivora.ph'],
+        $passengers = [
             [
+                'email'     => 'passenger@trivora.ph',
                 'name'      => 'Default Passenger',
-                'password'  => Hash::make('Passenger@123'),
-                'role'      => 'passenger',
-                'is_active' => true,
-            ]
-        );
-        \App\Models\Passenger::firstOrCreate(
-            ['user_id' => $pUser->id],
-            ['mobile_number' => '09170001122', 'rating' => 5.00, 'total_rides' => 0]
-        );
+                'mobile'    => '09170001122',
+                'emergency' => 'Juan Dela Cruz (09170009999)',
+                'rating'    => 4.90,
+                'rides'     => 14,
+            ],
+            [
+                'email'     => 'passenger.maria@trivora.ph',
+                'name'      => 'Maria Clara Santos',
+                'mobile'    => '09171112233',
+                'emergency' => 'Pedro Santos (09171110000)',
+                'rating'    => 5.00,
+                'rides'     => 8,
+            ],
+            [
+                'email'     => 'passenger.juan@trivora.ph',
+                'name'      => 'Juan Mercado',
+                'mobile'    => '09182223344',
+                'emergency' => 'Rosa Mercado (09182220000)',
+                'rating'    => 4.85,
+                'rides'     => 22,
+            ],
+            [
+                'email'     => 'passenger.ana@trivora.ph',
+                'name'      => 'Ana Reyes',
+                'mobile'    => '09193334455',
+                'emergency' => 'Carlos Reyes (09193330000)',
+                'rating'    => 4.95,
+                'rides'     => 19,
+            ],
+            [
+                'email'     => 'passenger.carlo@trivora.ph',
+                'name'      => 'Carlo Mendoza',
+                'mobile'    => '09204445566',
+                'emergency' => 'Sofia Mendoza (09204440000)',
+                'rating'    => 4.80,
+                'rides'     => 11,
+            ],
+        ];
+
+        foreach ($passengers as $pData) {
+            $pUser = User::firstOrCreate(
+                ['email' => $pData['email']],
+                [
+                    'name'      => $pData['name'],
+                    'password'  => Hash::make('Passenger@123'),
+                    'role'      => 'passenger',
+                    'is_active' => true,
+                ]
+            );
+            \App\Models\Passenger::firstOrCreate(
+                ['user_id' => $pUser->id],
+                [
+                    'mobile_number'     => $pData['mobile'],
+                    'emergency_contact' => $pData['emergency'],
+                    'rating'            => $pData['rating'],
+                    'total_rides'       => $pData['rides'],
+                ]
+            );
+        }
+
 
         // ---------------------------------------------------------------------
         // 5. Tricycle Drivers (with Operator profiles)

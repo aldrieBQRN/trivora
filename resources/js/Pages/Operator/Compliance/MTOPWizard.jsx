@@ -153,7 +153,7 @@ export default function MTOPWizard({ applicationType = 'new', tricycleUnit = nul
         engine_number: tricycleUnit?.engine_number || '',
         chassis_number: tricycleUnit?.chassis_number || '',
         plate: tricycleUnit?.plate_number || '',
-        toda: tricycleUnit?.toda || 'A (Poblacion)',
+        toda: tricycleUnit?.toda || '',
         documents: {},
     });
 
@@ -295,10 +295,11 @@ export default function MTOPWizard({ applicationType = 'new', tricycleUnit = nul
                             <div className="mw-input-group" style={{ gridColumn: '1 / -1' }}>
                                 <label className="mw-label">TODA Assignment</label>
                                 <select className="mw-select" value={data.toda} onChange={e => setData('toda', e.target.value)}>
+                                    <option value="">Select TODA Assignment</option>
                                     <option value="TODA Bucana">TODA Bucana</option>
                                     <option value="TODA Brgy. 10">TODA Brgy. 10</option>
                                     <option value="TODA Brgy. 8">TODA Brgy. 8</option>
-                                    <option value="TODA Brgy. 14">TODA Brgy. 14</option>
+                                    <option value="TODA Brgy. 4">TODA Brgy. 4</option>
                                 </select>
                             </div>
                             <div className="mw-input-group" style={{ gridColumn: '1 / -1' }}>

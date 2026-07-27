@@ -24,6 +24,47 @@ Route::get('/', function () {
 Route::get('/register-mtop', [RegistrationController::class, 'publicWizard'])->name('register.public');
 Route::post('/register-mtop', [RegistrationController::class, 'store'])->name('register.public.submit');
 
+// Public Plate/Franchise Verification (no auth required)
+Route::get('/api/public/verify-plate', function (Request $request) {
+    $plate = strtoupper(trim($request->query('plate', '')));
+
+    if (!$plate) {
+        return response()->json(['found' => false, 'error' => 'No plate number provided.'], 400);
+    }
+
+    // Try exact match first, then suffix match (e.g. "8812" matches "AAA-8812")
+    $tricycle = \App\Models\Tricycle::with(['operator', 'todaZone', 'franchiseScheme'])
+        ->where('plate_number', $plate)
+        ->orWhere('plate_number', 'LIKE', "%-{$plate}")
+        ->orWhere('plate_number', 'LIKE', "{$plate}%")
+        ->first();
+
+    if (!$tricycle) {
+        return response()->json(['found' => false]);
+    }
+
+    $fs = $tricycle->franchiseScheme;
+
+    // Use tricycle.status as the primary source of truth
+    $franchiseStatus = match(true) {
+        $tricycle->status === 'active'       => 'Active',
+        $tricycle->status === 'unregistered' => 'Unregistered',
+        $fs && $fs->expiry_date && $fs->expiry_date->isPast() => 'Expired',
+        default                              => 'Pending',
+    };
+
+    return response()->json([
+        'found'          => true,
+        'plate'          => $tricycle->plate_number,
+        'operator'       => $tricycle->operator ? $tricycle->operator->full_name : 'N/A',
+        'make_model'     => trim("{$tricycle->make} {$tricycle->model}"),
+        'toda'           => $tricycle->todaZone ? $tricycle->todaZone->name : 'N/A',
+        'status'         => $franchiseStatus,
+        'expiry'         => $fs && $fs->expiry_date ? $fs->expiry_date->format('M d, Y') : null,
+        'body_number'    => $tricycle->body_number ?: null,
+    ]);
+})->name('public.verify-plate');
+
 // Unified Login
 Route::middleware('guest')->group(function () {
     Route::get('/login', [OperatorAuthController::class, 'showLoginForm'])->name('login');

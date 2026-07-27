@@ -441,8 +441,8 @@ const CSS = `
 export default function Welcome() {
     const [plateQuery, setPlateQuery] = useState('');
 
-    // Public Verification Function using SweetAlert2
-    const handleVerify = () => {
+    // Public Verification Function — calls real API
+    const handleVerify = async () => {
         if (!plateQuery.trim()) {
             Swal.fire({
                 title: 'Input Required',
@@ -454,58 +454,65 @@ export default function Welcome() {
             return;
         }
 
-        const query = plateQuery.trim().toUpperCase();
+        Swal.fire({
+            title: 'Checking...',
+            text: 'Looking up franchise record.',
+            allowOutsideClick: false,
+            didOpen: () => Swal.showLoading(),
+        });
 
-        // Mock Database for Demo
-        const mockDb = {
-            '8812': { status: 'Active', operator: 'Mario Dela Cruz', make: 'Honda TMX 125', toda: 'TODA A' },
-            '4491': { status: 'Active', operator: 'Juanito Perez', make: 'Kawasaki Barako 175', toda: 'TODA B' },
-            '1100': { status: 'Revoked', operator: 'Antonio Luna', make: 'Yamaha YTX 125', toda: 'TODA C' }
-        };
+        try {
+            const res = await fetch(`/api/public/verify-plate?plate=${encodeURIComponent(plateQuery.trim())}`);
+            const data = await res.json();
 
-        // Try to find the record (strips out "PLT-" if the user types it)
-        const cleanQuery = query.replace('PLT-', '');
-        const result = mockDb[cleanQuery];
-
-        if (result) {
-            if (result.status === 'Active') {
+            if (!data.found) {
                 Swal.fire({
-                    title: 'Valid Franchise',
-                    html: `
-                        <div style="text-align: left; padding: 10px; background: #F4F6FF; border-radius: 8px; margin-top: 10px;">
-                            <b>Plate No:</b> PLT-${cleanQuery}<br/>
-                            <b>Operator:</b> ${result.operator}<br/>
-                            <b>TODA:</b> ${result.toda}<br/>
-                            <b>Unit:</b> ${result.make}<br/><br/>
-                            <span style="color:#059669; font-weight:800; font-size: 14px;">Status: ACTIVE ✓</span>
-                        </div>
-                    `,
-                    icon: 'success',
-                    confirmButtonColor: '#059669',
-                    customClass: { title: 'font-jakarta', popup: 'font-inter' }
-                });
-            } else {
-                Swal.fire({
-                    title: 'Franchise Revoked',
-                    html: `
-                        <div style="text-align: left; padding: 10px; background: #FEF2F2; border-radius: 8px; margin-top: 10px;">
-                            <b>Plate No:</b> PLT-${cleanQuery}<br/><br/>
-                            <span style="color:#DC2626; font-weight:800; font-size: 14px;">Status: REVOKED ⊗</span><br/><br/>
-                            <span style="font-size: 13px; color: #5A6488;">This tricycle is not allowed to operate. Please report to the BPLO office immediately.</span>
-                        </div>
-                    `,
-                    icon: 'error',
+                    title: 'Record Not Found',
+                    text: `No official franchise record found for Plate No. "${plateQuery.trim().toUpperCase()}".`,
+                    icon: 'question',
                     confirmButtonColor: '#1C2340',
                     customClass: { title: 'font-jakarta', popup: 'font-inter' }
                 });
+                return;
             }
-        } else {
+
+            const statusColor = data.status === 'Active' ? '#059669'
+                              : data.status === 'Expired' ? '#D97706'
+                              : data.status === 'Unregistered' ? '#6B7280'
+                              : '#DC2626';
+
+            const statusIcon = data.status === 'Active' ? 'success'
+                             : data.status === 'Expired' ? 'warning'
+                             : 'error';
+
+            const statusLabel = data.status === 'Active' ? '✓ ACTIVE — Valid MTOP Franchise'
+                              : data.status === 'Expired' ? '⚠ EXPIRED — Renewal Required'
+                              : data.status === 'Unregistered' ? '○ UNREGISTERED — No Permit Issued'
+                              : '⊗ ' + data.status.toUpperCase();
+
             Swal.fire({
-                title: 'Record Not Found',
-                text: `No official franchise record found for Plate No. "${query}".`,
-                icon: 'question',
-                confirmButtonColor: '#1C2340',
+                title: data.status === 'Active' ? 'Valid Franchise Found' : 'Franchise Issue Detected',
+                html: `
+                    <div style="text-align:left;padding:12px 10px;background:${data.status === 'Active' ? '#F0FDF4' : '#FEF2F2'};border-radius:10px;margin-top:8px;font-size:13px;line-height:1.8">
+                        <b>Plate No:</b> ${data.plate}<br/>
+                        ${data.body_number ? `<b>Body No:</b> ${data.body_number}<br/>` : ''}
+                        <b>Operator:</b> ${data.operator}<br/>
+                        <b>Unit:</b> ${data.make_model}<br/>
+                        <b>TODA Zone:</b> ${data.toda}<br/>
+                        ${data.expiry ? `<b>Franchise Expiry:</b> ${data.expiry}<br/>` : ''}
+                        <br/><span style="color:${statusColor};font-weight:800;font-size:13px">${statusLabel}</span>
+                    </div>
+                `,
+                icon: statusIcon,
+                confirmButtonColor: data.status === 'Active' ? '#059669' : '#1C2340',
                 customClass: { title: 'font-jakarta', popup: 'font-inter' }
+            });
+        } catch {
+            Swal.fire({
+                title: 'Error',
+                text: 'Could not reach the verification server. Please try again.',
+                icon: 'error',
+                confirmButtonColor: '#1C2340',
             });
         }
     };
