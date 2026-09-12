@@ -73,7 +73,7 @@ export default function TrivoraLayout({ children, title, role = "TMO Personnel" 
 
             {/* ══════ SIDEBAR ══════════════════════════════════════ */}
             <aside
-                className={`fixed inset-y-0 left-0 z-50 flex w-[260px] flex-col bg-tmo-primary transition-transform duration-300 md:static md:translate-x-0 ${
+                className={`fixed inset-y-0 left-0 z-50 flex w-[260px] flex-col bg-tmo-primary transition-transform duration-300 print:hidden md:static md:translate-x-0 ${
                     sidebarOpen ? 'translate-x-0' : '-translate-x-full'
                 }`}
             >
@@ -141,7 +141,7 @@ export default function TrivoraLayout({ children, title, role = "TMO Personnel" 
             <div className="flex min-w-0 flex-1 flex-col">
 
                 {/* Header */}
-                <header className="sticky top-0 z-30 flex h-16 shrink-0 items-center justify-between border-b border-tmo-border bg-white px-5 sm:px-8">
+                <header className="sticky top-0 z-30 flex h-16 shrink-0 items-center justify-between border-b border-tmo-border bg-white px-5 print:hidden sm:px-8">
 
                     <button
                         className="flex h-9 w-9 items-center justify-center rounded-lg border border-tmo-border text-tmo-muted hover:border-tmo-borderStrong hover:text-tmo-ink md:hidden"
