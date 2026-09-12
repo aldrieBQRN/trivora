@@ -18,8 +18,10 @@ const SIZES = {
 /**
  * Shared TMO Panel button. Variants map to the panel's status/brand tokens
  * so every action control across pages shares the same height/radius/weight.
+ * Pass `as={Link}` (Inertia) to render a link styled identically to a button.
  */
 export default function Button({
+    as: Component = 'button',
     variant = 'secondary',
     size = 'md',
     loading = false,
@@ -31,13 +33,10 @@ export default function Button({
     type = 'button',
     ...props
 }) {
-    return (
-        <button
-            {...props}
-            type={type}
-            disabled={disabled || loading}
-            className={`inline-flex items-center justify-center rounded-lg font-semibold whitespace-nowrap transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 disabled:opacity-50 disabled:cursor-not-allowed ${VARIANTS[variant] || VARIANTS.secondary} ${SIZES[size] || SIZES.md} ${className}`}
-        >
+    const classes = `inline-flex items-center justify-center rounded-lg font-semibold whitespace-nowrap transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 disabled:opacity-50 disabled:cursor-not-allowed ${VARIANTS[variant] || VARIANTS.secondary} ${SIZES[size] || SIZES.md} ${className}`;
+
+    const content = (
+        <>
             {loading ? (
                 <Loader2 size={15} className="animate-spin" />
             ) : (
@@ -45,6 +44,20 @@ export default function Button({
             )}
             {children}
             {!loading && Icon && iconPosition === 'right' && <Icon size={15} strokeWidth={2} />}
+        </>
+    );
+
+    if (Component !== 'button') {
+        return (
+            <Component {...props} className={classes}>
+                {content}
+            </Component>
+        );
+    }
+
+    return (
+        <button {...props} type={type} disabled={disabled || loading} className={classes}>
+            {content}
         </button>
     );
 }
