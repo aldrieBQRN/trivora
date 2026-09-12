@@ -1,17 +1,23 @@
 import { Loader2 } from 'lucide-react';
 
 const VARIANTS = {
-    primary: 'bg-tmo-primary text-white border border-tmo-primary hover:bg-tmo-primaryHover focus-visible:ring-tmo-primary',
-    secondary: 'bg-white text-tmo-ink border border-tmo-borderStrong hover:bg-gray-50 focus-visible:ring-tmo-primary',
-    danger: 'bg-white text-red-700 border border-red-200 hover:bg-red-50 focus-visible:ring-red-600',
-    dangerSolid: 'bg-red-600 text-white border border-red-600 hover:bg-red-700 focus-visible:ring-red-600',
-    success: 'bg-emerald-600 text-white border border-emerald-600 hover:bg-emerald-700 focus-visible:ring-emerald-600',
-    ghost: 'bg-transparent text-tmo-muted border border-transparent hover:bg-gray-100 hover:text-tmo-ink focus-visible:ring-tmo-primary',
+    primary:
+        'bg-tmo-primary text-white shadow-sm shadow-tmo-primary/20 hover:bg-tmo-primaryHover hover:shadow-md hover:shadow-tmo-primary/25 focus-visible:ring-tmo-primary/40 active:shadow-sm',
+    secondary:
+        'bg-white text-gray-700 border border-gray-300 shadow-sm hover:bg-gray-50 hover:border-gray-400 focus-visible:ring-tmo-primary/30',
+    danger:
+        'bg-white text-red-600 border border-red-200 shadow-sm hover:bg-red-50 hover:border-red-300 focus-visible:ring-red-500/40',
+    dangerSolid:
+        'bg-red-600 text-white shadow-sm shadow-red-600/20 hover:bg-red-700 hover:shadow-md hover:shadow-red-600/25 focus-visible:ring-red-500/40',
+    success:
+        'bg-emerald-600 text-white shadow-sm shadow-emerald-600/20 hover:bg-emerald-700 hover:shadow-md hover:shadow-emerald-600/25 focus-visible:ring-emerald-500/40',
+    ghost:
+        'bg-transparent text-gray-500 hover:bg-gray-100 hover:text-gray-900 focus-visible:ring-tmo-primary/30',
 };
 
 const SIZES = {
-    sm: 'h-8 px-3 text-xs gap-1.5',
-    md: 'h-10 px-4 text-sm gap-2',
+    sm: 'h-8 px-3 text-[13px] gap-1.5',
+    md: 'h-[38px] px-4 text-[13.5px] gap-2',
     lg: 'h-11 px-5 text-sm gap-2',
 };
 
@@ -33,17 +39,17 @@ export default function Button({
     type = 'button',
     ...props
 }) {
-    const classes = `inline-flex items-center justify-center rounded-lg font-semibold whitespace-nowrap transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 disabled:opacity-50 disabled:cursor-not-allowed ${VARIANTS[variant] || VARIANTS.secondary} ${SIZES[size] || SIZES.md} ${className}`;
+    const classes = `inline-flex select-none items-center justify-center rounded-[9px] font-medium tracking-[-0.005em] whitespace-nowrap transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 disabled:opacity-45 disabled:pointer-events-none active:scale-[0.98] ${VARIANTS[variant] || VARIANTS.secondary} ${SIZES[size] || SIZES.md} ${className}`;
 
     const content = (
         <>
             {loading ? (
                 <Loader2 size={15} className="animate-spin" />
             ) : (
-                Icon && iconPosition === 'left' && <Icon size={15} strokeWidth={2} />
+                Icon && iconPosition === 'left' && <Icon size={15} strokeWidth={2.25} />
             )}
             {children}
-            {!loading && Icon && iconPosition === 'right' && <Icon size={15} strokeWidth={2} />}
+            {!loading && Icon && iconPosition === 'right' && <Icon size={15} strokeWidth={2.25} />}
         </>
     );
 
@@ -63,10 +69,10 @@ export default function Button({
 }
 
 const ICON_VARIANTS = {
-    default: 'bg-white text-tmo-muted border border-tmo-border hover:bg-gray-50 hover:text-tmo-ink',
-    primary: 'bg-tmo-primary text-white border border-tmo-primary hover:bg-tmo-primaryHover',
-    success: 'bg-white text-emerald-600 border border-emerald-200 hover:bg-emerald-50',
-    danger: 'bg-white text-red-600 border border-red-200 hover:bg-red-50',
+    default: 'bg-white text-gray-400 border border-gray-200 hover:bg-gray-50 hover:text-gray-700 hover:border-gray-300',
+    primary: 'bg-tmo-primary text-white shadow-sm shadow-tmo-primary/20 hover:bg-tmo-primaryHover',
+    success: 'bg-white text-emerald-600 border border-gray-200 hover:bg-emerald-50 hover:border-emerald-200',
+    danger: 'bg-white text-gray-400 border border-gray-200 hover:bg-red-50 hover:text-red-600 hover:border-red-200',
 };
 
 /** Square icon-only button for row actions (edit / approve / reject / delete). */
@@ -85,9 +91,9 @@ export function IconButton({
             type={props.type || 'button'}
             aria-label={label}
             title={label}
-            className={`inline-flex ${dim} shrink-0 items-center justify-center rounded-lg transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-tmo-primary disabled:opacity-40 disabled:cursor-not-allowed ${ICON_VARIANTS[variant] || ICON_VARIANTS.default} ${className}`}
+            className={`inline-flex ${dim} shrink-0 items-center justify-center rounded-lg transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-tmo-primary/30 disabled:opacity-40 disabled:pointer-events-none active:scale-95 ${ICON_VARIANTS[variant] || ICON_VARIANTS.default} ${className}`}
         >
-            <Icon size={15} strokeWidth={2} />
+            <Icon size={15} strokeWidth={2.1} />
         </button>
     );
 }
