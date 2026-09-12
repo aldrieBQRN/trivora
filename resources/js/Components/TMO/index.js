@@ -9,4 +9,4 @@ export { default as FilterPills } from './FilterPills';
 export { Table, Thead, Tbody, Tr, Td } from './DataTable';
 export { default as Pagination } from './Pagination';
 export { default as Modal } from './Modal';
-export { Label, HelperText, ErrorText, Input, Select, Textarea } from './FormField';
+export { Label, ErrorText, Input, Select, Textarea } from './FormField';
