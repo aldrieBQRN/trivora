@@ -1,13 +1,8 @@
 import React, { useState } from 'react';
 import { Head, Link } from '@inertiajs/react';
 import TrivoraLayout from '@/Layouts/TrivoraLayout';
-import {
-    Bike, AlertTriangle, CheckCircle2, MapPin, Download, ChevronRight,
-} from 'lucide-react';
-import {
-    PageHeader, KpiCard, KpiGrid, StatusBadge, SearchInput, FilterPills,
-    Table, Thead, Tbody, Tr, Td, Pagination, EmptyState, Button,
-} from '@/Components/TMO';
+import { Bike, Phone, Search, X, ChevronRight, ChevronLeft, Download } from 'lucide-react';
+import { PageHeader, EmptyState, Button } from '@/Components/TMO';
 
 const STATUS_FILTERS = [
     { value: 'all', label: 'All' },
@@ -125,6 +120,10 @@ export default function TricycleRegistry({ initialUnits = [] }) {
     const totalCount     = units.length;
     const activeCount    = units.filter(u => u.status === 'active').length;
     const suspendedCount = units.filter(u => u.status === 'suspended').length;
+    const activePct      = totalCount > 0 ? Math.round((activeCount / totalCount) * 100) : 0;
+    const suspendedPct   = totalCount > 0 ? 100 - activePct : 0;
+
+    const isFiltering = query.trim() !== '' || statusFilter !== 'all';
 
     return (
         <TrivoraLayout title="Tricycle Registry" role="TMO Officer">
@@ -134,117 +133,250 @@ export default function TricycleRegistry({ initialUnits = [] }) {
                 eyebrow="Tricycle Management"
                 title="Active Tricycle Registry"
                 subtitle="Master record of all registered and operating tricycles in Nasugbu"
-            />
-
-            <KpiGrid cols={3}>
-                <KpiCard label="Total Registered" value={totalCount} icon={Bike} tone="primary" />
-                <KpiCard label="Active Tricycles" value={activeCount} icon={CheckCircle2} tone="success" />
-                <KpiCard label="Suspended Tricycles" value={suspendedCount} icon={AlertTriangle} tone="warning" />
-            </KpiGrid>
-
-            <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <SearchInput
-                    value={query}
-                    onChange={handleQueryChange}
-                    placeholder="Search Unit ID, Plate, or Operator…"
-                    className="w-full sm:w-80"
-                />
-                <div className="flex flex-wrap items-center gap-2">
-                    <FilterPills options={STATUS_FILTERS} value={statusFilter} onChange={handleStatusFilterChange} />
+                actions={
                     <Button variant="secondary" icon={Download} onClick={handleExport}>
                         Export CSV
                     </Button>
+                }
+            />
+
+            {/* ── Fleet summary ── */}
+            <div className="mb-6 flex flex-col gap-6 rounded-2xl border border-tmo-border bg-tmo-surface p-5 sm:p-6 lg:flex-row lg:items-center">
+                <div className="flex items-center gap-4">
+                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-tmo-primarySoft text-tmo-primary">
+                        <Bike size={22} strokeWidth={2} />
+                    </div>
+                    <div>
+                        <p className="text-[28px] font-bold leading-none tracking-tight tabular-nums text-tmo-ink">{totalCount}</p>
+                        <p className="mt-1 text-xs font-semibold uppercase tracking-wide text-tmo-muted">Registered Units</p>
+                    </div>
+                </div>
+
+                <div className="hidden h-12 w-px bg-tmo-border lg:block" />
+
+                <div className="min-w-0 flex-1">
+                    <div className="flex h-2 w-full overflow-hidden rounded-full bg-gray-100">
+                        {activeCount > 0 && <div className="h-full bg-emerald-500" style={{ width: `${activePct}%` }} />}
+                        {suspendedCount > 0 && <div className="h-full bg-amber-500" style={{ width: `${suspendedPct}%` }} />}
+                    </div>
+                    <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-1.5 text-xs">
+                        <span className="flex items-center gap-1.5 font-medium text-tmo-ink">
+                            <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                            {activeCount} Active
+                        </span>
+                        <span className="flex items-center gap-1.5 font-medium text-tmo-ink">
+                            <span className="h-2 w-2 rounded-full bg-amber-500" />
+                            {suspendedCount} Suspended
+                        </span>
+                    </div>
+                </div>
+
+                <div className="hidden h-12 w-px bg-tmo-border lg:block" />
+
+                <div className="shrink-0">
+                    <p className="text-[28px] font-bold leading-none tracking-tight tabular-nums text-tmo-ink">{activePct}%</p>
+                    <p className="mt-1 text-xs font-semibold uppercase tracking-wide text-tmo-muted">Fleet Active Rate</p>
                 </div>
             </div>
 
-            <Table>
-                <Thead>
-                    <th>Tricycle Unit ID</th>
-                    <th>Plate Number</th>
-                    <th>Tricycle Operator</th>
-                    <th>TODA &amp; Coding Scheme</th>
-                    <th>Status</th>
-                    <th className="text-right">Action</th>
-                </Thead>
-                <Tbody>
-                    {filtered.length === 0 ? (
-                        <tr>
-                            <td colSpan={6}>
-                                <EmptyState
-                                    icon={Bike}
-                                    title={query || statusFilter !== 'all' ? 'No matching records found' : 'Registry is empty'}
-                                    description={query || statusFilter !== 'all' ? 'Try adjusting your search query or status filter.' : 'No registered tricycles yet.'}
-                                />
-                            </td>
-                        </tr>
-                    ) : (
-                        paginated.map(unit => <UnitRow key={unit.id} unit={unit} />)
+            {/* ── Toolbar ── */}
+            <div className="mb-3 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                <div className="relative w-full lg:max-w-md">
+                    <Search size={16} strokeWidth={2} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-tmo-subtle" />
+                    <input
+                        type="text"
+                        value={query}
+                        onChange={e => handleQueryChange(e.target.value)}
+                        placeholder="Search by plate, operator, or unit ID…"
+                        className="h-11 w-full rounded-xl border border-tmo-border bg-white pl-10 pr-9 text-sm text-tmo-ink placeholder:text-tmo-subtle transition-shadow focus:border-tmo-primary focus:outline-none focus:ring-4 focus:ring-tmo-primary/10"
+                    />
+                    {query && (
+                        <button
+                            type="button"
+                            onClick={() => handleQueryChange('')}
+                            className="absolute right-3 top-1/2 flex h-5 w-5 -translate-y-1/2 items-center justify-center rounded-full text-tmo-subtle hover:bg-gray-100 hover:text-tmo-ink"
+                        >
+                            <X size={13} strokeWidth={2.5} />
+                        </button>
                     )}
-                </Tbody>
-            </Table>
+                </div>
 
-            {filtered.length > 0 && (
-                <div className="rounded-b-xl border border-t-0 border-tmo-border bg-tmo-surface">
-                    <Pagination
-                        page={activePage}
-                        totalPages={totalPages}
-                        totalItems={filtered.length}
-                        pageSize={ITEMS_PER_PAGE}
-                        onPageChange={setCurrentPage}
+                <div className="inline-flex shrink-0 items-center gap-1 self-start rounded-lg border border-tmo-border bg-white p-1">
+                    {STATUS_FILTERS.map(opt => (
+                        <button
+                            key={opt.value}
+                            type="button"
+                            onClick={() => handleStatusFilterChange(opt.value)}
+                            className={`rounded-md px-3.5 py-1.5 text-xs font-semibold transition-colors ${
+                                statusFilter === opt.value ? 'bg-tmo-primary text-white' : 'text-tmo-muted hover:text-tmo-ink'
+                            }`}
+                        >
+                            {opt.label}
+                        </button>
+                    ))}
+                </div>
+            </div>
+
+            <p className="mb-4 text-xs text-tmo-muted">
+                <span className="font-semibold text-tmo-ink">{filtered.length}</span> of {totalCount} unit{totalCount === 1 ? '' : 's'}
+                {isFiltering ? ' match your filters' : ' registered'}
+            </p>
+
+            {filtered.length === 0 ? (
+                <div className="rounded-2xl border border-tmo-border bg-tmo-surface">
+                    <EmptyState
+                        icon={Bike}
+                        title={isFiltering ? 'No matching records found' : 'Registry is empty'}
+                        description={isFiltering ? 'Try adjusting your search query or status filter.' : 'No registered tricycles yet.'}
                     />
                 </div>
+            ) : (
+                <>
+                    {/* ── Desktop / tablet table ── */}
+                    <div className="hidden overflow-hidden rounded-2xl border border-tmo-border bg-tmo-surface md:block">
+                        <table className="w-full text-left">
+                            <thead>
+                                <tr className="border-b border-tmo-border">
+                                    <th className="px-6 py-3.5 text-[11px] font-semibold uppercase tracking-wide text-tmo-muted">Unit</th>
+                                    <th className="px-6 py-3.5 text-[11px] font-semibold uppercase tracking-wide text-tmo-muted">Operator</th>
+                                    <th className="px-6 py-3.5 text-[11px] font-semibold uppercase tracking-wide text-tmo-muted">TODA &amp; Coding</th>
+                                    <th className="px-6 py-3.5 text-[11px] font-semibold uppercase tracking-wide text-tmo-muted">Status</th>
+                                    <th className="w-12 px-4 py-3.5" />
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-tmo-border">
+                                {paginated.map(unit => <UnitRow key={unit.id} unit={unit} />)}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    {/* ── Mobile cards ── */}
+                    <div className="flex flex-col gap-3 md:hidden">
+                        {paginated.map(unit => <UnitCard key={unit.id} unit={unit} />)}
+                    </div>
+
+                    {/* ── Pagination ── */}
+                    {totalPages > 1 && (
+                        <div className="mt-5 flex items-center justify-between">
+                            <p className="text-xs text-tmo-muted">
+                                Page <span className="font-semibold text-tmo-ink">{activePage}</span> of{' '}
+                                <span className="font-semibold text-tmo-ink">{totalPages}</span>
+                            </p>
+                            <div className="flex items-center gap-2">
+                                <button
+                                    type="button"
+                                    disabled={activePage <= 1}
+                                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                                    className="flex h-9 items-center gap-1.5 rounded-lg border border-tmo-border bg-white px-3 text-xs font-semibold text-tmo-ink transition-colors hover:bg-tmo-bg disabled:pointer-events-none disabled:opacity-40"
+                                >
+                                    <ChevronLeft size={14} /> Previous
+                                </button>
+                                <button
+                                    type="button"
+                                    disabled={activePage >= totalPages}
+                                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                                    className="flex h-9 items-center gap-1.5 rounded-lg border border-tmo-border bg-white px-3 text-xs font-semibold text-tmo-ink transition-colors hover:bg-tmo-bg disabled:pointer-events-none disabled:opacity-40"
+                                >
+                                    Next <ChevronRight size={14} />
+                                </button>
+                            </div>
+                        </div>
+                    )}
+                </>
             )}
         </TrivoraLayout>
     );
 }
 
-function UnitRow({ unit }) {
+function StatusDot({ status }) {
+    const active = status === 'active';
+    return (
+        <span className={`inline-flex items-center gap-1.5 text-[13px] font-medium ${active ? 'text-emerald-700' : 'text-amber-700'}`}>
+            <span className={`h-2 w-2 shrink-0 rounded-full ${active ? 'bg-emerald-500' : 'bg-amber-500'}`} />
+            {active ? 'Active' : 'Suspended'}
+        </span>
+    );
+}
+
+function CodingLine({ unit }) {
     const codingHex = unit.coding_hex || '#4F5BCB';
-    const unitIdCode = unit.unit_code || `TRV-${String(unit.id).padStart(3, '0')}`;
     const dayLabel = unit.coding_day ? (DAY_NAMES[unit.coding_day.split(' ')[0]] || unit.coding_day) : 'Monday';
+    return (
+        <div className="flex items-center gap-1.5 text-xs text-tmo-muted">
+            <span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: codingHex, boxShadow: `0 0 0 2px ${codingHex}25` }} />
+            <span className="font-semibold text-tmo-ink">#{unit.coding_scheme_number || unit.body_no || unit.sticker_no}</span>
+            <span>&middot; {dayLabel}</span>
+        </div>
+    );
+}
+
+function UnitRow({ unit }) {
+    const unitIdCode = unit.unit_code || `TRV-${String(unit.id).padStart(3, '0')}`;
 
     return (
-        <Tr>
-            <Td>
-                <span className="text-xs font-bold text-gray-700">{unitIdCode}</span>
-            </Td>
-            <Td>
-                <span className="inline-block rounded border border-tmo-primary/25 bg-tmo-primarySoft px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-tmo-primary">
-                    {unit.plate_no}
-                </span>
-            </Td>
-            <Td>
+        <tr className="group transition-colors hover:bg-tmo-bg/60">
+            <td className="px-6 py-4">
+                <p className="text-sm font-bold tracking-wide text-tmo-ink">{unit.plate_no}</p>
+                <p className="mt-0.5 font-mono text-[11px] text-tmo-subtle">{unitIdCode}</p>
+            </td>
+            <td className="px-6 py-4">
                 <p className="text-[13.5px] font-semibold text-tmo-ink">{unit.operator}</p>
-                <p className="mt-0.5 flex items-center gap-1 text-[11px] font-medium text-tmo-muted">
-                    <MapPin size={10} strokeWidth={2.5} />
+                <p className="mt-0.5 flex items-center gap-1 text-xs text-tmo-muted">
+                    <Phone size={11} strokeWidth={2.5} />
                     {unit.contact}
                 </p>
-            </Td>
-            <Td>
-                <p className="mb-1 text-[12.5px] font-semibold text-tmo-ink">{unit.toda}</p>
-                <div className="flex items-center gap-1.5">
-                    <span
-                        className="h-2 w-2 shrink-0 rounded-full"
-                        style={{ backgroundColor: codingHex, boxShadow: `0 0 0 2px ${codingHex}25` }}
-                    />
-                    <span className="text-xs font-bold text-tmo-ink">
-                        #{unit.coding_scheme_number || unit.body_no || unit.sticker_no}
-                    </span>
-                    <span className="text-xs font-medium text-tmo-muted">({dayLabel})</span>
+            </td>
+            <td className="px-6 py-4">
+                <p className="mb-1 text-[13.5px] font-medium text-tmo-ink">{unit.toda}</p>
+                <CodingLine unit={unit} />
+            </td>
+            <td className="px-6 py-4">
+                <StatusDot status={unit.status} />
+            </td>
+            <td className="px-4 py-4 text-right">
+                <Link
+                    href={route('tricycle.details', unit.id)}
+                    aria-label={`View details for ${unit.plate_no}`}
+                    className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-tmo-subtle transition-colors group-hover:text-tmo-primary hover:bg-tmo-primarySoft"
+                >
+                    <ChevronRight size={16} strokeWidth={2.25} />
+                </Link>
+            </td>
+        </tr>
+    );
+}
+
+function UnitCard({ unit }) {
+    const unitIdCode = unit.unit_code || `TRV-${String(unit.id).padStart(3, '0')}`;
+
+    return (
+        <Link
+            href={route('tricycle.details', unit.id)}
+            className="block rounded-2xl border border-tmo-border bg-tmo-surface p-4 transition-colors active:bg-tmo-bg"
+        >
+            <div className="flex items-start justify-between gap-3">
+                <div>
+                    <p className="text-base font-bold tracking-wide text-tmo-ink">{unit.plate_no}</p>
+                    <p className="mt-0.5 font-mono text-[11px] text-tmo-subtle">{unitIdCode}</p>
                 </div>
-            </Td>
-            <Td>
-                {unit.status === 'active' ? (
-                    <StatusBadge variant="success" icon={CheckCircle2}>Active</StatusBadge>
-                ) : (
-                    <StatusBadge variant="warning" icon={AlertTriangle}>Suspended</StatusBadge>
-                )}
-            </Td>
-            <Td className="text-right">
-                <Button as={Link} href={route('tricycle.details', unit.id)} variant="primary" size="sm" icon={ChevronRight} iconPosition="right">
-                    View Details
-                </Button>
-            </Td>
-        </Tr>
+                <StatusDot status={unit.status} />
+            </div>
+
+            <div className="mt-3.5 border-t border-tmo-border pt-3.5">
+                <p className="text-sm font-semibold text-tmo-ink">{unit.operator}</p>
+                <p className="mt-0.5 flex items-center gap-1 text-xs text-tmo-muted">
+                    <Phone size={11} strokeWidth={2.5} />
+                    {unit.contact}
+                </p>
+            </div>
+
+            <div className="mt-3.5 flex items-center justify-between border-t border-tmo-border pt-3.5">
+                <div>
+                    <p className="mb-1 text-xs font-medium text-tmo-ink">{unit.toda}</p>
+                    <CodingLine unit={unit} />
+                </div>
+                <ChevronRight size={18} strokeWidth={2.25} className="shrink-0 text-tmo-subtle" />
+            </div>
+        </Link>
     );
 }
