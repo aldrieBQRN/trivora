@@ -1,114 +1,20 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Head, Link, router } from '@inertiajs/react';
+import { Head, Link } from '@inertiajs/react';
 import TrivoraLayout from '@/Layouts/TrivoraLayout';
 import TricycleMap from '@/Components/TricycleMap';
 import {
-    ShieldAlert, Users, Navigation, Ban,
-    AlertCircle, CheckCircle2, BarChart3,
-    Play, Pause, Zap, AlertTriangle, Radio, ChevronRight
+    Users, Navigation, Ban, AlertCircle, CheckCircle2, BarChart3,
+    Play, Pause, Zap, AlertTriangle, Radio, ChevronRight,
 } from 'lucide-react';
 import {
-    AreaChart, Area, XAxis, YAxis,
-    CartesianGrid, Tooltip, ResponsiveContainer,
+    AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from 'recharts';
+import { StatusBadge } from '@/Components/TMO';
 
 import routeA from '../../data/routeA.json';
 import routeB from '../../data/routeB.json';
 import routeC from '../../data/routeC.json';
 import routeD from '../../data/routeD.json';
-
-const CSS = `
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600;700&family=DM+Sans:wght@500;600;700&display=swap');
-
-.td-root { font-family: 'Inter', sans-serif; color: #1C2340; max-width: 1500px; margin: 0 auto; padding-bottom: 48px; }
-.td-root *, .td-root *::before, .td-root *::after { box-sizing: border-box; }
-.td-eyebrow { font-family: 'DM Sans', sans-serif; font-size: 9.5px; font-weight: 700; letter-spacing: .18em; text-transform: uppercase; color: #1C2340; display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
-.td-eyebrow::before { content: ''; width: 18px; height: 1.5px; background: #4F5BCB; border-radius: 2px; }
-.td-live-pip { width: 7px; height: 7px; border-radius: 50%; background: #059669; animation: tdPulse 1.4s ease-in-out infinite; flex-shrink: 0; }
-@keyframes tdPulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: .5; transform: scale(.8); } }
-.td-title { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 30px; font-weight: 800; letter-spacing: -.025em; color: #1C2340; line-height: 1; }
-.td-topbar { display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 16px; margin-bottom: 20px; }
-.td-badge-dark { background: #1C2340; color: #FFFFFF; padding: 12px 20px; border-radius: 14px; display: flex; flex-direction: column; align-items: center; min-width: 140px; box-shadow: 0 4px 18px rgba(28,35,64,.18); }
-.td-badge-dark-sub { font-family: 'DM Sans', sans-serif; font-size: 8px; font-weight: 700; letter-spacing: .18em; text-transform: uppercase; color: #FFFFFF; margin-bottom: 5px; }
-.td-badge-dark-val { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 22px; font-weight: 800; letter-spacing: .06em; color: #FFFFFF; line-height: 1; }
-.td-time-block { text-align: right; padding: 0 16px; border-left: 1px solid rgba(28,35,64,.1); }
-.td-time-val { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 22px; font-weight: 700; letter-spacing: -.01em; color: #1C2340; line-height: 1; margin-bottom: 5px; font-variant-numeric: tabular-nums; }
-.td-time-day { font-family: 'DM Sans', sans-serif; font-size: 9px; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; color: #1C2340; }
-
-.td-sim-bar { background: linear-gradient(135deg, #1C2340 0%, #2A345B 100%); color: #FFFFFF; padding: 14px 20px; border-radius: 16px; display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 24px; box-shadow: 0 8px 24px rgba(28,35,64,.18); flex-wrap: wrap; }
-.td-sim-title { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 13px; font-weight: 800; display: flex; align-items: center; gap: 8px; letter-spacing: .02em; }
-.td-sim-sub { font-family: 'Inter', sans-serif; font-size: 11px; color: #94A3B8; margin-top: 2px; }
-.td-sim-controls { display: flex; align-items: center; gap: 10px; }
-.td-sim-btn { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 11px; font-weight: 700; padding: 8px 14px; border-radius: 8px; border: none; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: all .15s; }
-.td-sim-btn-play { background: #059669; color: #FFFFFF; }
-.td-sim-btn-play:hover { background: #047857; }
-.td-sim-btn-pause { background: #DC2626; color: #FFFFFF; }
-.td-sim-btn-pause:hover { background: #B91C1C; }
-.td-sim-btn-trigger { background: rgba(245,158,11,.15); color: #F59E0B; border: 1px solid rgba(245,158,11,.3); }
-.td-sim-btn-trigger:hover { background: rgba(245,158,11,.25); }
-
-.td-kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 32px; }
-@media (max-width: 1280px) { .td-kpi-grid { grid-template-columns: repeat(2, 1fr); } }
-@media (max-width: 640px)  { .td-kpi-grid { grid-template-columns: 1fr; } }
-.td-kpi { background: linear-gradient(135deg, #F9FAFB 0%, #F3F4F9 100%); border: 1px solid rgba(79,91,203,.12); border-radius: 14px; padding: 20px 22px; transition: box-shadow .2s, border-color .2s, transform .2s; position: relative; overflow: hidden; }
-.td-kpi:hover { border-color: rgba(79,91,203,.25); box-shadow: 0 8px 24px rgba(79,91,203,.12); transform: translateY(-2px); }
-.td-kpi::after { content: ''; position: absolute; bottom: 0; right: 0; width: 80px; height: 80px; border-radius: 50%; background: radial-gradient(circle, rgba(79,91,203,.08) 0%, transparent 70%); pointer-events: none; }
-.td-kpi-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px; }
-.td-kpi-icon { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-.td-kpi-icon-stone  { background: linear-gradient(135deg, #4F5BCB 0%, #6675A8 100%);  color: #FFFFFF; }
-.td-kpi-icon-rose   { background: linear-gradient(135deg, #DC2626 0%, #B91C1C 100%);  color: #FFFFFF; }
-.td-kpi-icon-emerald{ background: linear-gradient(135deg, #059669 0%, #047857 100%);  color: #FFFFFF; }
-.td-kpi-icon-amber  { background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%);  color: #FFFFFF; }
-.td-kpi-trend { font-family: 'DM Sans', sans-serif; font-size: 8.5px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; border-radius: 6px; padding: 4px 10px; transition: all .2s ease; }
-.td-kpi-trend-live { color: #DC2626; background: linear-gradient(135deg, rgba(220,38,38,.1) 0%, rgba(220,38,38,.05) 100%); border: 1px solid rgba(220,38,38,.25); }
-.td-kpi-trend-detecting { color: #F59E0B; background: linear-gradient(135deg, rgba(245,158,11,.1) 0%, rgba(245,158,11,.05) 100%); border: 1px solid rgba(245,158,11,.25); }
-.td-kpi-trend-optimal { color: #059669; background: linear-gradient(135deg, rgba(5,150,105,.1) 0%, rgba(5,150,105,.05) 100%); border: 1px solid rgba(5,150,105,.25); }
-.td-kpi-trend-synced { color: #4F5BCB; background: linear-gradient(135deg, rgba(79,91,203,.1) 0%, rgba(79,91,203,.05) 100%); border: 1px solid rgba(79,91,203,.25); }
-.td-kpi-val-row { display: flex; align-items: baseline; gap: 6px; margin-bottom: 4px; line-height: 1; }
-.td-kpi-val { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 30px; font-weight: 800; letter-spacing: -.025em; color: #1C2340; }
-.td-kpi-unit { font-family: 'DM Sans', sans-serif; font-size: 9.5px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: #1C2340; }
-.td-kpi-unit-alert { color: #DC2626; }
-.td-kpi-lbl { font-family: 'DM Sans', sans-serif; font-size: 10px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: #1C2340; line-height: 1; }
-.td-grid { display: grid; grid-template-columns: 1fr 380px; gap: 28px; align-items: start; }
-@media (max-width: 1280px) { .td-grid { grid-template-columns: 1fr; } }
-.td-col-left  { display: flex; flex-direction: column; gap: 24px; }
-.td-col-right { display: flex; flex-direction: column; gap: 24px; }
-.td-card { background: #FFFFFF; border: 1px solid rgba(79,91,203,.12); border-radius: 18px; box-shadow: 0 2px 8px rgba(79,91,203,.08); overflow: hidden; transition: box-shadow .2s, border-color .2s; }
-.td-card:hover { border-color: rgba(79,91,203,.2); box-shadow: 0 8px 24px rgba(79,91,203,.12); }
-.td-card-body { padding: 24px; }
-.td-card-header { display: flex; align-items: center; gap: 10px; margin-bottom: 22px; padding-bottom: 18px; border-bottom: 1px solid rgba(79,91,203,.1); }
-.td-card-icon { width: 34px; height: 34px; border-radius: 9px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-.td-card-icon-dark   { background: linear-gradient(135deg, #4F5BCB 0%, #6675A8 100%); color: #FFFFFF; }
-.td-card-icon-rose   { background: linear-gradient(135deg, #DC2626 0%, #B91C1C 100%); color: #FFFFFF; }
-.td-card-icon-muted  { background: rgba(79,91,203,.08); color: #4F5BCB; }
-.td-card-title { font-family: 'DM Sans', sans-serif; font-size: 10px; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; color: #1C2340; }
-.td-map-card { background: #FFFFFF; border: 1px solid rgba(79,91,203,.12); border-radius: 18px; box-shadow: 0 2px 8px rgba(79,91,203,.08); padding: 8px; height: 500px; position: relative; transition: box-shadow .2s, border-color .2s; }
-.td-map-card:hover { border-color: rgba(79,91,203,.2); box-shadow: 0 8px 24px rgba(79,91,203,.12); }
-.td-map-overlay { position: absolute; top: 20px; left: 20px; z-index: 1000; background: rgba(255,255,255,.95); backdrop-filter: blur(16px); border: 1px solid rgba(79,91,203,.15); border-radius: 10px; padding: 8px 14px; display: flex; align-items: center; gap: 8px; box-shadow: 0 4px 16px rgba(79,91,203,.15); }
-.td-map-overlay-label { font-family: 'DM Sans', sans-serif; font-size: 9.5px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: #1C2340; }
-.td-map-inner { border-radius: 12px; overflow: hidden; width: 100%; height: 100%; position: relative; z-index: 0; }
-.td-chart-wrap { height: 200px; width: 100%; }
-.td-toda-list { display: flex; flex-direction: column; gap: 10px; }
-.td-toda-row { display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; background: rgba(237,238,244,.5); border: 1px solid rgba(28,35,64,.07); border-radius: 11px; transition: background .15s, border-color .15s; }
-.td-toda-row:hover { background: #FFFFFF; border-color: rgba(28,35,64,.12); }
-.td-toda-left { display: flex; align-items: center; gap: 10px; }
-.td-toda-pip { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
-.td-toda-name { font-family: 'DM Sans', sans-serif; font-size: 10.5px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: #1C2340; }
-.td-toda-right { display: flex; align-items: baseline; gap: 6px; }
-.td-toda-count-ok    { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 18px; font-weight: 800; color: #1C2340; line-height: 1; }
-.td-toda-count-alert { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 18px; font-weight: 800; color: #DC2626; line-height: 1; }
-.td-toda-sub { font-family: 'DM Sans', sans-serif; font-size: 8.5px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: #8A96BC; }
-.td-feed { display: flex; flex-direction: column; gap: 16px; }
-.td-feed-empty { padding: 40px 0; text-align: center; font-family: 'DM Sans', sans-serif; font-size: 9.5px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: #8A96BC; line-height: 1.8; }
-.td-incident { display: flex; gap: 12px; }
-.td-incident-pip { margin-top: 5px; flex-shrink: 0; width: 8px; height: 8px; border-radius: 50%; background: #DC2626; animation: tdPulse 1.4s ease-in-out infinite; }
-.td-incident-body { flex: 1; }
-.td-incident-top { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 4px; }
-.td-incident-id { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 14px; font-weight: 800; letter-spacing: -.01em; color: #1C2340; line-height: 1; margin-bottom: 4px; }
-.td-incident-driver { font-family: 'DM Sans', sans-serif; font-size: 9px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: #5A6488; }
-.td-incident-time { font-family: 'DM Sans', sans-serif; font-size: 9px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: #1C2340; flex-shrink: 0; }
-.td-incident-msg { font-family: 'Inter', sans-serif; font-size: 10.5px; font-weight: 500; color: #5A6488; line-height: 1.5; border-left: 2px solid rgba(220,38,38,.15); padding-left: 8px; margin-top: 6px; text-transform: uppercase; letter-spacing: .04em; }
-`;
 
 const getCodingDetails = () => {
     const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -135,7 +41,7 @@ const extractRouteCoordinates = (geoJson) => {
 };
 
 export default function Dashboard({ initialTricycles = [] }) {
-    const [currentTime, setCurrentTime] = useState(new Date());
+    const [currentTime] = useState(new Date());
     const codingInfo = getCodingDetails();
 
     // TODA GeoJSON Route Coordinate Sets
@@ -237,7 +143,7 @@ export default function Dashboard({ initialTricycles = [] }) {
         const target = tricycles[targetIdx];
 
         setTricycles(prev => prev.map((t, idx) => idx === targetIdx ? { ...t, status: 'violator' } : t));
-        
+
         const newIncident = {
             id: target.id,
             plate: target.plate,
@@ -294,205 +200,173 @@ export default function Dashboard({ initialTricycles = [] }) {
     return (
         <TrivoraLayout title="Fleet Command" role="TMO Supervisor">
             <Head title="TMO Dashboard" />
-            <style dangerouslySetInnerHTML={{ __html: CSS }} />
 
-            <div className="td-root">
-                {/* ── TOPBAR ── */}
-                <div className="td-topbar">
-                    <div>
-                        <p className="td-eyebrow">
-                            <span className="td-live-pip" />
-                            Active Enforcement & Telematics Monitor
+            {/* ── TOPBAR ── */}
+            <div className="mb-5 flex flex-wrap items-start justify-between gap-4">
+                <div>
+                    <p className="mb-1.5 flex items-center gap-2 text-[9.5px] font-bold uppercase tracking-widest text-tmo-ink">
+                        <span className="h-[7px] w-[7px] shrink-0 animate-pulse rounded-full bg-emerald-600" />
+                        Active Enforcement &amp; Telematics Monitor
+                    </p>
+                    <h1 className="text-2xl font-extrabold tracking-tight text-tmo-ink sm:text-[30px]">Coding &amp; Route Monitor</h1>
+                </div>
+
+                <div className="flex items-center gap-4">
+                    <div className="flex min-w-[140px] flex-col items-center rounded-2xl bg-tmo-primary px-5 py-3 text-white shadow-lg shadow-tmo-primary/20">
+                        <span className="mb-1 text-[8px] font-bold uppercase tracking-widest">Restricted Plates</span>
+                        <span className="text-xl font-extrabold tracking-wide">{codingInfo.restricted}</span>
+                    </div>
+                    <div className="border-l border-tmo-border pl-4 text-right">
+                        <p className="mb-1 text-xl font-bold tabular-nums leading-none text-tmo-ink">
+                            {currentTime.toLocaleTimeString('en-US', { hour12: false })}
                         </p>
-                        <h1 className="td-title">Coding & Route Monitor</h1>
+                        <p className="text-[9px] font-bold uppercase tracking-widest text-tmo-ink">{codingInfo.day}</p>
+                    </div>
+                </div>
+            </div>
+
+            {/* ── SIMULATION & ROUTE VIOLATION CONTROL BAR ── */}
+            <div className="mb-6 flex flex-wrap items-center justify-between gap-4 rounded-2xl bg-tmo-primary px-5 py-3.5 text-white shadow-lg shadow-tmo-primary/20">
+                <div>
+                    <div className="flex items-center gap-2 text-[13px] font-extrabold">
+                        <Radio size={16} className="animate-pulse text-emerald-400" />
+                        TODA Route Telematics &amp; 25m Buffer Simulator
+                    </div>
+                    <div className="mt-0.5 text-[11px] text-white/60">
+                        Live GPS monitoring with 25m tolerance corridor geofencing (Bucana, Brgy. 10, Brgy. 8, Brgy. 4).
+                    </div>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2.5">
+                    <button
+                        type="button"
+                        onClick={() => setIsSimulating(!isSimulating)}
+                        className={`flex items-center gap-1.5 rounded-lg px-3.5 py-2 text-[11px] font-bold transition-colors ${
+                            isSimulating ? 'bg-red-600 hover:bg-red-700' : 'bg-emerald-600 hover:bg-emerald-700'
+                        }`}
+                    >
+                        {isSimulating ? <><Pause size={14} /> Pause Sim</> : <><Play size={14} /> Resume Sim</>}
+                    </button>
+
+                    <div className="flex gap-0.5 rounded-lg bg-white/10 p-0.5">
+                        {[1, 2, 5].map(spd => (
+                            <button
+                                key={spd}
+                                type="button"
+                                onClick={() => setSimSpeed(spd)}
+                                className={`rounded-md px-2.5 py-1 text-[11px] font-bold transition-colors ${
+                                    simSpeed === spd ? 'bg-white text-tmo-primary' : 'text-white/50 hover:text-white'
+                                }`}
+                            >
+                                {spd}x
+                            </button>
+                        ))}
                     </div>
 
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                        <div className="td-badge-dark">
-                            <span className="td-badge-dark-sub">Restricted Plates</span>
-                            <span className="td-badge-dark-val">{codingInfo.restricted}</span>
+                    <button
+                        type="button"
+                        onClick={handleTriggerCodingViolation}
+                        className="flex items-center gap-1.5 rounded-lg border border-amber-400/30 bg-amber-400/15 px-3.5 py-2 text-[11px] font-bold text-amber-300 transition-colors hover:bg-amber-400/25"
+                    >
+                        <AlertTriangle size={14} /> Coding Breach
+                    </button>
+
+                    <button
+                        type="button"
+                        onClick={handleTriggerRouteStray}
+                        className="flex items-center gap-1.5 rounded-lg border border-purple-400/35 bg-purple-500/20 px-3.5 py-2 text-[11px] font-bold text-purple-300 transition-colors hover:bg-purple-500/30"
+                    >
+                        <Zap size={14} /> Route Stray (&gt;25m)
+                    </button>
+                </div>
+            </div>
+
+            <div className="mb-8 grid grid-cols-1 gap-3.5 sm:grid-cols-2 xl:grid-cols-4">
+                <KpiCard title="Tricycles on Road" value={tricycles.length} unit="Active" icon={Users} tone="primary" trend="Live" trendVariant="danger" />
+                <KpiCard title="Illegal Movement" value={violations.length} unit="Violators" icon={Ban} tone="danger" trend="Detecting" trendVariant="warning" unitAlert={violations.length > 0} />
+                <KpiCard title="Compliance Rate" value={`${complianceRate}%`} unit="Safe" icon={CheckCircle2} tone="success" trend="Optimal" trendVariant="success" />
+                <KpiCard title="Active TODA Routes" value="4" unit="Groups" icon={Navigation} tone="warning" trend="Synced" trendVariant="info" />
+            </div>
+
+            <div className="grid grid-cols-1 items-start gap-6 xl:grid-cols-[1fr_380px]">
+                <div className="flex flex-col gap-6">
+                    <div className="relative h-[500px] rounded-2xl border border-tmo-border bg-tmo-surface p-2 shadow-sm">
+                        <div className="relative z-0 h-full w-full overflow-hidden rounded-xl">
+                            <TricycleMap tricycles={tricycles} routes={{ bucana: routeD, brgy10: routeC, brgy8: routeA, brgy14: routeB }} />
                         </div>
-                        <div className="td-time-block">
-                            <p className="td-time-val">
-                                {currentTime.toLocaleTimeString('en-US', { hour12: false })}
-                            </p>
-                            <p className="td-time-day">{codingInfo.day}</p>
+                    </div>
+
+                    <div className="rounded-2xl border border-tmo-border bg-tmo-surface p-6 shadow-sm">
+                        <div className="mb-5 flex items-center gap-2.5 border-b border-tmo-border pb-4">
+                            <div className="flex h-[34px] w-[34px] items-center justify-center rounded-lg bg-tmo-primarySoft text-tmo-primary">
+                                <BarChart3 size={16} strokeWidth={1.8} />
+                            </div>
+                            <span className="text-[10px] font-bold uppercase tracking-widest text-tmo-ink">Peak Violation Periods</span>
+                        </div>
+                        <div className="h-[200px] w-full">
+                            <ViolationTrendChart />
                         </div>
                     </div>
                 </div>
 
-                {/* ── SIMULATION & ROUTE VIOLATION CONTROL BAR ── */}
-                <div className="td-sim-bar">
-                    <div>
-                        <div className="td-sim-title">
-                            <Radio size={16} color="#059669" className="animate-pulse" />
-                            TODA Route Telematics & 25m Buffer Simulator
+                <div className="flex flex-col gap-6">
+                    <div className="rounded-2xl border border-tmo-border bg-tmo-surface p-6 shadow-sm">
+                        <div className="mb-5 flex items-center gap-2.5 border-b border-tmo-border pb-4">
+                            <div className="flex h-[34px] w-[34px] items-center justify-center rounded-lg bg-tmo-primary text-white">
+                                <Navigation size={16} />
+                            </div>
+                            <span className="text-[10px] font-bold uppercase tracking-widest text-tmo-ink">TODA Compliance</span>
                         </div>
-                        <div className="td-sim-sub">
-                            Live GPS monitoring with 25m tolerance corridor geofencing (Bucana, Brgy. 10, Brgy. 8, Brgy. 4).
-                        </div>
-                    </div>
-
-                    <div className="td-sim-controls">
-                        <button
-                            type="button"
-                            onClick={() => setIsSimulating(!isSimulating)}
-                            className={`td-sim-btn ${isSimulating ? 'td-sim-btn-pause' : 'td-sim-btn-play'}`}
-                        >
-                            {isSimulating ? <><Pause size={14} /> Pause Sim</> : <><Play size={14} /> Resume Sim</>}
-                        </button>
-
-                        <div style={{ display: 'flex', background: 'rgba(255,255,255,.1)', padding: 3, borderRadius: 8, gap: 2 }}>
-                            {[1, 2, 5].map(spd => (
-                                <button
-                                    key={spd}
-                                    type="button"
-                                    onClick={() => setSimSpeed(spd)}
-                                    style={{
-                                        border: 'none', borderRadius: 6, padding: '4px 10px', fontSize: 11, fontWeight: 700,
-                                        cursor: 'pointer',
-                                        background: simSpeed === spd ? '#FFFFFF' : 'transparent',
-                                        color: simSpeed === spd ? '#1C2340' : '#94A3B8',
-                                    }}
-                                >
-                                    {spd}x
-                                </button>
+                        <div className="flex flex-col gap-2.5">
+                            {todaGroups.map(g => (
+                                <TODARow
+                                    key={g.name}
+                                    name={g.name}
+                                    color={g.color}
+                                    count={tricycles.filter(t => (t.toda === g.name || t.todaName === g.name) && (t.status === 'violator' || t.status === 'route_violator')).length}
+                                />
                             ))}
                         </div>
-
-                        <button
-                            type="button"
-                            onClick={handleTriggerCodingViolation}
-                            className="td-sim-btn td-sim-btn-trigger"
-                        >
-                            <AlertTriangle size={14} /> Coding Breach
-                        </button>
-
-                        <button
-                            type="button"
-                            onClick={handleTriggerRouteStray}
-                            style={{ background: 'rgba(147,51,234,.18)', color: '#C084FC', border: '1px solid rgba(147,51,234,.35)' }}
-                            className="td-sim-btn"
-                        >
-                            <Zap size={14} /> Route Stray (&gt;25m)
-                        </button>
-                    </div>
-                </div>
-
-                <div className="td-kpi-grid">
-                    <KpiCard title="Tricycles on Road" value={tricycles.length} unit="Active" icon={Users} iconClass="td-kpi-icon-stone" trend="Live" />
-                    <KpiCard title="Illegal Movement" value={violations.length} unit="Violators" icon={Ban} iconClass="td-kpi-icon-rose" trend="Detecting" unitAlert={violations.length > 0} />
-                    <KpiCard title="Compliance Rate" value={`${complianceRate}%`} unit="Safe" icon={CheckCircle2} iconClass="td-kpi-icon-emerald" trend="Optimal" />
-                    <KpiCard title="Active TODA Routes" value="4" unit="Groups" icon={Navigation} iconClass="td-kpi-icon-amber" trend="Synced" />
-                </div>
-
-                <div className="td-grid">
-                    <div className="td-col-left">
-                        <div className="td-map-card">
-                            <div className="td-map-inner">
-                                <TricycleMap tricycles={tricycles} routes={{ bucana: routeD, brgy10: routeC, brgy8: routeA, brgy14: routeB }} />
-                            </div>
-                        </div>
-
-                        <div className="td-card">
-                            <div className="td-card-body">
-                                <div className="td-card-header">
-                                    <div className="td-card-icon td-card-icon-muted">
-                                        <BarChart3 size={16} strokeWidth={1.8} />
-                                    </div>
-                                    <span className="td-card-title">Peak Violation Periods</span>
-                                </div>
-                                <div className="td-chart-wrap">
-                                    <ViolationTrendChart />
-                                </div>
-                            </div>
-                        </div>
                     </div>
 
-                    <div className="td-col-right">
-                        <div className="td-card">
-                            <div className="td-card-body">
-                                <div className="td-card-header">
-                                    <div className="td-card-icon td-card-icon-dark">
-                                        <Navigation size={16} />
-                                    </div>
-                                    <span className="td-card-title">TODA Compliance</span>
+                    <div className="flex-1 rounded-2xl border border-tmo-border bg-tmo-surface p-6 shadow-sm">
+                        <div className="mb-5 flex items-center justify-between border-b border-tmo-border pb-4">
+                            <div className="flex items-center gap-2.5">
+                                <div className="flex h-[34px] w-[34px] items-center justify-center rounded-lg bg-red-50 text-red-600">
+                                    <AlertCircle size={16} />
                                 </div>
-                                <div className="td-toda-list">
-                                    {todaGroups.map(g => (
-                                        <TODARow
-                                            key={g.name}
-                                            name={g.name}
-                                            color={g.color}
-                                            count={tricycles.filter(t => (t.toda === g.name || t.todaName === g.name) && (t.status === 'violator' || t.status === 'route_violator')).length}
-                                        />
-                                    ))}
-                                </div>
+                                <span className="text-[10px] font-bold uppercase tracking-widest text-tmo-ink">Violation Feed</span>
                             </div>
+                            <Link href={route('tmo.violations')} className="flex items-center gap-0.5 text-[11px] font-bold text-tmo-primary">
+                                See All <ChevronRight size={13} />
+                            </Link>
                         </div>
-
-                        <div className="td-card" style={{ flex: 1 }}>
-                            <div className="td-card-body">
-                                <div className="td-card-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                                        <div className="td-card-icon td-card-icon-rose">
-                                            <AlertCircle size={16} />
-                                        </div>
-                                        <span className="td-card-title">Violation Feed</span>
-                                    </div>
-                                    <Link
-                                        href={route('tmo.violations')}
-                                        style={{
-                                            fontFamily: "'DM Sans', sans-serif",
-                                            fontSize: '11px',
-                                            fontWeight: 700,
-                                            color: '#4F5BCB',
-                                            textDecoration: 'none',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            gap: '2px',
-                                            letterSpacing: '.04em'
-                                        }}
-                                    >
-                                        See All <ChevronRight size={13} />
-                                    </Link>
+                        <div className="flex max-h-[360px] flex-col gap-4 overflow-y-auto">
+                            {simViolations.length > 0 ? (
+                                simViolations.slice(0, 3).map((inc, i) => (
+                                    <IncidentEntry key={i} id={inc.id} plate={inc.plate} operator={inc.operator} type={inc.type} message={inc.message} time={inc.time} />
+                                ))
+                            ) : violations.length > 0 ? (
+                                violations.slice(0, 3).map(trike => (
+                                    <IncidentEntry
+                                        key={trike.id}
+                                        id={trike.id}
+                                        plate={trike.plate}
+                                        operator={trike.operator}
+                                        type={trike.status === 'route_violator' ? 'route' : 'coding'}
+                                        message={
+                                            trike.status === 'route_violator'
+                                                ? `ROUTE VIOLATION: Unit ${trike.plate} (${trike.id}) strayed outside designated ${trike.toda} corridor (>25m buffer).`
+                                                : `CODING BREACH: Unit ${trike.plate} (${trike.id}) operating on restricted coding day (${codingInfo.restricted}).`
+                                        }
+                                        time="Live"
+                                    />
+                                ))
+                            ) : (
+                                <div className="py-10 text-center text-[9.5px] font-bold uppercase leading-loose tracking-widest text-tmo-subtle">
+                                    No Active Violations<br />Detected
                                 </div>
-                                <div className="td-feed" style={{ overflowY: 'auto', maxHeight: 360 }}>
-                                    {simViolations.length > 0 ? (
-                                        simViolations.slice(0, 3).map((inc, i) => (
-                                            <IncidentEntry
-                                                key={i}
-                                                id={inc.id}
-                                                plate={inc.plate}
-                                                operator={inc.operator}
-                                                type={inc.type}
-                                                message={inc.message}
-                                                time={inc.time}
-                                            />
-                                        ))
-                                    ) : violations.length > 0 ? (
-                                        violations.slice(0, 3).map(trike => (
-                                            <IncidentEntry
-                                                key={trike.id}
-                                                id={trike.id}
-                                                plate={trike.plate}
-                                                operator={trike.operator}
-                                                type={trike.status === 'route_violator' ? 'route' : 'coding'}
-                                                message={
-                                                    trike.status === 'route_violator'
-                                                        ? `ROUTE VIOLATION: Unit ${trike.plate} (${trike.id}) strayed outside designated ${trike.toda} corridor (>25m buffer).`
-                                                        : `CODING BREACH: Unit ${trike.plate} (${trike.id}) operating on restricted coding day (${codingInfo.restricted}).`
-                                                }
-                                                time="Live"
-                                            />
-                                        ))
-                                    ) : (
-                                        <div className="td-feed-empty">
-                                            No Active Violations<br />Detected
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -501,29 +375,26 @@ export default function Dashboard({ initialTricycles = [] }) {
     );
 }
 
-function KpiCard({ title, value, unit, icon: Icon, iconClass, trend, unitAlert }) {
-    const getTrendClass = (trendText) => {
-        const lowerTrend = trendText.toLowerCase();
-        if (lowerTrend === 'live') return 'td-kpi-trend-live';
-        if (lowerTrend === 'detecting') return 'td-kpi-trend-detecting';
-        if (lowerTrend === 'optimal') return 'td-kpi-trend-optimal';
-        if (lowerTrend === 'synced') return 'td-kpi-trend-synced';
-        return 'td-kpi-trend-live';
+function KpiCard({ title, value, unit, icon: Icon, tone, trend, trendVariant, unitAlert }) {
+    const TONES = {
+        primary: 'bg-tmo-primarySoft text-tmo-primary',
+        danger: 'bg-red-50 text-red-600',
+        success: 'bg-emerald-50 text-emerald-600',
+        warning: 'bg-amber-50 text-amber-600',
     };
-
     return (
-        <div className="td-kpi">
-            <div className="td-kpi-top">
-                <div className={`td-kpi-icon ${iconClass}`}>
+        <div className="rounded-xl border border-tmo-border bg-tmo-surface p-5">
+            <div className="mb-4 flex items-start justify-between">
+                <div className={`flex h-10 w-10 items-center justify-center rounded-lg ${TONES[tone] || TONES.primary}`}>
                     <Icon size={18} strokeWidth={2.5} />
                 </div>
-                <span className={`td-kpi-trend ${getTrendClass(trend)}`}>{trend}</span>
+                <StatusBadge variant={trendVariant}>{trend}</StatusBadge>
             </div>
-            <div className="td-kpi-val-row">
-                <span className="td-kpi-val">{value}</span>
-                <span className={`td-kpi-unit${unitAlert ? ' td-kpi-unit-alert' : ''}`}>{unit}</span>
+            <div className="mb-1 flex items-baseline gap-1.5">
+                <span className="text-[28px] font-extrabold leading-none tracking-tight text-tmo-ink">{value}</span>
+                <span className={`text-[9.5px] font-bold uppercase tracking-wide ${unitAlert ? 'text-red-600' : 'text-tmo-ink'}`}>{unit}</span>
             </div>
-            <p className="td-kpi-lbl">{title}</p>
+            <p className="text-[10px] font-bold uppercase tracking-wide text-tmo-muted">{title}</p>
         </div>
     );
 }
@@ -531,14 +402,14 @@ function KpiCard({ title, value, unit, icon: Icon, iconClass, trend, unitAlert }
 function TODARow({ name, color, count }) {
     const isAlert = count > 0;
     return (
-        <div className="td-toda-row">
-            <div className="td-toda-left">
-                <span className="td-toda-pip" style={{ background: color || '#4F5BCB', width: 10, height: 10 }} />
-                <span className="td-toda-name">{name}</span>
+        <div className="flex items-center justify-between rounded-lg border border-tmo-border bg-tmo-bg px-3.5 py-3">
+            <div className="flex items-center gap-2.5">
+                <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: color || '#4F5BCB' }} />
+                <span className="text-[10.5px] font-bold uppercase tracking-wide text-tmo-ink">{name}</span>
             </div>
-            <div className="td-toda-right">
-                <span className={isAlert ? 'td-toda-count-alert' : 'td-toda-count-ok'}>{count}</span>
-                <span className="td-toda-sub">Violations</span>
+            <div className="flex items-baseline gap-1.5">
+                <span className={`text-lg font-extrabold leading-none ${isAlert ? 'text-red-600' : 'text-tmo-ink'}`}>{count}</span>
+                <span className="text-[8.5px] font-bold uppercase tracking-wide text-tmo-subtle">Violations</span>
             </div>
         </div>
     );
@@ -549,27 +420,27 @@ function IncidentEntry({ id, plate, operator, type, message, time }) {
     const pipColor = isRoute ? '#9333EA' : '#DC2626';
 
     return (
-        <div className="td-incident">
-            <span className="td-incident-pip" style={{ background: pipColor }} />
-            <div className="td-incident-body">
-                <div className="td-incident-top">
+        <div className="flex gap-3">
+            <span className="mt-1.5 h-2 w-2 shrink-0 animate-pulse rounded-full" style={{ background: pipColor }} />
+            <div className="flex-1">
+                <div className="mb-1 flex items-start justify-between">
                     <div>
-                        <p className="td-incident-id" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <p className="mb-1 flex items-center gap-1.5 text-sm font-extrabold text-tmo-ink">
                             Plate: {plate}
-                            <span style={{
-                                fontSize: 9, fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase',
-                                padding: '2px 6px', borderRadius: 4,
-                                background: isRoute ? 'rgba(147,51,234,.12)' : 'rgba(220,38,38,.12)',
-                                color: isRoute ? '#9333EA' : '#DC2626'
-                            }}>
+                            <span
+                                className="rounded px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide"
+                                style={{ background: isRoute ? 'rgba(147,51,234,.12)' : 'rgba(220,38,38,.12)', color: pipColor }}
+                            >
                                 {isRoute ? 'Route Violation' : 'Coding Breach'}
                             </span>
                         </p>
-                        <p className="td-incident-driver">{operator} • {id}</p>
+                        <p className="text-[9px] font-bold uppercase tracking-wide text-tmo-muted">{operator} • {id}</p>
                     </div>
-                    <span className="td-incident-time">{time || 'Live'}</span>
+                    <span className="shrink-0 text-[9px] font-bold uppercase tracking-wide text-tmo-ink">{time || 'Live'}</span>
                 </div>
-                <p className="td-incident-msg" style={{ borderLeftColor: pipColor }}>{message}</p>
+                <p className="mt-1.5 border-l-2 pl-2 text-[10.5px] font-medium uppercase tracking-wide text-tmo-muted" style={{ borderColor: `${pipColor}26` }}>
+                    {message}
+                </p>
             </div>
         </div>
     );
@@ -587,15 +458,15 @@ function ViolationTrendChart() {
             <AreaChart data={data} margin={{ top: 10, right: 16, left: 0, bottom: 24 }}>
                 <defs>
                     <linearGradient id="tdAreaFill" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%"  stopColor="#4F5BCB" stopOpacity={0.12} />
-                        <stop offset="95%" stopColor="#4F5BCB" stopOpacity={0} />
+                        <stop offset="5%"  stopColor="#1D2542" stopOpacity={0.12} />
+                        <stop offset="95%" stopColor="#1D2542" stopOpacity={0} />
                     </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="4 4" vertical={false} stroke="rgba(28,35,64,.06)" />
-                <XAxis dataKey="time" axisLine={true} axisLineStyle={{ stroke: 'rgba(28,35,64,.1)', strokeWidth: 1 }} tickLine={false} tick={{ fill: '#6B7280', fontSize: 11, fontWeight: 600, fontFamily: 'Inter' }} label={{ value: 'Time', position: 'insideBottom', offset: -10, fontSize: 12, fontWeight: 700, fill: '#1C2340', fontFamily: 'DM Sans' }} />
-                <YAxis axisLine={true} axisLineStyle={{ stroke: 'rgba(28,35,64,.1)', strokeWidth: 1 }} tickLine={false} tick={{ fill: '#6B7280', fontSize: 11, fontWeight: 600, fontFamily: 'Inter' }} label={{ value: 'Violations', angle: -90, position: 'insideLeft', offset: 10, fontSize: 12, fontWeight: 700, fill: '#1C2340', fontFamily: 'DM Sans' }} />
-                <Tooltip contentStyle={{ borderRadius: 12, border: '1px solid rgba(28,35,64,.08)', boxShadow: '0 10px 24px rgba(28,35,64,.1)', fontSize: 11, fontFamily: 'Inter', }} labelStyle={{ fontWeight: 700, color: '#1C2340', marginBottom: 4 }} />
-                <Area type="monotone" dataKey="v" stroke="#4F5BCB" strokeWidth={2.5} fillOpacity={1} fill="url(#tdAreaFill)" />
+                <XAxis dataKey="time" axisLine={true} axisLineStyle={{ stroke: 'rgba(28,35,64,.1)', strokeWidth: 1 }} tickLine={false} tick={{ fill: '#6B7280', fontSize: 11, fontWeight: 600 }} label={{ value: 'Time', position: 'insideBottom', offset: -10, fontSize: 12, fontWeight: 700, fill: '#1D2542' }} />
+                <YAxis axisLine={true} axisLineStyle={{ stroke: 'rgba(28,35,64,.1)', strokeWidth: 1 }} tickLine={false} tick={{ fill: '#6B7280', fontSize: 11, fontWeight: 600 }} label={{ value: 'Violations', angle: -90, position: 'insideLeft', offset: 10, fontSize: 12, fontWeight: 700, fill: '#1D2542' }} />
+                <Tooltip contentStyle={{ borderRadius: 12, border: '1px solid rgba(28,35,64,.08)', boxShadow: '0 10px 24px rgba(28,35,64,.1)', fontSize: 11 }} labelStyle={{ fontWeight: 700, color: '#1D2542', marginBottom: 4 }} />
+                <Area type="monotone" dataKey="v" stroke="#1D2542" strokeWidth={2.5} fillOpacity={1} fill="url(#tdAreaFill)" />
             </AreaChart>
         </ResponsiveContainer>
     );
