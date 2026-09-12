@@ -60,20 +60,20 @@ export default function TrivoraLayout({ children, title, role = "TMO Personnel" 
 
     return (
         <div
-            className="flex min-h-screen bg-tmo-bg font-sans"
+            className="flex h-screen overflow-hidden bg-tmo-bg font-sans"
             style={{ opacity: isExiting ? 0 : 1, transition: 'opacity .4s' }}
         >
             {/* Mobile overlay */}
             {sidebarOpen && (
                 <div
-                    className="fixed inset-0 z-40 bg-gray-900/40 backdrop-blur-[1px] md:hidden"
+                    className="fixed inset-0 z-40 bg-gray-900/40 backdrop-blur-[1px] lg:hidden"
                     onClick={() => setSidebarOpen(false)}
                 />
             )}
 
             {/* ══════ SIDEBAR ══════════════════════════════════════ */}
             <aside
-                className={`fixed inset-y-0 left-0 z-50 flex w-[264px] flex-col bg-tmo-primary transition-transform duration-300 print:hidden md:static md:translate-x-0 ${
+                className={`fixed inset-y-0 left-0 z-50 flex w-[264px] flex-col bg-tmo-primary transition-transform duration-300 print:hidden lg:static lg:translate-x-0 ${
                     sidebarOpen ? 'translate-x-0' : '-translate-x-full'
                 }`}
             >
@@ -89,7 +89,7 @@ export default function TrivoraLayout({ children, title, role = "TMO Personnel" 
                     </Link>
                     <button
                         onClick={() => setSidebarOpen(false)}
-                        className="flex h-8 w-8 items-center justify-center rounded-lg text-white/50 hover:bg-white/10 hover:text-white md:hidden"
+                        className="flex h-8 w-8 items-center justify-center rounded-lg text-white/50 hover:bg-white/10 hover:text-white lg:hidden"
                     >
                         <X size={18} strokeWidth={2} />
                     </button>
@@ -159,12 +159,12 @@ export default function TrivoraLayout({ children, title, role = "TMO Personnel" 
                 <header className="sticky top-0 z-30 flex h-16 shrink-0 items-center justify-between border-b border-gray-200 bg-white/90 px-5 backdrop-blur-sm print:hidden sm:px-8">
 
                     <button
-                        className="flex h-9 w-9 items-center justify-center rounded-lg border border-gray-200 text-gray-500 hover:border-gray-300 hover:text-gray-800 md:hidden"
+                        className="flex h-9 w-9 items-center justify-center rounded-lg border border-gray-200 text-gray-500 hover:border-gray-300 hover:text-gray-800 lg:hidden"
                         onClick={() => setSidebarOpen(true)}
                     >
                         <Menu size={18} strokeWidth={2} />
                     </button>
-                    <div className="hidden md:block" />
+                    <div className="hidden lg:block" />
 
                     <div className="flex items-center gap-1.5">
 
