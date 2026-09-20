@@ -15,7 +15,7 @@ Comprehensive guide for deploying the complete Trivora ecosystem (Web Portal + 2
                       ┌────────────────┴────────────────┐
                       │           Render.com            │
                       │    Laravel Web Service & API    │
-                      │ (https://trivora-api.onrender.com)
+                      │ (https://trivora-mh55.onrender.com)
                       └────────▲────────────────▲───────┘
                                │                │
                   HTTPS (Web)  │                │ REST API
