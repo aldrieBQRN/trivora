@@ -36,25 +36,27 @@ const createTodaIcon = (zone) => {
     });
 };
 
-const createCustomIcon = (status, source = 'real') => {
+const createCustomIcon = (status, source = 'real', isOnline = true) => {
     let color, pulse, hasAnimation;
 
-    if (status === 'compliant') {
-        color = 'bg-emerald-500';
-        pulse = 'bg-emerald-400';
-        hasAnimation = false;
-    } else if (status === 'offline') {
+    if (!isOnline || status === 'offline') {
         color = 'bg-slate-400';
         pulse = '';
         hasAnimation = false;
-    } else if (status === 'coding_no_operation') {
-        color = 'bg-slate-400';
-        pulse = '';
-        hasAnimation = false;
-    } else {
+    } else if (status === 'violator') {
         // Coding restriction breach / violator
         color = 'bg-rose-600';
         pulse = 'bg-rose-400';
+        hasAnimation = true;
+    } else if (status === 'coding_no_operation') {
+        // Active GPS unit subject to today's coding scheme
+        color = 'bg-amber-500';
+        pulse = 'bg-amber-400';
+        hasAnimation = true;
+    } else {
+        // Compliant & active GPS unit
+        color = 'bg-emerald-500';
+        pulse = 'bg-emerald-400';
         hasAnimation = true;
     }
 
@@ -432,7 +434,7 @@ export default function TricycleMap({
                         <Marker
                             key={trike.id}
                             position={[trike.lat, trike.lng]}
-                            icon={createCustomIcon(trike.status, trike.source)}
+                            icon={createCustomIcon(trike.status, trike.source, trike.is_online)}
                             zIndexOffset={trike.status === 'violator' ? 1000 : trike.status === 'coding_no_operation' ? 500 : 0}
                             ref={(ref) => { if (ref) markerRefs.current[trike.id] = ref; }}
                             eventHandlers={{
@@ -481,10 +483,31 @@ export default function TricycleMap({
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                                             <div style={{
                                                 width: '8px', height: '8px', borderRadius: '50%',
-                                                backgroundColor: trike.status === 'compliant' ? '#10B981' : (trike.status === 'coding_no_operation' || trike.status === 'offline') ? '#94A3B8' : '#DC2626'
+                                                backgroundColor: !trike.is_online || trike.status === 'offline'
+                                                    ? '#94A3B8'
+                                                    : trike.status === 'violator'
+                                                        ? '#DC2626'
+                                                        : trike.status === 'coding_no_operation'
+                                                            ? '#F59E0B'
+                                                            : '#10B981'
                                             }}></div>
-                                            <span style={{ fontSize: '10px', fontWeight: 'bold', textTransform: 'uppercase', color: trike.status === 'violator' ? '#DC2626' : trike.status === 'compliant' ? '#059669' : '#64748B' }}>
-                                                {trike.status === 'compliant' ? 'Active · Allowed Operation' : trike.status === 'coding_no_operation' ? 'Coding - Off Duty' : trike.status === 'offline' ? 'Offline' : 'Coding Violator'}
+                                            <span style={{
+                                                fontSize: '10px', fontWeight: 'bold', textTransform: 'uppercase',
+                                                color: !trike.is_online || trike.status === 'offline'
+                                                    ? '#64748B'
+                                                    : trike.status === 'violator'
+                                                        ? '#DC2626'
+                                                        : trike.status === 'coding_no_operation'
+                                                            ? '#D97706'
+                                                            : '#059669'
+                                            }}>
+                                                {!trike.is_online || trike.status === 'offline'
+                                                    ? 'Offline'
+                                                    : trike.status === 'violator'
+                                                        ? 'Coding Violator'
+                                                        : trike.status === 'coding_no_operation'
+                                                            ? 'Restricted Today (Coding Day)'
+                                                            : 'Active · Allowed Operation'}
                                             </span>
                                         </div>
 
@@ -544,12 +567,16 @@ export default function TricycleMap({
                         <span style={{ fontSize: '10.5px', fontWeight: '600', color: '#334155' }}>Active (Operating)</span>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <div style={{ width: '9px', height: '9px', borderRadius: '50%', backgroundColor: '#F59E0B' }}></div>
+                        <span style={{ fontSize: '10.5px', fontWeight: '600', color: '#334155' }}>Restricted Today (Coding Day)</span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                         <div style={{ width: '9px', height: '9px', borderRadius: '50%', backgroundColor: '#DC2626' }}></div>
                         <span style={{ fontSize: '10.5px', fontWeight: '600', color: '#334155' }}>Coding Restriction Breach</span>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                         <div style={{ width: '9px', height: '9px', borderRadius: '50%', backgroundColor: '#94A3B8' }}></div>
-                        <span style={{ fontSize: '10.5px', fontWeight: '600', color: '#334155' }}>Offline (no recent signal)</span>
+                        <span style={{ fontSize: '10.5px', fontWeight: '600', color: '#334155' }}>Offline (No recent signal)</span>
                     </div>
                     {hasSimulated && (
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>

@@ -651,8 +651,26 @@ export default function LiveMonitoring({ initialTricycles = [], stats = {}, toda
 
                                                     <div className="mt-2 flex items-center justify-between text-[10.5px] border-t border-slate-100 pt-1.5">
                                                         <span className="flex items-center gap-1.5 font-semibold text-slate-700">
-                                                            <span className={`h-1.5 w-1.5 rounded-full ${isSimulated ? 'bg-slate-400' : isOffline ? 'bg-slate-400' : 'bg-emerald-500'}`} />
-                                                            {isSimulated ? 'Simulation' : isOffline ? 'Offline' : 'GPS Active'}
+                                                            <span className={`h-1.5 w-1.5 rounded-full ${
+                                                                isSimulated
+                                                                    ? 'bg-slate-400'
+                                                                    : isOffline
+                                                                        ? 'bg-slate-400'
+                                                                        : unit.status === 'violator'
+                                                                            ? 'bg-rose-500'
+                                                                            : unit.status === 'coding_no_operation'
+                                                                                ? 'bg-amber-500'
+                                                                                : 'bg-emerald-500'
+                                                            }`} />
+                                                            {isSimulated
+                                                                ? 'Simulation'
+                                                                : isOffline
+                                                                    ? 'Offline'
+                                                                    : unit.status === 'violator'
+                                                                        ? 'Violation'
+                                                                        : unit.status === 'coding_no_operation'
+                                                                            ? 'GPS Active · Restricted'
+                                                                            : 'GPS Active'}
                                                         </span>
                                                         <span className="text-slate-400 font-medium font-mono text-[10px]">
                                                             {lastUpdateLabel}

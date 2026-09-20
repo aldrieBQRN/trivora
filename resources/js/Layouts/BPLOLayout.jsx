@@ -4,7 +4,7 @@ import {
     Bell, Menu, Settings, LogOut,
     ChevronDown, ChevronRight,
     LayoutDashboard, FileText,
-    FolderCheck, Users, X
+    FolderCheck, Users, X, BarChart3
 } from 'lucide-react';
 
 /* ─────────────────────────────────────────────────────────────────────────
@@ -26,6 +26,7 @@ export default function BPLOLayout({ children, title, role = "BPLO Officer", bre
                 { name: 'Dashboard',            icon: LayoutDashboard, route: '/bplo-dashboard' },
                 { name: 'Releasing Queue',      icon: FileText,        route: '/bplo/releasing'  },
                 { name: 'Active Registry',      icon: FolderCheck,     route: '/bplo/registry'   },
+                { name: 'Reports & Analytics',  icon: BarChart3,       route: '/bplo/reports'    },
             ]
         },
         {
