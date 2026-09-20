@@ -156,12 +156,10 @@ export default function TodaIndex({ todas = [], filters = {}, stats = {}, next_c
 
     const handleSearchChange = (val) => {
         setSearchQuery(val);
-        setCurrentPage(1);
     };
 
     const handleStatusFilterChange = (val) => {
         setStatusFilter(val);
-        setCurrentPage(1);
     };
 
     // Open Edit Modal
@@ -415,19 +413,6 @@ export default function TodaIndex({ todas = [], filters = {}, stats = {}, next_c
                                 <option key={opt.value} value={opt.value}>{opt.label}</option>
                             ))}
                         </select>
-
-                        {/* Reset Filter Button */}
-                        {isFiltering && (
-                            <button
-                                type="button"
-                                onClick={handleClearAll}
-                                className="inline-flex h-10 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-600 shadow-2xs transition-colors hover:bg-slate-50 hover:text-slate-900"
-                                title="Reset all filters"
-                            >
-                                <RotateCcw size={13} strokeWidth={2.2} className="text-slate-400" />
-                                <span>Reset</span>
-                            </button>
-                        )}
                     </div>
                 </div>
             </div>

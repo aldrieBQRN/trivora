@@ -317,7 +317,7 @@ html { scroll-behavior: smooth; }
   gap: 28px;
 }
 .wl-steps-line {
-  position: absolute; top: 32px; left: 12%; right: 12%; height: 2px;
+  position: absolute; top: 64px; left: 12%; right: 12%; height: 2px;
   background-image: linear-gradient(to right, rgba(79,91,203,.28) 0 10px, transparent 10px 18px);
   background-size: 18px 2px;
   z-index: 0;
@@ -644,7 +644,7 @@ export default function Welcome({ overview = {} }) {
             <div className="wl-wrap">
                 <div className="wl-hero">
                     <p className={`wl-hero-badge ${FADE}`} style={delay(0)}>
-                        <ShieldCheck size={12} strokeWidth={2.4} /> Official Municipal Platform — Nasugbu, Batangas
+                        <ShieldCheck size={12} strokeWidth={2.4} /> Nasugbu, Batangas
                     </p>
                     <h1 className={`wl-hero-title ${FADE}`} style={delay(80)}>
                         Smart Tricycle<br /><span className="wl-hero-title-accent">Management System</span>

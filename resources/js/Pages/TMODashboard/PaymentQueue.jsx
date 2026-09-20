@@ -232,20 +232,14 @@ export default function PaymentQueue({
                         <input
                             type="text"
                             value={query}
-                            onChange={(e) => {
-                                setQuery(e.target.value);
-                                setCurrentPage(1);
-                            }}
+                            onChange={(e) => setQuery(e.target.value)}
                             placeholder="Search by ticket no, reference, operator, or plate…"
                             className="h-10 w-full rounded-lg border border-slate-200 bg-slate-50/50 pl-10 pr-9 text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 shadow-2xs transition-all focus:border-[#1D2542] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#1D2542]/10"
                         />
                         {query && (
                             <button
                                 type="button"
-                                onClick={() => {
-                                    setQuery('');
-                                    setCurrentPage(1);
-                                }}
+                                onClick={() => setQuery('')}
                                 className="absolute right-3 top-1/2 flex h-5 w-5 -translate-y-1/2 items-center justify-center rounded-full text-slate-400 hover:bg-slate-200 hover:text-slate-700"
                             >
                                 <X size={12} strokeWidth={2.5} />
@@ -256,28 +250,13 @@ export default function PaymentQueue({
                     <div className="flex items-center gap-2">
                         <select
                             value={statusFilter}
-                            onChange={(e) => {
-                                setStatusFilter(e.target.value);
-                                setCurrentPage(1);
-                            }}
+                            onChange={(e) => setStatusFilter(e.target.value)}
                             className="h-10 rounded-lg border border-slate-200 bg-white px-3 pr-8 text-xs font-semibold text-slate-700 shadow-2xs transition-colors focus:border-[#1D2542] focus:outline-none focus:ring-2 focus:ring-[#1D2542]/10 cursor-pointer"
                         >
                             {STATUS_OPTIONS.map((opt) => (
                                 <option key={opt.value} value={opt.value}>{opt.label}</option>
                             ))}
                         </select>
-
-                        {isFiltering && (
-                            <button
-                                type="button"
-                                onClick={handleClearAll}
-                                className="inline-flex h-10 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-600 shadow-2xs transition-colors hover:bg-slate-50 hover:text-slate-900"
-                                title="Reset all filters"
-                            >
-                                <RotateCcw size={13} strokeWidth={2.2} className="text-slate-400" />
-                                <span>Reset</span>
-                            </button>
-                        )}
                     </div>
                 </div>
             </div>

@@ -267,48 +267,39 @@ export default function ActiveRegistry({
                 3. FILTER & SEARCH DECK
                ══════════════════════════════════════════════════════════════ */}
             <div className={`mb-4 rounded-2xl border border-slate-200/70 bg-white p-3 sm:p-3.5 ${CARD_SHADOW}`}>
-                <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
+                <div className="flex flex-col lg:flex-row lg:items-center gap-2.5">
                     {/* Search bar */}
-                    <div className="relative flex-1">
+                    <div className="relative flex-1 min-w-[220px]">
                         <Search
                             size={16}
                             strokeWidth={2.2}
-                            className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"
+                            className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"
                         />
                         <input
                             type="text"
                             placeholder="Search by Coding Scheme No, Plate No, Operator, or TODA..."
                             value={query}
-                            onChange={(e) => {
-                                setQuery(e.target.value);
-                                setCurrentPage(1);
-                            }}
-                            className="w-full rounded-lg border border-slate-200 bg-slate-50/50 pl-10 pr-9 py-2 text-xs sm:text-sm text-slate-900 placeholder-slate-400 transition-colors focus:border-[#1D2542] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#1D2542]/10"
+                            onChange={(e) => setQuery(e.target.value)}
+                            className="h-10 w-full rounded-lg border border-slate-200 bg-slate-50/50 pl-10 pr-9 text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 shadow-2xs transition-all focus:border-[#1D2542] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#1D2542]/10"
                         />
                         {query && (
                             <button
                                 type="button"
-                                onClick={() => {
-                                    setQuery('');
-                                    setCurrentPage(1);
-                                }}
-                                className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded p-1 text-slate-400 hover:text-slate-600 hover:bg-slate-100 cursor-pointer transition-colors"
+                                onClick={() => setQuery('')}
+                                className="absolute right-3 top-1/2 flex h-5 w-5 -translate-y-1/2 items-center justify-center rounded-full text-slate-400 hover:bg-slate-200 hover:text-slate-700"
                             >
-                                <X size={14} />
+                                <X size={12} strokeWidth={2.5} />
                             </button>
                         )}
                     </div>
 
                     {/* Filter Dropdowns */}
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
                         {/* TODA Dropdown */}
                         <select
                             value={todaFilter}
-                            onChange={(e) => {
-                                setTodaFilter(e.target.value);
-                                setCurrentPage(1);
-                            }}
-                            className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 shadow-2xs focus:border-[#1D2542] focus:outline-none focus:ring-2 focus:ring-[#1D2542]/10"
+                            onChange={(e) => setTodaFilter(e.target.value)}
+                            className="h-10 w-full sm:w-48 rounded-lg border border-slate-200 bg-white px-3 pr-8 text-xs font-semibold text-slate-700 shadow-2xs transition-colors focus:border-[#1D2542] focus:outline-none focus:ring-2 focus:ring-[#1D2542]/10 cursor-pointer truncate"
                         >
                             <option value="all">All Associations</option>
                             {availableTodas.map((toda) => (
@@ -319,29 +310,13 @@ export default function ActiveRegistry({
                         {/* Status Dropdown */}
                         <select
                             value={statusFilter}
-                            onChange={(e) => {
-                                setStatusFilter(e.target.value);
-                                setCurrentPage(1);
-                            }}
-                            className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 shadow-2xs focus:border-[#1D2542] focus:outline-none focus:ring-2 focus:ring-[#1D2542]/10"
+                            onChange={(e) => setStatusFilter(e.target.value)}
+                            className="h-10 w-full sm:w-44 rounded-lg border border-slate-200 bg-white px-3 pr-8 text-xs font-semibold text-slate-700 shadow-2xs transition-colors focus:border-[#1D2542] focus:outline-none focus:ring-2 focus:ring-[#1D2542]/10 cursor-pointer"
                         >
                             <option value="all">All Statuses</option>
                             <option value="active">Active Only</option>
                             <option value="revoked">Revoked Only</option>
                         </select>
-
-                        {/* Reset button */}
-                        {isFiltering && (
-                            <button
-                                type="button"
-                                onClick={handleClearAll}
-                                className="inline-flex items-center gap-1.5 rounded-lg border border-dashed border-slate-300 bg-slate-50/50 px-2.5 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-colors cursor-pointer"
-                                title="Reset all filters"
-                            >
-                                <RotateCcw size={13} />
-                                <span className="hidden sm:inline">Reset</span>
-                            </button>
-                        )}
                     </div>
                 </div>
 
