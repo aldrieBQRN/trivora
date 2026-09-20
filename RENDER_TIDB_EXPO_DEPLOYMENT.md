@@ -81,30 +81,43 @@ Render runs Laravel in a dedicated Docker container with zero bot blockers, allo
 Inside `trivora/`, a `Dockerfile` and `nginx.conf` package PHP 8.3, Nginx, and Vite production builds.
 
 ### 2. Create the Web Service on Render
+
 1. Go to **[render.com](https://render.com)** and log in with your GitHub account.
 2. Click **New +** ➔ **Web Service**.
 3. Select your repository: **`aldrieBQRN/trivora`**.
-4. Settings:
-   * **Name**: `trivora-backend`
-   * **Region**: Singapore
-   * **Runtime**: Docker
-   * **Instance Type**: **Free**
-5. Add Environment Variables:
-   * `APP_NAME`: `Trivora`
-   * `APP_ENV`: `production`
-   * `APP_KEY`: `base64:/oHknj2e98oD5V+P0+pFlueofsIVolERL/SxYaIuIUs=`
-   * `APP_DEBUG`: `false`
-   * `APP_URL`: `https://trivora-backend.onrender.com`
-   * `DB_CONNECTION`: `mysql`
-   * `DB_HOST`: *(Your TiDB host)*
-   * `DB_PORT`: `4000`
-   * `DB_DATABASE`: `test` (or `trivora`)
-   * `DB_USERNAME`: *(Your TiDB username)*
-   * `DB_PASSWORD`: *(Your TiDB password)*
-   * `MYSQL_ATTR_SSL_CA`: `/etc/ssl/certs/ca-certificates.crt`
-6. Click **Create Web Service**.
-   * Render will build and deploy your app, giving you a live URL:
-   * e.g., `https://trivora-backend.onrender.com`
+4. Configure the form fields as follows:
+
+| Form Field | Exact Value to Enter / Select | Notes |
+| :--- | :--- | :--- |
+| **Name** | `trivora-backend` *(or any unique name)* | This creates your public HTTPS URL (`https://trivora-backend.onrender.com`). |
+| **Language** | **Docker** *(Change from `Node`)* | Render does not have a native PHP runtime; Docker is the official way to run Laravel on Render. |
+| **Branch** | `main` | Deploys your production branch. |
+| **Region** | **Singapore (Southeast Asia)** | Matches TiDB Singapore for minimal latency to the Philippines. |
+| **Root Directory** | *(Leave **empty** / blank)* | Do not type anything. The code is in the repository root. |
+| **Dockerfile Path** | `./Dockerfile` | Keep default (`./Dockerfile`). It points to the Dockerfile in your repo root. |
+| **Docker Build Context Directory** | *(Leave **empty** / blank or `.`)* | Defaults to the root of your repo. |
+| **Build / Start Commands** | *(Disappear automatically)* | Handled entirely by `Dockerfile` and `entrypoint.sh`. |
+| **Compute** | **Free** ($0 / month) | Free tier with 512 MB RAM. |
+
+5. **Environment Variables** (Scroll down on the same page and click **Add Environment Variable**):
+
+| Environment Variable Key | Value | Description |
+| :--- | :--- | :--- |
+| `APP_NAME` | `Trivora` | Application title |
+| `APP_ENV` | `production` | Production mode |
+| `APP_KEY` | `base64:/oHknj2e98oD5V+P0+pFlueofsIVolERL/SxYaIuIUs=` | App encryption key from local `.env` |
+| `APP_DEBUG` | `false` | Security: hide detailed stack traces |
+| `APP_URL` | `https://trivora-backend.onrender.com` | Your live Render domain |
+| `DB_CONNECTION` | `mysql` | Standard MySQL driver |
+| `DB_HOST` | `gateway01.ap-southeast-1.prod.aws.tidbcloud.com` | Your TiDB Host (from TiDB Connect modal) |
+| `DB_PORT` | `4000` | TiDB Cloud default port |
+| `DB_DATABASE` | `test` *(or `trivora`)* | Your database name in TiDB |
+| `DB_USERNAME` | `xxxxxx.root` | Your TiDB username |
+| `DB_PASSWORD` | `YOUR_TIDB_PASSWORD` | Your generated TiDB password |
+| `MYSQL_ATTR_SSL_CA` | `/etc/ssl/certs/ca-certificates.crt` | Enables required TLS/SSL on Alpine Linux |
+
+6. Click **Create Web Service** at the bottom.
+   * Render will automatically build the Docker image, run migrations, seed data, and start Nginx on port 80!
 
 ---
 
