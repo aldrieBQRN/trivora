@@ -21,7 +21,14 @@ class RegistrationController extends Controller
     // For the Public Landing Page Registration
     public function publicWizard()
     {
-        return Inertia::render('Registration/PublicApply');
+        return Inertia::render('Registration/PublicApply', [
+            // The Vehicle Specs step's TODA Assignment dropdown — real TODA Management data,
+            // not a hardcoded list, so every active TODA is selectable and store() below (which
+            // resolves by exact `name` match) always finds a real match.
+            'todaZones' => \App\Models\TodaZone::where('is_active', true)
+                ->orderBy('id')
+                ->get(['id', 'name']),
+        ]);
     }
 
     /**

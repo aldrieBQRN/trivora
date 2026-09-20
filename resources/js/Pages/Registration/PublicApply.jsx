@@ -674,7 +674,7 @@ function validateVehicleInfo(data) {
     return errors;
 }
 
-export default function PublicApply() {
+export default function PublicApply({ todaZones = [] }) {
     const { url } = usePage();
     const [step, setStep] = useState(1);
     const [agreed, setAgreed] = useState(false);
@@ -685,10 +685,16 @@ export default function PublicApply() {
     const [touched, setTouched] = useState({});
     const markTouched = (field) => setTouched(t => (t[field] ? t : { ...t, [field]: true }));
 
+    // All 42 official barangays of Nasugbu, Batangas (PSA/PSGC) — the 12 Poblacion barangays use
+    // a bare number as the submitted value (so store()'s 'Brgy. ' . $barangay concatenation reads
+    // as "Brgy. 1, Nasugbu, Batangas"), paired with a clear "Barangay N" label.
     const nasugbuBarangays = [
-        'Poblacion 1', 'Poblacion 2', 'Poblacion 3', 'Poblacion 4',
-        'Wawa', 'Papaya', 'Bucana', 'Lumbangan', 'Pantalan', 'Bilaran', 'Cogunan',
-    ];
+        ...Array.from({ length: 12 }, (_, i) => ({ value: String(i + 1), label: `Barangay ${i + 1}` })),
+        'Aga', 'Balaytigui', 'Banilad', 'Bilaran', 'Bucana', 'Bulihan', 'Bunducan', 'Butucan',
+        'Calayo', 'Catandaan', 'Cogunan', 'Dayap', 'Kaylaway', 'Kayrilaw', 'Latag', 'Looc',
+        'Lumbangan', 'Malapad na Bato', 'Mataas na Pulo', 'Maugat', 'Munting Indan', 'Natipuan',
+        'Pantalan', 'Papaya', 'Putat', 'Reparo', 'Talangan', 'Tumalim', 'Utod', 'Wawa',
+    ].map(b => (typeof b === 'string' ? { value: b, label: b } : b));
 
     const documentList = [
         { id: 'orcr',      label: 'Xerox OR/CR',                                          required: true },
@@ -1049,7 +1055,7 @@ export default function PublicApply() {
                                             onChange={e => setData('barangay', e.target.value)}
                                             onBlur={() => markTouched('barangay')}>
                                             <option value="">Select Barangay</option>
-                                            {nasugbuBarangays.map(b => <option key={b} value={b}>{b}</option>)}
+                                            {nasugbuBarangays.map(b => <option key={b.value} value={b.value}>{b.label}</option>)}
                                         </select>
                                         <MapPin size={15} strokeWidth={2} />
                                     </div>
@@ -1116,10 +1122,9 @@ export default function PublicApply() {
                                             onChange={e => setData('toda', e.target.value)}
                                             onBlur={() => markTouched('toda')}>
                                             <option value="">Select TODA Assignment</option>
-                                            <option value="TODA Bucana">TODA Bucana</option>
-                                            <option value="TODA Brgy. 10">TODA Brgy. 10</option>
-                                            <option value="TODA Brgy. 8">TODA Brgy. 8</option>
-                                            <option value="TODA Brgy. 4">TODA Brgy. 4</option>
+                                            {todaZones.map(zone => (
+                                                <option key={zone.id} value={zone.name}>{zone.name}</option>
+                                            ))}
                                         </select>
                                     </div>
                                 </Field>

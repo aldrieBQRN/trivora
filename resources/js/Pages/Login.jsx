@@ -81,6 +81,7 @@ const CSS = `
   font-size: clamp(26px, 2.6vw, 34px); font-weight: 800;
   letter-spacing: -.02em; line-height: 1.15;
   margin-top: 24px; margin-bottom: 12px;
+  color: #FFFFFF;
 }
 @media (max-width: 900px) { .ol-side-title { margin-top: 16px; } }
 .ol-side-desc {
