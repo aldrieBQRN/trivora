@@ -82,8 +82,18 @@ try {
     $kernel->call('optimize:clear');
     echo "<pre>" . htmlspecialchars(\Illuminate\Support\Facades\Artisan::output() ?: 'Caches cleared.') . "</pre><br>";
 
-    // 6. Run Migrations
+    // 6. Run Migrations (load base schema via PDO first if needed to bypass proc_open)
     echo "<strong>Step 6: Running database migrations...</strong><br>";
+    if (!\Illuminate\Support\Facades\Schema::hasTable('migrations')) {
+        $schemaFile = $corePath . '/database/schema/mysql-schema.sql';
+        if (file_exists($schemaFile)) {
+            echo "<em>Loading base schema from mysql-schema.sql via PDO (bypassing proc_open)...</em><br>";
+            $sql = file_get_contents($schemaFile);
+            \Illuminate\Support\Facades\DB::unprepared($sql);
+            echo "<span class='success'>✓ Base schema loaded successfully.</span><br>";
+        }
+    }
+
     $kernel->call('migrate', ['--force' => true]);
     $migrateOutput = \Illuminate\Support\Facades\Artisan::output();
     echo "<pre>" . htmlspecialchars($migrateOutput ?: 'Database already up to date.') . "</pre><br>";

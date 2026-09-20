@@ -441,7 +441,17 @@ Route::get('/artisan-migrate', function (\Illuminate\Http\Request $request) {
             }
         }
 
-        // 4. Migrations & Seeders
+        // 4. Base Schema loader (bypasses proc_open on shared hosting)
+        if (!\Illuminate\Support\Facades\Schema::hasTable('migrations')) {
+            $schemaFile = database_path('schema/mysql-schema.sql');
+            if (file_exists($schemaFile)) {
+                $sql = file_get_contents($schemaFile);
+                \Illuminate\Support\Facades\DB::unprepared($sql);
+                $output[] = "=== Base Schema Loaded via PDO ===\n";
+            }
+        }
+
+        // 5. Migrations & Seeders
         $seedClass = $request->query('class');
         $seedParams = ['--force' => true];
         if ($seedClass) {
