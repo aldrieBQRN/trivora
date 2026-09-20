@@ -17,11 +17,18 @@ class Passenger extends Model
         'emergency_contact',
         'rating',
         'total_rides',
+        'terms_accepted',
+        'privacy_policy_accepted',
+        'consent_accepted_at',
+        'terms_version',
     ];
 
     protected $casts = [
         'rating' => 'float',
         'total_rides' => 'integer',
+        'terms_accepted' => 'boolean',
+        'privacy_policy_accepted' => 'boolean',
+        'consent_accepted_at' => 'datetime',
     ];
 
     public function user(): BelongsTo
@@ -32,5 +39,10 @@ class Passenger extends Model
     public function bookings(): HasMany
     {
         return $this->hasMany(Booking::class);
+    }
+
+    public function savedPlaces(): HasMany
+    {
+        return $this->hasMany(SavedPlace::class);
     }
 }

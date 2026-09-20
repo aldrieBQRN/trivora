@@ -1,0 +1,73 @@
+name: Deploy Trivora to InfinityFree (Secure Split Architecture)
+
+on:
+  push:
+    branches:
+      - main
+      - tmo-panel-redesign
+  workflow_dispatch:
+
+jobs:
+  web-deploy:
+    name: Build & Deploy to InfinityFree FTP
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 1. Checkout Code
+        uses: actions/checkout@v4
+
+      - name: 2. Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          coverage: none
+          extensions: mbstring, xml, ctype, iconv, intl, pdo_mysql, bcmath, gd
+
+      - name: 3. Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: 4. Install Composer Dependencies
+        run: composer install --no-dev --optimize-autoloader --no-progress --prefer-dist
+
+      - name: 5. Install NPM Dependencies & Build Vite Assets
+        run: |
+          npm ci
+          npm run build
+
+      - name: 6. Deploy Private Core Files to htdocs/trivora-core/
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          server-dir: htdocs/trivora-core/
+          exclude: |
+            **/.git*
+            **/.git*/**
+            **/node_modules/**
+            **/vendor/**
+            **/public/**
+            **/tests/**
+            **/scratch/**
+            **/playwright*
+            **/*.md
+            .env
+            .env.*
+            *.env
+            env.txt
+            env.php
+            custom_env.php
+            .env.example
+            phpunit.xml
+
+      - name: 7. Deploy Public Assets Only to /htdocs/ (Public Web Root)
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          local-dir: public/
+          server-dir: htdocs/

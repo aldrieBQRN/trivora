@@ -245,16 +245,26 @@ class MobileAppDataSeeder extends Seeder
         // 5. Seed Historical Completed Bookings & Ratings (Past 14 Days)
         // ---------------------------------------------------------------------
         $completedScenarios = [
-            // [passenger, driver, todaZone, pickup, dropoff, fare, distance, duration, daysAgo, ratingScore, comment, tags]
+            // Today trips (0 days ago) for Pedro Ramos & others
+            [$p2, $dPedro,   $zBucana, 'Nasugbu Town Plaza', 'Bucana Public Beach', 55.00, 2.4, 8, 0, 5, 'Super polite driver! On time and safe ride.', ['Polite Driver', 'Clean Tricycle', 'Safe Driving']],
+            [$p3, $dPedro,   $zBucana, 'Barangay 8 Market', 'Nasugbu Doctors Hospital', 40.00, 1.5, 5, 0, 5, 'Very helpful driver, assisted with bags.', ['On Time', 'Helpful']],
+            [$p4, $dPedro,   $zBucana, 'Savemore Market Nasugbu', 'Coastal View Subd Gate 2', 60.00, 2.8, 9, 0, 5, 'Great route choice and smooth drive.', ['Great Route', 'Smooth Ride']],
+            
+            // Yesterday trips (1 day ago)
             [$p1, $dRicardo, $zBucana, 'Nasugbu Town Plaza', 'Bucana Beach Resort', 50.00, 2.1, 7, 1, 5, 'Very courteous driver! Smooth ride to the beach.', ['Polite Driver', 'Clean Tricycle', 'Safe Driving']],
+            [$p5, $dPedro,   $zBucana, 'San Isidro Parish', 'Wawa Port Terminal', 50.00, 2.2, 7, 1, 5, 'Arrived very quickly. Excellent driver.', ['On Time', 'Safe Driving']],
             [$p1, $dPedro,   $zBucana, 'Poblacion Commercial Center', 'Sunset View Bay', 45.00, 1.9, 6, 2, 5, 'Quick pickup and very helpful with my groceries.', ['On Time', 'Helpful']],
+
+            // Earlier trips (3-12 days ago)
             [$p2, $dJose,    $zBrgy10, 'Brgy. 10 Public Market', 'San Isidro Street', 35.00, 1.1, 4, 2, 5, 'Fast and safe driving.', ['Safe Driving', 'Smooth Ride']],
             [$p2, $dMaria,   $zBrgy4,  'Wawa Terminal', 'Poblacion Plaza', 40.00, 1.5, 5, 3, 4, 'Polite driver, clean sidecar.', ['Clean Tricycle', 'Polite Driver']],
             [$p3, $dPedro,   $zBucana, 'Municipal Hall Compound', 'Bucana Fisherman Village', 50.00, 2.2, 8, 3, 5, 'Great route choice, avoided traffic completely.', ['Great Route', 'Polite Driver']],
+            [$p4, $dPedro,   $zBucana, 'Brgy. 10 Chapel', 'Batangas State University Gate 1', 65.00, 3.2, 11, 4, 5, 'Punctual and very respectful.', ['On Time', 'Safe Driving']],
             [$p3, $dRicardo, $zBucana, 'San Isidro Parish', 'Central Terminal', 40.00, 1.4, 5, 4, 5, 'Punctual and very respectful.', ['On Time', 'Safe Driving']],
             [$p4, $dJose,    $zBrgy10, 'Brgy. 10 Market Gate 1', 'Nasugbu Doctors Hospital', 45.00, 1.7, 6, 4, 5, 'Clean tricycle and smooth acceleration.', ['Clean Tricycle', 'Smooth Ride']],
             [$p4, $dErnesto, $zBrgy8,  'Barangay 8 Hall', 'Nasugbu Integrated School', 30.00, 1.0, 4, 5, 4, 'Good ride, fair charge.', ['On Time']],
             [$p5, $dMaria,   $zBrgy4,  'Brgy. 4 Covered Court', 'Wawa Beach Front', 35.00, 1.3, 5, 5, 5, 'Exemplary service! Very polite lady driver.', ['Polite Driver', 'Clean Tricycle', 'Safe Driving']],
+            [$p2, $dPedro,   $zBucana, 'Central Bus Terminal', 'Nasugbu Public Market', 35.00, 1.2, 5, 6, 4, 'Good driver service.', ['Safe Driving']],
             [$p5, $dRicardo, $zBucana, 'BSU Nasugbu Campus', 'Poblacion Market', 45.00, 1.8, 7, 6, 5, 'Always dependable driver in Nasugbu.', ['Safe Driving', 'Great Route']],
             [$p1, $dPedro,   $zBucana, 'Bucana Elementary School', 'Town Plaza', 40.00, 1.6, 6, 7, 5, 'Smooth and pleasant commute.', ['Polite Driver']],
             [$p2, $dJose,    $zBrgy10, 'Nasugbu Hospital', 'Brgy. 10 Residence', 35.00, 1.2, 4, 8, 5, 'Very careful driver, felt very safe.', ['Safe Driving']],

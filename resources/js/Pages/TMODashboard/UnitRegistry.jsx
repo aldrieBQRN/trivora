@@ -1,20 +1,10 @@
-import React, { useState, useMemo } from 'react';
-import { Head, Link } from '@inertiajs/react';
+import React, { useState, useMemo, useEffect } from 'react';
+import { Head, Link, router } from '@inertiajs/react';
 import TrivoraLayout from '@/Layouts/TrivoraLayout';
 import {
-    Bike, Phone, Search, X, ChevronRight, ChevronLeft, Download,
-    RotateCcw, MapPin, Calendar, ShieldCheck, AlertTriangle,
-    SlidersHorizontal, CheckCircle2, FileSpreadsheet, ArrowUpRight,
-    Sparkles, Info, Shield, Layers, Hash
+    Bike, Phone, Search, X, ChevronRight, ChevronLeft,
+    MapPin, Calendar, RotateCcw, ShieldAlert, SlidersHorizontal
 } from 'lucide-react';
-
-const STATUS_FILTERS = [
-    { value: 'all', label: 'All Fleet' },
-    { value: 'active', label: 'Active' },
-    { value: 'suspended', label: 'Suspended' },
-];
-
-const CODING_DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
 
 const CODING_SCHEDULE = {
     Monday:    { color: 'Red',    hex: '#EF4444', digits: '1, 2',  bg: '#FEF2F2', border: '#FECACA' },
@@ -26,47 +16,32 @@ const CODING_SCHEDULE = {
 
 const WEEKDAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
-export default function TricycleRegistry({ initialUnits = [] }) {
-    // 25 fallback units if initialUnits is empty
-    const defaultUnits = [
-        { id: 1,  coding_scheme_number: '0142', body_no: '0142', sticker_no: '0142', plate_no: 'AAA-1234', operator: 'Ricardo Dalisay', contact: '0917 123 4567', toda: 'TODA Bucana', coding_color: 'Red', coding_hex: '#EF4444', coding_bg: 'rgba(239,68,68,.12)', coding_day: 'Monday', status: 'active' },
-        { id: 2,  coding_scheme_number: '0089', body_no: '0089', sticker_no: '0089', plate_no: 'BBB-5678', operator: 'Cardo Santos', contact: '0918 555 1234', toda: 'TODA Brgy. 10', coding_color: 'White', coding_hex: '#64748B', coding_bg: 'rgba(100,116,139,.12)', coding_day: 'Friday', status: 'active' },
-        { id: 3,  coding_scheme_number: '0301', body_no: '0301', sticker_no: '0301', plate_no: 'CCC-9012', operator: 'Juan Dela Cruz', contact: '0919 888 9999', toda: 'TODA Brgy. 8', coding_color: 'Red', coding_hex: '#EF4444', coding_bg: 'rgba(239,68,68,.12)', coding_day: 'Monday', status: 'suspended' },
-        { id: 4,  coding_scheme_number: '0012', body_no: '0012', sticker_no: '0012', plate_no: 'DDD-3456', operator: 'Maria Clara', contact: '0920 111 2222', toda: 'TODA Brgy. 4', coding_color: 'Red', coding_hex: '#EF4444', coding_bg: 'rgba(239,68,68,.12)', coding_day: 'Monday', status: 'active' },
-        { id: 5,  coding_scheme_number: '0204', body_no: '0204', sticker_no: '0204', plate_no: 'EEE-7890', operator: 'Emilio Aguinaldo', contact: '0921 333 4444', toda: 'TODA Bucana', coding_color: 'Blue', coding_hex: '#3B82F6', coding_bg: 'rgba(59,130,246,.12)', coding_day: 'Tuesday', status: 'active' },
-        { id: 6,  coding_scheme_number: '0512', body_no: '0512', sticker_no: '0512', plate_no: 'FFF-2468', operator: 'Andres Bonifacio', contact: '0922 444 5555', toda: 'TODA Brgy. 10', coding_color: 'Red', coding_hex: '#EF4444', coding_bg: 'rgba(239,68,68,.12)', coding_day: 'Monday', status: 'suspended' },
-        { id: 7,  coding_scheme_number: '0108', body_no: '0108', sticker_no: '0108', plate_no: 'GGG-1357', operator: 'Apolinario Mabini', contact: '0923 666 7777', toda: 'TODA Brgy. 8', coding_color: 'Green', coding_hex: '#10B981', coding_bg: 'rgba(16,185,129,.12)', coding_day: 'Thursday', status: 'active' },
-        { id: 8,  coding_scheme_number: '0330', body_no: '0330', sticker_no: '0330', plate_no: 'HHH-9876', operator: 'Gabriela Silang', contact: '0924 777 8888', toda: 'TODA Brgy. 4', coding_color: 'White', coding_hex: '#64748B', coding_bg: 'rgba(100,116,139,.12)', coding_day: 'Friday', status: 'active' },
-        { id: 9,  coding_scheme_number: '0415', body_no: '0415', sticker_no: '0415', plate_no: 'JJJ-5432', operator: 'Melchora Aquino', contact: '0925 888 9990', toda: 'TODA Bucana', coding_color: 'Yellow', coding_hex: '#D97706', coding_bg: 'rgba(245,158,11,.12)', coding_day: 'Wednesday', status: 'suspended' },
-        { id: 10, coding_scheme_number: '0602', body_no: '0602', sticker_no: '0602', plate_no: 'KKK-1122', operator: 'Jose Rizal', contact: '0926 999 0011', toda: 'TODA Brgy. 10', coding_color: 'Red', coding_hex: '#EF4444', coding_bg: 'rgba(239,68,68,.12)', coding_day: 'Monday', status: 'active' },
-        { id: 11, coding_scheme_number: '0711', body_no: '0711', sticker_no: '0711', plate_no: 'LLL-3344', operator: 'Antonio Luna', contact: '0927 123 9988', toda: 'TODA Brgy. 8', coding_color: 'Red', coding_hex: '#EF4444', coding_bg: 'rgba(239,68,68,.12)', coding_day: 'Monday', status: 'active' },
-        { id: 12, coding_scheme_number: '0820', body_no: '0820', sticker_no: '0820', plate_no: 'MMM-5566', operator: 'Gregorio del Pilar', contact: '0928 234 8877', toda: 'TODA Brgy. 4', coding_color: 'White', coding_hex: '#64748B', coding_bg: 'rgba(100,116,139,.12)', coding_day: 'Friday', status: 'active' },
-        { id: 13, coding_scheme_number: '0935', body_no: '0935', sticker_no: '0935', plate_no: 'NNN-7788', operator: 'Marcelo H. del Pilar', contact: '0929 345 7766', toda: 'TODA Bucana', coding_color: 'Yellow', coding_hex: '#D97706', coding_bg: 'rgba(245,158,11,.12)', coding_day: 'Wednesday', status: 'active' },
-        { id: 14, coding_scheme_number: '0150', body_no: '0150', sticker_no: '0150', plate_no: 'PPP-9900', operator: 'Mariano Gomez', contact: '0930 456 6655', toda: 'TODA Brgy. 10', coding_color: 'White', coding_hex: '#64748B', coding_bg: 'rgba(100,116,139,.12)', coding_day: 'Friday', status: 'suspended' },
-        { id: 15, coding_scheme_number: '0264', body_no: '0264', sticker_no: '0264', plate_no: 'QQQ-1230', operator: 'Jose Burgos', contact: '0931 567 5544', toda: 'TODA Brgy. 8', coding_color: 'Blue', coding_hex: '#3B82F6', coding_bg: 'rgba(59,130,246,.12)', coding_day: 'Tuesday', status: 'active' },
-        { id: 16, coding_scheme_number: '0378', body_no: '0378', sticker_no: '0378', plate_no: 'RRR-4560', operator: 'Jacinto Zamora', contact: '0932 678 4433', toda: 'TODA Brgy. 4', coding_color: 'Green', coding_hex: '#10B981', coding_bg: 'rgba(16,185,129,.12)', coding_day: 'Thursday', status: 'active' },
-        { id: 17, coding_scheme_number: '0489', body_no: '0489', sticker_no: '0489', plate_no: 'SSS-7890', operator: 'Graciano Lopez Jaena', contact: '0933 789 3322', toda: 'TODA Bucana', coding_color: 'White', coding_hex: '#64748B', coding_bg: 'rgba(100,116,139,.12)', coding_day: 'Friday', status: 'active' },
-        { id: 18, coding_scheme_number: '0590', body_no: '0590', sticker_no: '0590', plate_no: 'TTT-0123', operator: 'Juan Luna', contact: '0934 890 2211', toda: 'TODA Brgy. 10', coding_color: 'White', coding_hex: '#64748B', coding_bg: 'rgba(100,116,139,.12)', coding_day: 'Friday', status: 'suspended' },
-        { id: 19, coding_scheme_number: '0611', body_no: '0611', sticker_no: '0611', plate_no: 'VVV-3456', operator: 'Felix Hidalgo', contact: '0935 901 1100', toda: 'TODA Brgy. 8', coding_color: 'Red', coding_hex: '#EF4444', coding_bg: 'rgba(239,68,68,.12)', coding_day: 'Monday', status: 'active' },
-        { id: 20, coding_scheme_number: '0722', body_no: '0722', sticker_no: '0722', plate_no: 'WWW-6789', operator: 'Fernando Amorsolo', contact: '0936 012 2299', toda: 'TODA Brgy. 4', coding_color: 'Red', coding_hex: '#EF4444', coding_bg: 'rgba(239,68,68,.12)', coding_day: 'Monday', status: 'active' },
-        { id: 21, coding_scheme_number: '0833', body_no: '0833', sticker_no: '0833', plate_no: 'XXX-9012', operator: 'Guillermo Tolentino', contact: '0937 123 3388', toda: 'TODA Bucana', coding_color: 'Blue', coding_hex: '#3B82F6', coding_bg: 'rgba(59,130,246,.12)', coding_day: 'Tuesday', status: 'active' },
-        { id: 22, coding_scheme_number: '0944', body_no: '0944', sticker_no: '0944', plate_no: 'YYY-2345', operator: 'Vicente Manansala', contact: '0938 234 4477', toda: 'TODA Brgy. 10', coding_color: 'Blue', coding_hex: '#3B82F6', coding_bg: 'rgba(59,130,246,.12)', coding_day: 'Tuesday', status: 'suspended' },
-        { id: 23, coding_scheme_number: '0055', body_no: '0055', sticker_no: '0055', plate_no: 'ZZZ-5678', operator: 'Carlos Francisco', contact: '0939 345 5566', toda: 'TODA Brgy. 8', coding_color: 'Yellow', coding_hex: '#D97706', coding_bg: 'rgba(245,158,11,.12)', coding_day: 'Wednesday', status: 'active' },
-        { id: 24, coding_scheme_number: '0166', body_no: '0166', sticker_no: '0166', plate_no: 'ABC-8901', operator: 'Nick Joaquin', contact: '0940 456 6677', toda: 'TODA Brgy. 4', coding_color: 'Yellow', coding_hex: '#D97706', coding_bg: 'rgba(245,158,11,.12)', coding_day: 'Wednesday', status: 'active' },
-        { id: 25, coding_scheme_number: '0277', body_no: '0277', sticker_no: '0277', plate_no: 'XYZ-2346', operator: 'Jose Garcia Villa', contact: '0941 567 7788', toda: 'TODA Bucana', coding_color: 'Green', coding_hex: '#10B981', coding_bg: 'rgba(16,185,129,.12)', coding_day: 'Thursday', status: 'active' },
-    ];
+// Shared soft, layered shadow token — same elevation language used across the redesigned TMO
+// pages (Dashboard.jsx, Index.jsx) so this page reads as part of the same product.
+const CARD_SHADOW = 'shadow-[0_1px_2px_0_rgba(15,23,42,0.04),0_8px_24px_-8px_rgba(15,23,42,0.10)]';
 
-    const units = initialUnits && initialUnits.length > 0 ? initialUnits : defaultUnits;
+export default function TricycleRegistry({ initialUnits = [] }) {
+    const units = initialUnits || [];
+
+    // Silent background refresh — a newly activated/suspended tricycle from another session
+    // should appear here without a manual reload. Search/filter/pagination state below is local
+    // React state, untouched by this prop refresh.
+    useEffect(() => {
+        const { stop } = router.poll(15000, { only: ['initialUnits'] });
+        return () => stop();
+    }, []);
+
 
     // Filters state
     const [query, setQuery] = useState('');
     const [statusFilter, setStatusFilter] = useState('all');
     const [todaFilter, setTodaFilter] = useState('all');
-    const [codingDayFilter, setCodingDayFilter] = useState('all');
+    const [codingFilter, setCodingFilter] = useState('all');
+    const [onlyCodedToday, setOnlyCodedToday] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
-    const [itemsPerPage, setItemsPerPage] = useState(10);
+    const itemsPerPage = 10;
 
-    // Today's municipal context
+    // Contextual day calculation
     const todayName = useMemo(() => {
         const dayIdx = new Date().getDay();
         return WEEKDAY_NAMES[dayIdx] || 'Monday';
@@ -75,16 +50,31 @@ export default function TricycleRegistry({ initialUnits = [] }) {
     const isWeekend = todayName === 'Saturday' || todayName === 'Sunday';
     const todayCodingRule = !isWeekend ? CODING_SCHEDULE[todayName] : null;
 
-    // Dynamic TODA list
-    const todaList = useMemo(() => {
-        const set = new Set();
+    // Dynamic TODA list & counts
+    const todaOptions = useMemo(() => {
+        const map = {};
         units.forEach(u => {
-            if (u.toda) set.add(u.toda);
+            const t = u.toda || 'Unassigned';
+            map[t] = (map[t] || 0) + 1;
         });
-        return Array.from(set).sort();
+        return Object.entries(map).sort((a, b) => a[0].localeCompare(b[0]));
     }, [units]);
 
-    // Filter computation
+    // Dynamic Coding Scheme options
+    const codingOptions = useMemo(() => {
+        return Object.entries(CODING_SCHEDULE).map(([day, meta]) => {
+            const count = units.filter(u => u.coding_color === meta.color || (u.coding_day && u.coding_day.includes(day))).length;
+            return {
+                day,
+                color: meta.color,
+                hex: meta.hex,
+                digits: meta.digits,
+                count
+            };
+        });
+    }, [units]);
+
+    // Fast, immediate multi-dimensional filtering
     const filtered = useMemo(() => {
         const q = query.trim().toLowerCase();
         return units.filter(u => {
@@ -103,13 +93,17 @@ export default function TricycleRegistry({ initialUnits = [] }) {
 
             const matchesStatus = statusFilter === 'all' || u.status === statusFilter;
             const matchesToda = todaFilter === 'all' || u.toda === todaFilter;
-            const matchesCoding = codingDayFilter === 'all' || (
-                u.coding_day && u.coding_day.toLowerCase().includes(codingDayFilter.toLowerCase())
+            const matchesCoding = codingFilter === 'all' || (
+                (u.coding_color && u.coding_color.toLowerCase() === codingFilter.toLowerCase()) ||
+                (u.coding_day && u.coding_day.toLowerCase().includes(codingFilter.toLowerCase()))
+            );
+            const matchesCodedToday = !onlyCodedToday || (
+                !isWeekend && u.coding_day && u.coding_day.toLowerCase().includes(todayName.toLowerCase())
             );
 
-            return matchesQuery && matchesStatus && matchesToda && matchesCoding;
+            return matchesQuery && matchesStatus && matchesToda && matchesCoding && matchesCodedToday;
         });
-    }, [units, query, statusFilter, todaFilter, codingDayFilter]);
+    }, [units, query, statusFilter, todaFilter, codingFilter, onlyCodedToday, isWeekend, todayName]);
 
     // KPI Metrics
     const totalCount = units.length;
@@ -131,45 +125,15 @@ export default function TricycleRegistry({ initialUnits = [] }) {
     const endIndex = Math.min(startIndex + itemsPerPage, filtered.length);
     const paginated = filtered.slice(startIndex, endIndex);
 
-    const isFiltering = query.trim() !== '' || statusFilter !== 'all' || todaFilter !== 'all' || codingDayFilter !== 'all';
+    const isFiltering = query.trim() !== '' || statusFilter !== 'all' || todaFilter !== 'all' || codingFilter !== 'all' || onlyCodedToday;
 
-    const handleResetFilters = () => {
+    const handleClearAll = () => {
         setQuery('');
         setStatusFilter('all');
         setTodaFilter('all');
-        setCodingDayFilter('all');
+        setCodingFilter('all');
+        setOnlyCodedToday(false);
         setCurrentPage(1);
-    };
-
-    // Export CSV
-    const handleExport = () => {
-        const exportList = filtered.length > 0 ? filtered : units;
-        const csvHeaders = ['Tricycle ID', 'Body / Sticker No', 'Plate Number', 'Operator', 'Contact', 'TODA Zone', 'Coding Scheme Color', 'Coding Day', 'Compliance Status'];
-        const csvRows = exportList.map(u => [
-            u.unit_code || `TRV-${String(u.id).padStart(3, '0')}`,
-            u.coding_scheme_number || u.body_no || u.sticker_no,
-            u.plate_no,
-            u.operator,
-            u.contact || 'N/A',
-            u.toda,
-            u.coding_color || 'N/A',
-            u.coding_day || 'N/A',
-            u.status ? u.status.toUpperCase() : 'UNKNOWN'
-        ]);
-
-        const csvContent = [csvHeaders, ...csvRows]
-            .map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
-            .join('\n');
-
-        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.setAttribute('href', url);
-        link.setAttribute('download', `Trivora_Municipal_Tricycle_Registry_${new Date().toISOString().split('T')[0]}.csv`);
-        link.style.visibility = 'hidden';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
     };
 
     return (
@@ -177,50 +141,28 @@ export default function TricycleRegistry({ initialUnits = [] }) {
             <Head title="Active Tricycle Registry | TRIVORA" />
 
             {/* ══════════════════════════════════════════════════════════════
-                1. EXECUTIVE OPERATIONS HEADER
+                1. CLEAN HEADER (Without redundant label or tags)
                ══════════════════════════════════════════════════════════════ */}
-            <div className="mb-5 flex flex-col gap-3.5 sm:flex-row sm:items-center sm:justify-between border-b border-slate-200/80 pb-4">
+            <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-slate-200/80 pb-5">
                 <div>
                     <h1 className="text-2xl sm:text-[28px] font-extrabold tracking-tight text-slate-900 leading-tight">
                         Active Tricycle Registry
                     </h1>
-                    <p className="mt-0.5 text-xs sm:text-[13px] text-slate-500 max-w-2xl leading-relaxed">
-                        Compliance ledger of franchised tricycles and designated color coding in Nasugbu.
+                    <p className="mt-1 text-xs sm:text-sm text-slate-500 max-w-2xl leading-relaxed">
+                        Master record of all registered and operating tricycles in Nasugbu
                     </p>
-                </div>
-
-                <div className="flex items-center gap-2 self-start sm:self-center shrink-0">
-                    {isFiltering && (
-                        <button
-                            type="button"
-                            onClick={handleResetFilters}
-                            className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-600 shadow-sm transition-colors hover:bg-slate-50 hover:text-slate-900"
-                        >
-                            <RotateCcw size={13} strokeWidth={2.2} />
-                            <span>Reset View</span>
-                        </button>
-                    )}
-                    <button
-                        type="button"
-                        onClick={handleExport}
-                        className="inline-flex h-9 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3.5 text-xs font-semibold text-slate-800 shadow-sm transition-all hover:border-slate-300 hover:bg-slate-50 hover:text-slate-950 active:scale-[0.99]"
-                    >
-                        <Download size={14} strokeWidth={2.2} className="text-slate-500" />
-                        <span>Export CSV</span>
-                    </button>
                 </div>
             </div>
 
             {/* ══════════════════════════════════════════════════════════════
-                2. RESPONSIVE OPERATIONAL STAT DECK
-                   (High-density desktop, ultra-compact tablet & mobile)
+                2. COMPACT OPERATIONAL KPI DECK
                ══════════════════════════════════════════════════════════════ */}
             <div className="mb-5 grid grid-cols-1 gap-3 sm:gap-4 md:grid-cols-12">
                 {/* ─ Primary Anchor: Fleet Volume & Operational Breakdown ─ */}
-                <div className="flex flex-col justify-between rounded-xl border border-slate-200/90 bg-white p-4 sm:p-5 shadow-sm md:col-span-12 xl:col-span-6">
+                <div className={`flex flex-col justify-between rounded-2xl border border-slate-200/70 bg-white p-4 sm:p-5 ${CARD_SHADOW} md:col-span-12 xl:col-span-6`}>
                     <div className="flex items-center justify-between gap-3 pb-3 border-b border-slate-100">
                         <div className="flex items-center gap-3">
-                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-tmo-primary text-white shadow-sm">
+                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#1D2542]/[0.10] to-[#1D2542]/[0.02] text-[#1D2542]">
                                 <Bike size={20} strokeWidth={2.2} />
                             </div>
                             <div>
@@ -278,13 +220,15 @@ export default function TricycleRegistry({ initialUnits = [] }) {
                 </div>
 
                 {/* ─ Secondary Metric: Today's Color Coding Compliance ─ */}
-                <div className="flex flex-col justify-between rounded-xl border border-slate-200/90 bg-white p-4 sm:p-5 shadow-sm md:col-span-6 xl:col-span-3">
+                <div className={`flex flex-col justify-between rounded-2xl border border-slate-200/70 bg-white p-4 sm:p-5 ${CARD_SHADOW} md:col-span-6 xl:col-span-3`}>
                     <div>
                         <div className="flex items-center justify-between">
                             <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
                                 Ordinance Enforcement
                             </span>
-                            <Calendar size={14} className="text-slate-400" />
+                            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-[#1D2542]/[0.10] to-[#1D2542]/[0.02] text-[#1D2542]">
+                                <Calendar size={14} />
+                            </span>
                         </div>
 
                         <div className="mt-2 flex items-center gap-2">
@@ -308,7 +252,7 @@ export default function TricycleRegistry({ initialUnits = [] }) {
                         </p>
                     </div>
 
-                    <div className="mt-3 rounded-lg bg-slate-50 p-2 border border-slate-100 flex items-center justify-between text-xs">
+                    <div className="mt-3 rounded-xl bg-slate-50 p-2.5 flex items-center justify-between text-xs">
                         <span className="text-[11px] font-medium text-slate-500">Restricted Today:</span>
                         <span className="font-bold text-slate-900 tabular-nums">
                             {codedTodayCount} units
@@ -320,17 +264,19 @@ export default function TricycleRegistry({ initialUnits = [] }) {
                 </div>
 
                 {/* ─ Tertiary Metric: Route & TODA Coverage ─ */}
-                <div className="flex flex-col justify-between rounded-xl border border-slate-200/90 bg-white p-4 sm:p-5 shadow-sm md:col-span-6 xl:col-span-3">
+                <div className={`flex flex-col justify-between rounded-2xl border border-slate-200/70 bg-white p-4 sm:p-5 ${CARD_SHADOW} md:col-span-6 xl:col-span-3`}>
                     <div>
                         <div className="flex items-center justify-between">
                             <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
                                 Franchise Zones
                             </span>
-                            <MapPin size={14} className="text-slate-400" />
+                            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-[#1D2542]/[0.10] to-[#1D2542]/[0.02] text-[#1D2542]">
+                                <MapPin size={14} />
+                            </span>
                         </div>
                         <div className="mt-2 flex items-baseline gap-2">
                             <span className="text-2xl sm:text-3xl font-extrabold tracking-tight tabular-nums text-slate-900">
-                                {todaList.length}
+                                {todaOptions.length}
                             </span>
                             <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
                                 Active TODAs
@@ -341,7 +287,7 @@ export default function TricycleRegistry({ initialUnits = [] }) {
                         </p>
                     </div>
 
-                    <div className="mt-3 rounded-lg bg-slate-50 p-2 border border-slate-100 flex items-center justify-between text-xs">
+                    <div className="mt-3 rounded-xl bg-slate-50 p-2.5 flex items-center justify-between text-xs">
                         <span className="text-[11px] font-medium text-slate-500">LGU District:</span>
                         <span className="text-xs font-bold text-slate-800">Nasugbu Central</span>
                     </div>
@@ -349,12 +295,13 @@ export default function TricycleRegistry({ initialUnits = [] }) {
             </div>
 
             {/* ══════════════════════════════════════════════════════════════
-                3. INTEGRATED COMMAND & FILTER TOOLBAR (RESPONSIVE)
+                3. SAAS MULTI-DIMENSIONAL COMMAND & FILTER DECK
+                   (Not basic: Search + Status + TODA + Color + Coded Today)
                ══════════════════════════════════════════════════════════════ */}
-            <div className="mb-4 rounded-xl border border-slate-200/90 bg-white p-3 sm:p-3.5 shadow-sm">
-                <div className="flex flex-col gap-2.5">
-                    {/* Top Row: Search Input */}
-                    <div className="relative w-full">
+            <div className={`mb-4 rounded-2xl border border-slate-200/70 bg-white p-3 sm:p-3.5 ${CARD_SHADOW}`}>
+                <div className="flex flex-col lg:flex-row lg:items-center gap-2.5">
+                    {/* Primary Search Input */}
+                    <div className="relative flex-1 min-w-[220px]">
                         <Search
                             size={16}
                             strokeWidth={2.2}
@@ -367,8 +314,8 @@ export default function TricycleRegistry({ initialUnits = [] }) {
                                 setQuery(e.target.value);
                                 setCurrentPage(1);
                             }}
-                            placeholder="Search plate, operator, or TODA…"
-                            className="h-10 w-full rounded-lg border border-slate-200 bg-slate-50/60 pl-10 pr-9 text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 transition-all focus:border-tmo-primary focus:bg-white focus:outline-none focus:ring-2 focus:ring-tmo-primary/10"
+                            placeholder="Search by plate number, body #, operator, or TODA…"
+                            className="h-10 w-full rounded-lg border border-slate-200 bg-slate-50/50 pl-10 pr-9 text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 shadow-2xs transition-all focus:border-tmo-primary focus:bg-white focus:outline-none focus:ring-2 focus:ring-tmo-primary/10"
                         />
                         {query && (
                             <button
@@ -384,167 +331,105 @@ export default function TricycleRegistry({ initialUnits = [] }) {
                         )}
                     </div>
 
-                    {/* Bottom Row: Status Switcher & Dropdown Controls */}
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5 pt-1">
-                        {/* Status Switcher (Full width on mobile, auto on desktop) */}
-                        <div className="grid grid-cols-3 sm:inline-flex items-center rounded-lg border border-slate-200 bg-slate-100/80 p-0.5">
-                            {STATUS_FILTERS.map(opt => {
-                                const count = opt.value === 'all'
-                                    ? totalCount
-                                    : opt.value === 'active'
-                                        ? activeCount
-                                        : suspendedCount;
-                                const isSelected = statusFilter === opt.value;
-
-                                return (
-                                    <button
-                                        key={opt.value}
-                                        type="button"
-                                        onClick={() => {
-                                            setStatusFilter(opt.value);
-                                            setCurrentPage(1);
-                                        }}
-                                        className={`flex items-center justify-center gap-1.5 rounded-md px-2 sm:px-3 py-1.5 text-xs font-semibold transition-all ${
-                                            isSelected
-                                                ? 'bg-white text-slate-900 shadow-sm font-bold'
-                                                : 'text-slate-600 hover:text-slate-900'
-                                        }`}
-                                    >
-                                        <span>{opt.label}</span>
-                                        <span className={`rounded-full px-1.5 py-0.5 text-[10px] tabular-nums font-bold ${
-                                            isSelected
-                                                ? 'bg-tmo-primary text-white'
-                                                : 'bg-slate-200/80 text-slate-600'
-                                        }`}>
-                                            {count}
-                                        </span>
-                                    </button>
-                                );
-                            })}
+                    {/* Filter Controls Row / Grid */}
+                    <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2">
+                        {/* Fleet / Status Filter */}
+                        <div className="col-span-1">
+                            <select
+                                value={statusFilter}
+                                onChange={e => {
+                                    setStatusFilter(e.target.value);
+                                    setCurrentPage(1);
+                                }}
+                                className="h-10 w-full sm:w-40 rounded-lg border border-slate-200 bg-white px-3 pr-8 text-xs font-semibold text-slate-700 shadow-2xs transition-colors focus:border-tmo-primary focus:outline-none focus:ring-2 focus:ring-tmo-primary/10 cursor-pointer"
+                            >
+                                <option value="all">All Fleet — {totalCount}</option>
+                                <option value="active">Active — {activeCount}</option>
+                                <option value="suspended">Suspended — {suspendedCount}</option>
+                            </select>
                         </div>
 
-                        {/* Dropdown Filters (2 Columns on mobile, inline on desktop) */}
-                        <div className="grid grid-cols-2 sm:flex sm:items-center gap-2">
-                            {/* TODA Dropdown */}
+                        {/* TODA Zone Filter */}
+                        <div className="col-span-1">
                             <select
                                 value={todaFilter}
                                 onChange={e => {
                                     setTodaFilter(e.target.value);
                                     setCurrentPage(1);
                                 }}
-                                className="h-9 w-full sm:w-auto rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-700 shadow-sm transition-colors focus:border-tmo-primary focus:outline-none focus:ring-2 focus:ring-tmo-primary/10 truncate"
+                                className="h-10 w-full sm:w-44 rounded-lg border border-slate-200 bg-white px-3 pr-8 text-xs font-semibold text-slate-700 shadow-2xs transition-colors focus:border-tmo-primary focus:outline-none focus:ring-2 focus:ring-tmo-primary/10 cursor-pointer truncate"
                             >
-                                <option value="all">All TODAs ({todaList.length})</option>
-                                {todaList.map(toda => (
-                                    <option key={toda} value={toda}>{toda}</option>
+                                <option value="all">All TODAs ({units.length})</option>
+                                {todaOptions.map(([toda, cnt]) => (
+                                    <option key={toda} value={toda}>{toda} ({cnt})</option>
                                 ))}
                             </select>
+                        </div>
 
-                            {/* Coding Day Dropdown */}
+                        {/* Color Coding Scheme Filter */}
+                        <div className="col-span-1">
                             <select
-                                value={codingDayFilter}
+                                value={codingFilter}
                                 onChange={e => {
-                                    setCodingDayFilter(e.target.value);
+                                    setCodingFilter(e.target.value);
                                     setCurrentPage(1);
                                 }}
-                                className="h-9 w-full sm:w-auto rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-700 shadow-sm transition-colors focus:border-tmo-primary focus:outline-none focus:ring-2 focus:ring-tmo-primary/10 truncate"
+                                className="h-10 w-full sm:w-40 rounded-lg border border-slate-200 bg-white px-3 pr-8 text-xs font-semibold text-slate-700 shadow-2xs transition-colors focus:border-tmo-primary focus:outline-none focus:ring-2 focus:ring-tmo-primary/10 cursor-pointer truncate"
                             >
-                                <option value="all">All Coding Days</option>
-                                {CODING_DAYS.map(day => (
-                                    <option key={day} value={day}>{day} ({CODING_SCHEDULE[day]?.color})</option>
+                                <option value="all">All Schemes ({units.length})</option>
+                                {codingOptions.map(opt => (
+                                    <option key={opt.day} value={opt.color}>
+                                        {opt.color} — {opt.day.slice(0, 3)} ({opt.count})
+                                    </option>
                                 ))}
                             </select>
-
-                            {/* Density Rows Per Page */}
-                            <div className="hidden xl:flex items-center gap-1 pl-1 text-xs text-slate-500 font-medium">
-                                <span className="text-slate-400">Rows:</span>
-                                <select
-                                    value={itemsPerPage}
-                                    onChange={e => {
-                                        setItemsPerPage(Number(e.target.value));
-                                        setCurrentPage(1);
-                                    }}
-                                    className="h-9 rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs font-semibold text-slate-700 shadow-sm focus:outline-none"
-                                >
-                                    <option value={10}>10</option>
-                                    <option value={25}>25</option>
-                                    <option value={50}>50</option>
-                                </select>
-                            </div>
                         </div>
-                    </div>
-                </div>
 
-                {/* Sub-bar: Active Filter Chips & Match Count */}
-                <div className="mt-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1.5 border-t border-slate-100 pt-2.5 text-xs text-slate-500">
-                    <div className="flex flex-wrap items-center gap-1.5">
-                        <span className="font-bold text-slate-800">
-                            {filtered.length} {filtered.length === 1 ? 'unit' : 'units'}
-                        </span>
-                        <span>matching criteria</span>
-                        {isFiltering && (
-                            <>
-                                <span className="text-slate-300 font-bold">·</span>
-                                {query && (
-                                    <span className="inline-flex items-center gap-1 rounded bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-800">
-                                        "{query}"
-                                        <button onClick={() => setQuery('')} className="hover:text-rose-600"><X size={10} /></button>
-                                    </span>
-                                )}
-                                {statusFilter !== 'all' && (
-                                    <span className="inline-flex items-center gap-1 rounded bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-800 capitalize">
-                                        {statusFilter}
-                                        <button onClick={() => setStatusFilter('all')} className="hover:text-rose-600"><X size={10} /></button>
-                                    </span>
-                                )}
-                                {todaFilter !== 'all' && (
-                                    <span className="inline-flex items-center gap-1 rounded bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-800">
-                                        {todaFilter}
-                                        <button onClick={() => setTodaFilter('all')} className="hover:text-rose-600"><X size={10} /></button>
-                                    </span>
-                                )}
-                                {codingDayFilter !== 'all' && (
-                                    <span className="inline-flex items-center gap-1 rounded bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-800">
-                                        {codingDayFilter}
-                                        <button onClick={() => setCodingDayFilter('all')} className="hover:text-rose-600"><X size={10} /></button>
-                                    </span>
-                                )}
-                                <button
-                                    onClick={handleResetFilters}
-                                    className="ml-1 text-[11px] font-bold text-tmo-primary hover:underline"
-                                >
-                                    Reset
-                                </button>
-                            </>
-                        )}
-                    </div>
-
-                    <div className="text-[11px] text-slate-400 tabular-nums self-end sm:self-center">
-                        Showing {filtered.length > 0 ? startIndex + 1 : 0}–{endIndex} of {filtered.length} units
+                        {/* Quick Enforcement Filter: Coded Today */}
+                        <div className="col-span-1">
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setOnlyCodedToday(prev => !prev);
+                                    setCurrentPage(1);
+                                }}
+                                className={`inline-flex h-10 w-full sm:w-auto items-center justify-center gap-1.5 rounded-lg border px-3 text-xs font-semibold shadow-2xs transition-all cursor-pointer ${
+                                    onlyCodedToday
+                                        ? 'border-rose-300 bg-rose-50 text-rose-800 ring-2 ring-rose-500/20 font-bold'
+                                        : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50'
+                                }`}
+                            >
+                                <ShieldAlert size={14} className={onlyCodedToday ? 'text-rose-600' : 'text-slate-400'} />
+                                <span>Coded Today</span>
+                                <span className={`rounded-full px-1.5 py-0.2 text-[10px] tabular-nums font-bold ${
+                                    onlyCodedToday ? 'bg-rose-600 text-white' : 'bg-slate-100 text-slate-600'
+                                }`}>
+                                    {codedTodayCount}
+                                </span>
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
 
             {/* ══════════════════════════════════════════════════════════════
-                4. DATA DISPLAY: DESKTOP/TABLET TABLE + MOBILE CARD SYSTEM
+                4. DATA DISPLAY: TABLE WITH INTEGRATED FOOTER PAGINATION
                ══════════════════════════════════════════════════════════════ */}
             {filtered.length === 0 ? (
-                <div className="rounded-xl border border-slate-200/90 bg-white p-10 text-center shadow-sm">
+                <div className={`rounded-2xl border border-slate-200/70 bg-white p-12 text-center ${CARD_SHADOW}`}>
                     <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 text-slate-400">
                         <Bike size={24} strokeWidth={1.8} />
                     </div>
                     <h3 className="mt-3.5 text-base font-bold text-slate-900">
-                        {isFiltering ? 'No matching tricycles found' : 'Registry is currently empty'}
+                        No matching tricycles found
                     </h3>
                     <p className="mx-auto mt-1 max-w-sm text-xs text-slate-500 leading-relaxed">
-                        {isFiltering
-                            ? 'No records match your selected search or filters. Try adjusting your query or resetting all filters.'
-                            : 'No tricycle records are currently registered in the database.'}
+                        No tricycle records match your selected filter criteria. Try adjusting or clearing filters.
                     </p>
                     {isFiltering && (
                         <button
                             type="button"
-                            onClick={handleResetFilters}
+                            onClick={handleClearAll}
                             className="mt-4 inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3.5 py-1.5 text-xs font-semibold text-slate-800 shadow-sm hover:bg-slate-50"
                         >
                             <RotateCcw size={12} strokeWidth={2.2} />
@@ -554,8 +439,8 @@ export default function TricycleRegistry({ initialUnits = [] }) {
                 </div>
             ) : (
                 <>
-                    {/* ── DESKTOP & TABLET DATA TABLE (md: 768px and up) ── */}
-                    <div className="hidden xl:block overflow-hidden rounded-xl border border-slate-200/90 bg-white shadow-sm">
+                    {/* ── DESKTOP & TABLET DATA TABLE WITH INTEGRATED FOOTER (md: 768px and up) ── */}
+                    <div className={`hidden md:block overflow-hidden rounded-2xl border border-slate-200/70 bg-white ${CARD_SHADOW}`}>
                         <div className="overflow-x-auto">
                             <table className="w-full text-left border-collapse">
                                 <thead>
@@ -592,10 +477,74 @@ export default function TricycleRegistry({ initialUnits = [] }) {
                                 </tbody>
                             </table>
                         </div>
+
+                        {/* Integrated Table Footer: Pagination Visually Connected */}
+                        <div className="flex items-center justify-between border-t border-slate-200/80 bg-slate-50/60 px-5 py-3">
+                            <p className="text-xs text-slate-500">
+                                Page <span className="font-bold text-slate-800 tabular-nums">{activePage}</span> of{' '}
+                                <span className="font-bold text-slate-800 tabular-nums">{totalPages}</span>
+                                <span className="mx-2 text-slate-300">·</span>
+                                <span className="tabular-nums font-semibold text-slate-700">{filtered.length}</span> units
+                            </p>
+
+                            <div className="flex items-center gap-1.5">
+                                <button
+                                    type="button"
+                                    disabled={activePage <= 1}
+                                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                                    className="inline-flex h-8 items-center gap-1 rounded-md border border-slate-200 bg-white px-2.5 text-xs font-semibold text-slate-700 shadow-sm transition-colors hover:bg-slate-50 disabled:pointer-events-none disabled:opacity-40"
+                                >
+                                    <ChevronLeft size={13} strokeWidth={2.5} />
+                                    <span>Prev</span>
+                                </button>
+
+                                <div className="flex items-center gap-1">
+                                    {Array.from({ length: totalPages }, (_, i) => i + 1)
+                                        .filter(p => {
+                                            if (totalPages <= 5) return true;
+                                            if (p === 1 || p === totalPages) return true;
+                                            return Math.abs(p - activePage) <= 1;
+                                        })
+                                        .map((p, idx, arr) => {
+                                            const prev = arr[idx - 1];
+                                            const hasGap = prev && p - prev > 1;
+
+                                            return (
+                                                <React.Fragment key={p}>
+                                                    {hasGap && (
+                                                        <span className="px-0.5 text-xs text-slate-400">…</span>
+                                                    )}
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setCurrentPage(p)}
+                                                        className={`flex h-8 w-8 items-center justify-center rounded-md text-xs font-bold transition-all ${
+                                                            activePage === p
+                                                                ? 'bg-tmo-primary text-white shadow-sm'
+                                                                : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
+                                                        }`}
+                                                    >
+                                                        {p}
+                                                    </button>
+                                                </React.Fragment>
+                                            );
+                                        })}
+                                </div>
+
+                                <button
+                                    type="button"
+                                    disabled={activePage >= totalPages}
+                                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                                    className="inline-flex h-8 items-center gap-1 rounded-md border border-slate-200 bg-white px-2.5 text-xs font-semibold text-slate-700 shadow-sm transition-colors hover:bg-slate-50 disabled:pointer-events-none disabled:opacity-40"
+                                >
+                                    <span>Next</span>
+                                    <ChevronRight size={13} strokeWidth={2.5} />
+                                </button>
+                            </div>
+                        </div>
                     </div>
 
                     {/* ── MOBILE PURPOSE-BUILT CARDS (< md: 768px) ── */}
-                    <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 xl:hidden">
+                    <div className="flex flex-col gap-2.5 md:hidden">
                         {paginated.map(unit => (
                             <MobileUnitCard
                                 key={unit.id}
@@ -604,72 +553,34 @@ export default function TricycleRegistry({ initialUnits = [] }) {
                                 isWeekend={isWeekend}
                             />
                         ))}
-                    </div>
 
-                    {/* ── PAGINATION CONTROLS ── */}
-                    <div className="mt-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 rounded-xl border border-slate-200/90 bg-white px-4 py-3 shadow-sm">
-                        <div className="flex items-center gap-1.5 text-xs text-slate-500">
-                            <span>Page</span>
-                            <span className="font-bold text-slate-800 tabular-nums">{activePage}</span>
-                            <span>of</span>
-                            <span className="font-bold text-slate-800 tabular-nums">{totalPages}</span>
-                            <span className="text-slate-300 font-bold">·</span>
-                            <span className="tabular-nums">({filtered.length} units total)</span>
-                        </div>
+                        {/* Mobile Pagination Connected at Bottom of List */}
+                        <div className={`mt-1 flex items-center justify-between rounded-2xl border border-slate-200/70 bg-white px-4 py-3 ${CARD_SHADOW}`}>
+                            <p className="text-xs text-slate-500">
+                                <span className="font-bold text-slate-800">{activePage}</span> of {totalPages}
+                                <span className="ml-1 text-[11px] text-slate-400">({filtered.length} units)</span>
+                            </p>
 
-                        <div className="flex items-center gap-1.5 self-center sm:self-auto">
-                            <button
-                                type="button"
-                                disabled={activePage <= 1}
-                                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                                className="inline-flex h-8 items-center gap-1 rounded-md border border-slate-200 bg-white px-2.5 text-xs font-semibold text-slate-700 shadow-sm transition-colors hover:bg-slate-50 disabled:pointer-events-none disabled:opacity-40"
-                            >
-                                <ChevronLeft size={13} strokeWidth={2.5} />
-                                <span>Prev</span>
-                            </button>
-
-                            {/* Numeric page pills */}
-                            <div className="flex items-center gap-1">
-                                {Array.from({ length: totalPages }, (_, i) => i + 1)
-                                    .filter(p => {
-                                        if (totalPages <= 5) return true;
-                                        if (p === 1 || p === totalPages) return true;
-                                        return Math.abs(p - activePage) <= 1;
-                                    })
-                                    .map((p, idx, arr) => {
-                                        const prev = arr[idx - 1];
-                                        const hasGap = prev && p - prev > 1;
-
-                                        return (
-                                            <React.Fragment key={p}>
-                                                {hasGap && (
-                                                    <span className="px-0.5 text-xs text-slate-400">…</span>
-                                                )}
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setCurrentPage(p)}
-                                                    className={`flex h-8 w-8 items-center justify-center rounded-md text-xs font-bold transition-all ${
-                                                        activePage === p
-                                                            ? 'bg-tmo-primary text-white shadow-sm'
-                                                            : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
-                                                    }`}
-                                                >
-                                                    {p}
-                                                </button>
-                                            </React.Fragment>
-                                        );
-                                    })}
+                            <div className="flex items-center gap-1.5">
+                                <button
+                                    type="button"
+                                    disabled={activePage <= 1}
+                                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                                    className="inline-flex h-8 items-center gap-1 rounded-md border border-slate-200 bg-white px-2.5 text-xs font-semibold text-slate-700 shadow-sm disabled:pointer-events-none disabled:opacity-40"
+                                >
+                                    <ChevronLeft size={13} strokeWidth={2.5} />
+                                    <span>Prev</span>
+                                </button>
+                                <button
+                                    type="button"
+                                    disabled={activePage >= totalPages}
+                                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                                    className="inline-flex h-8 items-center gap-1 rounded-md border border-slate-200 bg-white px-2.5 text-xs font-semibold text-slate-700 shadow-sm disabled:pointer-events-none disabled:opacity-40"
+                                >
+                                    <span>Next</span>
+                                    <ChevronRight size={13} strokeWidth={2.5} />
+                                </button>
                             </div>
-
-                            <button
-                                type="button"
-                                disabled={activePage >= totalPages}
-                                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                                className="inline-flex h-8 items-center gap-1 rounded-md border border-slate-200 bg-white px-2.5 text-xs font-semibold text-slate-700 shadow-sm transition-colors hover:bg-slate-50 disabled:pointer-events-none disabled:opacity-40"
-                            >
-                                <span>Next</span>
-                                <ChevronRight size={13} strokeWidth={2.5} />
-                            </button>
                         </div>
                     </div>
                 </>
@@ -693,13 +604,12 @@ function StatusPill({ status }) {
     const isActive = status === 'active';
     return (
         <span
-            className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold shadow-sm transition-colors ${
+            className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold shadow-2xs transition-colors ${
                 isActive
                     ? 'border border-emerald-200/90 bg-emerald-50 text-emerald-700'
                     : 'border border-amber-200/90 bg-amber-50 text-amber-800'
             }`}
         >
-            <span className={`h-1.5 w-1.5 rounded-full ${isActive ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'}`} />
             {isActive ? 'Active' : 'Suspended'}
         </span>
     );
@@ -713,30 +623,22 @@ function DesktopTableRow({ unit, todayName, isWeekend }) {
 
     return (
         <tr className="group transition-colors hover:bg-slate-50/80">
-            {/* Column 1: Tricycle Unit Credentials */}
-            <td className="py-3 pl-5 pr-3 align-middle">
-                <div className="flex items-center gap-2.5">
-                    {/* Official License Plate */}
-                    <div className="inline-flex items-center rounded-md border border-slate-300/80 bg-slate-100/90 px-2 py-0.5 font-mono text-xs font-bold tracking-wider text-slate-900 shadow-sm">
+            {/* Column 1: Tricycle Unit Plate & ID */}
+            <td className="py-3.5 pl-5 pr-3 align-middle">
+                <div className="flex flex-col">
+                    <span className="font-mono text-xs sm:text-[13px] font-bold tracking-wide text-slate-900">
                         {unit.plate_no}
-                    </div>
-
-                    {/* Body Number & Unit Code */}
-                    <div className="flex flex-col">
-                        <span className="font-mono text-xs font-extrabold text-slate-800">
-                            #{bodyNumber}
-                        </span>
-                        <span className="font-mono text-[10px] text-slate-400">
-                            {unitCode}
-                        </span>
-                    </div>
+                    </span>
+                    <span className="mt-0.5 font-mono text-[11px] text-slate-400">
+                        {unitCode}
+                    </span>
                 </div>
             </td>
 
             {/* Column 2: Operator & Contact */}
-            <td className="py-3 px-4 align-middle">
+            <td className="py-3.5 px-4 align-middle">
                 <div className="flex items-center gap-2.5">
-                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-100 border border-slate-200/70 text-[11px] font-bold text-slate-700">
+                    <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-100 text-[11px] font-bold text-slate-700">
                         {initials}
                     </div>
                     <div className="min-w-0">
@@ -752,60 +654,65 @@ function DesktopTableRow({ unit, todayName, isWeekend }) {
                                 {unit.contact}
                             </a>
                         ) : (
-                            <span className="text-[11px] text-slate-400">No contact provided</span>
+                            <span className="text-[11px] text-slate-400">No contact</span>
                         )}
                     </div>
                 </div>
             </td>
 
-            {/* Column 3: TODA Franchise Route */}
-            <td className="py-3 px-4 align-middle">
-                <span
-                    className={`inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs font-semibold ${
-                        unit.toda === 'Unassigned'
-                            ? 'border border-amber-200/70 bg-amber-50 text-amber-700'
-                            : 'border border-slate-200 bg-slate-50 text-slate-700'
-                    }`}
-                >
-                    <MapPin size={11} className={unit.toda === 'Unassigned' ? 'text-amber-500' : 'text-slate-400'} />
-                    {unit.toda}
-                </span>
-            </td>
-
-            {/* Column 4: Color Coding Scheme */}
-            <td className="py-3 px-4 align-middle">
-                <div className="flex items-center gap-1.5 flex-wrap">
-                    <div className="flex items-center gap-1.5 text-xs font-medium text-slate-700">
-                        <span
-                            className="h-2.5 w-2.5 shrink-0 rounded-full ring-1 ring-black/10"
-                            style={{ backgroundColor: unit.coding_hex || '#4F5BCB' }}
-                        />
-                        <span className="font-semibold text-slate-900">{unit.coding_color}</span>
-                        <span className="text-slate-400">·</span>
-                        <span className="text-slate-600">{unit.coding_day}</span>
-                    </div>
-
-                    {isCodedToday && (
-                        <span className="inline-flex items-center rounded bg-rose-50 border border-rose-200/80 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-rose-700">
-                            Coded Today
-                        </span>
-                    )}
+            {/* Column 3: TODA Franchise Route (Clean typography, no box) */}
+            <td className="py-3.5 px-4 align-middle">
+                <div className="flex items-center gap-1.5 text-xs">
+                    <MapPin size={12} className={unit.toda === 'Unassigned' ? 'text-amber-500 shrink-0' : 'text-slate-400 shrink-0'} />
+                    <span className={unit.toda === 'Unassigned' ? 'text-amber-700 font-medium' : 'text-slate-700 font-medium'}>
+                        {unit.toda}
+                    </span>
                 </div>
             </td>
 
-            {/* Column 5: Compliance Status */}
-            <td className="py-3 px-4 align-middle">
+            {/* Column 4: Color Coding Scheme & Number */}
+            <td className="py-3.5 px-4 align-middle">
+                <div className="flex flex-col">
+                    <div className="flex items-center gap-2">
+                        <span className="font-mono text-xs sm:text-[13px] font-bold text-slate-900">
+                            #{bodyNumber}
+                        </span>
+                        <span className="text-slate-300 text-xs">·</span>
+                        <div className="inline-flex items-center gap-1.5 text-xs text-slate-800">
+                            <span
+                                className="h-2 w-2 shrink-0 rounded-full ring-1 ring-black/10"
+                                style={{ backgroundColor: unit.coding_hex || '#64748B' }}
+                            />
+                            <span className="font-semibold text-slate-900">{unit.coding_color}</span>
+                        </div>
+
+                        {isCodedToday && (
+                            <span className="inline-flex items-center rounded bg-rose-50 border border-rose-200/80 px-1.5 py-0.2 text-[10px] font-bold uppercase tracking-wider text-rose-700">
+                                Coded
+                            </span>
+                        )}
+                    </div>
+
+                    {/* Restricted Day label directly under #0142 · Red */}
+                    <span className="mt-0.5 text-[11px] text-slate-400">
+                        Restricted: <span className="font-medium text-slate-600">{unit.coding_day}</span>
+                    </span>
+                </div>
+            </td>
+
+            {/* Column 5: Compliance Status (Badge like before) */}
+            <td className="py-3.5 px-4 align-middle">
                 <StatusPill status={unit.status} />
             </td>
 
-            {/* Column 6: Actions */}
-            <td className="py-3 pl-3 pr-5 text-right align-middle">
+            {/* Column 6: Actions (Styled button in #1D2542 with rounded-full pill radius) */}
+            <td className="py-3.5 pl-3 pr-5 text-right align-middle">
                 <Link
                     href={route('tricycle.details', unit.id)}
-                    className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 shadow-sm transition-all hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900 group-hover:border-slate-300"
+                    className="inline-flex items-center gap-1 rounded-full bg-[#1D2542] hover:bg-[#283256] text-white px-3.5 py-1.5 text-xs font-semibold shadow-2xs transition-all active:scale-[0.98]"
                 >
                     <span>Profile</span>
-                    <ChevronRight size={13} strokeWidth={2.5} className="text-slate-400 transition-transform group-hover:translate-x-0.5 group-hover:text-slate-700" />
+                    <ChevronRight size={13} strokeWidth={2.5} className="text-slate-300" />
                 </Link>
             </td>
         </tr>
@@ -819,15 +726,14 @@ function MobileUnitCard({ unit, todayName, isWeekend }) {
     const initials = getInitials(unit.operator);
 
     return (
-        <div className="rounded-xl border border-slate-200/90 bg-white p-3.5 shadow-sm transition-all hover:border-slate-300">
-            {/* Top Row: Vehicle Credentials & Status */}
-            <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-2.5">
-                <div className="flex items-center gap-2">
-                    <div className="inline-flex items-center rounded-md border border-slate-300/80 bg-slate-100 px-2 py-0.5 font-mono text-xs font-bold tracking-wider text-slate-900 shadow-sm">
+        <div className={`rounded-2xl border border-slate-200/70 bg-white p-3.5 ${CARD_SHADOW} transition-all hover:border-slate-300`}>
+            {/* Top Row: Vehicle Plate & Status */}
+            <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-2">
+                <div className="flex items-baseline gap-2">
+                    <span className="font-mono text-sm font-bold tracking-wide text-slate-900">
                         {unit.plate_no}
-                    </div>
-                    <span className="font-mono text-xs font-extrabold text-slate-800">#{bodyNumber}</span>
-                    <span className="font-mono text-[10px] text-slate-400">({unitCode})</span>
+                    </span>
+                    <span className="font-mono text-xs text-slate-400">({unitCode})</span>
                 </div>
 
                 <StatusPill status={unit.status} />
@@ -835,20 +741,17 @@ function MobileUnitCard({ unit, todayName, isWeekend }) {
 
             {/* Operator Information */}
             <div className="mt-2.5 flex items-center justify-between gap-2">
-                <div className="flex items-center gap-2.5 min-w-0">
-                    <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-100 border border-slate-200 text-[10px] font-bold text-slate-700">
+                <div className="flex items-center gap-2 min-w-0">
+                    <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-slate-100 text-[10px] font-bold text-slate-700">
                         {initials}
                     </div>
-                    <div className="min-w-0">
-                        <p className="truncate text-xs font-bold text-slate-900">{unit.operator}</p>
-                        <p className="text-[10px] text-slate-400">Franchise Operator</p>
-                    </div>
+                    <p className="truncate text-xs font-semibold text-slate-900">{unit.operator}</p>
                 </div>
 
                 {unit.contact && unit.contact !== 'N/A' && (
                     <a
                         href={`tel:${unit.contact}`}
-                        className="inline-flex shrink-0 items-center gap-1 rounded-md border border-slate-200 bg-slate-50 px-2 py-1 text-[11px] font-semibold text-slate-700 shadow-sm hover:bg-slate-100"
+                        className="inline-flex shrink-0 items-center gap-1 text-[11px] font-medium text-slate-500 hover:text-slate-800"
                     >
                         <Phone size={10} strokeWidth={2.2} className="text-slate-400" />
                         <span>{unit.contact}</span>
@@ -856,42 +759,44 @@ function MobileUnitCard({ unit, todayName, isWeekend }) {
                 )}
             </div>
 
-            {/* Route & Color Coding Metadata Badges */}
-            <div className="mt-2.5 flex flex-wrap items-center justify-between gap-1.5 border-t border-slate-100 pt-2.5 text-xs">
-                <span
-                    className={`inline-flex items-center gap-1 rounded px-2 py-0.5 text-[11px] font-semibold ${
-                        unit.toda === 'Unassigned'
-                            ? 'bg-amber-50 text-amber-700 border border-amber-200/70'
-                            : 'bg-slate-100 text-slate-700'
-                    }`}
-                >
-                    <MapPin size={10} className={unit.toda === 'Unassigned' ? 'text-amber-500' : 'text-slate-400'} />
-                    <span className="truncate">{unit.toda}</span>
-                </span>
+            {/* Route & Color Coding Metadata */}
+            <div className="mt-2.5 flex items-center justify-between gap-2 border-t border-slate-100 pt-2 text-xs">
+                <div className="flex items-center gap-1 text-[11px] truncate">
+                    <MapPin size={11} className={unit.toda === 'Unassigned' ? 'text-amber-500 shrink-0' : 'text-slate-400 shrink-0'} />
+                    <span className={`truncate ${unit.toda === 'Unassigned' ? 'text-amber-700 font-medium' : 'text-slate-600 font-medium'}`}>
+                        {unit.toda}
+                    </span>
+                </div>
 
-                <div className="flex items-center gap-1.5">
-                    <span
-                        className="h-2 w-2 rounded-full shrink-0"
-                        style={{ backgroundColor: unit.coding_hex || '#4F5BCB' }}
-                    />
-                    <span className="text-[11px] font-bold text-slate-800">{unit.coding_color}</span>
-                    <span className="text-slate-400 text-[10px]">({unit.coding_day.slice(0, 3)})</span>
-                    {isCodedToday && (
-                        <span className="rounded bg-rose-50 border border-rose-200 px-1 text-[9px] font-bold uppercase text-rose-700">
-                            Coded
-                        </span>
-                    )}
+                <div className="flex flex-col items-end shrink-0">
+                    <div className="flex items-center gap-1.5 text-[11px]">
+                        <span className="font-mono font-bold text-slate-900">#{bodyNumber}</span>
+                        <span className="text-slate-300">·</span>
+                        <span
+                            className="h-2 w-2 rounded-full shrink-0 ring-1 ring-black/10"
+                            style={{ backgroundColor: unit.coding_hex || '#64748B' }}
+                        />
+                        <span className="font-semibold text-slate-900">{unit.coding_color}</span>
+                        {isCodedToday && (
+                            <span className="rounded bg-rose-50 border border-rose-200/80 px-1 py-0.2 text-[9px] font-bold uppercase text-rose-700">
+                                Coded
+                            </span>
+                        )}
+                    </div>
+                    <span className="text-[10px] text-slate-400">
+                        Restricted: <span className="font-medium text-slate-600">{unit.coding_day}</span>
+                    </span>
                 </div>
             </div>
 
-            {/* Action Button */}
+            {/* Action Button: #1D2542 with rounded-full radius */}
             <div className="mt-2.5 pt-2 border-t border-slate-100">
                 <Link
                     href={route('tricycle.details', unit.id)}
-                    className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 py-1.5 text-xs font-bold text-slate-800 shadow-sm transition-colors hover:bg-slate-100 active:bg-slate-200"
+                    className="flex w-full items-center justify-center gap-1.5 rounded-full bg-[#1D2542] hover:bg-[#283256] text-white py-2 text-xs font-bold shadow-2xs transition-all active:scale-[0.98]"
                 >
                     <span>View Profile</span>
-                    <ChevronRight size={13} strokeWidth={2.5} className="text-slate-400" />
+                    <ChevronRight size={13} strokeWidth={2.5} className="text-slate-300" />
                 </Link>
             </div>
         </div>

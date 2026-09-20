@@ -1,504 +1,619 @@
-import React, { useState } from 'react';
-import { Head, Link } from '@inertiajs/react';
+import React, { useState, useMemo, useEffect } from 'react';
+import { Head, Link, router } from '@inertiajs/react';
 import BPLOLayout from '@/Layouts/BPLOLayout';
 import {
-    Search, Award, ChevronRight, Bike,
-    Hash, Filter, CheckCircle2, Inbox, Info, X
+    Search, Award, ChevronRight, ChevronLeft, Bike,
+    Hash, CheckCircle2, Inbox, Info, X, RotateCcw,
+    FolderCheck, MapPin, Receipt, TrendingUp
 } from 'lucide-react';
 
-/* ─────────────────────────────────────────────────────────────────────────
-   Civic Prestige — ReleasingQueue page
-   Matches BPLOLayout's slate-indigo system (TMO color palette)
-───────────────────────────────────────────────────────────────────────── */
-const CSS = `
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600;700&family=DM+Sans:wght@500;600;700&display=swap');
+// Shared soft, layered shadow token — same elevation language used across the redesigned TMO
+// panel pages, so BPLO cards read as part of the same product.
+const CARD_SHADOW = 'shadow-[0_1px_2px_0_rgba(15,23,42,0.04),0_8px_24px_-8px_rgba(15,23,42,0.10)]';
 
-/* ── Page-level tokens (mirror layout) ─────────────────────────────── */
-.rq-root {
-  font-family: 'Inter', sans-serif;
-  color: #1C2340;
-  padding-bottom: 48px;
-}
-.rq-root *, .rq-root *::before, .rq-root *::after { box-sizing: border-box; }
+const ITEMS_PER_PAGE = 10;
 
-/* ── Page heading ───────────────────────────────────────────────────── */
-.rq-eyebrow {
-  font-family: 'DM Sans', sans-serif;
-  font-size: 9.5px; font-weight: 700;
-  letter-spacing: .18em; text-transform: uppercase;
-  color: #4F5BCB;
-  display: flex; align-items: center; gap: 8px;
-  margin-bottom: 6px;
-}
-.rq-eyebrow::before {
-  content: '';
-  width: 18px; height: 1.5px;
-  background: #4F5BCB; border-radius: 2px;
-}
-.rq-title {
-  font-family: 'Plus Jakarta Sans', sans-serif;
-  font-size: 30px; font-weight: 800; letter-spacing: -.02em;
-  color: #1C2340; line-height: 1;
-}
-.rq-subtitle {
-  font-family: 'DM Sans', sans-serif;
-  font-size: 9px; font-weight: 600;
-  letter-spacing: .14em; text-transform: uppercase;
-  color: #8A96BC; margin-top: 6px;
-}
-
-/* ── Stat cards ─────────────────────────────────────────────────────── */
-.rq-stats { display: grid; grid-template-columns: repeat(3,1fr); gap: 14px; margin-bottom: 32px; }
-@media (max-width: 768px) { .rq-stats { grid-template-columns: 1fr; } }
-
-.rq-stat {
-  background: #fff;
-  border: 1px solid rgba(28,35,64,.08);
-  border-radius: 14px;
-  padding: 20px 22px;
-  display: flex; align-items: flex-start; gap: 16px;
-  transition: box-shadow .2s, border-color .2s;
-  position: relative; overflow: hidden;
-}
-.rq-stat:hover {
-  border-color: rgba(28,35,64,.14);
-  box-shadow: 0 4px 20px rgba(28,35,64,.07);
-}
-.rq-stat-accent { border-top: 2.5px solid #4F5BCB; }
-.rq-stat::after {
-  content: '';
-  position: absolute; bottom: 0; right: 0;
-  width: 80px; height: 80px;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(79,91,203,.04) 0%, transparent 70%);
-  pointer-events: none;
-}
-.rq-stat-icon {
-  width: 40px; height: 40px; border-radius: 10px;
-  display: flex; align-items: center; justify-content: center;
-  flex-shrink: 0;
-}
-.rq-stat-blue  { background: linear-gradient(135deg, #4F5BCB 0%, #6675A8 100%);  color: #FFFFFF; }
-.rq-stat-teal  { background: linear-gradient(135deg, #059669 0%, #047857 100%);  color: #FFFFFF; }
-.rq-stat-navy  { background: linear-gradient(135deg, #1C2340 0%, #3A4570 100%);    color: #FFFFFF; }
-.rq-stat-val {
-  font-family: 'Plus Jakarta Sans', sans-serif;
-  font-size: 28px; font-weight: 800; color: #1C2340;
-  line-height: 1;
-}
-.rq-stat-lbl {
-  font-family: 'DM Sans', sans-serif;
-  font-size: 9px; font-weight: 700;
-  letter-spacing: .13em; text-transform: uppercase;
-  color: #8A96BC; margin-top: 5px;
-}
-
-/* ── Toolbar ────────────────────────────────────────────────────────── */
-.rq-toolbar {
-  display: flex; align-items: flex-end; justify-content: flex-start;
-  gap: 16px; margin-bottom: 20px;
-  flex-wrap: wrap;
-}
-.rq-toolbar-left {}
-.rq-toolbar-right { display: flex; align-items: center; gap: 10px; margin-left: auto; }
-
-.rq-search {
-  display: flex; align-items: center; gap: 10px;
-  background: #fff; border: 1px solid rgba(28,35,64,.15);
-  border-radius: 50px; height: 42px; padding: 0 16px;
-  width: 300px; transition: all .2s;
-}
-.rq-search:focus-within {
-  border-color: rgba(79,91,203,.45);
-  box-shadow: 0 0 0 3px rgba(79,91,203,.1);
-  width: 340px;
-}
-.rq-search input {
-  border: none; outline: none; background: transparent;
-  font-family: 'Inter', sans-serif;
-  font-size: 12.5px; font-weight: 500; color: #1C2340;
-  width: 100%; letter-spacing: .01em;
-}
-.rq-search input::placeholder { color: #8A96BC; font-weight: 400; }
-.rq-search-icon { color: #8A96BC; flex-shrink: 0; }
-
-.rq-filter-btn {
-  height: 42px; padding: 0 16px;
-  border-radius: 50px;
-  border: 1px solid rgba(28,35,64,.15);
-  background: #fff; color: #3A4570;
-  display: flex; align-items: center; gap: 7px;
-  font-family: 'DM Sans', sans-serif; font-size: 10px;
-  font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
-  cursor: pointer; transition: all .18s;
-}
-.rq-filter-btn:hover { border-color: rgba(28,35,64,.18); color: #1C2340; }
-
-/* ── Table card ─────────────────────────────────────────────────────── */
-.rq-card {
-  background: #fff;
-  border: 1px solid rgba(28,35,64,.08);
-  border-radius: 16px;
-  overflow: hidden;
-  box-shadow: 0 1px 6px rgba(28,35,64,.05);
-}
-.rq-table { width: 100%; border-collapse: collapse; }
-
-/* Table head */
-.rq-thead-row { border-bottom: 1px solid rgba(28,35,64,.07); }
-.rq-th {
-  padding: 14px 24px;
-  font-family: 'DM Sans', sans-serif;
-  font-size: 8.5px; font-weight: 700;
-  letter-spacing: .16em; text-transform: uppercase;
-  color: #4F5BCB; text-align: left; white-space: nowrap;
-  background: rgba(79, 91, 203, 0.05);
-}
-.rq-th-right { text-align: right; }
-
-/* Table rows */
-.rq-row {
-  border-bottom: 1px solid rgba(28,35,64,.05);
-  transition: background .15s;
-}
-.rq-row:last-child { border-bottom: none; }
-.rq-row:hover { background: rgba(237,238,244,.7); }
-.rq-td { padding: 18px 24px; vertical-align: middle; }
-.rq-td-right { text-align: right; }
-
-/* Tracking ID chip */
-.rq-id-chip {
-  font-family: 'DM Sans', sans-serif;
-  font-size: 10.5px; font-weight: 700; letter-spacing: .06em;
-  color: #2E3A9E;
-  background: rgba(79,91,203,.09);
-  border: 1px solid rgba(79,91,203,.2);
-  border-radius: 7px; padding: 5px 11px;
-  display: inline-block;
-}
-
-/* Operator cell */
-.rq-op-wrap { display: flex; align-items: center; gap: 14px; }
-.rq-op-avatar {
-  width: 38px; height: 38px; border-radius: 10px; flex-shrink: 0;
-  background: linear-gradient(145deg, #2D3B6E 0%, #4F5BCB 100%);
-  display: flex; align-items: center; justify-content: center;
-  font-family: 'Plus Jakarta Sans', sans-serif;
-  font-size: 15px; font-weight: 700; color: #F1F5FE;
-  border: 1px solid rgba(79,91,203,.25);
-}
-.rq-op-name {
-  font-family: 'Inter', sans-serif;
-  font-size: 13.5px; font-weight: 600; color: #1C2340;
-  line-height: 1; margin-bottom: 5px; letter-spacing: -.01em;
-}
-.rq-op-unit {
-  display: flex; align-items: center; gap: 5px;
-  font-size: 11px; font-weight: 500; color: #8A96BC;
-}
-.rq-op-unit-icon { color: #4F5BCB; }
-
-/* TODA / TMO cell */
-.rq-toda {
-  font-family: 'Inter', sans-serif;
-  font-size: 13px; font-weight: 600; color: #1C2340;
-  margin-bottom: 6px; line-height: 1;
-}
-.rq-tmo-badge {
-  display: inline-flex; align-items: center; gap: 5px;
-  font-family: 'DM Sans', sans-serif;
-  font-size: 8px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
-  color: #065F46;
-  background: rgba(16,185,129,.09);
-  border: 1px solid rgba(16,185,129,.18);
-  border-radius: 5px; padding: 4px 9px;
-}
-
-/* Action button */
-.rq-issue-btn {
-  display: inline-flex; align-items: center; gap: 8px;
-  height: 40px; padding: 0 18px;
-  background: #2D3B6E; color: #F1F5FE;
-  border-radius: 50px;
-  font-family: 'DM Sans', sans-serif;
-  font-size: 9.5px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
-  text-decoration: none; border: none; cursor: pointer;
-  transition: all .2s; white-space: nowrap;
-}
-.rq-issue-btn:hover {
-  background: #4F5BCB;
-  box-shadow: 0 4px 16px rgba(79,91,203,.3);
-  transform: translateY(-1px);
-}
-.rq-issue-btn:active { transform: translateY(0); }
-
-/* ── Empty state ────────────────────────────────────────────────────── */
-.rq-empty { padding: 64px 32px; text-align: center; }
-.rq-empty-icon {
-  width: 64px; height: 64px; border-radius: 16px;
-  border: 1.5px dashed rgba(28,35,64,.15);
-  display: flex; align-items: center; justify-content: center;
-  color: rgba(28,35,64,.18);
-  margin: 0 auto 20px;
-}
-.rq-empty-title {
-  font-family: 'Plus Jakarta Sans', sans-serif;
-  font-size: 20px; font-weight: 700; color: #1C2340; margin-bottom: 6px;
-}
-.rq-empty-sub {
-  font-family: 'DM Sans', sans-serif;
-  font-size: 9px; font-weight: 700; letter-spacing: .13em;
-  text-transform: uppercase; color: #8A96BC;
-}
-
-/* ── Notice box ─────────────────────────────────────────────────────── */
-.rq-notice {
-  margin-top: 24px;
-  background: #fff;
-  border: 1px solid rgba(28,35,64,.08);
-  border-left: 3px solid #4F5BCB;
-  border-radius: 14px;
-  padding: 22px 24px;
-  display: flex; align-items: flex-start; gap: 16px;
-  box-shadow: 0 1px 4px rgba(28,35,64,.04);
-}
-.rq-notice-icon {
-  width: 36px; height: 36px; border-radius: 9px; flex-shrink: 0;
-  background: rgba(79,91,203,.09);
-  display: flex; align-items: center; justify-content: center;
-  color: #2E3A9E;
-}
-.rq-notice-title {
-  font-family: 'DM Sans', sans-serif;
-  font-size: 10px; font-weight: 700; letter-spacing: .12em;
-  text-transform: uppercase; color: #1C2340; margin-bottom: 7px;
-}
-.rq-notice-body {
-  font-size: 12.5px; font-weight: 400; color: #3A4570;
-  line-height: 1.65;
-}
-
-/* ── Stagger animation ──────────────────────────────────────────────── */
-.rq-stat  { animation: rqFadeUp .4s cubic-bezier(.2,0,.2,1) both; }
-.rq-stat:nth-child(1) { animation-delay: .05s; }
-.rq-stat:nth-child(2) { animation-delay: .10s; }
-.rq-stat:nth-child(3) { animation-delay: .15s; }
-.rq-card  { animation: rqFadeUp .4s .2s cubic-bezier(.2,0,.2,1) both; }
-.rq-notice{ animation: rqFadeUp .4s .3s cubic-bezier(.2,0,.2,1) both; }
-
-@keyframes rqFadeUp {
-  from { opacity: 0; transform: translateY(12px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-
-/* Responsive table */
-@media (max-width: 768px) {
-  .rq-search { width: 100%; }
-  .rq-toolbar { flex-direction: column; align-items: stretch; }
-  .rq-toolbar-right { width: 100%; }
-  .rq-th:nth-child(3), .rq-td:nth-child(3) { display: none; }
-}
-`;
-
-export default function ReleasingQueue({ applications = [], pendingCount = 0, issuedTodayCount = 0, activeRegistryCount = 0 }) {
+export default function ReleasingQueue({
+    applications = [],
+    pendingCount = 0,
+    issuedTodayCount = 0,
+    activeRegistryCount = 0,
+}) {
     const [query, setQuery] = useState('');
+    const [todaFilter, setTodaFilter] = useState('all');
+    const [currentPage, setCurrentPage] = useState(1);
 
-    const filtered = applications.filter(a => {
-        const idStr = a.id ? String(a.id).toLowerCase() : '';
-        const refStr = a.reference ? String(a.reference).toLowerCase() : '';
-        const opStr = a.operator ? String(a.operator).toLowerCase() : '';
-        const q = query.toLowerCase();
-        return idStr.includes(q) || refStr.includes(q) || opStr.includes(q);
-    });
+    // Silent background refresh — a TMO payment verification elsewhere feeds new units into this
+    // queue without a manual reload.
+    useEffect(() => {
+        const { stop } = router.poll(15000, {
+            only: ['applications', 'pendingCount', 'issuedTodayCount', 'activeRegistryCount'],
+        });
+        return () => stop();
+    }, []);
+
+    // Extract unique TODA zones from current applications
+    const todaOptions = useMemo(() => {
+        const set = new Set();
+        applications.forEach((a) => {
+            if (a.toda) set.add(a.toda);
+        });
+        return Array.from(set).sort();
+    }, [applications]);
+
+    const filtered = useMemo(() => {
+        const q = query.trim().toLowerCase();
+        return applications.filter((a) => {
+            const matchesQuery =
+                !q ||
+                String(a.id).toLowerCase().includes(q) ||
+                (a.reference && a.reference.toLowerCase().includes(q)) ||
+                (a.operator && a.operator.toLowerCase().includes(q)) ||
+                (a.make && a.make.toLowerCase().includes(q)) ||
+                (a.plate && a.plate.toLowerCase().includes(q)) ||
+                (a.or_number && a.or_number.toLowerCase().includes(q));
+
+            const matchesToda = todaFilter === 'all' || a.toda === todaFilter;
+            return matchesQuery && matchesToda;
+        });
+    }, [applications, query, todaFilter]);
+
+    const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE) || 1;
+    const activePage = Math.min(currentPage, totalPages);
+    const startIndex = (activePage - 1) * ITEMS_PER_PAGE;
+    const endIndex = Math.min(startIndex + ITEMS_PER_PAGE, filtered.length);
+    const paginated = filtered.slice(startIndex, endIndex);
+
+    const isFiltering = query.trim() !== '' || todaFilter !== 'all';
+
+    const handleClearAll = () => {
+        setQuery('');
+        setTodaFilter('all');
+        setCurrentPage(1);
+    };
 
     return (
-        <BPLOLayout title="Releasing Hub" role="BPLO Officer">
+        <BPLOLayout title="Releasing Queue" role="BPLO Officer">
             <Head title="BPLO Releasing | TRIVORA" />
 
-            <style dangerouslySetInnerHTML={{ __html: CSS }} />
-
-            <div className="rq-root">
-
-                {/* ── Page heading ── */}
-                <div style={{ marginBottom: 32 }}>
-                    <p className="rq-eyebrow">Issuance Hub</p>
-                    <h1 className="rq-title">Releasing Queue</h1>
-                    <p className="rq-subtitle">Final phase · Tricycle Number Coding Scheme assignment</p>
+            {/* ══════════════════════════════════════════════════════════════
+                1. CLEAN HEADER (Consistent with TMO Queue Layout)
+               ══════════════════════════════════════════════════════════════ */}
+            <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-slate-200/80 pb-5">
+                <div>
+                    <h1 className="text-2xl sm:text-[28px] font-extrabold tracking-tight text-slate-900 leading-tight">
+                        Releasing Queue
+                    </h1>
+                    <p className="mt-1 text-xs sm:text-sm text-slate-500 max-w-2xl leading-relaxed">
+                        Assign tricycle number coding scheme and release official MTOP stickers for verified, roadworthy units
+                    </p>
                 </div>
+            </div>
 
-                {/* ── Stat cards ── */}
-                <div className="rq-stats">
-                    <StatCard
-                        count={pendingCount}
-                        label="Pending Issuance"
-                        icon={Award}
-                        iconClass="rq-stat-blue"
-                        accent
-                    />
-                    <StatCard
-                        count={issuedTodayCount}
-                        label="Issued Today"
-                        icon={CheckCircle2}
-                        iconClass="rq-stat-teal"
-                    />
-                    <StatCard
-                        count={activeRegistryCount}
-                        label="Active Registry"
-                        icon={Hash}
-                        iconClass="rq-stat-navy"
-                    />
-                </div>
-
-                {/* ── Toolbar ── */}
-                <div className="rq-toolbar">
-                  <div className="rq-search">
-                    <Search size={14} strokeWidth={2} className="rq-search-icon" />
-                    <input
-                      type="text"
-                      placeholder="Search ID or operator…"
-                      value={query}
-                      onChange={e => setQuery(e.target.value)}
-                    />
-                    {query && (
-                      <button
-                        onClick={() => setQuery('')}
-                        style={{ background:'none', border:'none', cursor:'pointer',
-                             color:'#8A96BC', display:'flex', padding:0 }}
-                      >
-                        <X size={13} />
-                      </button>
-                    )}
-                  </div>
-                  <div className="rq-toolbar-right">
-                        <button className="rq-filter-btn">
-                            <Filter size={14} strokeWidth={2} />
-                            Filter
-                        </button>
-                    </div>
-                </div>
-
-                {/* ── Queue table ── */}
-                <div className="rq-card">
-                    <div style={{ overflowX: 'auto' }}>
-                        <table className="rq-table">
-                            <thead>
-                                <tr className="rq-thead-row">
-                                    <th className="rq-th">Application ID</th>
-                                    <th className="rq-th">Operator &amp; Unit</th>
-                                    <th className="rq-th">TMO Verification</th>
-                                    <th className="rq-th rq-th-right">Action</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {filtered.length === 0 ? (
-                                    <tr>
-                                        <td colSpan={4}>
-                                            <EmptyState hasQuery={!!query} />
-                                        </td>
-                                    </tr>
-                                ) : (
-                                    filtered.map(app => (
-                                        <QueueRow key={app.id} app={app} />
-                                    ))
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-
-                {/* ── Administrative notice ── */}
-                <div className="rq-notice">
-                    <div className="rq-notice-icon">
-                        <Info size={18} strokeWidth={1.8} />
-                    </div>
+            {/* ══════════════════════════════════════════════════════════════
+                2. PREMIUM KPI CARD DECK (TMO Operations style)
+               ══════════════════════════════════════════════════════════════ */}
+            <div className="mb-5 grid grid-cols-1 gap-3.5 sm:gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                {/* Card 1: Pending Issuance */}
+                <div className={`flex flex-col justify-between rounded-2xl border border-slate-200/70 bg-white p-4 sm:p-5 ${CARD_SHADOW}`}>
                     <div>
-                        <p className="rq-notice-title">Administrative Notice</p>
-                        <p className="rq-notice-body">
-                            Only units that have successfully completed TMO Phase 2 Inspection
-                            will appear here. Finalizing the issuance activates GPS telemetry
-                            and initiates automated billing for the current fiscal year.
+                        <div className="flex items-center justify-between">
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                                Pending Issuance
+                            </span>
+                            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500/[0.12] to-blue-500/[0.02] text-blue-700">
+                                <Award size={14} />
+                            </span>
+                        </div>
+                        <div className="mt-2 flex items-baseline gap-2">
+                            <span className="text-2xl sm:text-3xl font-extrabold tracking-tight tabular-nums text-slate-900">
+                                {pendingCount}
+                            </span>
+                            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                                Awaiting Sticker
+                            </span>
+                        </div>
+                        <p className="mt-1 text-[11px] text-slate-500">
+                            Payment verified, ready to release
                         </p>
                     </div>
+
+                    <div className="mt-3 rounded-xl bg-slate-50 p-2.5 flex items-center justify-between text-xs">
+                        <span className="text-[11px] font-medium text-slate-500">Status:</span>
+                        <span className="inline-flex items-center gap-1.5 font-bold text-blue-700 text-xs">
+                            {pendingCount > 0 && <span className="h-1.5 w-1.5 rounded-full bg-blue-500 animate-pulse" />}
+                            {pendingCount > 0 ? 'Action Needed' : 'All Clear'}
+                        </span>
+                    </div>
                 </div>
 
+                {/* Card 2: Issued Today */}
+                <div className={`flex flex-col justify-between rounded-2xl border border-slate-200/70 bg-white p-4 sm:p-5 ${CARD_SHADOW}`}>
+                    <div>
+                        <div className="flex items-center justify-between">
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                                Issued Today
+                            </span>
+                            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-500/[0.14] to-emerald-500/[0.02] text-emerald-600">
+                                <CheckCircle2 size={14} />
+                            </span>
+                        </div>
+                        <div className="mt-2 flex items-baseline gap-2">
+                            <span className="text-2xl sm:text-3xl font-extrabold tracking-tight tabular-nums text-slate-900">
+                                {issuedTodayCount}
+                            </span>
+                            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                                Completed
+                            </span>
+                        </div>
+                        <p className="mt-1 text-[11px] text-slate-500">
+                            Stickers handed over to drivers
+                        </p>
+                    </div>
+
+                    <div className="mt-3 rounded-xl bg-slate-50 p-2.5 flex items-center justify-between text-xs">
+                        <span className="text-[11px] font-medium text-slate-500">Session:</span>
+                        <span className="text-xs font-bold text-emerald-700">Active</span>
+                    </div>
+                </div>
+
+                {/* Card 3: Active Masterlist Registry */}
+                <div className={`flex flex-col justify-between rounded-2xl border border-slate-200/70 bg-white p-4 sm:p-5 ${CARD_SHADOW}`}>
+                    <div>
+                        <div className="flex items-center justify-between">
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                                Active Registry
+                            </span>
+                            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-[#1D2542]/[0.10] to-[#1D2542]/[0.02] text-[#1D2542]">
+                                <FolderCheck size={14} />
+                            </span>
+                        </div>
+                        <div className="mt-2 flex items-baseline gap-2">
+                            <span className="text-2xl sm:text-3xl font-extrabold tracking-tight tabular-nums text-[#1D2542]">
+                                {activeRegistryCount}
+                            </span>
+                            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                                Total Units
+                            </span>
+                        </div>
+                        <p className="mt-1 text-[11px] text-slate-500">
+                            Official franchises on record
+                        </p>
+                    </div>
+
+                    <div className="mt-3 rounded-xl bg-slate-50 p-2.5 flex items-center justify-between text-xs">
+                        <span className="text-[11px] font-medium text-slate-500">Registry:</span>
+                        <span className="text-xs font-bold text-slate-700">Synced</span>
+                    </div>
+                </div>
+
+                {/* Card 4: Issuance Progress */}
+                <div className={`flex flex-col justify-between rounded-2xl border border-slate-200/70 bg-white p-4 sm:p-5 ${CARD_SHADOW}`}>
+                    <div>
+                        <div className="flex items-center justify-between">
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                                Issuance Progress
+                            </span>
+                            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-[#1D2542]/[0.10] to-[#1D2542]/[0.02] text-[#1D2542]">
+                                <TrendingUp size={14} />
+                            </span>
+                        </div>
+                        <div className="mt-2 flex items-baseline gap-2">
+                            <span className="text-2xl sm:text-3xl font-extrabold tracking-tight tabular-nums text-slate-900">
+                                {(pendingCount + issuedTodayCount) > 0 ? Math.round((issuedTodayCount / (pendingCount + issuedTodayCount)) * 100) : 100}%
+                            </span>
+                        </div>
+                        <p className="mt-1 text-[11px] text-slate-500">
+                            Share of today's queue completed
+                        </p>
+                    </div>
+
+                    <div className="mt-3 rounded-xl bg-slate-50 p-2.5 flex items-center justify-between text-xs">
+                        <span className="text-[11px] font-medium text-slate-500">Today's progress:</span>
+                        <span className="text-xs font-bold text-slate-700">{issuedTodayCount} of {pendingCount + issuedTodayCount} done</span>
+                    </div>
+                </div>
+            </div>
+
+            {/* ══════════════════════════════════════════════════════════════
+                3. SEARCH & FILTER DECK
+               ══════════════════════════════════════════════════════════════ */}
+            <div className={`mb-4 rounded-2xl border border-slate-200/70 bg-white p-3 sm:p-3.5 ${CARD_SHADOW}`}>
+                <div className="flex flex-col sm:flex-row sm:items-center gap-2.5">
+                    <div className="relative flex-1 min-w-[220px]">
+                        <Search
+                            size={16}
+                            strokeWidth={2.2}
+                            className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"
+                        />
+                        <input
+                            type="text"
+                            value={query}
+                            onChange={(e) => {
+                                setQuery(e.target.value);
+                                setCurrentPage(1);
+                            }}
+                            placeholder="Search by reference ID, operator name, or make…"
+                            className="h-10 w-full rounded-lg border border-slate-200 bg-slate-50/50 pl-10 pr-9 text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 shadow-2xs transition-all focus:border-[#1D2542] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#1D2542]/10"
+                        />
+                        {query && (
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setQuery('');
+                                    setCurrentPage(1);
+                                }}
+                                className="absolute right-3 top-1/2 flex h-5 w-5 -translate-y-1/2 items-center justify-center rounded-full text-slate-400 hover:bg-slate-200 hover:text-slate-700"
+                            >
+                                <X size={12} strokeWidth={2.5} />
+                            </button>
+                        )}
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                        {todaOptions.length > 0 && (
+                            <select
+                                value={todaFilter}
+                                onChange={(e) => {
+                                    setTodaFilter(e.target.value);
+                                    setCurrentPage(1);
+                                }}
+                                className="h-10 rounded-lg border border-slate-200 bg-white px-3 pr-8 text-xs font-semibold text-slate-700 shadow-2xs transition-colors focus:border-[#1D2542] focus:outline-none focus:ring-2 focus:ring-[#1D2542]/10 cursor-pointer max-w-[200px] truncate"
+                            >
+                                <option value="all">All TODAs ({applications.length})</option>
+                                {todaOptions.map((toda) => (
+                                    <option key={toda} value={toda}>{toda}</option>
+                                ))}
+                            </select>
+                        )}
+
+                        {isFiltering && (
+                            <button
+                                type="button"
+                                onClick={handleClearAll}
+                                className="inline-flex h-10 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-600 shadow-2xs transition-colors hover:bg-slate-50 hover:text-slate-900"
+                                title="Reset all filters"
+                            >
+                                <RotateCcw size={13} strokeWidth={2.2} className="text-slate-400" />
+                                <span>Reset</span>
+                            </button>
+                        )}
+                    </div>
+                </div>
+            </div>
+
+            {/* ══════════════════════════════════════════════════════════════
+                4. DATA DISPLAY: TABLE WITH INTEGRATED FOOTER PAGINATION
+               ══════════════════════════════════════════════════════════════ */}
+            {filtered.length === 0 ? (
+                <div className={`rounded-2xl border border-slate-200/70 bg-white p-12 text-center ${CARD_SHADOW}`}>
+                    <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 text-slate-400">
+                        <Inbox size={24} strokeWidth={1.8} />
+                    </div>
+                    <h3 className="mt-3.5 text-base font-bold text-slate-900">
+                        {isFiltering ? 'No matching applications' : 'Releasing Queue is Clear'}
+                    </h3>
+                    <p className="mx-auto mt-1 max-w-sm text-xs text-slate-500 leading-relaxed">
+                        {isFiltering
+                            ? 'No applications match your search query or TODA filter.'
+                            : 'Units that have completed payment verification will appear here ready for sticker release.'}
+                    </p>
+                    {isFiltering && (
+                        <button
+                            type="button"
+                            onClick={handleClearAll}
+                            className="mt-4 inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3.5 py-1.5 text-xs font-semibold text-slate-800 shadow-sm hover:bg-slate-50"
+                        >
+                            <RotateCcw size={12} strokeWidth={2.2} />
+                            <span>Clear all filters</span>
+                        </button>
+                    )}
+                </div>
+            ) : (
+                <>
+                    {/* ── DESKTOP & TABLET DATA TABLE (md: 768px and up) ── */}
+                    <div className={`hidden md:block overflow-hidden rounded-2xl border border-slate-200/70 bg-white ${CARD_SHADOW}`}>
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-left border-collapse">
+                                <thead>
+                                    <tr className="border-b border-slate-200 bg-slate-50/75">
+                                        <th scope="col" className="py-3 pl-5 pr-3 text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                                            Tracking / Reference
+                                        </th>
+                                        <th scope="col" className="py-3 px-4 text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                                            Operator &amp; Unit
+                                        </th>
+                                        <th scope="col" className="py-3 px-4 text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                                            TODA Association
+                                        </th>
+                                        <th scope="col" className="py-3 px-4 text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                                            Inspection &amp; Payment
+                                        </th>
+                                        <th scope="col" className="py-3 pl-3 pr-5 text-right text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                                            Action
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-100 text-sm">
+                                    {paginated.map((app) => (
+                                        <DesktopReleasingRow key={app.id} app={app} />
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        {/* Integrated Table Footer: Pagination Visually Connected */}
+                        <div className="flex items-center justify-between border-t border-slate-200/80 bg-slate-50/60 px-5 py-3">
+                            <p className="text-xs text-slate-500">
+                                Page <span className="font-bold text-slate-800 tabular-nums">{activePage}</span> of{' '}
+                                <span className="font-bold text-slate-800 tabular-nums">{totalPages}</span>
+                                <span className="mx-2 text-slate-300">·</span>
+                                <span className="tabular-nums font-semibold text-slate-700">{filtered.length}</span> units
+                            </p>
+
+                            <div className="flex items-center gap-1.5">
+                                <button
+                                    type="button"
+                                    disabled={activePage <= 1}
+                                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                                    className="inline-flex h-8 items-center gap-1 rounded-md border border-slate-200 bg-white px-2.5 text-xs font-semibold text-slate-700 shadow-sm transition-colors hover:bg-slate-50 disabled:pointer-events-none disabled:opacity-40"
+                                >
+                                    <ChevronLeft size={13} strokeWidth={2.5} />
+                                    <span>Prev</span>
+                                </button>
+
+                                <div className="flex items-center gap-1">
+                                    {Array.from({ length: totalPages }, (_, i) => i + 1)
+                                        .filter(p => {
+                                            if (totalPages <= 5) return true;
+                                            if (p === 1 || p === totalPages) return true;
+                                            return Math.abs(p - activePage) <= 1;
+                                        })
+                                        .map((p, idx, arr) => {
+                                            const prev = arr[idx - 1];
+                                            const hasGap = prev && p - prev > 1;
+
+                                            return (
+                                                <React.Fragment key={p}>
+                                                    {hasGap && (
+                                                        <span className="px-0.5 text-xs text-slate-400">…</span>
+                                                    )}
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setCurrentPage(p)}
+                                                        className={`flex h-8 w-8 items-center justify-center rounded-md text-xs font-bold transition-all ${
+                                                            activePage === p
+                                                                ? 'bg-[#1D2542] text-white shadow-sm'
+                                                                : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
+                                                        }`}
+                                                    >
+                                                        {p}
+                                                    </button>
+                                                </React.Fragment>
+                                            );
+                                        })}
+                                </div>
+
+                                <button
+                                    type="button"
+                                    disabled={activePage >= totalPages}
+                                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                                    className="inline-flex h-8 items-center gap-1 rounded-md border border-slate-200 bg-white px-2.5 text-xs font-semibold text-slate-700 shadow-sm transition-colors hover:bg-slate-50 disabled:pointer-events-none disabled:opacity-40"
+                                >
+                                    <span>Next</span>
+                                    <ChevronRight size={13} strokeWidth={2.5} />
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* ── MOBILE PURPOSE-BUILT CARDS (under 768px) ── */}
+                    <div className="flex flex-col gap-2.5 md:hidden">
+                        {paginated.map((app) => (
+                            <MobileReleasingCard key={app.id} app={app} />
+                        ))}
+
+                        {/* Mobile Pagination Bar */}
+                        <div className={`mt-1 flex items-center justify-between rounded-2xl border border-slate-200/70 bg-white px-4 py-3 ${CARD_SHADOW}`}>
+                            <p className="text-xs text-slate-500">
+                                <span className="font-bold text-slate-800">{activePage}</span> of {totalPages}
+                                <span className="ml-1 text-[11px] text-slate-400">({filtered.length} units)</span>
+                            </p>
+
+                            <div className="flex items-center gap-1.5">
+                                <button
+                                    type="button"
+                                    disabled={activePage <= 1}
+                                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                                    className="inline-flex h-8 items-center gap-1 rounded-md border border-slate-200 bg-white px-2.5 text-xs font-semibold text-slate-700 shadow-sm disabled:pointer-events-none disabled:opacity-40"
+                                >
+                                    <ChevronLeft size={13} strokeWidth={2.5} />
+                                    <span>Prev</span>
+                                </button>
+                                <button
+                                    type="button"
+                                    disabled={activePage >= totalPages}
+                                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                                    className="inline-flex h-8 items-center gap-1 rounded-md border border-slate-200 bg-white px-2.5 text-xs font-semibold text-slate-700 shadow-sm disabled:pointer-events-none disabled:opacity-40"
+                                >
+                                    <span>Next</span>
+                                    <ChevronRight size={13} strokeWidth={2.5} />
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </>
+            )}
+
+            {/* ══════════════════════════════════════════════════════════════
+                5. ADMINISTRATIVE NOTICE
+               ══════════════════════════════════════════════════════════════ */}
+            <div className={`mt-5 rounded-2xl border border-slate-200/70 bg-white p-4 sm:p-5 ${CARD_SHADOW} flex items-start gap-3.5`}>
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-[#1D2542]/[0.10] to-[#1D2542]/[0.02] text-[#1D2542] mt-0.5">
+                    <Info size={16} strokeWidth={2.2} />
+                </div>
+                <div>
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-slate-900">
+                        Administrative Protocol
+                    </h4>
+                    <p className="mt-1 text-xs text-slate-500 leading-relaxed max-w-3xl">
+                        Only units that have successfully passed TMO physical inspection and completed cashier payment verification appear in this queue. Finalizing the issuance assigns the official tricycle number coding scheme, releases the sticker, and registers the unit in the active franchise masterlist.
+                    </p>
+                </div>
             </div>
         </BPLOLayout>
     );
 }
 
-/* ── Sub-components ──────────────────────────────────────────────────── */
+/* ─────────────────────────────────────────────────────────────────────────
+   SUBCOMPONENTS: Table Row & Mobile Card
+───────────────────────────────────────────────────────────────────────── */
 
-function StatCard({ count, label, icon: Icon, iconClass, accent }) {
-    return (
-        <div className={`rq-stat${accent ? ' rq-stat-accent' : ''}`}>
-            <div className={`rq-stat-icon ${iconClass}`}>
-                <Icon size={19} strokeWidth={2} />
-            </div>
-            <div>
-                <p className="rq-stat-val">{count}</p>
-                <p className="rq-stat-lbl">{label}</p>
-            </div>
-        </div>
-    );
+function getInitials(name) {
+    if (!name || name === 'N/A') return 'OP';
+    const parts = name.trim().split(/\s+/);
+    if (parts.length === 1) return parts[0].substring(0, 2).toUpperCase();
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 }
 
-function QueueRow({ app }) {
-    const initial = app.operator ? app.operator.charAt(0) : 'N';
+function DesktopReleasingRow({ app }) {
+    const initials = getInitials(app.operator);
+
     return (
-        <tr className="rq-row">
-            {/* Tracking ID */}
-            <td className="rq-td">
-                <span className="rq-id-chip">{app.reference}</span>
+        <tr className="group transition-colors hover:bg-slate-50/80">
+            {/* Column 1: Tracking / Reference */}
+            <td className="py-3.5 pl-5 pr-3 align-middle">
+                <div className="flex flex-col">
+                    <span className="font-mono text-xs sm:text-[13px] font-bold tracking-wide text-slate-900">
+                        {app.reference}
+                    </span>
+                    <span className="mt-0.5 text-[11px] text-slate-400 font-medium">
+                        Verified Application
+                    </span>
+                </div>
             </td>
 
-            {/* Operator & Unit */}
-            <td className="rq-td">
-                <div className="rq-op-wrap">
-                    <div className="rq-op-avatar">{initial}</div>
-                    <div>
-                        <p className="rq-op-name">{app.operator}</p>
-                        <p className="rq-op-unit">
-                            <Bike size={12} strokeWidth={2} className="rq-op-unit-icon" />
-                            {app.make}
+            {/* Column 2: Operator & Unit */}
+            <td className="py-3.5 px-4 align-middle">
+                <div className="flex items-center gap-2.5">
+                    <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-100 text-[11px] font-bold text-slate-700">
+                        {initials}
+                    </div>
+                    <div className="min-w-0">
+                        <p className="truncate text-xs sm:text-[13px] font-semibold text-slate-900 group-hover:text-slate-950">
+                            {app.operator}
                         </p>
+                        <div className="mt-0.5 flex items-center gap-1.5 text-xs text-slate-500">
+                            <Bike size={12} className="text-slate-400 shrink-0" />
+                            <span className="truncate">{app.make}</span>
+                            {app.plate && app.plate !== 'N/A' && (
+                                <>
+                                    <span className="text-slate-300">·</span>
+                                    <span className="font-mono text-[11px] font-semibold text-slate-700 bg-slate-100 px-1.5 py-0.2 rounded border border-slate-200/60">
+                                        {app.plate}
+                                    </span>
+                                </>
+                            )}
+                        </div>
                     </div>
                 </div>
             </td>
 
-            {/* TMO */}
-            <td className="rq-td">
-                <p className="rq-toda">{app.toda}</p>
-                <span className="rq-tmo-badge">
-                    <CheckCircle2 size={11} strokeWidth={2.5} />
-                    TMO Passed · {app.tmo_passed_at}
-                </span>
+            {/* Column 3: TODA Association */}
+            <td className="py-3.5 px-4 align-middle">
+                <div className="flex items-center gap-1.5 text-xs text-slate-700 font-medium">
+                    <MapPin size={12} className="text-slate-400 shrink-0" />
+                    <span>{app.toda}</span>
+                </div>
             </td>
 
-            {/* Action */}
-            <td className="rq-td rq-td-right">
-                <Link href={`/bplo/issue/${app.id}`} className="rq-issue-btn">
-                    Issue ID
-                    <ChevronRight size={13} strokeWidth={2.5} />
+            {/* Column 4: Inspection & Payment */}
+            <td className="py-3.5 px-4 align-middle">
+                <div className="flex flex-wrap items-center gap-1.5">
+                    <span className="inline-flex items-center gap-1 rounded-md bg-emerald-50 px-2 py-0.5 text-[10.5px] font-semibold text-emerald-700 border border-emerald-200/70">
+                        <CheckCircle2 size={11} strokeWidth={2.5} />
+                        TMO Passed · {app.tmo_passed_at || 'Verified'}
+                    </span>
+                    {app.or_number && (
+                        <span className="inline-flex items-center font-mono text-[10px] font-medium text-slate-600 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200/70" title="Cashier Official Receipt">
+                            {app.or_number}
+                        </span>
+                    )}
+                </div>
+            </td>
+
+            {/* Column 5: Action */}
+            <td className="py-3.5 pl-3 pr-5 text-right align-middle">
+                <Link
+                    href={`/bplo/issue/${app.id}`}
+                    className="inline-flex items-center gap-1 rounded-full bg-[#1D2542] hover:bg-[#283256] text-white px-3.5 py-1.5 text-xs font-semibold shadow-2xs transition-all active:scale-[0.98]"
+                >
+                    <span>Issue Number Coding</span>
+                    <ChevronRight size={13} strokeWidth={2.5} className="text-slate-300" />
                 </Link>
             </td>
         </tr>
     );
 }
 
-function EmptyState({ hasQuery }) {
+function MobileReleasingCard({ app }) {
+    const initials = getInitials(app.operator);
+
     return (
-        <div className="rq-empty">
-            <div className="rq-empty-icon">
-                <Inbox size={28} strokeWidth={1.4} />
+        <div className={`rounded-2xl border border-slate-200/70 bg-white p-3.5 transition-all hover:border-slate-300 ${CARD_SHADOW}`}>
+            {/* Top Row: Reference & TMO Passed Pill */}
+            <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-2">
+                <span className="font-mono text-sm font-bold tracking-wide text-slate-900">
+                    {app.reference}
+                </span>
+                <span className="inline-flex items-center gap-1 rounded-md bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-700 border border-emerald-200/70">
+                    <CheckCircle2 size={10} strokeWidth={2.5} />
+                    TMO Passed
+                </span>
             </div>
-            <p className="rq-empty-title">
-                {hasQuery ? 'No results found' : 'Queue is clear'}
-            </p>
-            <p className="rq-empty-sub">
-                {hasQuery
-                    ? 'Try a different ID or operator name'
-                    : 'No units are currently awaiting issuance'}
-            </p>
+
+            {/* Operator & TODA */}
+            <div className="mt-2.5 flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2 min-w-0">
+                    <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-100 text-[10px] font-bold text-slate-700">
+                        {initials}
+                    </div>
+                    <div className="min-w-0">
+                        <p className="truncate text-xs font-semibold text-slate-900">{app.operator}</p>
+                        <p className="truncate text-[11px] text-slate-400">{app.toda}</p>
+                    </div>
+                </div>
+
+                {app.or_number && (
+                    <span className="inline-flex items-center font-mono text-[10px] font-medium text-slate-600 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200/70 shrink-0">
+                        {app.or_number}
+                    </span>
+                )}
+            </div>
+
+            {/* Vehicle Info */}
+            <div className="mt-2 flex items-center justify-between text-xs text-slate-600">
+                <div className="flex items-center gap-1.5 truncate">
+                    <Bike size={12} className="text-slate-400 shrink-0" />
+                    <span className="truncate font-medium">{app.make || 'Tricycle Unit'}</span>
+                </div>
+                {app.plate && app.plate !== 'N/A' && (
+                    <span className="font-mono text-[11px] font-semibold text-slate-700 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200/60 shrink-0">
+                        {app.plate}
+                    </span>
+                )}
+            </div>
+
+            {/* Action Button */}
+            <div className="mt-2.5 pt-2 border-t border-slate-100">
+                <Link
+                    href={`/bplo/issue/${app.id}`}
+                    className="flex w-full items-center justify-center gap-1.5 rounded-full bg-[#1D2542] hover:bg-[#283256] text-white py-2 text-xs font-bold shadow-2xs transition-all active:scale-[0.98]"
+                >
+                    <span>Issue Number Coding</span>
+                    <ChevronRight size={13} strokeWidth={2.5} className="text-slate-300" />
+                </Link>
+            </div>
         </div>
     );
 }

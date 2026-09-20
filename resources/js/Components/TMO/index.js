@@ -6,6 +6,7 @@ export { default as StatusBadge } from './StatusBadge';
 export { default as EmptyState } from './EmptyState';
 export { default as SearchInput } from './SearchInput';
 export { default as FilterPills } from './FilterPills';
+export { default as DateRangeFilter } from './DateRangeFilter';
 export { Table, Thead, Tbody, Tr, Td } from './DataTable';
 export { default as Pagination } from './Pagination';
 export { default as Modal } from './Modal';

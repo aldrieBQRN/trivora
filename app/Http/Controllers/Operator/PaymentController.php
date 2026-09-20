@@ -7,11 +7,13 @@ use Illuminate\Http\Request;
 use Inertia\Inertia;
 use App\Models\Payment;
 use App\Models\Tricycle;
+use App\Models\Violation;
 
 class PaymentController extends Controller
 {
     /**
-     * Display payments list.
+     * Display payments list — MTOP franchise fees and settled violation fines merged
+     * into a single chronological ledger.
      */
     public function index(Request $request)
     {
@@ -24,25 +26,55 @@ class PaymentController extends Controller
             ]);
         }
 
-        // Fetch payments linked to applications of this operator
-        $payments = Payment::whereHas('application', function ($q) use ($operator) {
+        $mtopEntries = Payment::whereHas('application', function ($q) use ($operator) {
             $q->where('operator_id', $operator->id);
         })
             ->with(['application.tricycle'])
-            ->orderByDesc('payment_date')
             ->get()
-            ->map(function ($p) {
+            ->map(function (Payment $p) {
+                $unit = $p->application->tricycle?->body_number ?: 'Pending';
                 return [
                     'id'          => 'TXN-2026-' . str_pad($p->id, 5, '0', STR_PAD_LEFT),
                     'db_id'       => $p->id,
                     'reference'   => $p->official_receipt_number ?: 'OR-PENDING',
+                    'type'        => 'MTOP',
+                    'description' => "Franchise Fee for Unit {$unit}",
+                    'sortDate'    => $p->payment_date ?: $p->created_at,
                     'date'        => $p->payment_date ? $p->payment_date->format('M d, Y') : $p->created_at->format('M d, Y'),
                     'method'      => ucwords($p->payment_method),
-                    'unit'        => $p->application->tricycle?->body_number ?: 'Pending',
-                    'amount'      => (float)$p->amount,
+                    'amount'      => (float) $p->amount,
                     'status'      => $p->is_verified ? 'completed' : 'pending',
+                    'link'        => route('operator.payments.receipt', ['id' => $p->id]),
                 ];
             });
+
+        $triIds = Tricycle::where('operator_id', $operator->id)->pluck('id');
+
+        $violationEntries = Violation::whereIn('tricycle_id', $triIds)
+            ->whereNotNull('fine_paid_at')
+            ->with('tricycle')
+            ->get()
+            ->map(function (Violation $v) {
+                $unit = $v->tricycle?->body_number ?: 'Pending';
+                return [
+                    'id'          => 'VIO-2026-' . str_pad($v->id, 4, '0', STR_PAD_LEFT),
+                    'db_id'       => $v->id,
+                    'reference'   => $v->official_receipt_number ?: 'OR-PENDING',
+                    'type'        => 'Violation',
+                    'description' => ucwords(str_replace('_', ' ', $v->violation_type)) . " Fine — Unit {$unit}",
+                    'sortDate'    => $v->fine_paid_at,
+                    'date'        => $v->fine_paid_at->format('M d, Y'),
+                    'method'      => 'Treasury Cashier',
+                    'amount'      => (float) ($v->amount_paid ?? $v->fine_amount),
+                    'status'      => 'completed',
+                    'link'        => route('operator.violations.ticket', ['id' => $v->id]),
+                ];
+            });
+
+        $payments = $mtopEntries->concat($violationEntries)
+            ->sortByDesc('sortDate')
+            ->values()
+            ->map(fn ($entry) => collect($entry)->except('sortDate')->all());
 
         return Inertia::render('Operator/Payments/PaymentHistory', [
             'payments' => $payments,

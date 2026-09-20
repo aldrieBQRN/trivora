@@ -1,412 +1,29 @@
-import React, { useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { Head, Link } from '@inertiajs/react';
 import OperatorLayout from '@/Layouts/OperatorLayout';
+import { Button } from '@/Components/TMO';
+import { RadialBarChart, RadialBar, PolarAngleAxis, ResponsiveContainer } from 'recharts';
 import {
     AlertTriangle,
     AlertCircle,
-    CheckCircle2,
+    ShieldCheck,
+    ShieldAlert,
     Clock,
     Bike,
     Ban,
-    Wifi,
-    Wallet,
     Calendar,
-    BatteryMedium,
-    ShieldCheck,
-    ExternalLink,
     Info,
-    CircleDashed,
     FileText,
-    MapPin,
-    Wrench,
-    RefreshCw,
-    ClipboardCheck
+    ChevronRight,
+    ClipboardCheck,
 } from 'lucide-react';
 
-/* ─────────────────────────────────────────────────────────────────────────
-   DRIVER PORTAL — Unified Dashboard Layout
-   Matches TMO / Treasurer / BPLO Enterprise Token System
-───────────────────────────────────────────────────────────────────────── */
-const CSS = `
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600;700&family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&display=swap');
+const FADE = 'op-dash-fade';
+const delay = (ms) => ({ animationDelay: `${ms}ms` });
 
-/* ── Reset & Root ── */
-.op-root { font-family: 'Inter', sans-serif; color: #1C2340; width: 100%; padding-bottom: 80px; max-width: 1440px; margin: 0 auto; }
-.op-root *, .op-root *::before, .op-root *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-/* ── Page Heading ── */
-.op-eyebrow {
-    font-family: 'DM Sans', sans-serif;
-    font-size: 9.5px;
-    font-weight: 700;
-    letter-spacing: .2em;
-    text-transform: uppercase;
-    color: #4F5BCB;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-bottom: 8px;
-}
-.op-eyebrow::before {
-    content: '';
-    width: 24px;
-    height: 2px;
-    background: #4F5BCB;
-    border-radius: 4px;
-    flex-shrink: 0;
-}
-.op-title {
-    font-family: 'Plus Jakarta Sans', sans-serif;
-    font-size: 32px;
-    font-weight: 800;
-    letter-spacing: -.02em;
-    color: #1C2340;
-    line-height: 1.1;
-}
-.op-subtitle {
-    font-family: 'Inter', sans-serif;
-    font-size: 14px;
-    font-weight: 500;
-    color: #5A6488;
-    margin-top: 6px;
-}
-
-/* ── Top Bar ── */
-.op-topbar {
-    display: flex;
-    align-items: flex-end;
-    justify-content: space-between;
-    flex-wrap: wrap;
-    gap: 20px;
-    margin-bottom: 32px;
-}
-.op-topbar-actions { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
-
-/* ── Time & Coding Badges (From TMO) ── */
-.op-badge-dark {
-  background: #1C2340; color: #FFFFFF;
-  padding: 12px 20px; border-radius: 14px;
-  display: flex; flex-direction: column; align-items: center;
-  min-width: 140px;
-  box-shadow: 0 4px 18px rgba(28,35,64,.18);
-}
-.op-badge-dark-sub {
-  font-family: 'DM Sans', sans-serif;
-  font-size: 8px; font-weight: 700;
-  letter-spacing: .18em; text-transform: uppercase;
-  color: #FFFFFF; margin-bottom: 5px;
-}
-.op-badge-dark-val {
-  font-family: 'Plus Jakarta Sans', sans-serif;
-  font-size: 22px; font-weight: 800; letter-spacing: .06em;
-  color: #FFFFFF; line-height: 1;
-}
-.op-time-block {
-  text-align: right;
-  padding: 0 16px;
-  border-left: 1px solid rgba(28,35,64,.1);
-}
-.op-time-val {
-  font-family: 'Plus Jakarta Sans', sans-serif;
-  font-size: 22px; font-weight: 700; letter-spacing: -.01em;
-  color: #1C2340; line-height: 1; margin-bottom: 5px;
-  font-variant-numeric: tabular-nums;
-}
-.op-time-day {
-  font-family: 'DM Sans', sans-serif;
-  font-size: 9px; font-weight: 700;
-  letter-spacing: .16em; text-transform: uppercase;
-  color: #1C2340;
-}
-
-/* ── TMO-Style Premium KPI Grid ── */
-.op-kpi-grid {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 16px;
-    margin-bottom: 32px;
-}
-@media (max-width: 1199px) { .op-kpi-grid { grid-template-columns: repeat(2, 1fr); } }
-@media (max-width: 480px)  { .op-kpi-grid { grid-template-columns: 1fr; } }
-
-.op-kpi {
-    background: linear-gradient(135deg, #F9FAFB 0%, #F3F4F9 100%);
-    border: 1px solid rgba(79,91,203,.12);
-    border-radius: 16px;
-    padding: 20px 22px;
-    position: relative;
-    overflow: hidden;
-    transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease;
-    min-width: 0;
-}
-.op-kpi:hover {
-    transform: translateY(-2px);
-    border-color: rgba(79,91,203,.25);
-    box-shadow: 0 8px 24px rgba(79,91,203,.12);
-}
-.op-kpi::after {
-    content: '';
-    position: absolute; bottom: 0; right: 0;
-    width: 80px; height: 80px; border-radius: 50%;
-    background: radial-gradient(circle, rgba(79,91,203,.08) 0%, transparent 70%);
-    pointer-events: none;
-}
-.op-kpi-top {
-    display: flex; justify-content: space-between; align-items: flex-start;
-    margin-bottom: 16px;
-}
-.op-kpi-icon {
-    width: 40px; height: 40px; border-radius: 10px;
-    display: flex; align-items: center; justify-content: center;
-    flex-shrink: 0;
-}
-.op-kpi-icon-stone  { background: linear-gradient(135deg, #4F5BCB 0%, #6675A8 100%);  color: #FFFFFF; }
-.op-kpi-icon-rose   { background: linear-gradient(135deg, #DC2626 0%, #B91C1C 100%);  color: #FFFFFF; }
-.op-kpi-icon-emerald{ background: linear-gradient(135deg, #059669 0%, #047857 100%);  color: #FFFFFF; }
-.op-kpi-icon-amber  { background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%);  color: #FFFFFF; }
-
-.op-kpi-trend {
-    font-family: 'DM Sans', sans-serif;
-    font-size: 8.5px; font-weight: 700;
-    letter-spacing: .12em; text-transform: uppercase;
-    border-radius: 6px; padding: 4px 10px;
-    transition: all .2s ease;
-}
-.op-kpi-trend-live {
-    color: #059669;
-    background: linear-gradient(135deg, rgba(5,150,105,.1) 0%, rgba(5,150,105,.05) 100%);
-    border: 1px solid rgba(5,150,105,.25);
-}
-.op-kpi-trend-synced {
-    color: #4F5BCB;
-    background: linear-gradient(135deg, rgba(79,91,203,.1) 0%, rgba(79,91,203,.05) 100%);
-    border: 1px solid rgba(79,91,203,.25);
-}
-.op-kpi-trend-detecting {
-    color: #F59E0B;
-    background: linear-gradient(135deg, rgba(245,158,11,.1) 0%, rgba(245,158,11,.05) 100%);
-    border: 1px solid rgba(245,158,11,.25);
-}
-.op-kpi-trend-alert {
-    color: #DC2626;
-    background: linear-gradient(135deg, rgba(220,38,38,.1) 0%, rgba(220,38,38,.05) 100%);
-    border: 1px solid rgba(220,38,38,.25);
-}
-
-.op-kpi-val-row {
-    display: flex; align-items: baseline; gap: 6px;
-    margin-bottom: 4px; line-height: 1;
-}
-.op-kpi-val {
-    font-family: 'Plus Jakarta Sans', sans-serif;
-    font-size: 30px; font-weight: 800; letter-spacing: -.025em;
-    color: #1C2340;
-}
-.op-kpi-unit {
-    font-family: 'DM Sans', sans-serif;
-    font-size: 9.5px; font-weight: 700;
-    letter-spacing: .1em; text-transform: uppercase;
-    color: #1C2340;
-}
-.op-kpi-lbl {
-    font-family: 'DM Sans', sans-serif;
-    font-size: 10px; font-weight: 700;
-    letter-spacing: .1em; text-transform: uppercase;
-    color: #8A96BC;
-}
-
-/* ── Main Content Grid ── */
-.op-main-grid {
-    display: grid;
-    grid-template-columns: 1.3fr 1fr 0.8fr;
-    gap: 24px;
-    align-items: start;
-}
-.op-main-grid > * { min-width: 0; }
-@media (max-width: 1399px) {
-    .op-main-grid { grid-template-columns: 1.4fr 1fr; }
-    .op-hide-tablet { display: none !important; }
-}
-@media (max-width: 1024px) {
-    .op-main-grid { grid-template-columns: 1fr; }
-}
-
-/* ── Generic Cards ── */
-.op-card {
-    background: #FFFFFF;
-    border: 1px solid rgba(28,35,64,.08);
-    border-radius: 16px;
-    overflow: hidden;
-    box-shadow: 0 1px 6px rgba(28,35,64,.03);
-    min-width: 0;
-    transition: box-shadow .2s, border-color .2s;
-}
-.op-card:hover {
-    border-color: rgba(28,35,64,.14);
-    box-shadow: 0 4px 20px rgba(28,35,64,.07);
-}
-.op-card + .op-card { margin-top: 24px; }
-
-.op-card-header {
-    padding: 18px 24px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    border-bottom: 1px solid rgba(28,35,64,.06);
-    gap: 12px;
-    background: rgba(79,91,203,.03);
-}
-.op-card-title {
-    font-family: 'Plus Jakarta Sans', sans-serif;
-    font-size: 15px;
-    font-weight: 800;
-    color: #1C2340;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    min-width: 0;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-.op-card-link {
-    font-family: 'DM Sans', sans-serif;
-    font-size: 9px;
-    font-weight: 700;
-    color: #4F5BCB;
-    text-decoration: none;
-    text-transform: uppercase;
-    letter-spacing: .1em;
-    transition: color .2s;
-    flex-shrink: 0;
-}
-.op-card-link:hover { color: #1C2340; }
-
-/* ── Detailed Tricycle Profile ── */
-.op-trike-profile { padding: 24px; }
-.op-trike-header {
-    display: flex; align-items: center; gap: 16px;
-    margin-bottom: 24px; padding-bottom: 24px;
-    border-bottom: 1px dashed rgba(28,35,64,.1);
-}
-.op-trike-avatar {
-    width: 56px; height: 56px; border-radius: 14px;
-    background: linear-gradient(135deg, rgba(79,91,203,.1) 0%, rgba(79,91,203,.05) 100%);
-    color: #4F5BCB;
-    display: flex; align-items: center; justify-content: center;
-    border: 1px solid rgba(79,91,203,.15);
-}
-.op-trike-body-no { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 20px; font-weight: 800; color: #1C2340; line-height: 1; margin-bottom: 6px; }
-.op-trike-plate { font-family: 'DM Sans', sans-serif; font-size: 10.5px; font-weight: 700; color: #5A6488; text-transform: uppercase; letter-spacing: .08em; background: rgba(28,35,64,.04); padding: 4px 8px; border-radius: 6px; display: inline-block; }
-.op-trike-status {
-    margin-left: auto; display: flex; align-items: center; gap: 6px;
-    font-family: 'DM Sans', sans-serif; font-size: 9px; font-weight: 800;
-    color: #059669; text-transform: uppercase; letter-spacing: .05em;
-    background: rgba(5,150,105,.1); padding: 6px 12px; border-radius: 50px;
-    border: 1px solid rgba(5,150,105,.2);
-}
-.op-trike-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-.op-trike-data { display: flex; flex-direction: column; gap: 6px; }
-.op-trike-lbl { display: flex; align-items: center; gap: 6px; font-family: 'DM Sans', sans-serif; font-size: 9px; font-weight: 700; color: #8A96BC; text-transform: uppercase; letter-spacing: .08em; }
-.op-trike-val { font-family: 'Inter', sans-serif; font-size: 13.5px; font-weight: 600; color: #1C2340; }
-
-/* ── List Items (For Violations) ── */
-.op-list-item {
-    padding: 16px 24px;
-    border-bottom: 1px solid rgba(28,35,64,.05);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 12px;
-    min-width: 0;
-    transition: background .15s;
-}
-.op-list-item:last-child { border-bottom: none; }
-.op-list-item:hover { background: rgba(237,238,244,.4); }
-
-.op-list-item-left { display: flex; gap: 14px; align-items: center; min-width: 0; flex: 1; }
-.op-list-item-icon { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-.op-list-item-text { min-width: 0; }
-.op-list-item-title { font-family: 'Inter', sans-serif; font-size: 13.5px; font-weight: 700; color: #1C2340; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.op-list-item-sub { font-family: 'Inter', sans-serif; font-size: 11.5px; font-weight: 500; color: #8A96BC; margin-top: 2px; }
-
-/* ── Coding Calendar ── */
-.op-day-card {
-    padding: 10px 14px;
-    border-radius: 12px;
-    margin-bottom: 6px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    border: 1px solid rgba(28,35,64,.05);
-    background: #FFFFFF;
-    gap: 8px;
-    transition: all .2s;
-}
-.op-day-card.active {
-    background: rgba(79,91,203,.02);
-    border: 1px solid rgba(79,91,203,.2);
-    border-left: 3px solid #4F5BCB;
-    box-shadow: 0 2px 8px rgba(79,91,203,.08);
-}
-.op-day-name { font-family: 'Inter', sans-serif; font-size: 12.5px; font-weight: 600; color: #3A4570; }
-.op-day-tag { font-family: 'DM Sans', sans-serif; font-size: 8.5px; font-weight: 800; text-transform: uppercase; padding: 4px 10px; border-radius: 6px; letter-spacing: .1em; flex-shrink: 0; }
-.op-today-chip { font-family: 'DM Sans', sans-serif; font-size: 8px; font-weight: 800; color: #FFFFFF; background: #4F5BCB; padding: 3px 8px; border-radius: 4px; letter-spacing: .1em; flex-shrink: 0; }
-
-/* ── Coding Reminder Box ── */
-.op-reminder-box {
-    margin-top: 14px;
-    padding: 14px 16px;
-    background: rgba(217,119,6,.05);
-    border-radius: 14px;
-    border: 1px solid rgba(217,119,6,.15);
-    border-left: 3px solid #D97706;
-}
-.op-reminder-title { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 12px; font-weight: 800; color: #92400E; margin-bottom: 6px; display: flex; align-items: center; gap: 8px; }
-.op-reminder-body { font-size: 11px; font-weight: 500; color: #78350F; line-height: 1.5; }
-
-/* ── Tracker Card (dark gradient) ── */
-.op-tracker-card {
-    background: linear-gradient(135deg, #1C2340 0%, #2A3B5C 100%);
-    border: none; color: #FFFFFF; border-radius: 16px; overflow: hidden; min-width: 0; box-shadow: 0 8px 24px rgba(28,35,64,.15);
-}
-.op-tracker-inner { padding: 28px; }
-.op-tracker-eyebrow { font-family: 'DM Sans', sans-serif; font-size: 9px; font-weight: 700; opacity: .7; letter-spacing: .15em; text-transform: uppercase; margin-bottom: 10px; }
-.op-tracker-title { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 18px; font-weight: 800; margin-bottom: 20px; line-height: 1.3; }
-.op-progress-label { display: flex; justify-content: space-between; font-family: 'Inter', sans-serif; font-size: 10.5px; margin-bottom: 8px; font-weight: 600; color: rgba(255,255,255,.8); }
-.op-progress-label span:last-child { color: #FFFFFF; font-weight: 700; }
-.op-progress-track { height: 6px; background: rgba(255,255,255,.15); border-radius: 10px; margin-bottom: 20px; overflow: hidden; }
-.op-progress-fill { height: 100%; width: 50%; background: #059669; border-radius: 10px; }
-.op-tracker-stage { display: flex; align-items: center; gap: 8px; font-size: 11px; color: #FCD34D; font-weight: 600; }
-.op-tracker-btn { display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 24px; width: 100%; padding: 12px; background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.15); border-radius: 12px; color: #FFFFFF; font-family: 'DM Sans', sans-serif; font-size: 10px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; text-decoration: none; transition: background .2s; }
-.op-tracker-btn:hover { background: rgba(255,255,255,.2); }
-
-/* ── Device Card ── */
-.op-device-card {
-    margin-top: 24px; padding: 28px; text-align: center; background: #FFFFFF; border-radius: 16px; border: 1px solid rgba(28,35,64,.08); box-shadow: 0 1px 6px rgba(28,35,64,.03); min-width: 0;
-}
-.op-device-icon { width: 52px; height: 52px; background: rgba(79,91,203,.08); border-radius: 14px; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; color: #4F5BCB; }
-.op-device-title { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 15px; font-weight: 800; color: #1C2340; margin-bottom: 6px; }
-.op-device-body { font-size: 11.5px; font-weight: 500; color: #5A6488; line-height: 1.6; margin-bottom: 20px; }
-.op-device-btn { width: 100%; padding: 12px; background: #FFFFFF; border: 1px solid rgba(28,35,64,.15); border-radius: 12px; color: #1C2340; font-family: 'DM Sans', sans-serif; font-size: 10px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; cursor: pointer; transition: all .2s; }
-.op-device-btn:hover { background: rgba(28,35,64,.04); border-color: #1C2340; }
-
-/* ── Violation settle button ── */
-.op-settle-btn {
-    padding: 8px 16px; background: rgba(220,38,38,.08); color: #DC2626; border-radius: 50px; font-family: 'DM Sans', sans-serif; font-size: 9px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; text-decoration: none; border: 1px solid rgba(220,38,38,.15); flex-shrink: 0; white-space: nowrap; transition: all .2s;
-}
-.op-settle-btn:hover { background: #DC2626; color: #FFFFFF; }
-
-/* ── Pulse animation ── */
-.pulse-live { width: 7px; height: 7px; background: #059669; border-radius: 50%; flex-shrink: 0; animation: pulse-live 2s infinite; }
-@keyframes pulse-live { 0% { box-shadow: 0 0 0 0 rgba(5,150,105,.7); } 70% { box-shadow: 0 0 0 6px rgba(5,150,105,0); } 100% { box-shadow: 0 0 0 0 rgba(5,150,105,0); } }
-
-/* ── Empty state ── */
-.op-empty { padding: 40px 0; text-align: center; }
-.op-empty-icon { margin: 0 auto 12px; opacity: .8; display: block; }
-.op-empty-text { font-family: 'Inter', sans-serif; font-size: 12.5px; color: #8A96BC; font-weight: 500; }
-.op-calendar-body { padding: 20px 24px; }
-`;
+// Shared soft, layered shadow token — same elevation language used across TMODashboard, so this
+// panel reads as one consistent product rather than a different template.
+const CARD_SHADOW = 'shadow-[0_1px_2px_0_rgba(15,23,42,0.04),0_8px_24px_-8px_rgba(15,23,42,0.10)]';
 
 const getCodingDetails = () => {
     const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -418,318 +35,475 @@ const getCodingDetails = () => {
     return { day: today, restricted: schedule[today] || 'None' };
 };
 
-export default function OperatorDashboard({ operator, stats, tricycles, recentViolations }) {
+const CODING_RULES = [
+    { day: 'Monday', color: 'Green', badgeClass: 'bg-emerald-50 text-emerald-700 border-emerald-200', dotClass: 'bg-emerald-500' },
+    { day: 'Tuesday', color: 'Yellow', badgeClass: 'bg-amber-50 text-amber-700 border-amber-200', dotClass: 'bg-amber-500' },
+    { day: 'Wednesday', color: 'Blue', badgeClass: 'bg-blue-50 text-blue-700 border-blue-200', dotClass: 'bg-blue-500' },
+    { day: 'Thursday', color: 'Red', badgeClass: 'bg-red-50 text-red-700 border-red-200', dotClass: 'bg-red-500' },
+    { day: 'Friday', color: 'White', badgeClass: 'bg-gray-100 text-slate-500 border-slate-200', dotClass: 'bg-gray-400' },
+    { day: 'Saturday', color: 'No Coding', badgeClass: 'bg-gray-50 text-slate-400 border-slate-200', dotClass: 'bg-gray-300' },
+    { day: 'Sunday', color: 'No Coding', badgeClass: 'bg-gray-50 text-slate-400 border-slate-200', dotClass: 'bg-gray-300' },
+];
+
+export default function OperatorDashboard({ operator, stats, tricycles, recentViolations, expiringRegistrations = [], applicationProgress }) {
     const [currentTime, setCurrentTime] = useState(new Date());
     const codingInfo = getCodingDetails();
-
     const todayName = new Date().toLocaleDateString('en-US', { weekday: 'long' });
+    const expiredUnit = tricycles.find((t) => t.is_expired);
+    const finesDue = Number(stats.pending_fine_amount) > 0;
+    const violationCount = recentViolations.length;
+    const primaryUnit = tricycles[0];
+    const soonestExpiring = expiringRegistrations.length > 0
+        ? [...expiringRegistrations].sort((a, b) => a.days_left - b.days_left)[0]
+        : null;
 
     useEffect(() => {
         const timer = setInterval(() => setCurrentTime(new Date()), 1000);
         return () => clearInterval(timer);
     }, []);
 
-    const codingRules = [
-        { day: 'Monday',    color: 'Green',     hex: '#059669', bg: 'rgba(5,150,105,0.1)'  },
-        { day: 'Tuesday',   color: 'Yellow',    hex: '#D97706', bg: 'rgba(217,119,6,0.1)'  },
-        { day: 'Wednesday', color: 'Blue',      hex: '#2563EB', bg: 'rgba(37,99,235,0.1)'  },
-        { day: 'Thursday',  color: 'Red',       hex: '#DC2626', bg: 'rgba(220,38,38,0.1)'  },
-        { day: 'Friday',    color: 'White',     hex: '#5A6488', bg: 'rgba(28,35,64,0.05)', text: '#5A6488' },
-        { day: 'Saturday',  color: 'No Coding', hex: '#8A96BC', bg: '#FFFFFF', text: '#8A96BC' },
-        { day: 'Sunday',    color: 'No Coding', hex: '#8A96BC', bg: '#FFFFFF', text: '#8A96BC' },
-    ];
+    const { greeting, today } = useMemo(() => {
+        const hour = new Date().getHours();
+        const timeOfDay = hour < 12 ? 'morning' : hour < 18 ? 'afternoon' : 'evening';
+        return {
+            greeting: `Good ${timeOfDay}, ${operator.name.split(' ')[0]}`,
+            today: new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' }),
+        };
+    }, [operator.name]);
+
+    const complianceScore = useMemo(() => {
+        let score = 100;
+        if (expiredUnit && !expiredUnit.has_pending_renewal) score -= 40;
+        else if (expiredUnit) score -= 15;
+        score -= violationCount * 15;
+        return Math.max(10, Math.min(100, score));
+    }, [expiredUnit, violationCount]);
+
+    const scoreTone = complianceScore >= 80 ? '#1D2542' : complianceScore >= 50 ? '#64748B' : '#DC2626';
+
+    const heroMessage = expiredUnit
+        ? `Your MTOP franchise permit needs attention — ${expiredUnit.has_pending_renewal ? 'renewal is in progress.' : 'submit a renewal to stay compliant.'}`
+        : violationCount > 0
+            ? `You have ${violationCount} active violation${violationCount === 1 ? '' : 's'} awaiting settlement.`
+            : "You're all caught up — your unit is compliant and active.";
 
     return (
         <OperatorLayout title="Dashboard" operatorName={operator.name}>
             <Head title="Driver Dashboard | TRIVORA" />
-            <style dangerouslySetInnerHTML={{ __html: CSS }} />
 
-            <div className="op-root">
+            <style>{`
+                @keyframes opDashFadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+                .${FADE} { animation: opDashFadeUp .5s cubic-bezier(.16,1,.3,1) both; }
+                @media (prefers-reduced-motion: reduce) { .${FADE} { animation: none; } }
+            `}</style>
 
-                {/* ── HEADER ── */}
-                <header className="op-topbar">
-                    <div>
-                        <p className="op-eyebrow">Driver Portal</p>
-                        <h1 className="op-title">Welcome, {operator.name.split(' ')[0]}!</h1>
-                        <p className="op-subtitle">
-                            Overview of your tricycle for{' '}
-                            {new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+            {/* ══════════════════════════════════════════════════════════════
+                1. DARK HERO BANNER — greeting + compliance ring
+               ══════════════════════════════════════════════════════════════ */}
+            <div className={`relative mb-6 overflow-hidden rounded-2xl border border-slate-200/70 bg-white p-5 sm:p-8 ${CARD_SHADOW} ${FADE}`} style={delay(0)}>
+                <div className="relative flex flex-col gap-8 lg:flex-row lg:items-center lg:justify-between">
+                    <div className="max-w-lg">
+                        <div className="text-[10.5px] font-bold uppercase tracking-widest text-slate-400">{today}</div>
+                        <h1 className="mt-2 text-[26px] font-extrabold leading-tight tracking-tight text-[#1D2542] sm:text-[32px]">
+                            {greeting}
+                        </h1>
+                        <p className="mt-2 text-xs leading-relaxed text-slate-500 sm:text-sm">
+                            {heroMessage}
                         </p>
+
+                        <div className="mt-6 flex flex-wrap gap-2.5">
+                            <div className="flex items-center gap-2.5 rounded-xl bg-slate-50 p-2.5">
+                                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-[#1D2542]/[0.10] to-[#1D2542]/[0.02] text-[#1D2542]">
+                                    <Calendar size={14} />
+                                </span>
+                                <div>
+                                    <p className="text-[9px] font-bold uppercase tracking-widest text-slate-400">Restricted Today</p>
+                                    <p className="font-mono text-xs font-bold text-slate-900">{codingInfo.restricted}</p>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-2.5 rounded-xl bg-slate-50 p-2.5">
+                                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-[#1D2542]/[0.10] to-[#1D2542]/[0.02] text-[#1D2542]">
+                                    <Clock size={14} />
+                                </span>
+                                <div>
+                                    <p className="text-[9px] font-bold uppercase tracking-widest text-slate-400">{codingInfo.day}</p>
+                                    <p className="font-mono text-xs font-bold tabular-nums text-slate-900">{currentTime.toLocaleTimeString('en-US', { hour12: false })}</p>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
-                    <div className="op-topbar-actions">
-                        <div className="op-badge-dark">
-                            <span className="op-badge-dark-sub">Restricted Plates</span>
-                            <span className="op-badge-dark-val">{codingInfo.restricted}</span>
+                    <div className="flex shrink-0 items-center justify-center">
+                        <ScoreRing value={complianceScore} color={scoreTone} size={168} label="Compliance Score" textClassName="text-slate-900" trackColor="#F1F5F9" labelClassName="text-slate-400" />
+                    </div>
+                </div>
+            </div>
+
+            {/* ══════════════════════════════════════════════════════════════
+                2. FRANCHISE EXPIRED ALERT
+               ══════════════════════════════════════════════════════════════ */}
+            {expiredUnit && (
+                <div className={`mb-5 flex flex-col gap-4 rounded-2xl border border-red-200/70 bg-red-50 p-5 ${CARD_SHADOW} sm:flex-row sm:items-center sm:justify-between ${FADE}`} style={delay(80)}>
+                    <div className="flex items-start gap-3.5">
+                        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-red-600 to-red-700 text-white">
+                            <AlertCircle size={22} strokeWidth={2.5} />
                         </div>
-                        <div className="op-time-block">
-                            <p className="op-time-val">
-                                {currentTime.toLocaleTimeString('en-US', { hour12: false })}
+                        <div>
+                            <p className="text-sm font-bold text-red-800">
+                                Compliance Alert: Tricycle MTOP Franchise Permit Expired
                             </p>
-                            <p className="op-time-day">{codingInfo.day}</p>
+                            <p className="mt-1 text-xs text-red-700">
+                                {expiredUnit.has_pending_renewal
+                                    ? `The franchise permit for Unit #${expiredUnit.body_number} expired on ${expiredUnit.mtop_expiry}. Renewal application is currently in progress.`
+                                    : `The franchise permit for Unit #${expiredUnit.body_number || '1'} expired on ${expiredUnit.mtop_expiry}. Check your application status in the Application Tracker.`}
+                            </p>
                         </div>
                     </div>
-                </header>
+                    <Button as={Link} href={route('operator.mtop')} variant="dangerSolid" icon={FileText} className="shrink-0">
+                        Track Application
+                    </Button>
+                </div>
+            )}
 
-                {/* ── FRANCHISE EXPIRED UX ALERT BANNER ── */}
-                {tricycles.some(t => t.is_expired) && (
-                    <div style={{
-                        background: 'linear-gradient(135deg, rgba(220,38,38,.08) 0%, rgba(220,38,38,.03) 100%)',
-                        border: '1.5px solid rgba(220,38,38,.25)',
-                        borderRadius: 16,
-                        padding: '20px 24px',
-                        marginBottom: 28,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        gap: 16,
-                        boxShadow: '0 4px 18px rgba(220,38,38,.06)'
-                    }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-                            <div style={{
-                                width: 44, height: 44, borderRadius: 12,
-                                background: '#DC2626', color: '#FFFFFF',
-                                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                flexShrink: 0
-                            }}>
-                                <AlertCircle size={24} strokeWidth={2.5} />
+            {/* ══════════════════════════════════════════════════════════════
+                3. ACTION CARDS — quick links into each area
+               ══════════════════════════════════════════════════════════════ */}
+            <div className={`mb-5 grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-4 ${FADE}`} style={delay(140)}>
+                <ActionCard
+                    href={route('operator.fleet')}
+                    icon={Bike}
+                    active
+                    value={primaryUnit?.body_number || 'No Unit'}
+                    label="Registered Tricycle"
+                    meta={primaryUnit ? `Plate ${primaryUnit.plate_number || 'N/A'}` : 'Register a unit to get started'}
+                    cta="Manage Unit"
+                />
+                <ActionCard
+                    href={route('operator.violations')}
+                    icon={ShieldAlert}
+                    active={violationCount > 0}
+                    danger={violationCount > 0}
+                    value={violationCount}
+                    label="Active Violations"
+                    meta={finesDue ? `₱${stats.pending_fine_amount} unsettled` : 'No unsettled fines'}
+                    cta={violationCount > 0 ? 'View Tickets' : 'View Records'}
+                />
+                <ActionCard
+                    href={route('operator.mtop')}
+                    icon={FileText}
+                    active={!!expiredUnit}
+                    danger={!!expiredUnit}
+                    value={expiredUnit ? (expiredUnit.has_pending_renewal ? 'Renewing' : 'Expired') : 'Valid'}
+                    label="MTOP Franchise"
+                    meta={primaryUnit ? `Expires ${primaryUnit.mtop_expiry || 'N/A'}` : 'No franchise on record'}
+                    cta="View Application"
+                />
+                <ActionCard
+                    href={route('operator.mtop')}
+                    icon={Calendar}
+                    active={expiringRegistrations.length > 0}
+                    danger={!!soonestExpiring && soonestExpiring.days_left <= 30}
+                    value={expiringRegistrations.length}
+                    label="Renewal Alerts"
+                    meta={soonestExpiring ? `${soonestExpiring.body_number} in ${soonestExpiring.days_left}d` : 'No upcoming renewals'}
+                    cta="View Franchise"
+                />
+            </div>
+
+            {/* ══════════════════════════════════════════════════════════════
+                4. FRANCHISE APPLICATION PROGRESS — real tracking (from the
+                operator's actual in-progress MTOP application), only shown
+                when one exists. Light neutral card, not another navy block.
+               ══════════════════════════════════════════════════════════════ */}
+            {applicationProgress && (
+                <div className={`mb-5 rounded-2xl border border-slate-200/70 bg-white p-5 ${CARD_SHADOW} sm:p-6 ${FADE}`} style={delay(180)}>
+                    <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                        <div className="flex items-center gap-3">
+                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#1D2542]/[0.10] to-[#1D2542]/[0.02] text-[#1D2542]">
+                                <ClipboardCheck size={18} strokeWidth={2.2} />
                             </div>
                             <div>
-                                <p style={{ fontFamily: 'Plus Jakarta Sans, sans-serif', fontSize: 15, fontWeight: 800, color: '#991B1B', margin: 0 }}>
-                                    Compliance Alert: Tricycle MTOP Franchise Permit Expired
+                                <p className="text-sm font-bold text-slate-900">
+                                    {applicationProgress.type} in Progress &bull; Unit {applicationProgress.unit}
                                 </p>
-                                <p style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: '#B91C1C', marginTop: 3, margin: 0 }}>
-                                    {tricycles.find(t => t.is_expired)?.has_pending_renewal
-                                        ? `The franchise permit for Unit #${tricycles.find(t => t.is_expired)?.body_number} expired on ${tricycles.find(t => t.is_expired)?.mtop_expiry}. Renewal application is currently in progress.`
-                                        : `The franchise permit for Unit #${tricycles.find(t => t.is_expired)?.body_number || '1'} expired on ${tricycles.find(t => t.is_expired)?.mtop_expiry}. Inspect application status in Application Tracker.`}
+                                <p className="text-xs text-slate-500">
+                                    Ref: {applicationProgress.reference} &bull; Stage: {applicationProgress.stepLabel}
                                 </p>
                             </div>
                         </div>
-                        <Link
-                            href={route('operator.mtop')}
-                            style={{
-                                height: 40, padding: '0 20px', borderRadius: 10,
-                                background: '#DC2626', color: '#FFFFFF',
-                                display: 'inline-flex', alignItems: 'center', gap: 8,
-                                fontFamily: 'DM Sans, sans-serif', fontSize: 10, fontWeight: 700,
-                                letterSpacing: '.12em', textTransform: 'uppercase', textDecoration: 'none',
-                                boxShadow: '0 4px 12px rgba(220,38,38,.3)', whiteSpace: 'nowrap', flexShrink: 0
-                            }}
-                        >
-                            <FileText size={13} strokeWidth={2.5} /> Track Application Status
+                        <Button as={Link} href={route('operator.mtop.details', { id: applicationProgress.db_id })} variant="secondary" size="sm" className="shrink-0">
+                            View Application
+                        </Button>
+                    </div>
+
+                    <div className="mt-4 flex items-center gap-1.5">
+                        {Array.from({ length: applicationProgress.totalSteps }).map((_, i) => {
+                            const stepNum = i + 1;
+                            const isDone = stepNum < applicationProgress.step;
+                            const isCurrent = stepNum === applicationProgress.step;
+                            return (
+                                <div
+                                    key={i}
+                                    className={`h-1.5 flex-1 rounded-full ${
+                                        isDone ? 'bg-[#1D2542]' : isCurrent ? 'bg-[#1D2542]/50' : 'bg-slate-100'
+                                    }`}
+                                />
+                            );
+                        })}
+                    </div>
+
+                    <p className={`mt-3 flex items-start gap-1.5 text-xs leading-relaxed ${applicationProgress.needsAction ? 'font-semibold text-[#1D2542]' : 'text-slate-500'}`}>
+                        {applicationProgress.needsAction && <AlertCircle size={12} className="mt-0.5 shrink-0" />}
+                        {applicationProgress.message}
+                    </p>
+                </div>
+            )}
+
+            {/* ── Coding Schedule — full-width horizontal "week at a glance"
+                strip, sitting right under the application-progress card so
+                it reads as ordinance reference info up top, ahead of the
+                unit/violations detail below. ── */}
+            <div className={`mb-5 overflow-hidden rounded-2xl border border-slate-200/70 bg-white ${CARD_SHADOW} ${FADE}`} style={delay(200)}>
+                <div className="flex flex-wrap items-center justify-between gap-1 border-b border-slate-100 px-5 py-3.5">
+                    <div className="flex items-center gap-2">
+                        <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-[#1D2542]/[0.10] to-[#1D2542]/[0.02] text-[#1D2542]">
+                            <Calendar size={15} strokeWidth={2.2} />
+                        </div>
+                        <h2 className="text-sm font-bold text-slate-900">Coding Schedule</h2>
+                    </div>
+                    <span className="text-[11px] text-slate-400">Color Coding Ordinance &bull; weekly restriction by plate ending</span>
+                </div>
+                <div className="flex flex-col gap-4 p-5 lg:flex-row lg:items-center">
+                    <div className="grid flex-1 grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-7">
+                        {CODING_RULES.map((rule) => (
+                            <div
+                                key={rule.day}
+                                className={`flex items-center justify-between gap-2 rounded-lg border px-3 py-2 lg:flex-col lg:justify-center lg:gap-1.5 lg:px-2 lg:py-2.5 lg:text-center ${
+                                    rule.day === todayName ? 'border-[#1D2542]/20 bg-slate-50' : 'border-slate-100 bg-white'
+                                }`}
+                            >
+                                <div className="flex min-w-0 items-center gap-1.5 lg:gap-1">
+                                    <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${rule.dotClass}`} />
+                                    <span className="truncate text-[12.5px] font-bold text-slate-700 lg:text-[11px]">
+                                        <span className="lg:hidden">{rule.day}</span>
+                                        <span className="hidden lg:inline">{rule.day.slice(0, 3)}</span>
+                                    </span>
+                                    {rule.day === todayName && (
+                                        <span className="shrink-0 rounded bg-[#1D2542] px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-white lg:hidden">
+                                            Today
+                                        </span>
+                                    )}
+                                </div>
+                                <span className={`shrink-0 rounded-md border px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide lg:w-full lg:truncate lg:text-[9.5px] ${rule.badgeClass}`}>
+                                    {rule.color}
+                                </span>
+                                {rule.day === todayName && (
+                                    <span className="hidden rounded bg-[#1D2542] px-1.5 py-0.5 text-[8.5px] font-bold uppercase tracking-wide text-white lg:block">
+                                        Today
+                                    </span>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                    <div className="flex items-start gap-1.5 rounded-xl bg-slate-50 p-3 lg:w-72 lg:shrink-0">
+                        <Info size={13} className="mt-0.5 shrink-0 text-[#1D2542]" />
+                        <p className="text-[10.5px] leading-relaxed text-slate-600">
+                            Automated IoT enforcement is active in the Poblacion zone. Be aware of your restricted days to avoid digital fines.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            {/* ══════════════════════════════════════════════════════════════
+                5. MAIN CONTENT — My Tricycle and Active Violations, matched
+                to equal height (items-stretch) since Active Violations is
+                now capped at 3 recent entries, keeping both cards in the
+                same size range as a genuine paired row.
+               ══════════════════════════════════════════════════════════════ */}
+            <div className={`grid grid-cols-1 gap-4 lg:grid-cols-2 lg:items-stretch ${FADE}`} style={delay(220)}>
+
+                {/* My Tricycle */}
+                <div className={`flex flex-col overflow-hidden rounded-2xl border border-slate-200/70 bg-white ${CARD_SHADOW}`}>
+                    <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3.5 sm:px-5">
+                        <div className="flex items-center gap-2">
+                            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-[#1D2542]/[0.10] to-[#1D2542]/[0.02] text-[#1D2542]">
+                                <Bike size={15} strokeWidth={2.2} />
+                            </div>
+                            <h2 className="text-sm font-bold text-slate-900">My Tricycle</h2>
+                        </div>
+                        <Link href={route('operator.fleet')} className="shrink-0 text-[11px] font-bold uppercase tracking-wide text-[#1D2542] hover:text-[#283256]">
+                            Manage
                         </Link>
                     </div>
-                )}
 
-                {/* ── KPI GRID ── */}
-                <section className="op-kpi-grid">
-                    <KpiCard title="Assigned Unit" value="1" unit="Unit" icon={Bike} iconClass="op-kpi-icon-stone" trend="Synced" trendClass="op-kpi-trend-synced" />
-                    <KpiCard title="IoT Tracker Status" value="1" unit="Online" icon={Wifi} iconClass="op-kpi-icon-emerald" trend="Live" trendClass="op-kpi-trend-live" />
-                    <KpiCard title="Unsettled Fines" value={`₱${stats.pending_fine_amount || '0.00'}`} unit="PHP" icon={Ban} iconClass="op-kpi-icon-rose" trend="Action Needed" trendClass="op-kpi-trend-alert" />
-                    <KpiCard title="Compliance Rate" value="100%" unit="Rate" icon={ShieldCheck} iconClass="op-kpi-icon-amber" trend="Optimal" trendClass="op-kpi-trend-live" />
-                </section>
-
-                {/* ── MAIN CONTENT GRID ── */}
-                <main className="op-main-grid">
-
-                    {/* ── Column 1: Detailed Tricycle Profile & Violations ── */}
-                    <div>
-                        {/* Enhanced Tricycle Profile Card */}
-                        <div className="op-card">
-                            <div className="op-card-header">
-                                <h2 className="op-card-title">
-                                    <CircleDashed size={18} color="#4F5BCB" />
-                                    My Tricycle Profile
-                                </h2>
-                                <Link href={route('operator.fleet')} className="op-card-link">Manage Unit</Link>
+                    {tricycles.length === 0 ? (
+                        <div className="flex flex-1 flex-col items-center justify-center px-5 py-10 text-center">
+                            <Bike size={28} className="mx-auto mb-2 text-slate-300" />
+                            <p className="text-sm font-semibold text-slate-800">No tricycle registered yet</p>
+                            <p className="mt-1 text-xs text-slate-500">Register a unit to start tracking compliance.</p>
+                        </div>
+                    ) : tricycles.slice(0, 1).map((trike) => (
+                        <div key={trike.id} className="flex flex-1 flex-col p-4 sm:p-5">
+                            <div className="mb-4 flex items-center gap-3 sm:gap-4">
+                                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#1D2542]/[0.10] to-[#1D2542]/[0.02] text-[#1D2542] sm:h-12 sm:w-12">
+                                    <Bike size={20} strokeWidth={2.5} />
+                                </div>
+                                <div className="min-w-0">
+                                    <h3 className="truncate text-base font-bold leading-tight text-slate-900">{trike.body_number || 'N/A'}</h3>
+                                    <span className="mt-0.5 inline-block rounded-md bg-slate-100 px-2 py-0.5 font-mono text-[11px] font-bold uppercase tracking-wide text-slate-500">
+                                        {trike.plate_number || 'N/A'}
+                                    </span>
+                                </div>
                             </div>
 
-                            {tricycles.slice(0, 1).map((trike) => (
-                                <div key={trike.id} className="op-trike-profile">
-                                    <div className="op-trike-header">
-                                        <div className="op-trike-avatar">
-                                            <Bike size={28} strokeWidth={2.5} />
+                            <div className="flex flex-col gap-1.5 rounded-xl bg-slate-50 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-2">
+                                <span className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wide text-slate-400">
+                                    <FileText size={12} /> MTOP Franchise
+                                </span>
+                                <span className={`text-[13px] font-bold ${trike.is_expired ? 'text-red-600' : 'text-[#1D2542]'}`}>
+                                    {trike.mtop_status || 'Valid'} &bull; {trike.mtop_expiry || 'N/A'}
+                                </span>
+                            </div>
+
+                            {trike.mtop_days_left !== null && trike.mtop_days_left <= 30 && (
+                                <p className="mt-2.5 flex items-center gap-1.5 text-[11px] font-semibold text-[#1D2542]">
+                                    <Clock size={11} className="shrink-0" />
+                                    {trike.mtop_days_left > 0
+                                        ? `Expires in ${trike.mtop_days_left} day${trike.mtop_days_left !== 1 ? 's' : ''} — renew soon.`
+                                        : 'Expires today — renew as soon as possible.'}
+                                </p>
+                            )}
+
+                            <Link
+                                href={route('operator.fleet')}
+                                className="mt-4 flex items-center justify-center gap-1.5 rounded-lg border border-slate-200 py-2 text-[11px] font-bold uppercase tracking-wide text-slate-600 hover:bg-slate-50 lg:mt-auto"
+                            >
+                                View Full Vehicle Details <ChevronRight size={12} />
+                            </Link>
+                        </div>
+                    ))}
+                </div>
+
+                {/* Active Violations — capped at 3 most recent to keep this
+                    card's height in the same range as My Tricycle. */}
+                <div className={`flex flex-col overflow-hidden rounded-2xl border border-slate-200/70 bg-white ${CARD_SHADOW}`}>
+                    <div className="flex items-center justify-between gap-2 border-b border-slate-100 px-4 py-3.5 sm:px-5">
+                        <div className="flex items-center gap-2">
+                            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-red-500/[0.12] to-red-500/[0.02] text-red-600">
+                                <AlertTriangle size={15} strokeWidth={2.2} />
+                            </div>
+                            <h2 className="text-sm font-bold text-slate-900">Active Violations</h2>
+                        </div>
+                        {violationCount > 0 && (
+                            <Link href={route('operator.violations')} className="shrink-0 text-[11px] font-semibold text-slate-400 hover:text-slate-700">
+                                View all
+                            </Link>
+                        )}
+                    </div>
+                    {recentViolations.length > 0 ? (
+                        <div className="flex-1 divide-y divide-slate-100">
+                            {recentViolations.slice(0, 3).map((v) => (
+                                <div key={v.id} className="flex items-center justify-between gap-2 px-4 py-3.5 transition-colors hover:bg-slate-50/60 sm:px-5">
+                                    <div className="flex min-w-0 items-center gap-2.5 sm:gap-3">
+                                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-red-500/[0.12] to-red-500/[0.02] text-red-600">
+                                            <Ban size={15} strokeWidth={2.5} />
                                         </div>
-                                        <div>
-                                            <h3 className="op-trike-body-no">{trike.body_number || 'N/A'}</h3>
-                                            <span className="op-trike-plate">{trike.plate_number || 'N/A'}</span>
-                                        </div>
-                                        <div className="op-trike-status">
-                                            <div className="pulse-live" /> Connected
+                                        <div className="min-w-0">
+                                            <p className="truncate text-[13px] font-bold text-slate-900">Color Coding Breach</p>
+                                            <p className="truncate text-[11px] text-slate-500">{v.date} &bull; Unit {v.body_number}</p>
                                         </div>
                                     </div>
-
-                                    <div className="op-trike-grid">
-                                        <div className="op-trike-data">
-                                            <span className="op-trike-lbl"><Wrench size={10} /> Make & Model</span>
-                                            <span className="op-trike-val">Honda TMX 125 Alpha</span>
-                                        </div>
-                                        <div className="op-trike-data">
-                                            <span className="op-trike-lbl"><MapPin size={10} /> Route / Zone</span>
-                                            <span className="op-trike-val">Poblacion Zone (TODA A)</span>
-                                        </div>
-                                        <div className="op-trike-data">
-                                            <span className="op-trike-lbl"><FileText size={10} /> MTOP Franchise</span>
-                                            <span className="op-trike-val" style={{ color: trike.is_expired ? '#DC2626' : '#059669', fontWeight: 700 }}>
-                                                {trike.mtop_status || 'Valid'} ({trike.mtop_expiry || 'Oct 12, 2026'})
-                                            </span>
-                                        </div>
-                                        <div className="op-trike-data">
-                                            <span className="op-trike-lbl"><ClipboardCheck size={10} /> TMO Application</span>
-                                            <span className="op-trike-val" style={{ color: '#059669' }}>Approved</span>
-                                        </div>
-                                    </div>
-
-                                    {!trike.is_expired && (
-                                        <div style={{ marginTop: 20, paddingTop: 16, borderTop: '1px dashed rgba(28,35,64,.1)', display: 'flex', justifyContent: 'flex-end' }}>
-                                            <span style={{ height: 36, padding: '0 16px', borderRadius: 8, background: 'rgba(5,150,105,.1)', color: '#059669', border: '1px solid rgba(5,150,105,.2)', display: 'inline-flex', alignItems: 'center', gap: 6, fontFamily: 'DM Sans, sans-serif', fontSize: 9.5, fontWeight: 700, letterSpacing: '.12em', textTransform: 'uppercase' }}>
-                                                ✓ Franchise Active
-                                            </span>
-                                        </div>
-                                    )}
+                                    <Link
+                                        href={route('operator.violations.ticket', { id: v.id })}
+                                        className="shrink-0 whitespace-nowrap rounded-full bg-[#1D2542] px-3 py-1.5 text-[10px] font-bold uppercase tracking-wide text-white shadow-2xs transition-all hover:bg-[#283256] active:scale-[0.98]"
+                                    >
+                                        View
+                                    </Link>
                                 </div>
                             ))}
                         </div>
-
-                        {/* Active Violations */}
-                        <div className="op-card">
-                            <div className="op-card-header">
-                                <h2 className="op-card-title">
-                                    <AlertTriangle size={18} color="#DC2626" />
-                                    Active Violations
-                                </h2>
+                    ) : (
+                        <div className="flex flex-1 flex-col items-center justify-center px-6 py-10 text-center">
+                            <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-[#1D2542]/[0.10] to-[#1D2542]/[0.02]">
+                                <ShieldCheck size={22} className="text-[#1D2542]" />
                             </div>
-                            <div>
-                                {recentViolations.length > 0 ? recentViolations.map((v) => (
-                                    <div key={v.id} className="op-list-item">
-                                        <div className="op-list-item-left">
-                                            <div
-                                                className="op-list-item-icon"
-                                                style={{ background: 'rgba(220,38,38,.08)', color: '#DC2626' }}
-                                            >
-                                                <Ban size={16} strokeWidth={2.5} />
-                                            </div>
-                                            <div className="op-list-item-text">
-                                                <p className="op-list-item-title">Color Coding Breach</p>
-                                                <p className="op-list-item-sub">{v.date} &bull; Unit {v.body_number}</p>
-                                            </div>
-                                        </div>
-                                        <Link
-                                            href={route('operator.violations.pay', { id: v.id })}
-                                            className="op-settle-btn"
-                                        >
-                                            SETTLE NOW
-                                        </Link>
-                                    </div>
-                                )) : (
-                                    <div className="op-empty">
-                                        <ShieldCheck size={36} color="#059669" className="op-empty-icon" />
-                                        <p className="op-empty-text">Excellent! You have no active violations.</p>
-                                    </div>
-                                )}
-                            </div>
+                            <p className="text-sm font-semibold text-slate-800">No active violations.</p>
+                            <p className="mt-1 max-w-xs text-xs text-slate-500">You're compliant with the Color Coding Ordinance.</p>
                         </div>
-                    </div>
+                    )}
+                </div>
 
-                    {/* ── Column 2: Coding Calendar ── */}
-                    <div>
-                        <div className="op-card">
-                            <div className="op-card-header">
-                                <h2 className="op-card-title">
-                                    <Calendar size={18} color="#F59E0B" />
-                                    Coding Schedule
-                                </h2>
-                            </div>
-                            <div className="op-calendar-body">
-                                {codingRules.map((rule) => (
-                                    <div
-                                        key={rule.day}
-                                        className={`op-day-card${rule.day === todayName ? ' active' : ''}`}
-                                    >
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
-                                            <span className="op-day-name">{rule.day}</span>
-                                            {rule.day === todayName && (
-                                                <span className="op-today-chip">TODAY</span>
-                                            )}
-                                        </div>
-                                        <span
-                                            className="op-day-tag"
-                                            style={{ background: rule.bg, color: rule.text || rule.hex }}
-                                        >
-                                            {rule.color}
-                                        </span>
-                                    </div>
-                                ))}
-                                <div className="op-reminder-box">
-                                    <h4 className="op-reminder-title">
-                                        <Info size={14} color="#D97706" /> System Notice
-                                    </h4>
-                                    <p className="op-reminder-body">
-                                        Automated IoT enforcement is active in the Poblacion zone.
-                                        Please be aware of your restricted days to avoid digital fines.
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* ── Column 3: App Tracker + Device ── */}
-                    <div className="op-hide-tablet">
-                        <div className="op-tracker-card">
-                            <div className="op-tracker-inner">
-                                <p className="op-tracker-eyebrow">Franchise Tracker</p>
-                                <h3 className="op-tracker-title">Renewal: NSB-123</h3>
-                                <div>
-                                    <div className="op-progress-label">
-                                        <span>Approval Progress</span>
-                                        <span>50%</span>
-                                    </div>
-                                    <div className="op-progress-track">
-                                        <div className="op-progress-fill" />
-                                    </div>
-                                </div>
-                                <div className="op-tracker-stage">
-                                    <Clock size={14} /> Physical Inspection Stage
-                                </div>
-                                <Link href={route('operator.mtop')} className="op-tracker-btn">
-                                    TRACK STATUS <ExternalLink size={12} />
-                                </Link>
-                            </div>
-                        </div>
-
-                        <div className="op-device-card">
-                            <div className="op-device-icon">
-                                <BatteryMedium size={24} strokeWidth={2} />
-                            </div>
-                            <h4 className="op-device-title">GPS / IoT Device</h4>
-                            <p className="op-device-body">
-                                Ensure your IoT module battery is above 20% to keep zone tracking active.
-                            </p>
-                            <button className="op-device-btn">Manage Connectivity</button>
-                        </div>
-                    </div>
-
-                </main>
             </div>
         </OperatorLayout>
     );
 }
 
-/* ── SUB-COMPONENT: KPI CARD ── */
-function KpiCard({ title, value, unit, icon: Icon, iconClass, trend, trendClass }) {
+function ScoreRing({ value, max = 100, color, size = 140, label, textClassName = 'text-slate-900', trackColor = '#F1F5F9', labelClassName = 'text-slate-400' }) {
+    const data = [{ name: label || 'Score', value }];
+    const barSize = Math.max(8, Math.round(size * 0.09));
     return (
-        <div className="op-kpi">
-            <div className="op-kpi-top">
-                <div className={`op-kpi-icon ${iconClass}`}>
-                    <Icon size={18} strokeWidth={2.5} />
+        <div className="flex flex-col items-center">
+            <div className="relative" style={{ height: size, width: size }}>
+                <ResponsiveContainer width="100%" height="100%">
+                    <RadialBarChart innerRadius="76%" outerRadius="100%" data={data} startAngle={90} endAngle={-270} barSize={barSize}>
+                        <PolarAngleAxis type="number" domain={[0, max]} tick={false} />
+                        <RadialBar
+                            dataKey="value"
+                            cornerRadius={barSize}
+                            fill={color}
+                            background={{ fill: trackColor }}
+                            isAnimationActive
+                            animationDuration={800}
+                            animationEasing="ease-out"
+                        />
+                    </RadialBarChart>
+                </ResponsiveContainer>
+                <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
+                    <span className={`font-extrabold tabular-nums ${textClassName}`} style={{ fontSize: size * 0.19 }}>{value}%</span>
                 </div>
-                <span className={`op-kpi-trend ${trendClass}`}>{trend}</span>
             </div>
-            <div className="op-kpi-val-row">
-                <span className="op-kpi-val">{value}</span>
-                <span className="op-kpi-unit">{unit}</span>
-            </div>
-            <p className="op-kpi-lbl">{title}</p>
+            {label && <span className={`mt-2.5 text-[10px] font-bold uppercase tracking-widest ${labelClassName}`}>{label}</span>}
         </div>
+    );
+}
+
+function ActionCard({ href, icon: Icon, active, danger, value, label, meta, cta }) {
+    return (
+        <Link
+            href={href}
+            className={`group flex flex-col justify-between rounded-2xl border border-slate-200/70 bg-white p-4 sm:p-5 ${CARD_SHADOW} transition-all ${danger ? 'hover:border-red-300' : 'hover:border-slate-300'}`}
+        >
+            <div>
+                <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                        {label}
+                    </span>
+                    <span className={`flex h-7 w-7 items-center justify-center rounded-lg transition-colors ${
+                        danger
+                            ? 'bg-gradient-to-br from-red-500/[0.12] to-red-500/[0.02] text-red-600'
+                            : active
+                                ? 'bg-gradient-to-br from-[#1D2542]/[0.10] to-[#1D2542]/[0.02] text-[#1D2542]'
+                                : 'bg-slate-100 text-slate-400'
+                    }`}>
+                        <Icon size={14} />
+                    </span>
+                </div>
+                <div className="mt-2 flex items-baseline gap-2">
+                    <span className={`text-2xl sm:text-3xl font-extrabold tracking-tight tabular-nums ${danger ? 'text-red-600' : 'text-slate-900'}`}>
+                        {value}
+                    </span>
+                </div>
+                <p className="mt-1 text-[11px] text-slate-500">
+                    {meta}
+                </p>
+            </div>
+
+            <div className="mt-3 rounded-xl bg-slate-50 p-2.5 flex items-center justify-between text-xs">
+                <span className="text-[11px] font-medium text-slate-500">Details:</span>
+                <span className={`text-xs font-bold flex items-center gap-0.5 transition-colors ${danger ? 'text-red-600 group-hover:text-red-700' : 'text-[#1D2542] group-hover:text-indigo-600'}`}>
+                    {cta} <ChevronRight size={12} className="transition-transform group-hover:translate-x-0.5" />
+                </span>
+            </div>
+        </Link>
     );
 }

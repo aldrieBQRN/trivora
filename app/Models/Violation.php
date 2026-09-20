@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Violation extends Model
 {
@@ -20,6 +21,9 @@ class Violation extends Model
         'status',
         'fine_amount',
         'fine_paid_at',
+        'official_receipt_number',
+        'amount_paid',
+        'confirmed_by',
         'notes',
     ];
 
@@ -29,6 +33,7 @@ class Violation extends Model
             'detected_at'  => 'datetime',
             'fine_amount'  => 'decimal:2',
             'fine_paid_at' => 'datetime',
+            'amount_paid'  => 'decimal:2',
         ];
     }
 
@@ -110,5 +115,22 @@ class Violation extends Model
     public function detectedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'detected_by');
+    }
+
+    /**
+     * The TMO personnel who confirmed the offline treasury payment for this violation.
+     */
+    public function confirmedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'confirmed_by');
+    }
+
+    /**
+     * The driver's appeal against this violation, if one has ever been filed. One appeal per
+     * violation — the lifecycle is linear (issued -> appealed -> decided), no re-appeal.
+     */
+    public function appeal(): HasOne
+    {
+        return $this->hasOne(ViolationAppeal::class);
     }
 }

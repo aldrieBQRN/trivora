@@ -24,7 +24,12 @@
         <env name="BROADCAST_CONNECTION" value="null"/>
         <env name="CACHE_STORE" value="array"/>
         <env name="DB_CONNECTION" value="mysql"/>
-        <env name="DB_DATABASE" value="trivora"/>
+        <!-- MUST stay a separate database from the app's own DB_DATABASE (trivora) — several
+             existing tests use RefreshDatabase, which runs migrate:fresh (drops every table)
+             against whichever database this points at. Pointing this at the live dev database
+             wiped it out entirely (all seeded users/bookings/drivers) the first time the full
+             suite ran with both RefreshDatabase- and DatabaseTransactions-based tests together. -->
+        <env name="DB_DATABASE" value="trivora_testing"/>
         <env name="DB_URL" value=""/>
         <env name="MAIL_MAILER" value="array"/>
         <env name="QUEUE_CONNECTION" value="sync"/>

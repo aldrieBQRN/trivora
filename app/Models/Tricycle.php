@@ -47,7 +47,22 @@ class Tricycle extends Model
      */
     public function getCodingSchemeNumberAttribute($value)
     {
-        return $value ?: $this->franchiseScheme?->franchise_number;
+        if (!empty($value)) {
+            return $value;
+        }
+
+        // Demo seed tricycles mapped to authentic 4-digit coding scheme numbers (Red: ends in 1)
+        if ($this->plate_number === 'DEMO-0001') return '0081';
+        if ($this->plate_number === 'DEMO-0002') return '0101';
+        if ($this->plate_number === 'DEMO-0003') return '0011';
+
+        $fallback = $this->franchiseScheme?->franchise_number;
+        // Never use franchise application numbers (e.g. FRAN-DEMO-0003 or FS-...) as a coding scheme number
+        if ($fallback && !str_starts_with($fallback, 'FRAN-') && !str_starts_with($fallback, 'FS-')) {
+            return $fallback;
+        }
+
+        return null;
     }
 
     /**
@@ -55,7 +70,7 @@ class Tricycle extends Model
      */
     public function getBodyNumberAttribute()
     {
-        return $this->attributes['coding_scheme_number'] ?? $this->franchiseScheme?->franchise_number;
+        return $this->coding_scheme_number;
     }
 
     /**
@@ -120,6 +135,26 @@ class Tricycle extends Model
     }
 
     /**
+     * The currently paired physical GPS tracker, if any (gps_devices is the source of truth for
+     * device identity — tricycles.iot_device_id stays only as a human-facing display copy set at
+     * Final Confirmation time). Null for a tricycle that has never had an IoT device paired, or
+     * whose device was unpaired/reassigned elsewhere.
+     */
+    public function gpsDevice(): HasOne
+    {
+        return $this->hasOne(GpsDevice::class)->where('status', 'paired');
+    }
+
+    /**
+     * Every physical device ever paired to this tricycle, including ones since unpaired/
+     * reassigned/revoked — kept for history, never deleted on reassignment.
+     */
+    public function gpsDevices(): HasMany
+    {
+        return $this->hasMany(GpsDevice::class);
+    }
+
+    /**
      * GPS location history for this tricycle.
      */
     public function locations(): HasMany
@@ -149,5 +184,29 @@ class Tricycle extends Model
     public function openViolations(): HasMany
     {
         return $this->hasMany(Violation::class)->where('status', 'open');
+    }
+
+    /**
+     * Real GPS connectivity status, derived only from actual TricycleLocation pings — never
+     * implied by tracking_method/active_tracking_mode being set. A tricycle that has never sent
+     * a real ping is 'awaiting', never 'connected'. See config/tracking.php for the threshold.
+     *
+     * @return array{status: 'awaiting'|'connected'|'stale', last_seen_at: ?\Illuminate\Support\Carbon}
+     */
+    public function gpsStatus(): array
+    {
+        $latest = $this->latestLocation;
+
+        if (!$latest) {
+            return ['status' => 'awaiting', 'last_seen_at' => null];
+        }
+
+        $stalenessSeconds = config('tracking.staleness_seconds', 180);
+        $ageSeconds = $latest->recorded_at->diffInSeconds(now());
+
+        return [
+            'status'       => $ageSeconds < $stalenessSeconds ? 'connected' : 'stale',
+            'last_seen_at' => $latest->recorded_at,
+        ];
     }
 }

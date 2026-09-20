@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 import { Head, Link, router } from '@inertiajs/react';
 import OperatorLayout from '@/Layouts/OperatorLayout';
 import Swal from 'sweetalert2';
+import { BackLink, Button, StatusBadge } from '@/Components/TMO';
 import {
-    ChevronLeft,
     AlertTriangle,
     UploadCloud,
     FileText,
@@ -14,211 +14,11 @@ import {
     Check,
     Wrench,
     Settings,
-    Clock
 } from 'lucide-react';
 
-/* ─────────────────────────────────────────────────────────────────────────
-   OPERATOR PORTAL — Fix Application
-   Matches TMO Dashboard's exact slate/indigo token system
-   Path: resources/js/Pages/Operator/Compliance/MTOPFix.jsx
-   Prefix: mf-* (mtop-fix)
-───────────────────────────────────────────────────────────────────────── */
-const CSS = `
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600;700&family=DM+Sans:wght@500;600;700&display=swap');
-
-.mf-root {
-  font-family: 'Inter', sans-serif;
-  color: #1C2340;
-  width: 100%;
-  padding-bottom: 64px;
-}
-.mf-root *, .mf-root *::before, .mf-root *::after { box-sizing: border-box; }
-
-/* ── Nav & Header ────────────────────────────────────────────────────── */
-.mf-nav {
-  display: flex; align-items: center; justify-content: space-between;
-  margin-bottom: 32px;
-}
-.mf-back-link {
-  display: inline-flex; align-items: center; gap: 6px;
-  font-family: 'DM Sans', sans-serif; font-size: 9px; font-weight: 700;
-  letter-spacing: .16em; text-transform: uppercase;
-  color: #8A96BC; text-decoration: none; transition: color .18s;
-}
-.mf-back-link:hover { color: #1C2340; }
-.mf-id-badge {
-  font-family: 'DM Sans', sans-serif; font-size: 10px; font-weight: 800;
-  letter-spacing: .1em; text-transform: uppercase; color: #DC2626;
-  background: rgba(220,38,38,.09); border: 1px solid rgba(220,38,38,.2);
-  border-radius: 6px; padding: 5px 12px; display: flex; align-items: center; gap: 6px;
-}
-
-.mf-header { margin-bottom: 32px; }
-.mf-title {
-  font-family: 'Plus Jakarta Sans', sans-serif;
-  font-size: 30px; font-weight: 800; letter-spacing: -.025em;
-  color: #1C2340; line-height: 1; margin-bottom: 8px;
-}
-.mf-subtitle {
-  font-family: 'Inter', sans-serif; font-size: 13.5px;
-  font-weight: 500; color: #5A6488;
-}
-
-/* ── Alert Banner ───────────────────────────────────────────────────── */
-.mf-alert {
-  background: rgba(220,38,38,.04); border: 1px solid rgba(220,38,38,.2);
-  border-radius: 14px; padding: 20px 24px;
-  display: flex; align-items: flex-start; gap: 16px; margin-bottom: 32px;
-}
-.mf-alert-icon {
-  width: 44px; height: 44px; border-radius: 12px; flex-shrink: 0;
-  background: #FFFFFF; border: 1px solid rgba(220,38,38,.2);
-  display: flex; align-items: center; justify-content: center; color: #DC2626;
-}
-.mf-alert-title {
-  font-family: 'Plus Jakarta Sans', sans-serif; font-size: 16px;
-  font-weight: 800; color: #B91C1C; margin-bottom: 4px;
-}
-.mf-alert-desc {
-  font-family: 'Inter', sans-serif; font-size: 13px;
-  color: #7F1D1D; line-height: 1.6;
-}
-
-/* ── Cards & Grids ──────────────────────────────────────────────────── */
-.mf-card {
-  background: #FFFFFF; border: 1px solid rgba(28,35,64,.08);
-  border-radius: 16px; box-shadow: 0 1px 6px rgba(28,35,64,.05);
-  overflow: hidden; margin-bottom: 32px;
-}
-.mf-card-header {
-  padding: 20px 24px; border-bottom: 1px solid rgba(28,35,64,.06);
-  background: #FAFAFC; display: flex; align-items: center; gap: 10px;
-}
-.mf-card-title {
-  font-family: 'Plus Jakarta Sans', sans-serif; font-size: 15px;
-  font-weight: 800; color: #1C2340;
-}
-.mf-card-body { padding: 32px; }
-
-/* 2-Column Grid for OK items */
-.mf-doc-grid {
-  display: grid; grid-template-columns: 1fr; gap: 20px;
-}
-@media (min-width: 1024px) {
-  .mf-doc-grid { grid-template-columns: repeat(2, 1fr); }
-}
-
-/* Upload Row (Rejected) - Spans full width for better focus */
-.mf-row-rejected {
-  border: 1.5px solid rgba(220,38,38,.2); border-radius: 16px;
-  background: #FFFFFF; overflow: hidden; margin-bottom: 8px;
-}
-.mf-row-rejected-header {
-  padding: 20px 24px; background: rgba(220,38,38,.03);
-  border-bottom: 1px solid rgba(220,38,38,.1);
-  display: flex; align-items: flex-start; justify-content: space-between;
-}
-.mf-doc-name-err {
-  font-family: 'Plus Jakarta Sans', sans-serif; font-size: 15px;
-  font-weight: 700; color: #1C2340; margin-bottom: 6px; line-height: 1.4;
-}
-.mf-tmo-note {
-  font-family: 'Inter', sans-serif; font-size: 12.5px;
-  font-weight: 500; color: #DC2626; display: flex; align-items: flex-start; gap: 8px;
-}
-.mf-dropzone {
-  display: block; /* Required for label to act as a container */
-  padding: 40px 24px; text-align: center;
-  background: #FAFAFC; border: 2px dashed rgba(79,91,203,.2);
-  margin: 24px; border-radius: 12px; cursor: pointer;
-  transition: all .2s;
-}
-.mf-dropzone:hover {
-  background: rgba(79,91,203,.03); border-color: rgba(79,91,203,.5);
-}
-.mf-dropzone.has-file {
-  background: rgba(5,150,105,.04); border: 2.5px solid rgba(5,150,105,.3);
-}
-.mf-drop-icon {
-  width: 48px; height: 48px; border-radius: 12px;
-  background: #FFFFFF; border: 1px solid rgba(28,35,64,.1);
-  color: #4F5BCB; display: flex; align-items: center; justify-content: center;
-  margin: 0 auto 14px; box-shadow: 0 2px 8px rgba(28,35,64,.04);
-}
-.mf-drop-title {
-  font-family: 'Plus Jakarta Sans', sans-serif; font-size: 14px;
-  font-weight: 700; color: #1C2340; margin-bottom: 4px;
-}
-.mf-drop-sub {
-  font-family: 'Inter', sans-serif; font-size: 12px;
-  color: #8A96BC;
-}
-
-/* Locked Row (Approved/Pending/NA) */
-.mf-row-ok {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 18px 24px; border-radius: 14px;
-  border: 1px solid rgba(28,35,64,.08); background: #FAFAFC;
-}
-.mf-doc-name-ok {
-  font-family: 'Inter', sans-serif; font-size: 13.5px;
-  font-weight: 600; color: #5A6488; margin-bottom: 2px; line-height: 1.4; padding-right: 12px;
-}
-.mf-doc-meta-ok {
-  font-family: 'Inter', sans-serif; font-size: 11px; color: #8A96BC;
-}
-.mf-status-ok {
-  display: inline-flex; align-items: center; gap: 5px;
-  font-family: 'DM Sans', sans-serif; font-size: 9px;
-  font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
-  padding: 6px 14px; border-radius: 8px; white-space: nowrap;
-}
-.mf-status-ok.approved { color: #059669; background: rgba(5,150,105,.1); }
-.mf-status-ok.pending  { color: #D97706; background: rgba(217,119,6,.1); }
-.mf-status-ok.na       { color: #8A96BC; background: rgba(28,35,64,.08); }
-
-/* Repair Confirmation Box */
-.mf-confirm-box {
-  display: flex; align-items: center; gap: 14px;
-  padding: 20px 24px; border-radius: 16px;
-  background: rgba(79,91,203,.05); border: 1px solid rgba(79,91,203,.2);
-  margin-top: 32px; cursor: pointer; transition: all .2s;
-}
-.mf-confirm-box:hover { background: rgba(79,91,203,.08); border-color: rgba(79,91,203,.4); }
-.mf-confirm-box input[type="checkbox"] {
-  width: 20px; height: 20px; cursor: pointer;
-  accent-color: #4F5BCB;
-}
-.mf-confirm-label {
-  font-family: 'Inter', sans-serif; font-size: 14px;
-  font-weight: 600; color: #1C2340; cursor: pointer; user-select: none; line-height: 1.5;
-}
-
-/* ── Footer Action ──────────────────────────────────────────────────── */
-.mf-footer {
-  display: flex; justify-content: flex-end; gap: 16px;
-  padding-top: 32px; border-top: 1px solid rgba(28,35,64,.08); margin-top: 16px;
-}
-.mf-cancel-btn {
-  height: 52px; padding: 0 32px; border-radius: 12px;
-  border: 1px solid rgba(28,35,64,.12); background: #FFFFFF;
-  font-family: 'DM Sans', sans-serif; font-size: 11px; font-weight: 700;
-  letter-spacing: .12em; text-transform: uppercase; color: #5A6488;
-  cursor: pointer; transition: all .18s; text-decoration: none; display: flex; align-items: center;
-}
-.mf-cancel-btn:hover { background: #F8F9FC; color: #1C2340; border-color: rgba(28,35,64,.3); }
-
-.mf-submit-btn {
-  height: 52px; padding: 0 40px; border-radius: 12px;
-  background: #1C2340; color: #FFFFFF; border: none;
-  font-family: 'DM Sans', sans-serif; font-size: 11px; font-weight: 700;
-  letter-spacing: .12em; text-transform: uppercase;
-  display: flex; align-items: center; gap: 10px; cursor: pointer;
-  transition: all .2s; box-shadow: 0 4px 14px rgba(28,35,64,.25);
-}
-.mf-submit-btn:hover:not(:disabled) { background: #2E3A9E; transform: translateY(-1px); box-shadow: 0 8px 24px rgba(79,91,203,.3); }
-.mf-submit-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-`;
+// Shared soft, layered shadow token — same elevation language used across the redesigned TMO
+// and Operator panels, so this page reads as one consistent product rather than a different template.
+const CARD_SHADOW = 'shadow-[0_1px_2px_0_rgba(15,23,42,0.04),0_8px_24px_-8px_rgba(15,23,42,0.10)]';
 
 const documentList = [
     { id: 'prangkisa', label: 'Xerox Prangkisa (Kung Renew)' },
@@ -284,7 +84,6 @@ export default function MTOPFix({ application }) {
     const [repairsConfirmed, setRepairsConfirmed] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    // Capture the files selected by the user
     const handleFileSelect = (docId, files) => {
         setNewFiles(prev => ({
             ...prev,
@@ -300,10 +99,9 @@ export default function MTOPFix({ application }) {
                 : 'Confirm that you have uploaded the correct replacement documents.',
             icon: 'question',
             showCancelButton: true,
-            confirmButtonColor: '#1C2340',
-            cancelButtonColor: '#8A96BC',
+            confirmButtonColor: '#1D2542',
+            cancelButtonColor: '#6B7280',
             confirmButtonText: 'Yes, Submit',
-            customClass: { title: 'font-jakarta', popup: 'font-inter' }
         }).then((result) => {
             if (result.isConfirmed) {
                 if (isPhysFix) {
@@ -351,34 +149,31 @@ export default function MTOPFix({ application }) {
     return (
         <OperatorLayout title={isPhysFix ? "Request Re-inspection" : "Fix Application"} operatorName={app.operatorName}>
             <Head title={isPhysFix ? "Request Re-inspection | TRIVORA" : "Fix Application | TRIVORA"} />
-            <style dangerouslySetInnerHTML={{ __html: CSS }} />
 
-            <div className="mf-root">
-                <div className="mf-nav">
-                    <Link href={route('operator.mtop.details', { id: app.id })} className="mf-back-link">
-                        <ChevronLeft size={14} strokeWidth={3} /> Back to Details
-                    </Link>
-                    <span className="mf-id-badge">
-                        <AlertTriangle size={12} strokeWidth={2.5}/> Action Required
-                    </span>
+            <div className="mx-auto max-w-[1100px] pb-10">
+                <div className="mb-6 flex items-center justify-between">
+                    <BackLink href={route('operator.mtop.details', { id: app.id })}>Back to Details</BackLink>
+                    <StatusBadge variant="danger" icon={AlertTriangle}>Action Required</StatusBadge>
                 </div>
 
-                <div className="mf-header">
-                    <h1 className="mf-title">
+                <div className="mb-6">
+                    <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-[26px]">
                         {isPhysFix ? 'Request Re-inspection' : 'Submit Corrections'}
                     </h1>
-                    <p className="mf-subtitle">
+                    <p className="mt-1.5 text-sm text-slate-500">
                         {isPhysFix
                             ? 'Review the defects found during inspection and confirm repairs.'
                             : 'Review the TMO notes below and upload the correct documents.'}
                     </p>
                 </div>
 
-                <div className="mf-alert">
-                    <div className="mf-alert-icon"><AlertTriangle size={24} strokeWidth={2.5} /></div>
+                <div className={`mb-6 flex items-start gap-4 rounded-2xl border border-red-200 bg-red-50 p-5 ${CARD_SHADOW}`}>
+                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-red-500/[0.16] to-red-500/[0.04] text-red-600">
+                        <AlertTriangle size={22} strokeWidth={2.5} />
+                    </div>
                     <div>
-                        <h2 className="mf-alert-title">Your application is currently paused.</h2>
-                        <p className="mf-alert-desc">
+                        <h2 className="text-base font-bold text-red-800">Your application is currently paused.</h2>
+                        <p className="mt-1 text-[13px] leading-relaxed text-red-700">
                             {isPhysFix
                                 ? `The TMO team found ${rejectedInspections.length} defects. Please ensure all items are repaired before requesting re-inspection.`
                                 : `The TMO team found issues with ${rejectedDocs.length} requirements. Please provide updated files to resume processing.`}
@@ -386,52 +181,51 @@ export default function MTOPFix({ application }) {
                     </div>
                 </div>
 
-                <div className="mf-card">
-                    <div className="mf-card-header">
-                        {isPhysFix ? <Settings size={16} strokeWidth={2}/> : <FileText size={16} strokeWidth={2}/>}
-                        <h2 className="mf-card-title">{isPhysFix ? 'Physical Repair Checklist' : 'Document Submission'}</h2>
+                <div className={`mb-6 overflow-hidden rounded-2xl border border-slate-200/70 bg-white ${CARD_SHADOW}`}>
+                    <div className="flex items-center gap-2.5 border-b border-slate-100 bg-slate-50/60 px-6 py-4">
+                        {isPhysFix ? <Settings size={16} className="text-slate-400" /> : <FileText size={16} className="text-slate-400" />}
+                        <h2 className="text-[15px] font-bold text-slate-900">{isPhysFix ? 'Physical Repair Checklist' : 'Document Submission'}</h2>
                     </div>
-                    <div className="mf-card-body">
-                        <div className="mf-doc-grid">
+                    <div className="p-6 sm:p-8">
+                        <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
                             {(isPhysFix ? app.inspections : app.documents).map((item) => {
                                 if (item.status === 'rejected') {
                                     const hasFiles = newFiles[item.id];
                                     return (
-                                        <div key={item.id} className="mf-row-rejected">
-                                            <div className="mf-row-rejected-header">
+                                        <div key={item.id} className="overflow-hidden rounded-2xl border-[1.5px] border-red-200 bg-white">
+                                            <div className="flex items-start justify-between gap-3 border-b border-red-100 bg-red-50/60 p-5">
                                                 <div>
-                                                    <p className="mf-doc-name-err">{item.name}</p>
-                                                    <div className="mf-tmo-note">
-                                                        {isPhysFix ? <Wrench size={14} /> : <Info size={14} />}
+                                                    <p className="mb-1.5 text-[15px] font-bold leading-snug text-slate-900">{item.name}</p>
+                                                    <div className="flex items-start gap-2 text-[12.5px] font-medium text-red-700">
+                                                        {isPhysFix ? <Wrench size={14} className="mt-0.5 shrink-0" /> : <Info size={14} className="mt-0.5 shrink-0" />}
                                                         <span>{isPhysFix ? 'Defect' : 'TMO Note'}: {item.note}</span>
                                                     </div>
                                                 </div>
-                                                <XCircle size={22} color="#DC2626" strokeWidth={2} />
+                                                <XCircle size={22} className="shrink-0 text-red-600" strokeWidth={2} />
                                             </div>
 
                                             {!isPhysFix && (
-                                                <label className={`mf-dropzone ${hasFiles ? 'has-file' : ''}`}>
+                                                <label className={`m-6 block cursor-pointer rounded-xl border-2 border-dashed p-8 text-center transition-colors ${hasFiles ? 'border-emerald-300 bg-emerald-50/60' : 'border-[#1D2542]/25 bg-slate-50 hover:border-[#1D2542]/50 hover:bg-[#1D2542]/[0.04]'}`}>
                                                     <input
                                                         type="file"
                                                         multiple
                                                         accept="image/*,.pdf"
-                                                        style={{ display: 'none' }}
+                                                        className="hidden"
                                                         onChange={(e) => {
                                                             if (e.target.files?.length > 0) {
                                                                 handleFileSelect(item.id, Array.from(e.target.files));
                                                             }
                                                         }}
                                                     />
-                                                    <div className="mf-drop-icon">
+                                                    <div className="mx-auto mb-3.5 flex h-12 w-12 items-center justify-center rounded-lg bg-gradient-to-br from-[#1D2542]/[0.10] to-[#1D2542]/[0.02] text-[#1D2542]">
                                                         {hasFiles ? <Check size={22} /> : <UploadCloud size={22} />}
                                                     </div>
-                                                    <p className="mf-drop-title">
-                                                        {hasFiles 
+                                                    <p className="text-sm font-bold text-slate-900">
+                                                        {hasFiles
                                                             ? `${hasFiles.length} file(s) selected: ${hasFiles.map(f => f.name).join(', ')}`
-                                                            : 'Click to upload replacement file(s)'
-                                                        }
+                                                            : 'Click to upload replacement file(s)'}
                                                     </p>
-                                                    <p className="mf-drop-sub">{hasFiles ? 'Files ready' : 'PDF, JPG, or PNG (Max 5MB)'}</p>
+                                                    <p className="mt-1 text-xs text-slate-500">{hasFiles ? 'Files ready' : 'PDF, JPG, or PNG (Max 5MB)'}</p>
                                                 </label>
                                             )}
                                         </div>
@@ -439,23 +233,21 @@ export default function MTOPFix({ application }) {
                                 }
 
                                 return (
-                                    <div key={item.id} className="mf-row-ok">
+                                    <div key={item.id} className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4">
                                         <div>
-                                            <p className="mf-doc-name-ok">{item.name}</p>
-                                            <p className="mf-doc-meta-ok">Approved & Verified</p>
+                                            <p className="pr-3 text-[13.5px] font-semibold leading-snug text-slate-500">{item.name}</p>
+                                            <p className="mt-0.5 text-[11px] text-slate-400">Approved &amp; Verified</p>
                                         </div>
-                                        <span className={`mf-status-ok ${item.status}`}>
-                                            <CheckCircle2 size={10} strokeWidth={3} /> Verified
-                                        </span>
+                                        <StatusBadge variant="success" icon={CheckCircle2} className="shrink-0">Verified</StatusBadge>
                                     </div>
                                 );
                             })}
                         </div>
 
                         {isPhysFix && (
-                            <label className="mf-confirm-box">
-                                <input type="checkbox" checked={repairsConfirmed} onChange={(e) => setRepairsConfirmed(e.target.checked)} />
-                                <span className="mf-confirm-label">
+                            <label className="mt-8 flex cursor-pointer items-center gap-3.5 rounded-xl border border-[#1D2542]/20 bg-[#1D2542]/[0.06] p-5 transition-colors hover:border-[#1D2542]/40">
+                                <input type="checkbox" checked={repairsConfirmed} onChange={(e) => setRepairsConfirmed(e.target.checked)} className="h-5 w-5 cursor-pointer accent-[#1D2542]" />
+                                <span className="cursor-pointer select-none text-sm font-semibold leading-relaxed text-slate-900">
                                     I confirm that all defects listed above have been repaired and my tricycle is ready for physical re-inspection.
                                 </span>
                             </label>
@@ -463,14 +255,20 @@ export default function MTOPFix({ application }) {
                     </div>
                 </div>
 
-                <div className="mf-footer">
-                    <Link href={route('operator.mtop.details', { id: app.id })} className="mf-cancel-btn">
+                <div className="flex justify-end gap-4 border-t border-slate-200 pt-6">
+                    <Button as={Link} href={route('operator.mtop.details', { id: app.id })} variant="secondary" size="lg">
                         Cancel
-                    </Link>
-                    <button className="mf-submit-btn" onClick={handleSubmit} disabled={isSubmitDisabled}>
-                        {isSubmitting ? <Loader2 size={16} className="animate-spin" /> : (isPhysFix ? <Check size={16} strokeWidth={2.5} /> : <UploadCloud size={16} strokeWidth={2.5} />)}
+                    </Button>
+                    <Button
+                        variant="primary"
+                        size="lg"
+                        onClick={handleSubmit}
+                        disabled={isSubmitDisabled}
+                        loading={isSubmitting}
+                        icon={isPhysFix ? Check : UploadCloud}
+                    >
                         {isSubmitting ? 'Processing...' : (isPhysFix ? 'Request Re-inspection' : 'Submit Corrections')}
-                    </button>
+                    </Button>
                 </div>
             </div>
         </OperatorLayout>

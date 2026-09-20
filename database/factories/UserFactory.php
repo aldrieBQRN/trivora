@@ -30,6 +30,13 @@ class UserFactory extends Factory
             'email_verified_at' => now(),
             'password' => static::$password ??= Hash::make('password'),
             'remember_token' => Str::random(10),
+            // Matches the `users.is_active` column's own DB default (`1`) — without this,
+            // a factory-created instance leaves the attribute unset in PHP memory (Eloquent
+            // doesn't hydrate DB-defaulted columns it didn't explicitly insert), which casts
+            // to `false` and makes RoleMiddleware treat every factory user as deactivated
+            // the moment a test uses `actingAs()` on it (that helper reuses the same in-memory
+            // instance rather than re-querying).
+            'is_active' => true,
         ];
     }
 
