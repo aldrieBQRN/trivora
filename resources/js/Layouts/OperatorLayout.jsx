@@ -312,7 +312,7 @@ export default function OperatorLayout({
                         </button>
 
                         {/* Dynamic Breadcrumbs Trail */}
-                        <nav aria-label="Breadcrumb" className="flex items-center gap-1.5 sm:gap-2 text-[12.5px] font-medium overflow-hidden">
+                        <nav aria-label="Breadcrumb" className="hidden items-center gap-1.5 text-[12.5px] font-medium overflow-hidden sm:flex sm:gap-2">
                             {computedBreadcrumbs.map((crumb, idx) => {
                                 const isLast = idx === computedBreadcrumbs.length - 1;
                                 return (

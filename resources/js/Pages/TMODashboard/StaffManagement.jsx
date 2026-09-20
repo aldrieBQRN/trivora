@@ -56,7 +56,6 @@ export default function StaffManagement({
 
     const handleSearch = (val) => {
         setSearch(val);
-        setCurrentPage(1);
         router.get(
             route('tmo.users'),
             { search: val, status: filter },
@@ -66,7 +65,6 @@ export default function StaffManagement({
 
     const handleFilter = (status) => {
         setFilter(status);
-        setCurrentPage(1);
         router.get(
             route('tmo.users'),
             { search, status },

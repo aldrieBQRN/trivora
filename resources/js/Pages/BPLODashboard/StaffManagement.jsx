@@ -59,7 +59,6 @@ export default function StaffManagement({
     const handleSearch = (e) => {
         const val = e.target.value;
         setSearch(val);
-        setCurrentPage(1);
         router.get(
             route('bplo.users'),
             { search: val, status: filter },
@@ -69,7 +68,6 @@ export default function StaffManagement({
 
     const handleFilter = (status) => {
         setFilter(status);
-        setCurrentPage(1);
         router.get(
             route('bplo.users'),
             { search, status },
@@ -79,7 +77,6 @@ export default function StaffManagement({
 
     const handleClearSearch = () => {
         setSearch('');
-        setCurrentPage(1);
         router.get(
             route('bplo.users'),
             { search: '', status: filter },
@@ -335,67 +332,43 @@ export default function StaffManagement({
                 3. FILTER & SEARCH DECK
                ══════════════════════════════════════════════════════════════ */}
             <div className={`mb-4 rounded-2xl border border-slate-200/70 bg-white p-3 sm:p-3.5 ${CARD_SHADOW}`}>
-                <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
+                <div className="flex flex-col lg:flex-row lg:items-center gap-2.5">
                     {/* Search input */}
-                    <div className="relative flex-1">
+                    <div className="relative flex-1 min-w-[220px]">
                         <Search
                             size={16}
                             strokeWidth={2.2}
-                            className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"
+                            className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"
                         />
                         <input
                             type="text"
                             value={search}
                             onChange={handleSearch}
                             placeholder="Search staff by name or official email..."
-                            className="w-full rounded-lg border border-slate-200 bg-slate-50/50 pl-10 pr-9 py-2 text-xs sm:text-sm text-slate-900 placeholder-slate-400 transition-colors focus:border-[#1D2542] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#1D2542]/10"
+                            className="h-10 w-full rounded-lg border border-slate-200 bg-slate-50/50 pl-10 pr-9 text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 shadow-2xs transition-all focus:border-[#1D2542] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#1D2542]/10"
                         />
                         {search && (
                             <button
                                 type="button"
                                 onClick={handleClearSearch}
-                                className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded p-1 text-slate-400 hover:text-slate-600 hover:bg-slate-100 cursor-pointer transition-colors"
+                                className="absolute right-3 top-1/2 flex h-5 w-5 -translate-y-1/2 items-center justify-center rounded-full text-slate-400 hover:bg-slate-200 hover:text-slate-700"
                             >
-                                <X size={14} />
+                                <X size={12} strokeWidth={2.5} />
                             </button>
                         )}
                     </div>
 
-                    {/* Filter segmented buttons */}
-                    <div className="flex items-center gap-1.5 bg-slate-100/80 p-1 rounded-lg border border-slate-200/60">
-                        <button
-                            type="button"
-                            onClick={() => handleFilter('all')}
-                            className={`px-3 py-1.5 rounded-md text-xs font-bold transition-colors cursor-pointer ${
-                                filter === 'all'
-                                    ? 'bg-white text-slate-900 shadow-2xs'
-                                    : 'text-slate-600 hover:text-slate-900'
-                            }`}
+                    {/* Status filter */}
+                    <div className="flex items-center gap-2">
+                        <select
+                            value={filter}
+                            onChange={e => handleFilter(e.target.value)}
+                            className="h-10 w-full sm:w-40 rounded-lg border border-slate-200 bg-white px-3 pr-8 text-xs font-semibold text-slate-700 shadow-2xs transition-colors focus:border-[#1D2542] focus:outline-none focus:ring-2 focus:ring-[#1D2542]/10 cursor-pointer"
                         >
-                            All ({stats.total})
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => handleFilter('active')}
-                            className={`px-3 py-1.5 rounded-md text-xs font-bold transition-colors cursor-pointer ${
-                                filter === 'active'
-                                    ? 'bg-white text-slate-900 shadow-2xs'
-                                    : 'text-slate-600 hover:text-slate-900'
-                            }`}
-                        >
-                            Active ({stats.active})
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => handleFilter('inactive')}
-                            className={`px-3 py-1.5 rounded-md text-xs font-bold transition-colors cursor-pointer ${
-                                filter === 'inactive'
-                                    ? 'bg-white text-slate-900 shadow-2xs'
-                                    : 'text-slate-600 hover:text-slate-900'
-                            }`}
-                        >
-                            Inactive ({stats.inactive})
-                        </button>
+                            <option value="all">All Staff ({stats.total})</option>
+                            <option value="active">Active ({stats.active})</option>
+                            <option value="inactive">Inactive ({stats.inactive})</option>
+                        </select>
                     </div>
                 </div>
             </div>
