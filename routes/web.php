@@ -43,11 +43,17 @@ Route::post('/register-mtop', [RegistrationController::class, 'store'])->name('r
 // Cloud Database Seeder Route (for initial cloud setup and verification)
 Route::get('/seed-database', function () {
     try {
+        // 1. Run any pending migrations first
+        \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
+        $migrateOutput = \Illuminate\Support\Facades\Artisan::output();
+
+        // 2. Seed database
         \Illuminate\Support\Facades\Artisan::call('db:seed', ['--force' => true]);
-        $output = \Illuminate\Support\Facades\Artisan::output();
-        return response("<pre style='font-family:monospace;background:#1e293b;color:#10b981;padding:24px;border-radius:8px;font-size:14px;line-height:1.6;'>✅ Database Seeded Successfully:\n\n" . htmlspecialchars($output) . "\n\n👉 <a href='/login' style='color:#38bdf8;'>Back to Login</a></pre>");
+        $seedOutput = \Illuminate\Support\Facades\Artisan::output();
+
+        return response("<pre style='font-family:monospace;background:#1e293b;color:#10b981;padding:24px;border-radius:8px;font-size:14px;line-height:1.6;'>✅ Migrations & Database Seeded Successfully!\n\n--- Migrations ---\n" . htmlspecialchars($migrateOutput) . "\n--- Seeder ---\n" . htmlspecialchars($seedOutput) . "\n\n👉 <a href='/login' style='color:#38bdf8;font-weight:bold;'>Click Here to Login</a></pre>");
     } catch (\Throwable $e) {
-        return response("<pre style='font-family:monospace;background:#1e293b;color:#ef4444;padding:24px;border-radius:8px;font-size:14px;line-height:1.6;'>❌ Seeder Error:\n\n" . htmlspecialchars($e->getMessage() . "\n\n" . $e->getTraceAsString()) . "</pre>", 500);
+        return response("<pre style='font-family:monospace;background:#1e293b;color:#ef4444;padding:24px;border-radius:8px;font-size:14px;line-height:1.6;'>❌ Setup Error:\n\n" . htmlspecialchars($e->getMessage() . "\n\n" . $e->getTraceAsString()) . "</pre>", 500);
     }
 });
 
