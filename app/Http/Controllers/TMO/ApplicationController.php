@@ -5,6 +5,7 @@ namespace App\Http\Controllers\TMO;
 use App\Http\Controllers\Controller;
 use App\Models\Application;
 use App\Models\ApplicationStatusHistory;
+use App\Models\TodaZone;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -15,11 +16,11 @@ use Inertia\Response;
 class ApplicationController extends Controller
 {
     /**
-     * Display the document queue.
+     * Display the initial online document queue.
      */
     public function index(): Response
     {
-        // Fetch applications currently at Step 1 (Document Review)
+        // Fetch applications currently at Phase 1 (Online Document Review)
         // This includes pending_review, under_review, and rejected (awaiting resubmission)
         $applications = Application::with(['operator.todaZone', 'documents'])
             ->whereIn('status', ['pending_review', 'under_review', 'rejected'])
@@ -27,7 +28,7 @@ class ApplicationController extends Controller
             ->get()
             ->map(function ($app) {
                 $statusLabel = in_array($app->status, ['pending_review', 'under_review']) ? 'Pending' : 'Re-submission';
-                
+
                 return [
                     'id'             => $app->id,
                     'reference'      => $app->reference_number,
@@ -40,19 +41,24 @@ class ApplicationController extends Controller
                 ];
             });
 
-        // Calculate queue counts
         $pendingCount = $applications->where('status', 'Pending')->count();
         $resubmissionCount = $applications->where('status', 'Re-submission')->count();
-        
-        // Count applications processed today (status changes to pending_inspection, failed_inspection, etc. made today)
+
+        // Count online applications reviewed today by current user
         $reviewedTodayCount = ApplicationStatusHistory::where('changed_by', Auth::id())
             ->whereDate('created_at', now()->toDateString())
             ->whereIn('to_status', ['pending_inspection', 'rejected'])
             ->distinct('application_id')
             ->count();
 
+        // Fetch all active TODA zones from the database for comprehensive filtering
+        $todaZones = TodaZone::where('is_active', true)
+            ->orderBy('name')
+            ->get(['id', 'name', 'code']);
+
         return Inertia::render('TMODashboard/DocumentQueue', [
             'applications'        => $applications,
+            'todaZones'           => $todaZones,
             'pendingCount'        => $pendingCount,
             'reviewedTodayCount'  => $reviewedTodayCount,
             'resubmissionCount'   => $resubmissionCount,
@@ -60,7 +66,7 @@ class ApplicationController extends Controller
     }
 
     /**
-     * Show the detailed document review screen.
+     * Show the detailed online document review screen.
      */
     public function show(Application $application): Response
     {
@@ -69,7 +75,6 @@ class ApplicationController extends Controller
         $operator = $application->operator;
         $tricycle = $application->tricycle;
 
-        // Map database documents to frontend expectation
         $requirementsMap = [
             'drivers_license'    => 'license',
             'or_cr'              => 'orcr',
@@ -85,7 +90,6 @@ class ApplicationController extends Controller
         foreach ($application->documents as $doc) {
             $frontendId = $requirementsMap[$doc->document_type] ?? 'other';
             if ($frontendId === 'other') {
-                // Try to extract original category from filename prefix
                 $parts = explode('_', $doc->file_name, 2);
                 if (count($parts) > 1 && in_array($parts[0], ['prangkisa', 'receipt', 'tariff', 'auth'])) {
                     $frontendId = $parts[0];
@@ -100,11 +104,15 @@ class ApplicationController extends Controller
                 'id'            => $doc->id,
                 'category'      => $frontendId,
                 'file_name'     => $doc->file_name,
-                'file_path'     => asset('storage/' . $doc->file_path),
+                'file_path'     => '/storage/' . ltrim($doc->file_path, '/'),
                 'mime_type'     => $doc->mime_type,
                 'review_status' => $doc->review_status,
             ];
         }
+
+        $todaName = $tricycle?->todaZone?->name 
+            ?? $operator?->todaZone?->name 
+            ?? 'Unassigned';
 
         $appData = [
             'id'             => $application->id,
@@ -112,11 +120,18 @@ class ApplicationController extends Controller
             'operator'       => $operator ? $operator->full_name : 'N/A',
             'contact'        => $operator ? $operator->contact_number : 'N/A',
             'barangay'       => $operator ? $operator->barangay : 'N/A',
-            'toda'           => ($operator && $operator->todaZone) ? $operator->todaZone->name : 'Unassigned',
-            'make'           => $tricycle ? "{$tricycle->make} {$tricycle->model}" : 'N/A',
-            'engine_number'  => $tricycle ? $tricycle->engine_number : 'N/A',
-            'chassis_number' => $tricycle ? $tricycle->chassis_number : 'N/A',
-            'plate'          => $tricycle ? $tricycle->plate_number : 'N/A',
+            'toda'           => $todaName,
+            'make'           => $tricycle ? trim("{$tricycle->make} {$tricycle->model}") : 'N/A',
+            'make_name'      => $tricycle ? $tricycle->make : 'N/A',
+            'model_name'     => $tricycle ? $tricycle->model : 'N/A',
+            'year_model'     => $tricycle ? ($tricycle->year_model ?: 'N/A') : 'N/A',
+            'body_color'     => $tricycle ? ($tricycle->body_color ?: 'N/A') : 'N/A',
+            'body_type'      => $tricycle ? ($tricycle->body_type ?: 'N/A') : 'N/A',
+            'engine_number'  => $tricycle ? ($tricycle->engine_number ?: 'N/A') : 'N/A',
+            'chassis_number' => $tricycle ? ($tricycle->chassis_number ?: 'N/A') : 'N/A',
+            'plate'          => $tricycle ? ($tricycle->plate_number ?: 'N/A') : 'N/A',
+            'or_number'      => $tricycle ? ($tricycle->or_number ?: 'N/A') : 'N/A',
+            'cr_number'      => $tricycle ? ($tricycle->cr_number ?: 'N/A') : 'N/A',
             'status'         => $application->status,
             'docStatuses'    => $docStatuses,
             'rejectionReasons' => $rejectionReasons,
@@ -129,7 +144,7 @@ class ApplicationController extends Controller
     }
 
     /**
-     * Submit document review results.
+     * Submit initial online document review results.
      */
     public function review(Request $request, Application $application): RedirectResponse
     {
@@ -157,7 +172,6 @@ class ApplicationController extends Controller
 
             // 1. Update review status on individual document records
             foreach ($application->documents as $doc) {
-                // Find matching frontend key
                 $frontendKey = array_search($doc->document_type, $requirementsMap, true);
                 if (!$frontendKey && $doc->document_type === 'other') {
                     $parts = explode('_', $doc->file_name, 2);
@@ -180,12 +194,12 @@ class ApplicationController extends Controller
             // 2. Transition workflow step and application status
             if ($action === 'approve') {
                 $toStatus = 'pending_inspection';
-                $toStep = 2; // Step 2: Physical Inspection
-                $notes = 'All mandatory documents verified and approved. Moved to Inspection phase.';
+                $toStep = 2; // Step 2: Physical Tricycle Inspection
+                $notes = 'Uploaded requirements verified and approved. Unit endorsed for physical roadworthiness inspection.';
             } else {
                 $toStatus = 'rejected';
                 $toStep = 1; // Stay at step 1 for resubmission
-                $notes = 'Application rejected due to document verification issues.';
+                $notes = 'Online application rejected due to document verification issues. Correction required.';
             }
 
             $application->update([
@@ -208,7 +222,7 @@ class ApplicationController extends Controller
         });
 
         $message = $action === 'approve'
-            ? 'Application approved and moved to Physical Inspection phase.'
+            ? 'Application requirements approved. Unit scheduled for Physical Tricycle Inspection.'
             : 'Rejection notice sent successfully to the operator.';
 
         return redirect()->route('tmo.docs')->with('success', $message);

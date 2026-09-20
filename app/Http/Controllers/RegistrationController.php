@@ -8,6 +8,9 @@ use Inertia\Inertia;
 
 class RegistrationController extends Controller
 {
+    // Bumped only when the terms/privacy copy in Registration/PublicApply.jsx materially changes.
+    private const TERMS_VERSION = '2026.1';
+
     // For the Internal TMO Validation Dashboard
     public function create()
     {
@@ -26,6 +29,8 @@ class RegistrationController extends Controller
      */
     public function store(Request $request)
     {
+        $currentYear = (int) now()->format('Y');
+
         $request->validate([
             // Driver info
             'first_name'     => 'required|string|max:100',
@@ -34,14 +39,24 @@ class RegistrationController extends Controller
             'barangay'       => 'required|string|max:100',
             'email'          => 'required|string|email|max:255|unique:users,email',
             'password'       => 'required|string|min:8',
-            
+
             // Vehicle specs
             'plate_number'   => 'required|string|max:20|unique:tricycles,plate_number',
             'make_model'     => 'required|string|max:100',
+            'year_model'     => 'required|integer|min:1980|max:' . ($currentYear + 1),
+            'body_color'     => 'required|string|max:50',
+            'body_type'      => 'required|string|max:100',
             'engine_number'  => 'required|string|max:50|unique:tricycles,engine_number',
             'chassis_number' => 'required|string|max:50|unique:tricycles,chassis_number',
+            'or_number'      => 'required|string|max:50',
+            'cr_number'      => 'required|string|max:50',
             'toda'           => 'required|string|max:20',
-            
+
+            // Terms & Agreement — the single "I have read, understood, and agree to the
+            // Terms & Conditions, including the Data Privacy Consent..." checkbox on Step 1.
+            'terms_accepted'           => 'required|accepted',
+            'privacy_policy_accepted'  => 'required|accepted',
+
             // Documents
             'documents'           => 'required|array',
             'documents.orcr'      => 'required|array|min:1',
@@ -63,15 +78,14 @@ class RegistrationController extends Controller
                 'role'     => 'tricycle_driver',
             ]);
 
-            // Find TodaZone matching TODA code (e.g. 'A' maps to TODA-01, etc.)
-            $todaCodeMap = [
-                'A' => 'TODA-01',
-                'B' => 'TODA-02',
-                'C' => 'TODA-03',
-                'D' => 'TODA-04',
-            ];
-            $todaCode = $todaCodeMap[$request->input('toda')] ?? 'TODA-01';
-            $todaZone = \App\Models\TodaZone::where('code', $todaCode)->first();
+            // Registration/PublicApply.jsx's TODA Assignment dropdown submits the zone's full
+            // display name directly (e.g. "TODA Bucana", "TODA Brgy. 10") — resolve by that
+            // name, matching exactly what's sent. (This used to map through single-letter
+            // codes 'A'-'D' to TodaZone codes 'TODA-01'..'TODA-04', but the frontend never sent
+            // those letters and no zone in this database is coded that way either — the lookup
+            // always missed and silently fell back to a zone that doesn't exist, so every
+            // registration ended up with a NULL TODA regardless of what was picked.)
+            $todaZone = \App\Models\TodaZone::where('name', $request->input('toda'))->first();
 
             // 2. Create Operator
             $operator = \App\Models\Operator::create([
@@ -101,8 +115,11 @@ class RegistrationController extends Controller
                 'chassis_number' => $request->input('chassis_number'),
                 'make'           => $make,
                 'model'          => $model,
-                'year_model'     => 2024,
-                'body_color'     => 'Red',
+                'year_model'     => $request->input('year_model'),
+                'body_color'     => $request->input('body_color'),
+                'body_type'      => $request->input('body_type'),
+                'or_number'      => $request->input('or_number'),
+                'cr_number'      => $request->input('cr_number'),
                 'status'         => 'unregistered',
             ]);
 
@@ -111,13 +128,17 @@ class RegistrationController extends Controller
             $refNo = 'APP-2026-' . str_pad($appCount + 1, 5, '0', STR_PAD_LEFT);
 
             $application = \App\Models\Application::create([
-                'reference_number' => $refNo,
-                'operator_id'      => $operator->id,
-                'tricycle_id'      => $tricycle->id,
-                'application_type' => 'new',
-                'current_step'     => 1, // Step 1: Document review
-                'status'           => 'pending_review',
-                'submitted_at'     => now(),
+                'reference_number'        => $refNo,
+                'operator_id'             => $operator->id,
+                'tricycle_id'             => $tricycle->id,
+                'application_type'        => 'new',
+                'current_step'            => 1, // Step 1: Document review
+                'status'                  => 'pending_review',
+                'submitted_at'            => now(),
+                'terms_accepted'          => $request->boolean('terms_accepted'),
+                'privacy_policy_accepted' => $request->boolean('privacy_policy_accepted'),
+                'consent_accepted_at'     => now(),
+                'terms_version'           => self::TERMS_VERSION,
             ]);
 
             // 5. Save Documents

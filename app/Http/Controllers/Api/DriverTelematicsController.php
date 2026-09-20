@@ -3,15 +3,28 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Driver;
 use App\Models\Tricycle;
 use App\Models\TricycleLocation;
-use App\Models\Violation;
+use App\Services\TelemetryService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 
+/**
+ * Thin API layer over TelemetryService (the shared GPS processing pipeline mobile and a future
+ * ST-901L IoT receiver both feed): authentication (route middleware), request validation,
+ * resolving the authenticated driver's own tricycle, and shaping the HTTP response. All actual
+ * location/coding-check/violation processing lives in the service — this controller has none of
+ * it anymore.
+ */
 class DriverTelematicsController extends Controller
 {
+    public function __construct(private readonly TelemetryService $telemetryService)
+    {
+    }
+
     /**
      * Ingest single live location ping from mobile app background/foreground watcher.
      */
@@ -53,28 +66,51 @@ class DriverTelematicsController extends Controller
             ], 404);
         }
 
-        $recordedAt = $request->recorded_at ? \Carbon\Carbon::parse($request->recorded_at) : now();
+        // The mobile/web app sends recorded_at as a UTC ISO string (JS Date::toISOString()).
+        // Carbon::parse() on a string carrying an explicit offset keeps that offset internally —
+        // without converting to the app's own timezone here, MySQL's naive datetime column would
+        // silently store the raw UTC wall-clock digits, mislabeled as if they were already
+        // Asia/Manila (config('app.timezone')), making every client-stamped ping look ~8 hours
+        // stale next to now()/other server-stamped timestamps.
+        $recordedAt = $request->recorded_at
+            ? \Carbon\Carbon::parse($request->recorded_at)->setTimezone(config('app.timezone'))
+            : now();
+        $source = $tricycle->active_tracking_mode === 'iot_device' ? 'gps_device' : 'mobile_app';
 
-        // 1. Create Location Telemetry Record
-        $location = TricycleLocation::create([
+        // 1-3. Persist the location, run the shared color-coding engine, and return its result —
+        // all delegated to TelemetryService so mobile and a future IoT receiver share exactly one
+        // implementation. The service already wraps the coding-check step in its own try/catch,
+        // so an engine failure here still never blocks the ping itself from being recorded.
+        $result = $this->telemetryService->process([
             'tricycle_id' => $tricycle->id,
             'latitude'    => $request->latitude,
             'longitude'   => $request->longitude,
-            'speed_kmh'   => $request->speed_kmh ?? 0,
-            'heading_deg' => $request->heading_deg ?? 0,
-            'accuracy_m'  => $request->accuracy_m ?? 5.0,
-            'source'      => 'mobile_app',
+            'speed_kmh'   => $request->speed_kmh,
+            'heading_deg' => $request->heading_deg,
+            'accuracy_m'  => $request->accuracy_m,
+            'source'      => $source,
             'recorded_at' => $recordedAt,
         ]);
+        $location = $result['location'];
 
-        // 2. Execute Server-Side Automated Violation Engine
-        $violationDetected = $this->runAutomatedViolationChecks($tricycle, $location);
+        // 4. Update the driver's live position cache (used for booking dispatch/display) in the
+        // same request, so the mobile app no longer needs a separate /driver/location call. This
+        // stays controller-side, not in the shared service: it's keyed by the authenticated
+        // driver's own User/Driver row, which a future IoT device ping has no equivalent of.
+        $driver = Driver::where('user_id', $user->id)->first();
+        if ($driver) {
+            $driver->update([
+                'current_lat'              => $request->latitude,
+                'current_lng'              => $request->longitude,
+                'last_location_updated_at' => $recordedAt,
+            ]);
+        }
 
         return response()->json([
             'success'   => true,
             'message'   => 'Location ping recorded successfully.',
             'ping_id'   => $location->id,
-            'violation' => $violationDetected,
+            'violation' => $result['violation'],
         ], 201);
     }
 
@@ -111,113 +147,60 @@ class DriverTelematicsController extends Controller
             ], 400);
         }
 
+        $source = $tricycle->active_tracking_mode === 'iot_device' ? 'gps_device' : 'mobile_app';
         $insertedCount = 0;
-        DB::transaction(function () use ($request, $tricycle, &$insertedCount) {
+        $createdLocations = collect();
+
+        // Each ping is persisted via the shared service's recordLocation() — but NOT process(),
+        // since that would run the color-coding check once per ping. The check still needs to
+        // run only once per distinct calendar date, exactly as before this refactor.
+        DB::transaction(function () use ($request, $tricycle, $source, &$insertedCount, &$createdLocations) {
             foreach ($request->pings as $ping) {
-                TricycleLocation::create([
+                $createdLocations->push($this->telemetryService->recordLocation([
                     'tricycle_id' => $tricycle->id,
                     'latitude'    => $ping['latitude'],
                     'longitude'   => $ping['longitude'],
-                    'speed_kmh'   => $ping['speed_kmh'] ?? 0,
-                    'heading_deg' => $ping['heading_deg'] ?? 0,
-                    'accuracy_m'  => $ping['accuracy_m'] ?? 5.0,
-                    'source'      => 'mobile_app',
-                    'recorded_at' => \Carbon\Carbon::parse($ping['recorded_at']),
-                ]);
+                    'speed_kmh'   => $ping['speed_kmh'] ?? null,
+                    'heading_deg' => $ping['heading_deg'] ?? null,
+                    'accuracy_m'  => $ping['accuracy_m'] ?? null,
+                    'source'      => $source,
+                    // See the identical fix + comment in store() above.
+                    'recorded_at' => \Carbon\Carbon::parse($ping['recorded_at'])->setTimezone(config('app.timezone')),
+                ]));
                 $insertedCount++;
             }
         });
+
+        // Update the driver's live position cache from the most recent ping in the batch.
+        $latest = $createdLocations->sortByDesc('recorded_at')->first();
+        if ($latest) {
+            $driver = Driver::where('user_id', $request->user()->id)->first();
+            if ($driver) {
+                $driver->update([
+                    'current_lat'              => $latest->latitude,
+                    'current_lng'              => $latest->longitude,
+                    'last_location_updated_at' => $latest->recorded_at,
+                ]);
+            }
+        }
+
+        // Run the shared color-coding check once per distinct calendar date present in the batch
+        // (judged by each ping's own recorded_at, not upload time) — never once per ping.
+        try {
+            $createdLocations
+                ->groupBy(fn (TricycleLocation $loc) => $loc->recorded_at->toDateString())
+                ->each(function ($locationsForDate) use ($tricycle) {
+                    $this->telemetryService->checkColorCoding($tricycle, $locationsForDate->sortByDesc('recorded_at')->first());
+                });
+        } catch (\Throwable $e) {
+            Log::error("Color-coding check failed during batch flush for tricycle {$tricycle->id}: {$e->getMessage()}");
+        }
 
         return response()->json([
             'success'        => true,
             'message'        => "Flushed {$insertedCount} offline location pings to server.",
             'processed_count'=> $insertedCount,
         ], 200);
-    }
-
-    /**
-     * Core Automated Violation Detection Engine
-     */
-    protected function runAutomatedViolationChecks(Tricycle $tricycle, TricycleLocation $location)
-    {
-        $today = now();
-        $dayName = $today->format('l'); // e.g. Monday
-        $restrictedEndings = $this->getRestrictedDigitsForDay($dayName);
-
-        $bodyNo = $tricycle->body_number ?: $tricycle->plate_number;
-        $lastDigit = $bodyNo ? (int)substr(trim($bodyNo), -1) : null;
-
-        // Check 1: Color-Coding Operating Violation
-        if ($lastDigit !== null && in_array($lastDigit, $restrictedEndings)) {
-            // Check if violation citation already generated today for coding
-            $existingViolation = Violation::where('tricycle_id', $tricycle->id)
-                ->where('violation_type', 'coding_no_operation')
-                ->whereDate('detected_at', $today->toDateString())
-                ->exists();
-
-            if (!$existingViolation) {
-                $violation = Violation::create([
-                    'tricycle_id'    => $tricycle->id,
-                    'violation_type' => 'coding_no_operation',
-                    'description'    => "Automated GPS Detection: Operating on restricted color-coding day ({$dayName}, ending digit {$lastDigit}).",
-                    'fine_amount'    => 500.00,
-                    'penalty_amount' => 500.00,
-                    'status'         => 'open',
-                    'detected_at'    => now(),
-                ]);
-
-                return [
-                    'flagged'  => true,
-                    'type'     => 'coding_no_operation',
-                    'citation' => "CITE-" . str_pad($violation->id, 5, '0', STR_PAD_LEFT),
-                    'message'  => "ALERT: Operating on restricted coding day ({$dayName}). Violation recorded.",
-                ];
-            }
-        }
-
-        // Check 2: Over-speeding Limit (> 40 km/h in municipal zone)
-        if ($location->speed_kmh > 40.0) {
-            $existingSpeeding = Violation::where('tricycle_id', $tricycle->id)
-                ->where('violation_type', 'overspeeding')
-                ->where('detected_at', '>=', now()->subMinutes(30))
-                ->exists();
-
-            if (!$existingSpeeding) {
-                $violation = Violation::create([
-                    'tricycle_id'    => $tricycle->id,
-                    'violation_type' => 'overspeeding',
-                    'description'    => "Automated Telematics: Exceeded 40 km/h speed limit (Recorded: {$location->speed_kmh} km/h).",
-                    'fine_amount'    => 1000.00,
-                    'penalty_amount' => 1000.00,
-                    'status'         => 'open',
-                    'detected_at'    => now(),
-                ]);
-
-                return [
-                    'flagged'  => true,
-                    'type'     => 'overspeeding',
-                    'citation' => "CITE-" . str_pad($violation->id, 5, '0', STR_PAD_LEFT),
-                    'message'  => "WARNING: Speed limit exceeded ({$location->speed_kmh} km/h). Citation issued.",
-                ];
-            }
-        }
-
-        return ['flagged' => false];
-    }
-
-    /**
-     * Map day of week to restricted last digits
-     */
-    protected function getRestrictedDigitsForDay(string $dayName): array
-    {
-        return match ($dayName) {
-            'Monday'    => [1, 2],
-            'Tuesday'   => [3, 4],
-            'Wednesday' => [5, 6],
-            'Thursday'  => [7, 8],
-            'Friday'    => [9, 0],
-            default     => [], // Saturday & Sunday no coding restriction
-        };
     }
 
     /**

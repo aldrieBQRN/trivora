@@ -1,369 +1,300 @@
-import React, { useState, useEffect } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Head, Link } from '@inertiajs/react';
 import OperatorLayout from '@/Layouts/OperatorLayout';
+import { PageHeader, Button, StatusBadge, EmptyState } from '@/Components/TMO';
 import {
     MapPin,
     User,
-    Activity,
-    Settings,
     Navigation2,
-    Wifi,
+    Smartphone,
     Bike,
-    FileText,
-    BatteryMedium,
-    ShieldCheck,
-    Wrench,
-    RefreshCw
+    Satellite,
+    Info,
+    Clock,
 } from 'lucide-react';
 
-/* ─────────────────────────────────────────────────────────────────────────
-   DRIVER PORTAL — My Tricycle (Full-Width Enterprise View)
-   Path: resources/js/Pages/Operator/Fleet.jsx
-───────────────────────────────────────────────────────────────────────── */
-const CSS = `
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600;700&family=DM+Sans:wght@500;600;700&display=swap');
+// Shared soft, layered shadow token — same elevation language used across TMODashboard, so this
+// panel reads as one consistent product rather than a different template.
+const CARD_SHADOW = 'shadow-[0_1px_2px_0_rgba(15,23,42,0.04),0_8px_24px_-8px_rgba(15,23,42,0.10)]';
 
-.f-root { font-family: 'Inter', sans-serif; color: #1C2340; padding-bottom: 64px; max-width: 1440px; margin: 0 auto; }
-.f-root *, .f-root *::before, .f-root *::after { box-sizing: border-box; }
+const TRACKING_META = {
+    iot_device: { label: 'IoT GPS', icon: Satellite, badgeClass: 'bg-indigo-50 text-indigo-700 border-indigo-200' },
+    mobile_app: { label: 'Mobile GPS', icon: Smartphone, badgeClass: 'bg-slate-100 text-slate-600 border-slate-200' },
+};
 
-/* ── Page heading ───────────────────────────────────────────────────── */
-.f-eyebrow {
-  font-family: 'DM Sans', sans-serif;
-  font-size: 9.5px; font-weight: 700;
-  letter-spacing: .18em; text-transform: uppercase;
-  color: #4F5BCB;
-  display: flex; align-items: center; gap: 8px;
-  margin-bottom: 6px;
-}
-.f-eyebrow::before {
-  content: '';
-  width: 18px; height: 1.5px;
-  background: #4F5BCB; border-radius: 2px;
-}
-.f-title {
-  font-family: 'Plus Jakarta Sans', sans-serif;
-  font-size: 32px; font-weight: 800; letter-spacing: -.02em;
-  color: #1C2340; line-height: 1.1;
-}
-.f-subtitle {
-  font-family: 'Inter', sans-serif;
-  font-size: 14px; font-weight: 500;
-  color: #5A6488; margin-top: 6px;
+const VEHICLE_STATUS_META = {
+    active: { label: 'Active', variant: 'success' },
+    suspended: { label: 'Suspended', variant: 'warning' },
+    revoked: { label: 'Revoked', variant: 'danger' },
+    unregistered: { label: 'Unregistered', variant: 'neutral' },
+};
+
+/** Tracking connectivity derived only from real location pings — never fabricated. */
+function getTrackingStatus(tricycle) {
+    const isIot = tricycle.activeTrackingMode === 'iot_device';
+    if (!tricycle.lastSignal) return { label: isIot ? 'Offline' : 'Inactive', dot: 'bg-slate-300', text: 'text-slate-400' };
+    if (tricycle.lastSignal.isRecent) return { label: isIot ? 'Online' : 'Active', dot: 'bg-emerald-500', text: 'text-emerald-700' };
+    return { label: 'No Recent Update', dot: 'bg-amber-500', text: 'text-amber-700' };
 }
 
-/* ── TMO Document Queue-Style Stats Grid ── */
-.f-stats-grid {
-    display: grid; grid-template-columns: repeat(3, 1fr);
-    gap: 16px; margin-top: 32px; margin-bottom: 32px;
-}
-@media (max-width: 1024px) { .f-stats-grid { grid-template-columns: 1fr; } }
+export default function MyTricycles({ tricycles = [], selectedId = null, auth }) {
+    const operatorName = auth?.user?.name || 'Driver';
+    const [currentId, setCurrentId] = useState(selectedId);
 
-.f-stat {
-    background: #fff; border: 1px solid rgba(28,35,64,.08); border-radius: 14px;
-    padding: 20px 22px; display: flex; align-items: flex-start; gap: 16px;
-    transition: box-shadow .2s, border-color .2s; position: relative; overflow: hidden;
-}
-.f-stat:hover { border-color: rgba(28,35,64,.14); box-shadow: 0 4px 20px rgba(28,35,64,.07); }
-.f-stat::after {
-    content: ''; position: absolute; bottom: 0; right: 0; width: 80px; height: 80px;
-    border-radius: 50%; background: radial-gradient(circle, rgba(79,91,203,.04) 0%, transparent 70%);
-    pointer-events: none;
-}
-.f-stat-icon {
-    width: 42px; height: 42px; border-radius: 10px;
-    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
-}
-.f-stat-teal { background: linear-gradient(135deg, #059669 0%, #047857 100%); color: #FFFFFF; }
-.f-stat-blue { background: linear-gradient(135deg, #4F5BCB 0%, #6675A8 100%); color: #FFFFFF; }
-.f-stat-amber { background: linear-gradient(135deg, #D97706 0%, #B45309 100%); color: #FFFFFF; }
+    const selected = useMemo(
+        () => tricycles.find((t) => t.db_id === currentId) || tricycles[0] || null,
+        [tricycles, currentId]
+    );
 
-.f-stat-val {
-    font-family: 'Plus Jakarta Sans', sans-serif; font-size: 26px;
-    font-weight: 800; color: #1C2340; line-height: 1;
-}
-.f-stat-lbl {
-    font-family: 'DM Sans', sans-serif; font-size: 9px; font-weight: 700;
-    letter-spacing: .13em; text-transform: uppercase; color: #8A96BC; margin-top: 6px;
-}
-
-/* ── Full-Width Single Unit Card ────────────────────────────────────── */
-.f-card {
-    background: #FFFFFF; border: 1px solid rgba(28,35,64,.08); border-radius: 20px;
-    overflow: hidden; box-shadow: 0 4px 20px rgba(28,35,64,.03); transition: transform .2s, box-shadow .2s;
-    display: flex; flex-direction: column;
-}
-.f-card:hover { border-color: rgba(79,91,203,.15); box-shadow: 0 8px 30px rgba(28,35,64,.05); }
-
-.f-card-header { padding: 32px 40px; display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 1px dashed rgba(28,35,64,.08); background: rgba(79,91,203,.02); }
-.f-unit-badge { display: inline-flex; align-items: center; justify-content: center; width: 64px; height: 64px; background: linear-gradient(135deg, rgba(79,91,203,.1) 0%, rgba(79,91,203,.05) 100%); color: #4F5BCB; border-radius: 16px; margin-bottom: 16px; border: 1px solid rgba(79,91,203,.15); }
-.f-unit-id { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 28px; font-weight: 800; color: #1C2340; line-height: 1; margin-bottom: 8px; }
-.f-unit-model { font-family: 'Inter', sans-serif; font-size: 15px; font-weight: 500; color: #5A6488; }
-
-.f-status-pill {
-    display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: 50px;
-    font-family: 'DM Sans', sans-serif; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .08em;
-    background: rgba(5,150,105,.1); color: #059669; border: 1px solid rgba(5,150,105,.2);
-}
-
-/* Changed to 4 columns for full-width monitors */
-.f-card-body { padding: 40px; flex: 1; display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; }
-@media (max-width: 1024px) { .f-card-body { grid-template-columns: repeat(2, 1fr); } }
-@media (max-width: 640px) { .f-card-body { grid-template-columns: 1fr; } }
-
-.f-info-row { display: flex; align-items: center; gap: 16px; padding: 20px; background: #FFFFFF; border-radius: 14px; border: 1px solid rgba(28,35,64,.08); transition: background .2s, border-color .2s; }
-.f-info-row:hover { background: #F9FAFB; border-color: rgba(79,91,203,.2); }
-
-.f-info-icon { width: 44px; height: 44px; border-radius: 12px; background: rgba(79,91,203,.08); color: #4F5BCB; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-.f-info-icon.emerald { background: rgba(5,150,105,.08); color: #059669; }
-.f-info-icon.amber { background: rgba(245,158,11,.08); color: #D97706; }
-
-.f-info-text { flex: 1; }
-.f-info-label { font-family: 'DM Sans', sans-serif; font-size: 9.5px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: #8A96BC; margin-bottom: 6px; }
-.f-info-value { font-family: 'Inter', sans-serif; font-size: 14.5px; font-weight: 600; color: #1C2340; display: flex; align-items: center; gap: 8px; }
-
-.f-color-dot { width: 12px; height: 12px; border-radius: 50%; display: inline-block; }
-
-.f-card-footer { padding: 24px 40px; background: #FAFAFC; border-top: 1px solid rgba(28,35,64,.05); display: flex; gap: 16px; }
-.f-btn-primary {
-    flex: 1; height: 48px; padding: 0 32px; border-radius: 12px; background: #1C2340; color: #FFFFFF;
-    font-family: 'DM Sans', sans-serif; font-size: 11px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
-    display: flex; align-items: center; justify-content: center; gap: 10px; border: none; cursor: pointer; transition: all .2s;
-    text-decoration: none; box-shadow: 0 4px 14px rgba(28,35,64,.25);
-}
-.f-btn-primary:hover { background: #2E3A9E; box-shadow: 0 6px 20px rgba(79,91,203,.3); transform: translateY(-1px); color: #FFFFFF; }
-.f-btn-secondary {
-    height: 48px; padding: 0 24px; border-radius: 12px; background: #FFFFFF; border: 1px solid rgba(28,35,64,.15);
-    color: #1C2340; font-family: 'DM Sans', sans-serif; font-size: 11px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
-    display: flex; align-items: center; justify-content: center; gap: 10px; cursor: pointer; transition: all .2s; text-decoration: none;
-}
-.f-btn-secondary:hover { background: #F8F9FC; border-color: rgba(28,35,64,.3); color: #1C2340; }
-
-/* ── Pulse animation ── */
-@keyframes pulse {
-    0%   { box-shadow: 0 0 0 0 rgba(5,150,105,.7); }
-    70%  { box-shadow: 0 0 0 6px rgba(5,150,105,0); }
-    100% { box-shadow: 0 0 0 0 rgba(5,150,105,0); }
-}
-`;
-
-export default function MyTricycle({ tricycle, auth }) {
-    const operatorName = auth?.user?.name || "Driver";
-
-    if (!tricycle) {
+    if (tricycles.length === 0) {
         return (
-            <OperatorLayout title="My Tricycle" operatorName={operatorName}>
-                <Head title="My Tricycle | TRIVORA" />
-                <style dangerouslySetInnerHTML={{ __html: CSS }} />
-                <div className="f-root">
-                    <div>
-                        <p className="f-eyebrow">Unit Management</p>
-                        <h1 className="f-title">My Tricycle</h1>
-                        <p className="f-subtitle">View your assigned tricycle unit details and real-time IoT tracker status.</p>
-                    </div>
-                    <div style={{ textAlign: 'center', padding: '80px 0', background: '#FFF', borderRadius: '24px', border: '1px dashed #E2E8F0', marginTop: 32 }}>
-                        <Bike size={48} strokeWidth={1} style={{ margin: '0 auto 16px', color: '#94A3B8', opacity: 0.5 }} />
-                        <p style={{ fontFamily: 'Plus Jakarta Sans', fontSize: 18, fontWeight: 800, color: '#1E293B' }}>No registered tricycle</p>
-                        <p style={{ fontFamily: 'Inter', fontSize: 14, color: '#64748B', marginTop: 4 }}>You don't have an active tricycle unit linked to your account yet.</p>
-                        <Link href={route('operator.mtop')} className="f-btn-primary" style={{ display: 'inline-flex', maxWidth: 240, margin: '24px auto 0' }}>
-                            View Permit Status
-                        </Link>
+            <OperatorLayout title="My Tricycles" operatorName={operatorName}>
+                <Head title="My Tricycles | TRIVORA" />
+                <div className="mx-auto max-w-[1500px]">
+                    <PageHeader
+                        eyebrow="Unit Management"
+                        title="My Tricycles"
+                        subtitle="View your registered tricycle units and how each one is being tracked."
+                    />
+                    <div className={`rounded-2xl border border-dashed border-slate-300 bg-white ${CARD_SHADOW}`}>
+                        <EmptyState
+                            icon={Bike}
+                            title="No registered tricycle"
+                            description="You don't have an active tricycle unit linked to your account yet."
+                            action={
+                                <Button as={Link} href={route('operator.mtop')} variant="primary">
+                                    View Permit Status
+                                </Button>
+                            }
+                        />
                     </div>
                 </div>
             </OperatorLayout>
         );
     }
 
+    const unitQuery = (base) => ({ unit: selected.db_id, ...(base || {}) });
+    const selectedTracking = getTrackingStatus(selected);
+    const selectedVehicleStatus = VEHICLE_STATUS_META[selected.vehicleStatus] || VEHICLE_STATUS_META.unregistered;
+
     return (
-        <OperatorLayout title="My Tricycle" operatorName={operatorName}>
-            <Head title="My Tricycle | TRIVORA" />
-            <style dangerouslySetInnerHTML={{ __html: CSS }} />
+        <OperatorLayout title="My Tricycles" operatorName={operatorName}>
+            <Head title="My Tricycles | TRIVORA" />
 
-            <div className="f-root">
+            <div className="mx-auto max-w-[1500px] pb-10">
+                <PageHeader
+                    eyebrow="Unit Management"
+                    title="My Tricycles"
+                    subtitle={`${tricycles.length} registered unit${tricycles.length !== 1 ? 's' : ''} • each tracked via IoT GPS or Mobile GPS.`}
+                />
 
-                {/* ── PAGE HEADING ── */}
-                <div>
-                    <p className="f-eyebrow">Unit Management</p>
-                    <h1 className="f-title">My Tricycle</h1>
-                    <p className="f-subtitle">View your assigned tricycle unit details and real-time IoT tracker status.</p>
-                </div>
+                {/* ── VEHICLE SWITCHER — a horizontal strip, only shown with more than one
+                    unit, so a single-tricycle driver never sees an empty rail beside the
+                    detail panel. Height is intrinsic to one row, independent of the panel below. ── */}
+                {tricycles.length > 1 && (
+                    <div className="mb-6 flex flex-wrap gap-3">
+                        {tricycles.map((t) => {
+                            const isActive = selected?.db_id === t.db_id;
+                            const tm = TRACKING_META[t.activeTrackingMode] || TRACKING_META.mobile_app;
+                            const TmIcon = tm.icon;
+                            const tracking = getTrackingStatus(t);
+                            const needsAttention = t.vehicleStatus !== 'active';
 
-                {/* ── TMO DOCUMENT QUEUE-STYLE STATS GRID ── */}
-                <div className="f-stats-grid">
-                    <StatCard
-                        value="Online" label="IoT Connection Status"
-                        icon={Wifi} iconClass="f-stat-teal" accentColor="#059669"
-                    />
-                    <StatCard
-                        value={tricycle.iotBattery} label="Tracker Battery Level"
-                        icon={BatteryMedium} iconClass="f-stat-blue"
-                    />
-                    <StatCard
-                        value={tricycle.mtopStatus} label="Franchise Validity"
-                        icon={ShieldCheck} iconClass="f-stat-amber"
-                    />
-                </div>
-
-                {/* ── FULL-WIDTH TRICYCLE CARD ── */}
-                <div className="f-card">
-
-                    {/* Card Header */}
-                    <div className="f-card-header">
-                        <div>
-                            <div className="f-unit-badge">
-                                <Bike size={32} strokeWidth={2.5} />
-                            </div>
-                            <h2 className="f-unit-id">{tricycle.id}</h2>
-                            <p className="f-unit-model">{tricycle.makeModel} • Plate: {tricycle.plateNo}</p>
-                        </div>
-                        <div>
-                            <div className="f-status-pill">
-                                <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#059669', display: 'block', animation: 'pulse 2s infinite' }} />
-                                Connected
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* 4-Column Card Body Grid */}
-                    <div className="f-card-body">
-
-                        <div className="f-info-row">
-                            <div className="f-info-icon"><User size={20} /></div>
-                            <div className="f-info-text">
-                                <p className="f-info-label">Assigned Driver</p>
-                                <p className="f-info-value">{tricycle.driver}</p>
-                            </div>
-                        </div>
-
-                        <div className="f-info-row">
-                            <div className="f-info-icon amber"><MapPin size={20} /></div>
-                            <div className="f-info-text">
-                                <p className="f-info-label">Color Code & Zone</p>
-                                <p className="f-info-value">
-                                    <span className="f-color-dot" style={{ background: tricycle.colorHex }}></span>
-                                    {tricycle.colorCode} ({tricycle.zone})
-                                </p>
-                            </div>
-                        </div>
-
-                        <div className="f-info-row">
-                            <div className="f-info-icon" style={{ background: tricycle.isExpired ? 'rgba(220,38,38,.1)' : 'rgba(5,150,105,.1)', color: tricycle.isExpired ? '#DC2626' : '#059669' }}><FileText size={20} /></div>
-                            <div className="f-info-text">
-                                <p className="f-info-label">MTOP Franchise Expiry</p>
-                                <p className="f-info-value" style={{ color: tricycle.isExpired ? '#DC2626' : '#059669', fontWeight: 700 }}>
-                                    {tricycle.mtopExpiry} {tricycle.isExpired ? '(EXPIRED)' : ''}
-                                </p>
-                            </div>
-                        </div>
-
-                        <div className="f-info-row">
-                            <div className="f-info-icon"><Activity size={20} /></div>
-                            <div className="f-info-text">
-                                <p className="f-info-label">IoT Sync Status</p>
-                                <p className="f-info-value">
-                                    Last synced: {tricycle.lastPing}
-                                </p>
-                            </div>
-                        </div>
-
-                    </div>
-
-                    {/* Card Footer Actions */}
-                    <div className="f-card-footer">
-                        <Link href={route('operator.tracking')} className="f-btn-primary">
-                            <Navigation2 size={16} /> Open Live GPS Tracking
-                        </Link>
-
-                        {tricycle.hasPendingRenewal ? (
-                            <span style={{ background: 'rgba(217,119,6,.1)', color: '#D97706', border: '1px solid rgba(217,119,6,.2)', padding: '10px 18px', borderRadius: 10, fontFamily: 'DM Sans, sans-serif', fontSize: 11, fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 6, letterSpacing: '.05em', textTransform: 'uppercase' }}>
-                                <Activity size={14} /> Renewal In Progress
-                            </span>
-                        ) : (tricycle.canRenew || tricycle.isExpired) ? (
-                            <Link
-                                href={route('operator.mtop.create', { type: 'renewal', unit_id: tricycle.db_id || tricycle.id })}
-                                className="f-btn-secondary"
-                                style={{
-                                    background: '#DC2626',
-                                    color: '#FFFFFF',
-                                    borderColor: '#DC2626',
-                                    fontWeight: 700
-                                }}
-                            >
-                                <RefreshCw size={16} /> Renew Expired Franchise
-                            </Link>
-                        ) : (
-                            <span style={{ background: 'rgba(5,150,105,.1)', color: '#059669', border: '1px solid rgba(5,150,105,.2)', padding: '10px 18px', borderRadius: 10, fontFamily: 'DM Sans, sans-serif', fontSize: 11, fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 6, letterSpacing: '.05em', textTransform: 'uppercase' }}>
-                                ✓ Franchise Active
-                            </span>
-                        )}
-
-                        <Link href={route('operator.settings')} className="f-btn-secondary" title="Unit Settings">
-                            <Settings size={16} /> Unit Settings
-                        </Link>
-                    </div>
-
-                </div>
-
-                {/* ── FRANCHISE PERMIT HISTORY LIST ── */}
-                {tricycle.franchiseHistory && tricycle.franchiseHistory.length > 0 && (
-                    <div style={{ marginTop: 32, background: '#FFFFFF', border: '1px solid rgba(28,35,64,.08)', borderRadius: 20, padding: 32, boxShadow: '0 4px 20px rgba(28,35,64,.03)' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
-                            <h3 style={{ fontFamily: 'Plus Jakarta Sans', fontSize: 18, fontWeight: 800, color: '#1C2340', display: 'flex', alignItems: 'center', gap: 10 }}>
-                                <FileText size={20} color="#4F5BCB" /> Franchise Permit History
-                            </h3>
-                            <span style={{ fontFamily: 'DM Sans', fontSize: 10, fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase', color: '#8A96BC' }}>
-                                Total Permits: {tricycle.franchiseHistory.length}
-                            </span>
-                        </div>
-
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                            {tricycle.franchiseHistory.map((item) => (
-                                <div key={item.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', borderRadius: 14, background: '#FAFAFC', border: '1px solid rgba(28,35,64,.06)' }}>
-                                    <div>
-                                        <p style={{ fontFamily: 'Plus Jakarta Sans', fontSize: 15, fontWeight: 800, color: '#1C2340', margin: 0 }}>
-                                            Franchise #{item.franchise_number}
-                                        </p>
-                                        <p style={{ fontFamily: 'Inter', fontSize: 12, color: '#5A6488', marginTop: 4, margin: 0 }}>
-                                            Issued: <strong>{item.issue_date}</strong> • Expiry: <strong>{item.expiry_date}</strong>
-                                        </p>
-                                        {item.notes && (
-                                            <p style={{ fontFamily: 'Inter', fontSize: 11, color: '#8A96BC', marginTop: 4, fontStyle: 'italic', margin: 0 }}>
-                                                {item.notes}
-                                            </p>
-                                        )}
+                            return (
+                                <button
+                                    key={t.db_id}
+                                    type="button"
+                                    onClick={() => setCurrentId(t.db_id)}
+                                    className={`relative flex shrink-0 flex-col gap-2 rounded-xl border p-4 text-left transition-colors ${
+                                        isActive ? `border-[#1D2542]/20 bg-[#1D2542]/[0.06] ${CARD_SHADOW}` : 'border-slate-200 bg-white hover:border-[#1D2542]/40'
+                                    }`}
+                                    style={{ minWidth: 200 }}
+                                >
+                                    {needsAttention && (
+                                        <span className="absolute right-3 top-3 h-2 w-2 rounded-full bg-amber-500" title="Needs attention" />
+                                    )}
+                                    <div className="min-w-0">
+                                        <p className="truncate text-sm font-bold text-slate-900">{t.plateNo}</p>
+                                        <p className="truncate text-[11px] text-slate-500">{t.id}</p>
                                     </div>
-                                    <div>
-                                        {item.status === 'Active' ? (
-                                            <span style={{ fontFamily: 'DM Sans', fontSize: 10, fontWeight: 800, color: '#059669', background: 'rgba(5,150,105,.1)', padding: '6px 14px', borderRadius: 50, border: '1px solid rgba(5,150,105,.2)', textTransform: 'uppercase', letterSpacing: '.05em' }}>
-                                                ✓ Active Permit
-                                            </span>
-                                        ) : (
-                                            <span style={{ fontFamily: 'DM Sans', fontSize: 10, fontWeight: 800, color: '#DC2626', background: 'rgba(220,38,38,.1)', padding: '6px 14px', borderRadius: 50, border: '1px solid rgba(220,38,38,.2)', textTransform: 'uppercase', letterSpacing: '.05em' }}>
-                                                Expired Permit
-                                            </span>
-                                        )}
+                                    <div className="flex flex-wrap items-center gap-1.5">
+                                        <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${tm.badgeClass}`}>
+                                            <TmIcon size={10} /> {tm.label}
+                                        </span>
+                                        <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-slate-500">
+                                            {tracking.label}
+                                        </span>
                                     </div>
-                                </div>
-                            ))}
-                        </div>
+                                </button>
+                            );
+                        })}
                     </div>
                 )}
+
+                {/* ── SELECTED VEHICLE DETAIL (full width) ── */}
+                <div className={`overflow-hidden rounded-2xl border border-slate-200/70 bg-white ${CARD_SHADOW}`}>
+                    <div className="flex flex-col gap-4 border-b border-dashed border-slate-200 bg-slate-50 px-6 py-6 sm:flex-row sm:items-start sm:justify-between sm:px-8">
+                        <div className="flex items-start gap-4">
+                            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#1D2542]/[0.10] to-[#1D2542]/[0.02] text-[#1D2542]">
+                                <Bike size={28} strokeWidth={2.5} />
+                            </div>
+                            <div>
+                                <h2 className="text-xl font-bold leading-tight text-slate-900">{selected.plateNo}</h2>
+                                <p className="mt-1 text-sm text-slate-500">{selected.id} &bull; {selected.makeModel}</p>
+                            </div>
+                        </div>
+                        <StatusBadge variant={selectedVehicleStatus.variant}>{selectedVehicleStatus.label}</StatusBadge>
+                    </div>
+
+                    {/* Body: spec sheet (left, wide) + tracking & actions rail (right) */}
+                    <div className="grid grid-cols-1 gap-6 p-6 sm:p-8 lg:grid-cols-[1fr_320px] lg:items-start lg:gap-8">
+
+                        {/* ── RIGHT ON DESKTOP / FIRST ON MOBILE: Tracking + quick facts + actions ── */}
+                        <div className="space-y-5 lg:order-2">
+                            <div>
+                                <h3 className="mb-3 text-sm font-bold text-slate-900">Tracking</h3>
+
+                                <TrackingCard tricycle={selected} status={selectedTracking} />
+
+                                <p className="mt-3 flex items-start gap-1.5 text-[11px] leading-relaxed text-slate-400">
+                                    <Info size={13} className="mt-0.5 shrink-0" />
+                                    {selected.activeTrackingMode === 'iot_device'
+                                        ? 'IoT GPS is optional — this unit can switch to Mobile GPS through the Driver app at any time.'
+                                        : 'An IoT GPS device is optional and not required for this unit.'}
+                                </p>
+                            </div>
+
+                            <div className="space-y-3 border-t border-dashed border-slate-200 pt-5">
+                                <InfoTile icon={User} label="Assigned Driver" value={selected.driver} />
+                                <InfoTile
+                                    icon={MapPin}
+                                    tone="amber"
+                                    label="Color Coding"
+                                    value={
+                                        <>
+                                            <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ background: selected.colorHex }} />
+                                            {selected.colorCode}
+                                        </>
+                                    }
+                                />
+                            </div>
+
+                            <div className="border-t border-dashed border-slate-200 pt-5">
+                                <Button as={Link} href={route('operator.tracking', unitQuery())} variant="primary" size="lg" icon={Navigation2} className="w-full">
+                                    Open Live GPS Tracking
+                                </Button>
+                            </div>
+                        </div>
+
+                        {/* ── LEFT ON DESKTOP / SECOND ON MOBILE: Vehicle Specifications ── */}
+                        <div className="lg:order-1">
+                            <div className="mb-4">
+                                <h3 className="text-sm font-bold text-slate-900">Vehicle Specifications</h3>
+                                <p className="mt-0.5 text-[11px] text-slate-400">Registered details from this unit's Tricycle Registration record.</p>
+                            </div>
+                            <div className="space-y-4">
+                                <div className="rounded-xl bg-slate-50 p-5">
+                                    <h4 className="mb-1 text-[11px] font-bold uppercase tracking-wide text-slate-500">Vehicle Information</h4>
+                                    <div className="divide-y divide-slate-200">
+                                        <SpecRow label="LTO Plate Number" value={selected.plateNo} />
+                                        <SpecRow label="Make &amp; Model" value={selected.makeModel} />
+                                        <SpecRow label="Year Model" value={selected.yearModel} />
+                                        <SpecRow label="Body Color" value={selected.bodyColor} />
+                                        <SpecRow label="Body Type" value={selected.bodyType} />
+                                    </div>
+                                </div>
+                                <div className="rounded-xl bg-slate-50 p-5">
+                                    <h4 className="mb-1 text-[11px] font-bold uppercase tracking-wide text-slate-500">Registration Information</h4>
+                                    <div className="divide-y divide-slate-200">
+                                        <SpecRow label="TODA Assignment" value={selected.zone} />
+                                        <SpecRow label="Engine Number" value={selected.engineNumber} />
+                                        <SpecRow label="Chassis Number" value={selected.chassisNumber} />
+                                        <SpecRow label="LTO OR Number" value={selected.orNumber} />
+                                        <SpecRow label="LTO CR Number" value={selected.crNumber} />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </OperatorLayout>
     );
 }
 
-/* ── SUB-COMPONENT: STAT CARD ── */
-function StatCard({ value, label, icon: Icon, iconClass, accentColor }) {
-    const cardStyle = accentColor ? { borderTop: `2.5px solid ${accentColor}` } : {};
+function TrackingCard({ tricycle, status }) {
+    const isIot = tricycle.activeTrackingMode === 'iot_device';
+    const Icon = isIot ? Satellite : Smartphone;
+    const signal = tricycle.lastSignal;
 
     return (
-        <div className="f-stat" style={cardStyle}>
-            <div className={`f-stat-icon ${iconClass}`}>
-                <Icon size={20} strokeWidth={2.5} />
+        <div className={`rounded-xl border p-5 ${isIot ? 'border-indigo-200/70 bg-indigo-50/60' : 'border-slate-200/70 bg-slate-50/70'}`}>
+            <div className="flex items-start gap-4">
+                <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-lg ${isIot ? 'bg-gradient-to-br from-indigo-500/[0.14] to-indigo-500/[0.02] text-indigo-700' : 'bg-white text-slate-600'}`}>
+                    <Icon size={22} strokeWidth={2} />
+                </div>
+                <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                        <p className={`text-sm font-bold ${isIot ? 'text-indigo-900' : 'text-slate-800'}`}>
+                            {isIot ? 'IoT GPS' : 'Mobile GPS'}
+                        </p>
+                        <span className={`inline-flex items-center gap-1.5 text-xs font-bold ${status.text}`}>
+                            {status.label}
+                        </span>
+                    </div>
+                    <p className={`mt-1 text-xs ${isIot ? 'text-indigo-700' : 'text-slate-600'}`}>
+                        {isIot
+                            ? `SinoTrack GPS device${tricycle.iotDeviceId ? ` (ID: ${tricycle.iotDeviceId})` : ''} installed on this unit.`
+                            : "Tracked via the driver's phone using the Trivora Driver app."}
+                    </p>
+                </div>
             </div>
-            <div>
-                <p className="f-stat-val">{value}</p>
-                <p className="f-stat-lbl">{label}</p>
+
+            <div className="mt-4 grid grid-cols-1 gap-3 border-t border-dashed border-black/5 pt-4 sm:grid-cols-2">
+                <div>
+                    <p className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wide text-slate-400"><MapPin size={11} /> Last Location</p>
+                    <p className="mt-1 text-[13px] font-semibold text-slate-900">
+                        {signal ? `${signal.latitude.toFixed(5)}, ${signal.longitude.toFixed(5)}` : 'Not available yet'}
+                    </p>
+                </div>
+                <div>
+                    <p className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wide text-slate-400"><Clock size={11} /> Last Updated</p>
+                    <p className="mt-1 text-[13px] font-semibold text-slate-900">{signal ? signal.at : 'Never'}</p>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+function SpecRow({ label, value }) {
+    return (
+        <div className="flex items-center justify-between gap-3 py-2.5 first:pt-0 last:pb-0">
+            <span className="text-[11px] font-semibold text-slate-500">{label}</span>
+            {value ? (
+                <span className="text-right text-[13px] font-semibold text-slate-900">{value}</span>
+            ) : (
+                <span className="text-right text-[13px] italic text-slate-400">Not provided</span>
+            )}
+        </div>
+    );
+}
+
+const TILE_TONES = {
+    default: 'bg-gradient-to-br from-[#1D2542]/[0.10] to-[#1D2542]/[0.02] text-[#1D2542]',
+    amber: 'bg-gradient-to-br from-amber-500/[0.12] to-amber-500/[0.02] text-amber-600',
+    emerald: 'bg-gradient-to-br from-emerald-500/[0.12] to-emerald-500/[0.02] text-emerald-600',
+    danger: 'bg-gradient-to-br from-red-500/[0.12] to-red-500/[0.02] text-red-600',
+};
+
+function InfoTile({ icon: Icon, label, value, tone = 'default' }) {
+    return (
+        <div className="flex items-center gap-3.5 rounded-xl border border-slate-200/70 bg-white p-4 transition-colors hover:bg-slate-50/60">
+            <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-lg ${TILE_TONES[tone] || TILE_TONES.default}`}>
+                <Icon size={19} strokeWidth={2} />
+            </div>
+            <div className="min-w-0">
+                <p className="text-[10px] font-bold uppercase tracking-wide text-slate-500">{label}</p>
+                <p className="mt-1 flex items-center gap-2 text-[13.5px] font-semibold text-slate-900">{value}</p>
             </div>
         </div>
     );

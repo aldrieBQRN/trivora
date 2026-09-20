@@ -1,582 +1,527 @@
-import React, { useState } from 'react';
-import { createPortal } from 'react-dom';
+import React from 'react';
 import { Head, Link } from '@inertiajs/react';
 import BPLOLayout from '@/Layouts/BPLOLayout';
 import {
-    ArrowLeft,
-    Calendar,
-    Eye,
-    Bike,
-    MapPin,
-    User,
-    FileCheck2,
-    FileText,
-    CheckCircle2,
-    Phone,
-    Gauge,
+    ChevronLeft, Calendar, Bike, MapPin,
+    User, Phone, Printer, ShieldCheck,
+    Clock, FileBadge, Check, Mail,
+    CreditCard, Home, Navigation
 } from 'lucide-react';
 
-const CSS = `
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600;700&family=DM+Sans:wght@500;600;700&display=swap');
+/**
+ * Determine coding day and scheme details from body number or registry coding_day.
+ */
+function getCodingSchemeInfo(bodyNumber, serverCodingDay) {
+    if (serverCodingDay && serverCodingDay !== 'None' && serverCodingDay !== 'Unassigned') {
+        const dayMap = {
+            'Monday': { digits: '1 & 2', scheme: 'Blue Scheme', badgeClass: 'bg-blue-50 text-blue-700 border-blue-200/80', dotClass: 'bg-blue-500' },
+            'Tuesday': { digits: '3 & 4', scheme: 'Green Scheme', badgeClass: 'bg-emerald-50 text-emerald-700 border-emerald-200/80', dotClass: 'bg-emerald-500' },
+            'Wednesday': { digits: '5 & 6', scheme: 'Yellow Scheme', badgeClass: 'bg-amber-50 text-amber-700 border-amber-200/80', dotClass: 'bg-amber-500' },
+            'Thursday': { digits: '7 & 8', scheme: 'Purple Scheme', badgeClass: 'bg-purple-50 text-purple-700 border-purple-200/80', dotClass: 'bg-purple-500' },
+            'Friday': { digits: '9 & 0', scheme: 'Red Scheme', badgeClass: 'bg-rose-50 text-rose-700 border-rose-200/80', dotClass: 'bg-rose-500' },
+        };
+        const mapped = dayMap[serverCodingDay] || { digits: '—', scheme: 'Standard Scheme', badgeClass: 'bg-slate-100 text-slate-700 border-slate-200', dotClass: 'bg-slate-400' };
+        return {
+            day: serverCodingDay,
+            ...mapped
+        };
+    }
 
-.rd-root {
-  font-family: 'Inter', sans-serif;
-  color: #1C2340;
-  max-width: 1500px;
-  margin: 0 auto;
-  padding-bottom: 48px;
-}
-.rd-root *, .rd-root *::before, .rd-root *::after { box-sizing: border-box; }
+    if (!bodyNumber) {
+        return { day: 'Monday', digits: '1 & 2', scheme: 'Blue Scheme', badgeClass: 'bg-blue-50 text-blue-700 border-blue-200/80', dotClass: 'bg-blue-500' };
+    }
 
-/* Back nav */
-.rd-nav {
-  display: flex;
-  align-items: center;
-  margin-bottom: 28px;
-}
-.rd-back-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-family: 'DM Sans', sans-serif;
-  font-size: 9px;
-  font-weight: 700;
-  letter-spacing: .16em;
-  text-transform: uppercase;
-  color: #8A96BC;
-  text-decoration: none;
-  transition: color .18s;
-}
-.rd-back-link:hover { color: #1C2340; }
+    const clean = String(bodyNumber).trim();
+    const lastChar = clean.charAt(clean.length - 1);
+    const lastDigit = parseInt(lastChar, 10);
 
-/* Hero + Operator card */
-.rd-hero-shell {
-  background: #FFFFFF;
-  border: 1px solid rgba(28,35,64,.12);
-  border-radius: 20px;
-  overflow: hidden;
-  box-shadow: 0 8px 32px rgba(28,35,64,.15);
-  margin-bottom: 34px;
-}
+    if (isNaN(lastDigit)) {
+        return { day: 'Monday', digits: '1 & 2', scheme: 'Blue Scheme', badgeClass: 'bg-blue-50 text-blue-700 border-blue-200/80', dotClass: 'bg-blue-500' };
+    }
 
-.rd-hero {
-  background: linear-gradient(135deg, #1C2340 0%, #2E3A9E 100%);
-  border-radius: 20px 20px 0 0;
-  padding: 34px 38px;
-  position: relative;
-  overflow: hidden;
-}
-.rd-hero-bg-icon {
-  position: absolute;
-  top: 50%;
-  right: -24px;
-  transform: translateY(-50%);
-  color: #FFFFFF;
-  opacity: .08;
-  pointer-events: none;
-}
-.rd-hero-inner {
-  position: relative;
-  z-index: 1;
-  display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 30px;
-  align-items: center;
-}
-@media (max-width: 768px) {
-  .rd-hero-inner { grid-template-columns: 1fr; }
-}
-.rd-hero-label {
-  font-family: 'DM Sans', sans-serif;
-  font-size: 8.5px;
-  font-weight: 700;
-  letter-spacing: .18em;
-  text-transform: uppercase;
-  color: #FFFFFF;
-  margin-bottom: 10px;
-}
-.rd-hero-title {
-  font-family: 'Plus Jakarta Sans', sans-serif;
-  font-size: 28px;
-  font-weight: 800;
-  letter-spacing: -.025em;
-  color: #FFFFFF;
-  line-height: 1;
-  margin-bottom: 14px;
-}
-.rd-hero-meta {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  flex-wrap: wrap;
-}
-.rd-hero-meta-item {
-  font-family: 'DM Sans', sans-serif;
-  font-size: 9px;
-  font-weight: 700;
-  letter-spacing: .12em;
-  text-transform: uppercase;
-  color: #FFFFFF;
-}
-.rd-hero-logo {
-  max-width: 120px;
-  height: auto;
-  object-fit: contain;
-  border-radius: 12px;
+    switch (lastDigit) {
+        case 1:
+        case 2:
+            return { day: 'Monday', digits: '1 & 2', scheme: 'Blue Scheme', badgeClass: 'bg-blue-50 text-blue-700 border-blue-200/80', dotClass: 'bg-blue-500' };
+        case 3:
+        case 4:
+            return { day: 'Tuesday', digits: '3 & 4', scheme: 'Green Scheme', badgeClass: 'bg-emerald-50 text-emerald-700 border-emerald-200/80', dotClass: 'bg-emerald-500' };
+        case 5:
+        case 6:
+            return { day: 'Wednesday', digits: '5 & 6', scheme: 'Yellow Scheme', badgeClass: 'bg-amber-50 text-amber-700 border-amber-200/80', dotClass: 'bg-amber-500' };
+        case 7:
+        case 8:
+            return { day: 'Thursday', digits: '7 & 8', scheme: 'Purple Scheme', badgeClass: 'bg-purple-50 text-purple-700 border-purple-200/80', dotClass: 'bg-purple-500' };
+        case 9:
+        case 0:
+            return { day: 'Friday', digits: '9 & 0', scheme: 'Red Scheme', badgeClass: 'bg-rose-50 text-rose-700 border-rose-200/80', dotClass: 'bg-rose-500' };
+        default:
+            return { day: 'Monday', digits: '1 & 2', scheme: 'Blue Scheme', badgeClass: 'bg-blue-50 text-blue-700 border-blue-200/80', dotClass: 'bg-blue-500' };
+    }
 }
 
-.rd-hero-content {
-  display: flex;
-  flex-direction: column;
-}
-
-.rd-op-wrap { padding: 24px; }
-.rd-op-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 20px;
-}
-.rd-op-field {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-}
-.rd-op-icon {
-  width: 40px;
-  height: 40px;
-  border-radius: 10px;
-  background: rgba(79,91,203,.08);
-  color: #4F5BCB;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-.rd-op-label {
-  font-family: 'DM Sans', sans-serif;
-  font-size: 8.5px;
-  font-weight: 600;
-  letter-spacing: .12em;
-  text-transform: uppercase;
-  color: #8A96BC;
-  margin-bottom: 4px;
-}
-.rd-op-value {
-  font-family: 'Inter', sans-serif;
-  font-size: 13px;
-  font-weight: 600;
-  color: #1C2340;
-}
-
-/* Requirements section */
-.rd-section { margin-bottom: 28px; }
-.rd-section-label {
-  font-family: 'DM Sans', sans-serif;
-  font-size: 9px;
-  font-weight: 700;
-  letter-spacing: .17em;
-  text-transform: uppercase;
-  color: #4F5BCB;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 16px;
-}
-.rd-section-label::before {
-  content: '';
-  width: 18px;
-  height: 1.5px;
-  background: #4F5BCB;
-  border-radius: 2px;
-}
-
-.rd-card {
-  background: #FFFFFF;
-  border: 1px solid rgba(28,35,64,.08);
-  border-radius: 14px;
-  overflow: hidden;
-}
-.rd-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  padding: 14px 18px;
-  border-bottom: 1px solid rgba(28,35,64,.07);
-  background: rgba(79,91,203,.05);
-}
-.rd-head-left {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-family: 'DM Sans', sans-serif;
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: .11em;
-  text-transform: uppercase;
-  color: #4F5BCB;
-}
-.rd-count {
-  font-family: 'DM Sans', sans-serif;
-  font-size: 9px;
-  font-weight: 700;
-  letter-spacing: .1em;
-  text-transform: uppercase;
-  color: #5A6488;
-}
-
-.rd-table { width: 100%; border-collapse: collapse; }
-.rd-table th {
-  text-align: left;
-  padding: 12px 18px;
-  font-family: 'DM Sans', sans-serif;
-  font-size: 8.5px;
-  font-weight: 700;
-  letter-spacing: .15em;
-  text-transform: uppercase;
-  color: #8A96BC;
-  border-bottom: 1px solid rgba(28,35,64,.06);
-}
-.rd-table td {
-  padding: 14px 18px;
-  border-bottom: 1px solid rgba(28,35,64,.05);
-  font-size: 13px;
-  color: #1C2340;
-}
-.rd-table tr:last-child td { border-bottom: none; }
-
-.rd-status {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  padding: 5px 10px;
-  border-radius: 999px;
-  font-family: 'DM Sans', sans-serif;
-  font-size: 8.5px;
-  font-weight: 700;
-  letter-spacing: .11em;
-  text-transform: uppercase;
-  border: 1px solid transparent;
-}
-.rd-status-verified {
-  background: rgba(16,185,129,.12);
-  color: #047857;
-  border-color: rgba(16,185,129,.28);
-}
-
-.rd-preview-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  height: 32px;
-  padding: 0 12px;
-  border-radius: 999px;
-  border: 1px solid rgba(79,91,203,.25);
-  background: rgba(79,91,203,.08);
-  color: #2E3A9E;
-  text-decoration: none;
-  font-family: 'DM Sans', sans-serif;
-  font-size: 8.5px;
-  font-weight: 700;
-  letter-spacing: .1em;
-  text-transform: uppercase;
-  white-space: nowrap;
-  cursor: pointer;
-}
-.rd-preview-btn:hover {
-  background: rgba(79,91,203,.14);
-}
-
-/* Preview modal */
-.rd-modal-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 9999;
-  background: rgba(10,14,50,.4);
-  backdrop-filter: blur(4px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 24px;
-}
-.rd-modal {
-  background: #FFFFFF;
-  border-radius: 16px;
-  box-shadow: 0 20px 60px rgba(28,35,64,.2);
-  width: 100%;
-  max-width: 760px;
-  overflow: hidden;
-}
-.rd-modal-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 18px 22px;
-  border-bottom: 1px solid rgba(28,35,64,.07);
-}
-.rd-modal-title {
-  font-family: 'Plus Jakarta Sans', sans-serif;
-  font-size: 15px;
-  font-weight: 800;
-  color: #1C2340;
-  letter-spacing: -.02em;
-}
-.rd-modal-close {
-  background: none;
-  border: none;
-  cursor: pointer;
-  color: #8A96BC;
-  font-family: 'DM Sans', sans-serif;
-  font-size: 9px;
-  font-weight: 700;
-  letter-spacing: .12em;
-  text-transform: uppercase;
-}
-.rd-modal-close:hover { color: #1C2340; }
-.rd-modal-body {
-  background: #F4F6FF;
-  padding: 12px;
-}
-.rd-modal-image {
-  width: 100%;
-  max-height: 70vh;
-  object-fit: contain;
-  background: #FFFFFF;
-  border-radius: 10px;
-}
-.rd-modal-frame {
-  width: 100%;
-  height: 70vh;
-  border: none;
-  border-radius: 10px;
-  background: #FFFFFF;
-}
-
-.rd-no-data {
-  padding: 40px 24px;
-  text-align: center;
-  color: #8A96BC;
-  font-family: 'DM Sans', sans-serif;
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: .1em;
-  text-transform: uppercase;
-}
-`;
+// Shared soft, layered shadow token — same elevation language used across the redesigned TMO
+// panel pages, so BPLO cards read as part of the same product.
+const CARD_SHADOW = 'shadow-[0_1px_2px_0_rgba(15,23,42,0.04),0_8px_24px_-8px_rgba(15,23,42,0.10)]';
 
 export default function RegistryDetails({ registry }) {
-    const requirements = registry?.requirements || [];
-    const [previewDoc, setPreviewDoc] = useState(null);
+    const codingInfo = getCodingSchemeInfo(registry?.body_no, registry?.coding_day);
+    const isActive = registry?.status === 'active';
 
-    const isImagePreview = (url = '') => /\.(png|jpg|jpeg|gif|webp|svg)$/i.test(url);
+    const handlePrint = () => {
+        window.print();
+    };
 
     return (
         <BPLOLayout title="Registry Details" role="BPLO Officer">
-            <Head title={`Registry Details | ${registry?.plate_no || 'TRIVORA'}`} />
-            <style dangerouslySetInnerHTML={{ __html: CSS }} />
+            <Head title={`Registry: ${registry?.body_no || registry?.plate_no || 'Unit'} | TRIVORA`} />
 
-            <div className="rd-root" style={{ maxWidth: 1500, margin: '0 auto', paddingBottom: 48 }}>
-                <div className="rd-nav">
-                    <Link href="/bplo/registry" className="rd-back-link">
-                        <ArrowLeft size={14} strokeWidth={3} />
-                        Back to Registry
+            <div className="mx-auto max-w-7xl space-y-6 pb-12">
+
+                {/* ══════════════════════════════════════════════════════════════
+                    1. TOP ACTION & NAVIGATION BAR
+                   ══════════════════════════════════════════════════════════════ */}
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                    <Link
+                        href="/bplo/registry"
+                        className="group inline-flex items-center gap-1.5 text-xs sm:text-sm font-semibold text-slate-500 hover:text-slate-900 transition-colors"
+                    >
+                        <ChevronLeft size={16} strokeWidth={2.5} className="text-slate-400 group-hover:text-slate-700 transition-colors" />
+                        <span>Back to Active Registry</span>
                     </Link>
+
+                    <div className="flex items-center gap-2">
+                        <button
+                            type="button"
+                            onClick={handlePrint}
+                            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 shadow-2xs active:scale-[0.98] transition-all"
+                        >
+                            <Printer size={13} strokeWidth={2.2} className="text-slate-500" />
+                            <span>Print Record</span>
+                        </button>
+
+                        <span className="inline-flex items-center px-2.5 py-1 rounded-lg bg-slate-100 border border-slate-200 text-xs font-mono font-bold text-[#1D2542]">
+                            {registry?.plate_no || 'NO-PLATE'}
+                        </span>
+                    </div>
                 </div>
 
-                {/* ── Hero Section + Operator Info ── */}
-                <div style={{ backgroundColor: '#FFFFFF', border: '1px solid rgba(28,35,64,.12)', borderRadius: '20px', overflow: 'hidden', boxShadow: '0 8px 32px rgba(28,35,64,.15)', marginBottom: '40px' }}>
-                    <div className="rd-hero" style={{ background: 'linear-gradient(135deg, #1C2340 0%, #2E3A9E 100%)', borderRadius: '20px 20px 0 0', marginBottom: 0 }}>
-                        <Bike size={64} className="rd-hero-bg-icon" style={{ opacity: 0.08, color: '#1C2340' }} />
-                        <div className="rd-hero-inner">
-                            <div className="rd-hero-content">
-                                <p className="rd-hero-label" style={{ color: '#FFFFFF' }}>Tricycle Unit ID</p>
-                                <h1 className="rd-hero-title" style={{ color: '#FFFFFF' }}>{registry?.body_no || '-'}</h1>
-                                <div className="rd-hero-meta">
-                                    <span className="rd-hero-meta-item" style={{ color: '#FFFFFF' }}>
-                                        <span>Plate: {registry?.plate_no || '-'}</span>
+                {/* ══════════════════════════════════════════════════════════════
+                    2. HERO PROFILE HEADER CARD
+                   ══════════════════════════════════════════════════════════════ */}
+                <div className={`relative overflow-hidden rounded-2xl border border-slate-200/70 bg-white p-6 sm:p-8 ${CARD_SHADOW}`}>
+                    {/* Barely-there ambient color — brand tint without ever reading as a solid block */}
+                    <div className="pointer-events-none absolute -right-24 -top-28 h-80 w-80 rounded-full bg-gradient-to-br from-[#1D2542]/[0.07] to-transparent blur-3xl" aria-hidden="true" />
+                    <Bike size={128} className="pointer-events-none absolute -right-8 top-1/2 -translate-y-1/2 text-[#1D2542]/[0.04]" />
+
+                    <div className="relative z-10 flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+                        <div>
+                            {/* Eyebrow */}
+                            <div className="mb-2 flex items-center gap-2 text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                                <ShieldCheck size={14} className="text-emerald-600 shrink-0" />
+                                <span>Municipality of Nasugbu &bull; BPLO Tricycle Record</span>
+                            </div>
+
+                            {/* Title & Badges */}
+                            <div className="mb-3.5 flex flex-wrap items-center gap-2 sm:gap-3">
+                                <span className="font-mono text-2xl sm:text-4xl font-black tracking-tight text-slate-900">
+                                    No. {registry?.body_no || '—'}
+                                </span>
+
+                                {/* LTO Plate Badge */}
+                                <span className="inline-flex items-center px-2.5 py-1 rounded-md bg-slate-900 text-white font-mono text-xs sm:text-sm font-black tracking-wider shadow-xs">
+                                    {registry?.plate_no || '—'}
+                                </span>
+
+                                {/* Franchise Sticker Badge */}
+                                <span className="inline-flex items-center gap-1 rounded-md bg-slate-100 px-2.5 py-1 font-mono text-xs font-bold text-slate-700 border border-slate-200">
+                                    <FileBadge size={12} className="text-slate-400" />
+                                    <span>{registry?.sticker_no || `STK-${registry?.body_no || '0000'}`}</span>
+                                </span>
+
+                                {/* Status Badge */}
+                                {isActive ? (
+                                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                        <span>Active Franchise</span>
                                     </span>
-                                    <span className="rd-hero-meta-item" style={{ color: '#FFFFFF' }}>
-                                        <span>{registry?.make || '-'}</span>
-                                    </span>
-                                    <span className="rd-hero-meta-item" style={{ color: '#FFFFFF' }}>
-                                        <span>{registry?.status === 'active' ? '✓ Active' : '⊗ Suspended'}</span>
-                                    </span>
-                                </div>
-                            </div>
-                            <img src="/images/logo.png" alt="Logo" style={{ maxWidth: '120px', height: 'auto', objectFit: 'contain', borderRadius: '12px' }} />
-                        </div>
-                    </div>
-
-                    {/* Operator info inside same card */}
-                    <div style={{ padding: '24px' }}>
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-                                <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: 'rgba(79,91,203,.08)', color: '#4F5BCB', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                                    <User size={20} strokeWidth={2} />
-                                </div>
-                                <div>
-                                    <p style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '8.5px', fontWeight: 700, letterSpacing: '.12em', textTransform: 'uppercase', color: '#8A96BC', marginBottom: '4px' }}>Owner/Operator</p>
-                                    <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', fontWeight: 600, color: '#1C2340' }}>{registry?.operator || '-'}</p>
-                                </div>
-                            </div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-                                <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: 'rgba(79,91,203,.08)', color: '#4F5BCB', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                                    <Phone size={20} strokeWidth={2} />
-                                </div>
-                                <div>
-                                    <p style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '8.5px', fontWeight: 700, letterSpacing: '.12em', textTransform: 'uppercase', color: '#8A96BC', marginBottom: '4px' }}>Contact</p>
-                                    <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', fontWeight: 600, color: '#1C2340' }}>{registry?.contact || '-'}</p>
-                                </div>
-                            </div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-                                <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: 'rgba(79,91,203,.08)', color: '#4F5BCB', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                                    <MapPin size={20} strokeWidth={2} />
-                                </div>
-                                <div>
-                                    <p style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '8.5px', fontWeight: 700, letterSpacing: '.12em', textTransform: 'uppercase', color: '#8A96BC', marginBottom: '4px' }}>TODA/Route</p>
-                                    <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', fontWeight: 600, color: '#1C2340' }}>{registry?.toda || '-'}</p>
-                                </div>
-                            </div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-                                <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: 'rgba(79,91,203,.08)', color: '#4F5BCB', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                                    <Calendar size={20} strokeWidth={2} />
-                                </div>
-                                <div>
-                                    <p style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '8.5px', fontWeight: 700, letterSpacing: '.12em', textTransform: 'uppercase', color: '#8A96BC', marginBottom: '4px' }}>Coding Day</p>
-                                    <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', fontWeight: 600, color: '#1C2340' }}>{registry?.coding_day || '-'}</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div className="rd-section">
-                    <p className="rd-section-label">Vehicle Specifications</p>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px', padding: '24px', backgroundColor: '#FFFFFF', border: '1px solid rgba(28,35,64,.08)', borderRadius: '14px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-                            <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: 'rgba(79,91,203,.08)', color: '#4F5BCB', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                                <Bike size={20} strokeWidth={2} />
-                            </div>
-                            <div>
-                                <p style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '8.5px', fontWeight: 700, letterSpacing: '.12em', textTransform: 'uppercase', color: '#8A96BC', marginBottom: '4px' }}>Make & Model</p>
-                                <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', fontWeight: 600, color: '#1C2340' }}>{registry?.make || '-'}</p>
-                            </div>
-                        </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-                            <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: 'rgba(79,91,203,.08)', color: '#4F5BCB', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                                <Gauge size={20} strokeWidth={2} />
-                            </div>
-                            <div>
-                                <p style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '8.5px', fontWeight: 700, letterSpacing: '.12em', textTransform: 'uppercase', color: '#8A96BC', marginBottom: '4px' }}>Engine Number</p>
-                                <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', fontWeight: 600, color: '#1C2340' }}>{registry?.engine_number || '-'}</p>
-                            </div>
-                        </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-                            <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: 'rgba(79,91,203,.08)', color: '#4F5BCB', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                                <Gauge size={20} strokeWidth={2} />
-                            </div>
-                            <div>
-                                <p style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '8.5px', fontWeight: 700, letterSpacing: '.12em', textTransform: 'uppercase', color: '#8A96BC', marginBottom: '4px' }}>Chassis Number</p>
-                                <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', fontWeight: 600, color: '#1C2340' }}>{registry?.chassis_number || '-'}</p>
-                            </div>
-                        </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-                            <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: 'rgba(79,91,203,.08)', color: '#4F5BCB', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                                <Bike size={20} strokeWidth={2} />
-                            </div>
-                            <div>
-                                <p style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '8.5px', fontWeight: 700, letterSpacing: '.12em', textTransform: 'uppercase', color: '#8A96BC', marginBottom: '4px' }}>Plate Number</p>
-                                <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', fontWeight: 600, color: '#1C2340' }}>{registry?.plate_no || '-'}</p>
-                            </div>
-                        </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-                            <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: 'rgba(79,91,203,.08)', color: '#4F5BCB', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                                <MapPin size={20} strokeWidth={2} />
-                            </div>
-                            <div>
-                                <p style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '8.5px', fontWeight: 700, letterSpacing: '.12em', textTransform: 'uppercase', color: '#8A96BC', marginBottom: '4px' }}>TODA Assignment</p>
-                                <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', fontWeight: 600, color: '#1C2340' }}>{registry?.toda || '-'}</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div className="rd-section">
-                    <p className="rd-section-label">Requirements</p>
-                    <div className="rd-card">
-                        <div className="rd-head">
-                            <div className="rd-head-left">
-                                <FileCheck2 size={14} strokeWidth={2.2} />
-                                Submitted Requirements
-                            </div>
-                            <p className="rd-count">Total: {requirements.length}</p>
-                        </div>
-
-                        {requirements.length === 0 ? (
-                            <div className="rd-no-data">No requirement documents available</div>
-                        ) : (
-                            <div style={{ overflowX: 'auto' }}>
-                                <table className="rd-table">
-                                    <thead>
-                                        <tr>
-                                            <th>Document</th>
-                                            <th>Verification</th>
-                                            <th>Preview File</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {requirements.map((doc, idx) => (
-                                            <tr key={`${doc.name}-${idx}`}>
-                                                <td style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-                                                    <FileText size={14} strokeWidth={2} style={{ color: '#4F5BCB' }} />
-                                                    {doc.name}
-                                                </td>
-                                                <td>
-                                                    <span className="rd-status rd-status-verified">
-                                                        <CheckCircle2 size={11} strokeWidth={2.3} />
-                                                        Verified
-                                                    </span>
-                                                </td>
-                                                <td>
-                                                    {/* ALWAYS route to the orcr preview blade template */}
-                                                    <button
-                                                        type="button"
-                                                        className="rd-preview-btn"
-                                                        onClick={() => setPreviewDoc({ name: doc.name, url: '/document/orcr-preview' })}
-                                                    >
-                                                        <Eye size={12} strokeWidth={2.2} />
-                                                        Preview File
-                                                    </button>
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
-                        )}
-                    </div>
-                </div>
-
-                {previewDoc && createPortal(
-                    <div className="rd-modal-overlay" onClick={() => setPreviewDoc(null)}>
-                        <div className="rd-modal" onClick={e => e.stopPropagation()}>
-                            <div className="rd-modal-header">
-                                <p className="rd-modal-title">Document Preview - {previewDoc.name}</p>
-                                <button type="button" className="rd-modal-close" onClick={() => setPreviewDoc(null)}>
-                                    Close
-                                </button>
-                            </div>
-                            <div className="rd-modal-body">
-                                {isImagePreview(previewDoc.url) ? (
-                                    <img src={previewDoc.url} alt={previewDoc.name} className="rd-modal-image" />
                                 ) : (
-                                    <iframe src={previewDoc.url} className="rd-modal-frame" title={`${previewDoc.name} Preview`} />
+                                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-rose-50 text-rose-700 border border-rose-200">
+                                        <span>Suspended / Revoked</span>
+                                    </span>
                                 )}
                             </div>
+
+                            {/* Bottom Metadata Row */}
+                            <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-slate-500">
+                                <div className="flex items-center gap-1.5">
+                                    <User size={14} className="text-slate-400 shrink-0" />
+                                    <span className="font-semibold text-slate-900">{registry?.operator || 'Registered Driver'}</span>
+                                </div>
+
+                                <span className="text-slate-300 hidden sm:inline">&bull;</span>
+
+                                <div className="flex items-center gap-1.5">
+                                    <Bike size={14} className="text-slate-400 shrink-0" />
+                                    <span>{registry?.make || 'Standard Tricycle Unit'}</span>
+                                </div>
+
+                                <span className="text-slate-300 hidden sm:inline">&bull;</span>
+
+                                <div className="flex items-center gap-1.5">
+                                    <MapPin size={14} className="text-slate-400 shrink-0" />
+                                    <span>{registry?.toda || 'Unassigned TODA'}</span>
+                                </div>
+
+                                <span className="text-slate-300 hidden sm:inline">&bull;</span>
+
+                                <div className="flex items-center gap-1.5">
+                                    <span className={`inline-block h-2.5 w-2.5 rounded-full ring-2 ring-slate-200 shrink-0 ${codingInfo.dotClass}`} />
+                                    <span className="font-semibold text-slate-900">
+                                        {codingInfo.day} Coding ({codingInfo.scheme})
+                                    </span>
+                                </div>
+                            </div>
                         </div>
-                    </div>,
-                    document.body
-                )}
+
+                        {/* Right Seal & Municipal Badge */}
+                        <div className="self-start lg:self-center flex items-center gap-3 rounded-2xl bg-slate-50 p-3.5 border border-slate-200/70">
+                            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white p-1.5 shadow-sm border border-slate-200/70">
+                                <img src="/images/logo.png" alt="TRIVORA Logo" className="h-full w-full object-contain" />
+                            </div>
+                            <div className="text-left">
+                                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">LGU Nasugbu</span>
+                                <span className="text-xs font-black text-slate-900 block">Official BPLO Record</span>
+                                <span className="text-[10px] text-emerald-700 flex items-center gap-1 font-semibold mt-0.5">
+                                    <Check size={11} strokeWidth={2.5} /> Verified Active
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* ══════════════════════════════════════════════════════════════
+                    3. BALANCED 2-COLUMN EXECUTIVE WORKSTATION (50/50 Split)
+                   ══════════════════════════════════════════════════════════════ */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+
+                    {/* ── COLUMN 1: DRIVER PROFILE & FRANCHISE CLEARANCE ── */}
+                    <div className="space-y-6">
+
+                        {/* Card 1: Driver & Operator Information */}
+                        <div className={`overflow-hidden rounded-2xl border border-slate-200/70 bg-white ${CARD_SHADOW}`}>
+                            <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50/75 px-5 py-3.5">
+                                <div className="flex items-center gap-2">
+                                    <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-[#1D2542]/[0.10] to-[#1D2542]/[0.02] text-[#1D2542]">
+                                        <User size={15} strokeWidth={2.2} />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800">
+                                            Driver &amp; Operator Information
+                                        </h3>
+                                        <p className="text-[11px] text-slate-400 font-normal">
+                                            Personal and driver's license details
+                                        </p>
+                                    </div>
+                                </div>
+                                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-0.5 text-[10px] font-bold text-emerald-700 border border-emerald-200/70">
+                                    Verified
+                                </span>
+                            </div>
+
+                            <div className="p-5 divide-y divide-slate-100 text-xs">
+                                {/* Operator Full Name */}
+                                <div className="pb-3.5 flex items-start justify-between gap-3">
+                                    <div>
+                                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Full Name</span>
+                                        <span className="text-base font-bold text-slate-900 mt-0.5 block">{registry?.operator || '—'}</span>
+                                    </div>
+                                    <div className="h-10 w-10 rounded-full bg-gradient-to-br from-[#1D2542] to-[#2A3560] text-white flex items-center justify-center text-sm font-bold shadow-2xs shrink-0">
+                                        {registry?.operator ? registry.operator.charAt(0).toUpperCase() : 'D'}
+                                    </div>
+                                </div>
+
+                                {/* Contact Number */}
+                                <div className="py-3 flex items-center justify-between gap-2">
+                                    <span className="text-slate-500 font-medium flex items-center gap-1.5">
+                                        <Phone size={13} className="text-slate-400" />
+                                        Contact Number
+                                    </span>
+                                    {registry?.contact && registry.contact !== 'N/A' ? (
+                                        <a href={`tel:${registry.contact}`} className="font-semibold text-slate-800 hover:text-[#1D2542] transition-colors font-mono">
+                                            {registry.contact}
+                                        </a>
+                                    ) : (
+                                        <span className="text-slate-400">No contact provided</span>
+                                    )}
+                                </div>
+
+                                {/* Email Address */}
+                                <div className="py-3 flex items-center justify-between gap-2">
+                                    <span className="text-slate-500 font-medium flex items-center gap-1.5">
+                                        <Mail size={13} className="text-slate-400" />
+                                        Email Address
+                                    </span>
+                                    <span className="font-semibold text-slate-700 truncate max-w-[220px]">
+                                        {registry?.email || 'N/A'}
+                                    </span>
+                                </div>
+
+                                {/* Residential Address */}
+                                <div className="py-3 flex items-start justify-between gap-2">
+                                    <span className="text-slate-500 font-medium flex items-center gap-1.5 shrink-0 mt-0.5">
+                                        <Home size={13} className="text-slate-400" />
+                                        Home Address
+                                    </span>
+                                    <span className="font-semibold text-slate-800 text-right">
+                                        {registry?.address || `${registry?.barangay || 'Nasugbu'}, Batangas`}
+                                    </span>
+                                </div>
+
+                                {/* Barangay */}
+                                <div className="py-3 flex items-center justify-between gap-2">
+                                    <span className="text-slate-500 font-medium flex items-center gap-1.5">
+                                        <MapPin size={13} className="text-slate-400" />
+                                        Barangay / District
+                                    </span>
+                                    <span className="font-semibold text-slate-800">
+                                        {registry?.barangay || 'Poblacion'}
+                                    </span>
+                                </div>
+
+                                {/* Date of Birth */}
+                                <div className="py-3 flex items-center justify-between gap-2">
+                                    <span className="text-slate-500 font-medium flex items-center gap-1.5">
+                                        <Calendar size={13} className="text-slate-400" />
+                                        Date of Birth
+                                    </span>
+                                    <span className="font-semibold text-slate-800">
+                                        {registry?.date_of_birth || 'Dec 12, 1988'}
+                                    </span>
+                                </div>
+
+                                {/* Professional Driver's License */}
+                                <div className="py-3 flex items-center justify-between gap-2">
+                                    <span className="text-slate-500 font-medium flex items-center gap-1.5">
+                                        <CreditCard size={13} className="text-slate-400" />
+                                        Driver's License No.
+                                    </span>
+                                    <span className="font-mono font-bold text-slate-900 bg-slate-100 px-2 py-0.5 rounded border border-slate-200/60">
+                                        {registry?.license_no || 'N01-88-567890'}
+                                    </span>
+                                </div>
+
+                                {/* License Expiry & Restrictions */}
+                                <div className="pt-3 flex items-center justify-between gap-2">
+                                    <span className="text-slate-500 font-medium">License Expiry / Codes</span>
+                                    <span className="font-semibold text-slate-800">
+                                        {registry?.license_expiry || 'Dec 11, 2027'} (Codes: {registry?.license_codes || '1, 2'})
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Card 2: Franchise & Route Information */}
+                        <div className={`overflow-hidden rounded-2xl border border-slate-200/70 bg-white ${CARD_SHADOW}`}>
+                            <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50/75 px-5 py-3.5">
+                                <div className="flex items-center gap-2">
+                                    <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-500/[0.12] to-emerald-500/[0.02] text-emerald-600">
+                                        <FileBadge size={15} strokeWidth={2.2} />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800">
+                                            Franchise &amp; Route Information
+                                        </h3>
+                                        <p className="text-[11px] text-slate-400 font-normal">
+                                            Franchise permit and route details
+                                        </p>
+                                    </div>
+                                </div>
+                                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-0.5 text-[10px] font-bold text-emerald-700 border border-emerald-200/70">
+                                    <Check size={10} strokeWidth={2.5} />
+                                    Approved
+                                </span>
+                            </div>
+
+                            <div className="p-5 divide-y divide-slate-100 text-xs">
+                                <div className="pb-3 flex items-center justify-between gap-2">
+                                    <span className="text-slate-500 font-medium">Franchise Sticker No.</span>
+                                    <span className="font-mono font-bold text-slate-900 bg-slate-100 px-2.5 py-0.5 rounded border border-slate-200">
+                                        {registry?.sticker_no || `STK-${registry?.body_no || '0141'}`}
+                                    </span>
+                                </div>
+
+                                <div className="py-3 flex items-center justify-between gap-2">
+                                    <span className="text-slate-500 font-medium">MTOP Permit No.</span>
+                                    <span className="font-mono font-semibold text-slate-800 bg-slate-50 px-2 py-0.5 rounded border border-slate-100">
+                                        MTOP-2026-{registry?.body_no || '0141'}
+                                    </span>
+                                </div>
+
+                                <div className="py-3 flex items-center justify-between gap-2">
+                                    <span className="text-slate-500 font-medium">Assigned TODA</span>
+                                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-bold bg-indigo-50 text-[#1D2542] border border-indigo-100">
+                                        {registry?.toda || 'Unassigned Zone'}
+                                    </span>
+                                </div>
+
+                                <div className="py-3 flex items-center justify-between gap-2">
+                                    <span className="text-slate-500 font-medium">Date Issued</span>
+                                    <span className="font-semibold text-slate-800">{registry?.issue_date || 'March 12, 2026'}</span>
+                                </div>
+
+                                <div className="py-3 flex items-center justify-between gap-2">
+                                    <span className="text-slate-500 font-medium flex items-center gap-1.5">
+                                        <Navigation size={13} className="text-slate-400" />
+                                        GPS Tracking Status
+                                    </span>
+                                    <span className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                        Mobile GPS Active
+                                    </span>
+                                </div>
+
+                                <div className="pt-3">
+                                    <p className="text-[11px] text-slate-400 leading-relaxed">
+                                        Authorized to pick up and drop off passengers within the route of {registry?.toda || 'Nasugbu'} under local traffic rules.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    {/* ── COLUMN 2: VEHICLE TECHNICAL SPECS & CODING SCHEME ── */}
+                    <div className="space-y-6">
+
+                        {/* Card 1: Registered Tricycle Specifications */}
+                        <div className={`overflow-hidden rounded-2xl border border-slate-200/70 bg-white ${CARD_SHADOW}`}>
+                            <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50/75 px-5 py-3.5">
+                                <div className="flex items-center gap-2">
+                                    <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-[#1D2542]/[0.10] to-[#1D2542]/[0.02] text-[#1D2542]">
+                                        <Bike size={15} strokeWidth={2.2} />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800">
+                                            Tricycle Details
+                                        </h3>
+                                        <p className="text-[11px] text-slate-400 font-normal">
+                                            Motorcycle, sidecar, and LTO registration details
+                                        </p>
+                                    </div>
+                                </div>
+                                <span className="text-[11px] font-mono font-semibold text-slate-400">
+                                    Registered
+                                </span>
+                            </div>
+
+                            <div className="p-5 divide-y divide-slate-100 text-xs">
+                                <div className="pb-3 flex items-center justify-between gap-2">
+                                    <span className="text-slate-500 font-medium">Make &amp; Model</span>
+                                    <span className="font-bold text-slate-900">{registry?.make || '—'}</span>
+                                </div>
+
+                                <div className="py-3 flex items-center justify-between gap-2">
+                                    <span className="text-slate-500 font-medium">Year &amp; Body Color</span>
+                                    <span className="font-semibold text-slate-800">
+                                        {registry?.year_model || '2022'} &bull; {registry?.body_color || 'Blue'}
+                                    </span>
+                                </div>
+
+                                <div className="py-3 flex items-center justify-between gap-2">
+                                    <span className="text-slate-500 font-medium">Sidecar Type</span>
+                                    <span className="font-semibold text-slate-800">{registry?.body_type || 'Standard Side Car'}</span>
+                                </div>
+
+                                <div className="py-3 flex items-center justify-between gap-2">
+                                    <span className="text-slate-500 font-medium">LTO Plate Number</span>
+                                    <span className="font-mono font-bold text-slate-900 bg-slate-100 px-2 py-0.5 rounded border border-slate-200/60">
+                                        {registry?.plate_no || '—'}
+                                    </span>
+                                </div>
+
+                                <div className="py-3 flex items-center justify-between gap-2">
+                                    <span className="text-slate-500 font-medium">Tricycle Number Coding Scheme</span>
+                                    <span className="font-mono font-bold text-[#1D2542] text-sm">
+                                        No. {registry?.body_no || '—'}
+                                    </span>
+                                </div>
+
+                                <div className="py-3 flex items-center justify-between gap-2">
+                                    <span className="text-slate-500 font-medium">Official Receipt (OR) Number</span>
+                                    <span className="font-mono font-semibold text-slate-700 bg-slate-50 px-2 py-0.5 rounded border border-slate-100">
+                                        {registry?.or_number || 'OR-2026-000141'}
+                                    </span>
+                                </div>
+
+                                <div className="py-3 flex items-center justify-between gap-2">
+                                    <span className="text-slate-500 font-medium">Certificate of Registration (CR) Number</span>
+                                    <span className="font-mono font-semibold text-slate-700 bg-slate-50 px-2 py-0.5 rounded border border-slate-100">
+                                        {registry?.cr_number || 'CR-2026-000141'}
+                                    </span>
+                                </div>
+
+                                <div className="py-3 flex items-center justify-between gap-2">
+                                    <span className="text-slate-500 font-medium">Engine Number</span>
+                                    <span className="font-mono font-semibold text-slate-700 bg-slate-50 px-2 py-0.5 rounded border border-slate-100">
+                                        {registry?.engine_number || 'N/A'}
+                                    </span>
+                                </div>
+
+                                <div className="pt-3 flex items-center justify-between gap-2">
+                                    <span className="text-slate-500 font-medium">Chassis Number</span>
+                                    <span className="font-mono font-semibold text-slate-700 bg-slate-50 px-2 py-0.5 rounded border border-slate-100">
+                                        {registry?.chassis_number || 'N/A'}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Card 2: Color Coding & Traffic Schedule */}
+                        <div className={`rounded-2xl border border-slate-200/70 bg-white p-4 sm:p-5 ${CARD_SHADOW} space-y-4`}>
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                    <Clock size={16} className="text-[#1D2542]" />
+                                    <div>
+                                        <h4 className="text-xs font-bold uppercase tracking-wider text-slate-800">
+                                            Color Coding &amp; Traffic Schedule
+                                        </h4>
+                                        <p className="text-[11px] text-slate-400 font-normal">
+                                            Weekly coding day and operating hours
+                                        </p>
+                                    </div>
+                                </div>
+                                <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-bold border ${codingInfo.badgeClass}`}>
+                                    {codingInfo.day} Coding
+                                </span>
+                            </div>
+
+                            <div className="rounded-xl bg-slate-50 p-4 text-xs space-y-2.5">
+                                <div className="flex items-center justify-between">
+                                    <span className="text-slate-500 font-medium">Coding Day:</span>
+                                    <span className="font-bold text-slate-900">{codingInfo.day}</span>
+                                </div>
+                                <div className="flex items-center justify-between">
+                                    <span className="text-slate-500 font-medium">Restricted Hours:</span>
+                                    <span className="font-semibold text-slate-800">7:00 AM – 7:00 PM</span>
+                                </div>
+                                <div className="flex items-center justify-between">
+                                    <span className="text-slate-500 font-medium">Color Scheme:</span>
+                                    <span className="font-semibold text-slate-800">{codingInfo.scheme} (Ending in {codingInfo.digits})</span>
+                                </div>
+                                <div className="flex items-center justify-between">
+                                    <span className="text-slate-500 font-medium">Authorized Route:</span>
+                                    <span className="font-semibold text-[#1D2542]">{registry?.toda || 'Assigned Zone'}</span>
+                                </div>
+                            </div>
+
+                            <div className="rounded-lg bg-amber-50/60 p-3 border border-amber-200/70 text-[11px] text-amber-900 leading-relaxed">
+                                <strong>Notice:</strong> Tricycles are not allowed to operate on highways during their assigned coding day. Violations will be reported to the Traffic Management Office (TMO).
+                            </div>
+                        </div>
+
+                    </div>
+
+                </div>
+
             </div>
         </BPLOLayout>
     );

@@ -3,7 +3,8 @@ import { createPortal } from 'react-dom';
 import { Head, useForm, Link, usePage } from '@inertiajs/react';
 import Swal from 'sweetalert2';
 import {
-    Upload, Info, CheckCircle2, MapPin, Check, Camera, Eye, X
+    Upload, Info, CheckCircle2, MapPin, Check, Camera, Eye, X,
+    FileText, User, Bike, Mail, Lock, Phone, Loader2
 } from 'lucide-react';
 
 /* ─────────────────────────────────────────────────────────────────────────
@@ -17,176 +18,182 @@ const CSS = `
 
 .pa-root *, .pa-root *::before, .pa-root *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+/* Fixed to the viewport height on desktop (not min-height) so the side
+   panel and content pane are capped at one screen — the content pane can
+   then scroll internally without dragging the side panel along with it.
+   On mobile the split collapses into one normal scrolling page instead. */
 .pa-root {
   font-family: 'Inter', sans-serif;
-  background: #EDEEF4;
+  background: #FFFFFF;
   color: #1C2340;
-  min-height: 100vh;
-  display: flex; flex-direction: column;
-  overflow-x: hidden;
-}
-
-/* ── Hero backdrop (PHOTO BACKGROUND) ────────────────────────────────── */
-.pa-hero-backdrop {
-  position: absolute; top: 0; left: 0; width: 100%;
-  height: 460px;
-
-  /* Dark gradient overlay + Photo Background */
-  background-image:
-    linear-gradient(to bottom, rgba(28, 35, 64, 0.6) 0%, rgba(28, 35, 64, 0.98) 100%),
-    url('/images/nasugbu-bg.jpg');
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-
-  border-bottom-left-radius: 40px;
-  border-bottom-right-radius: 40px;
-  z-index: 0;
+  height: 100vh;
+  display: flex; flex-direction: row;
   overflow: hidden;
 }
+@media (max-width: 900px) { .pa-root { flex-direction: column; height: auto; min-height: 100vh; overflow: visible; } }
 
-.pa-hero-backdrop::after {
-  content: '';
-  position: absolute; inset: 0;
-  background:
-    radial-gradient(ellipse 60% 80% at 80% 20%, rgba(79,91,203,.18) 0%, transparent 70%),
-    radial-gradient(ellipse 40% 60% at 10% 80%, rgba(79,91,203,.10) 0%, transparent 70%);
-  pointer-events: none;
-}
-.pa-hero-backdrop::before {
-  content: '';
-  position: absolute; inset: 0;
-  background-image: radial-gradient(circle, rgba(255,255,255,.05) 1px, transparent 1px);
-  background-size: 28px 28px;
-  pointer-events: none;
-}
-
-/* ── Constraint wrapper ──────────────────────────────────────────────── */
-.pa-wrap {
-  max-width: 1200px; margin: 0 auto;
-  padding: 0 32px; width: 100%;
-}
-@media (max-width: 640px) { .pa-wrap { padding: 0 20px; } }
-
-/* ── Header ──────────────────────────────────────────────────────────── */
-.pa-header {
-  height: 80px;
-  display: flex; align-items: center; justify-content: space-between;
-  position: relative; z-index: 10;
-}
-.pa-logo { display: flex; align-items: center; gap: 14px; text-decoration: none; }
-.pa-logo-img-wrap {
-  height: 46px; width: auto; border-radius: 10px;
-  background: #FFFFFF;
-  box-shadow: 0 2px 10px rgba(0,0,0,.15);
-  display: flex; align-items: center; justify-content: center;
-  padding: 6px 10px; flex-shrink: 0;
-  transition: box-shadow .2s;
-}
-.pa-logo:hover .pa-logo-img-wrap { box-shadow: 0 4px 16px rgba(0,0,0,.22); }
-.pa-logo-img {
-  height: 30px; width: auto; object-fit: contain; display: block;
-}
-
-/* ── Page heading band ───────────────────────────────────────────────── */
-.pa-page-head {
-  position: relative; z-index: 10;
-  padding-bottom: 64px; text-align: center;
-  padding-top: 32px;
-}
-.pa-page-title {
-  font-family: 'Plus Jakarta Sans', sans-serif;
-  font-size: clamp(28px, 4vw, 42px); font-weight: 800;
-  letter-spacing: -.03em; color: #FFFFFF;
-  line-height: 1.1; margin-bottom: 16px;
-}
-.pa-page-sub {
-  font-family: 'DM Sans', sans-serif;
-  font-size: 11px; font-weight: 700;
-  letter-spacing: .14em; text-transform: uppercase;
-  color: rgba(255,255,255,.8);
-}
-
-/* ── Progress tracker ────────────────────────────────────────────────── */
-.pa-progress {
-  display: flex; align-items: center; justify-content: center;
-  gap: 0; margin-bottom: 40px;
-  position: relative; z-index: 10;
-}
-.pa-step {
-  display: flex; align-items: center; gap: 0;
-}
-.pa-step-node {
-  display: flex; flex-direction: column; align-items: center; gap: 8px;
-  position: relative; z-index: 2;
-}
-.pa-step-dot {
-  width: 36px; height: 36px; border-radius: 50%;
-  border: 2px solid rgba(255,255,255,.3);
-  background: rgba(255,255,255,.1);
-  display: flex; align-items: center; justify-content: center;
-  font-family: 'DM Sans', sans-serif;
-  font-size: 11px; font-weight: 800;
-  color: rgba(255,255,255,.6);
-  transition: all .3s ease;
-}
-.pa-step-dot.active {
-  background: #FFFFFF;
-  border-color: #FFFFFF;
-  color: #1C2340;
-  box-shadow: 0 4px 16px rgba(0,0,0,.25);
-}
-.pa-step-dot.done {
-  background: #4F5BCB;
-  border-color: #4F5BCB;
-  color: #FFFFFF;
-  box-shadow: 0 4px 12px rgba(79,91,203,.4);
-}
-.pa-step-label {
-  font-family: 'DM Sans', sans-serif;
-  font-size: 9px; font-weight: 700;
-  letter-spacing: .12em; text-transform: uppercase;
-  color: rgba(255,255,255,.6); transition: color .3s;
-  white-space: nowrap;
-}
-.pa-step-label.active { color: #FFFFFF; }
-.pa-step-label.done   { color: rgba(255,255,255,.8); }
-.pa-step-line {
-  width: 64px; height: 2px;
-  background: rgba(255,255,255,.2);
-  margin: 0 4px; margin-bottom: 24px;
-  border-radius: 2px; overflow: hidden;
-  transition: background .3s;
-}
-.pa-step-line.done { background: #4F5BCB; }
-@media (max-width: 640px) { .pa-step-line { width: 24px; } }
-
-/* ── Step card ───────────────────────────────────────────────────────── */
-.pa-card {
-  background: #FFFFFF;
-  border: 1px solid rgba(28,35,64,.08);
-  border-radius: 20px;
-  padding: 44px 48px;
-  box-shadow: 0 4px 24px rgba(28,35,64,.08);
-  max-width: 780px; margin: 0 auto;
-  animation: paFadeUp .4s cubic-bezier(.2,0,.2,1) both;
-}
-@media (max-width: 640px) { .pa-card { padding: 28px 20px; } }
 @keyframes paFadeUp {
   from { opacity: 0; transform: translateY(16px); }
   to   { opacity: 1; transform: translateY(0); }
 }
+@keyframes paSpin { to { transform: rotate(360deg); } }
+
+/* ── Split layout: branded step panel (left) + active step content
+   (right) — a different structural approach from the old centered
+   card-over-photo-hero layout, closer to how Login.jsx pairs an identity
+   panel with a task panel. ── */
+.pa-side {
+  flex: 0 0 42%; position: relative; overflow: hidden;
+  display: flex; flex-direction: column; justify-content: space-between;
+  padding: 48px 44px;
+  border-radius: 0 28px 28px 0;
+  background-image:
+    linear-gradient(165deg, rgba(20,26,51,.86) 0%, rgba(20,26,51,.97) 100%),
+    url('/images/nasugbu-bg.jpg');
+  background-size: cover; background-position: center; background-repeat: no-repeat;
+  color: #FFFFFF;
+}
+@media (max-width: 900px) { .pa-side { flex: 0 0 auto; padding: 36px 28px; border-radius: 0 0 28px 28px; } }
+
+.pa-side::before {
+  content: ''; position: absolute; inset: 0;
+  background-image: radial-gradient(circle, rgba(255,255,255,.05) 1px, transparent 1px);
+  background-size: 26px 26px; pointer-events: none;
+}
+.pa-hero-glow { position: absolute; border-radius: 50%; pointer-events: none; filter: blur(70px); }
+.pa-hero-glow--1 { top: -120px; right: -100px; width: 340px; height: 340px; background: radial-gradient(circle, rgba(79,91,203,.42), transparent 70%); }
+.pa-hero-glow--2 { bottom: -140px; left: -100px; width: 300px; height: 300px; background: radial-gradient(circle, rgba(255,255,255,.12), transparent 70%); }
+
+.pa-side-top { position: relative; z-index: 1; }
+.pa-side-mid { position: relative; z-index: 1; margin-top: 36px; }
+@media (max-width: 900px) { .pa-side-mid { margin-top: 22px; } }
+.pa-side-bottom { position: relative; z-index: 1; margin-top: 28px; }
+@media (max-width: 900px) { .pa-side-bottom { display: none; } }
+
+.pa-logo { display: flex; align-items: center; gap: 14px; text-decoration: none; width: fit-content; }
+.pa-logo-img-wrap {
+  height: 42px; width: auto; border-radius: 10px;
+  background: #FFFFFF;
+  box-shadow: 0 2px 10px rgba(0,0,0,.15);
+  display: flex; align-items: center; justify-content: center;
+  padding: 6px 9px; flex-shrink: 0;
+  transition: box-shadow .2s;
+}
+.pa-logo:hover .pa-logo-img-wrap { box-shadow: 0 4px 16px rgba(0,0,0,.22); }
+.pa-logo-img { height: 26px; width: auto; object-fit: contain; display: block; }
+
+.pa-page-title {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: clamp(22px, 2.6vw, 27px); font-weight: 800;
+  letter-spacing: -.025em; color: #FFFFFF;
+  line-height: 1.15; margin-top: 24px; margin-bottom: 8px;
+}
+@media (max-width: 900px) { .pa-page-title { margin-top: 16px; font-size: 20px; } }
+.pa-page-sub {
+  font-family: 'Inter', sans-serif;
+  font-size: 12.5px; font-weight: 400;
+  color: rgba(255,255,255,.72); line-height: 1.6; max-width: 300px;
+}
+@media (max-width: 900px) { .pa-page-sub { display: none; } }
+
+.pa-side-note {
+  font-family: 'DM Sans', sans-serif; font-size: 9px; font-weight: 700;
+  letter-spacing: .13em; text-transform: uppercase;
+  color: rgba(255,255,255,.45); line-height: 1.8;
+  padding-top: 20px; border-top: 1px solid rgba(255,255,255,.12);
+}
+
+/* ── Vertical step list ───────────────────────────────────────────────── */
+.pa-step-v-list { display: flex; flex-direction: column; }
+@media (max-width: 900px) { .pa-step-v-list { flex-direction: row; align-items: flex-start; gap: 4px; } }
+
+.pa-step-v { display: flex; gap: 14px; }
+@media (max-width: 900px) { .pa-step-v { flex: 1; flex-direction: column; align-items: center; gap: 6px; } }
+
+.pa-step-v-rail { display: flex; flex-direction: column; align-items: center; flex-shrink: 0; }
+@media (max-width: 900px) { .pa-step-v-rail { flex-direction: row; width: 100%; } }
+
+.pa-step-v-dot {
+  width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0;
+  border: 2px solid rgba(255,255,255,.28);
+  background: rgba(255,255,255,.08);
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'DM Sans', sans-serif; font-size: 11px; font-weight: 800;
+  color: rgba(255,255,255,.6);
+  transition: all .3s ease;
+}
+.pa-step-v-dot.active { background: #FFFFFF; border-color: #FFFFFF; color: #1C2340; box-shadow: 0 0 0 5px rgba(255,255,255,.14); }
+.pa-step-v-dot.done { background: #4F5BCB; border-color: #4F5BCB; color: #FFFFFF; }
+.pa-step-v-line {
+  width: 2px; flex: 1; min-height: 28px;
+  background: rgba(255,255,255,.16); border-radius: 2px;
+  transition: background .3s;
+}
+.pa-step-v-line.done { background: #4F5BCB; }
+@media (max-width: 900px) { .pa-step-v-line { width: 100%; height: 2px; min-height: 0; flex: 1; margin-top: 15px; } }
+
+.pa-step-v-text { padding-bottom: 28px; padding-top: 3px; }
+@media (max-width: 900px) { .pa-step-v-text { display: none; } }
+.pa-step-v-label {
+  font-family: 'DM Sans', sans-serif; font-size: 11px; font-weight: 800;
+  letter-spacing: .04em; color: rgba(255,255,255,.55);
+  transition: color .3s; margin-bottom: 4px;
+}
+.pa-step-v-label.active, .pa-step-v-label.done { color: #FFFFFF; }
+.pa-step-v-desc { font-family: 'Inter', sans-serif; font-size: 11.5px; color: rgba(255,255,255,.5); line-height: 1.5; max-width: 220px; }
+
+/* ── Content pane (right) — a 3-row grid (topbar / centered content /
+   footer) so the active step centers vertically & horizontally exactly
+   like Login.jsx's form pane, without that centering fighting the
+   topbar link or footer this page still needs (Login has neither). ── */
+.pa-content { flex: 1; display: grid; grid-template-rows: auto 1fr auto; min-width: 0; background: #FFFFFF; overflow: hidden; }
+@media (max-width: 900px) { .pa-content { overflow: visible; } }
+.pa-content-topbar {
+  display: flex; align-items: center; justify-content: flex-end;
+  padding: 20px 40px 0;
+}
+@media (max-width: 640px) { .pa-content-topbar { padding: 16px 20px 0; } }
+.pa-back-link {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-family: 'DM Sans', sans-serif; font-size: 10px; font-weight: 700;
+  letter-spacing: .1em; text-transform: uppercase;
+  color: #8A96BC; text-decoration: none; transition: color .18s;
+}
+.pa-back-link:hover { color: #1C2340; }
+
+.pa-content-center { display: flex; align-items: safe center; justify-content: center; padding: 24px 24px; overflow-y: auto; }
+.pa-content-inner { width: 100%; max-width: 620px; }
+
+/* ── Step card (now the primary content itself, not a floating box) ──── */
+.pa-card { animation: paFadeUp .4s cubic-bezier(.2,0,.2,1) both; }
+.pa-card--elevated {
+  background: #FFFFFF;
+  border: 1px solid rgba(28,35,64,.08);
+  border-radius: 22px;
+  padding: 56px 48px;
+  box-shadow: 0 1px 2px 0 rgba(28,35,64,.04), 0 8px 32px -8px rgba(28,35,64,.14);
+  max-width: 560px; margin: 40px auto;
+}
+@media (max-width: 640px) { .pa-card--elevated { padding: 40px 24px; margin: 20px auto; } }
 
 /* ── Card heading ────────────────────────────────────────────────────── */
 .pa-card-top {
-  display: flex; justify-content: space-between; align-items: flex-start;
+  display: flex; justify-content: space-between; align-items: center;
   margin-bottom: 36px; gap: 16px;
 }
+.pa-card-icon {
+  width: 48px; height: 48px; border-radius: 14px; flex-shrink: 0;
+  background: linear-gradient(135deg, rgba(79,91,203,.15), rgba(79,91,203,.02));
+  border: 1px solid rgba(79,91,203,.14);
+  display: flex; align-items: center; justify-content: center;
+  color: #4F5BCB;
+}
+.pa-card-top-text { display: flex; align-items: center; gap: 16px; }
 .pa-card-title {
   font-family: 'Plus Jakarta Sans', sans-serif;
-  font-size: 26px; font-weight: 800;
+  font-size: 25px; font-weight: 800;
   letter-spacing: -.025em; color: #1C2340;
-  margin-bottom: 6px; line-height: 1;
+  margin-bottom: 5px; line-height: 1.15;
 }
 .pa-card-sub {
   font-family: 'DM Sans', sans-serif;
@@ -295,6 +302,16 @@ const CSS = `
 }
 .pa-input::placeholder { color: #A0AEC0; font-weight: 400; opacity: 0.65; }
 
+/* Icon-in-field variant — used on the driver-info fields for a richer feel. */
+.pa-input-wrap { position: relative; }
+.pa-input-wrap .pa-input { padding-left: 42px; }
+.pa-input-wrap-icon {
+  position: absolute; left: 14px; top: 50%; transform: translateY(-50%);
+  color: #9AA3CC; pointer-events: none; display: flex; align-items: center;
+  transition: color .2s;
+}
+.pa-input-wrap:focus-within .pa-input-wrap-icon { color: #4F5BCB; }
+
 .pa-select {
   width: 100%; height: 48px;
   border: 1.5px solid rgba(28,35,64,.12);
@@ -315,6 +332,20 @@ const CSS = `
 .pa-select-wrap svg {
   position: absolute; right: 14px; top: 50%; transform: translateY(-50%);
   pointer-events: none; color: #9AA3CC;
+}
+
+/* ── Field-level validation error ───────────────────────────────────── */
+.pa-input.pa-input-error, .pa-select.pa-input-error {
+  border-color: rgba(220,38,38,.5);
+  background: rgba(220,38,38,.03);
+}
+.pa-input.pa-input-error:focus, .pa-select.pa-input-error:focus {
+  box-shadow: 0 0 0 3px rgba(220,38,38,.1);
+}
+.pa-field-error {
+  font-family: 'Inter', sans-serif;
+  font-size: 10.5px; font-weight: 600; color: #DC2626;
+  margin-top: 6px; padding-left: 2px;
 }
 
 /* ── Action row ──────────────────────────────────────────────────────── */
@@ -366,28 +397,37 @@ const CSS = `
 .pa-docs-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 24px; }
 @media (max-width: 640px) { .pa-docs-grid { grid-template-columns: 1fr; } }
 
-/* ── File upload tile ────────────────────────────────────────────────── */
-.pa-file-tile {
-  display: flex; align-items: center; justify-content: space-between;
-  gap: 12px; padding: 14px 16px;
-  border-radius: 12px;
-  border: 1.5px dashed rgba(28,35,64,.15);
-  background: #FAFAFA;
-  cursor: pointer; transition: all .18s;
-  min-height: 72px;
+/* ── Required-docs progress readout — live feedback instead of only
+   finding out what's missing after clicking Submit. ── */
+.pa-req-progress { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; }
+.pa-req-progress-bar { flex: 1; height: 6px; border-radius: 4px; background: rgba(28,35,64,.08); overflow: hidden; }
+.pa-req-progress-fill { height: 100%; border-radius: 4px; background: #059669; transition: width .3s ease; }
+.pa-req-progress-text {
+  font-family: 'DM Sans', sans-serif; font-size: 10px; font-weight: 800;
+  letter-spacing: .05em; color: #5A6488; white-space: nowrap;
 }
-.pa-file-tile:hover { border-color: rgba(79,91,203,.3); background: #FFFFFF; }
-.pa-file-tile.done {
-  border-style: solid;
-  border-color: rgba(5,150,105,.25); background: rgba(5,150,105,.03);
+
+.pa-docs-subhead {
+  display: flex; align-items: center; gap: 8px;
+  font-family: 'DM Sans', sans-serif; font-size: 10px; font-weight: 800;
+  letter-spacing: .1em; text-transform: uppercase; color: #8A96BC;
+  margin: 26px 0 12px; padding-top: 22px; border-top: 1px dashed rgba(28,35,64,.12);
 }
-.pa-file-info { flex: 1; min-width: 0; }
-.pa-file-name {
-  font-family: 'Inter', sans-serif;
-  font-size: 11.5px; font-weight: 600; color: #1C2340;
-  line-height: 1.3; margin-bottom: 6px;
+
+/* ── File upload tile icon chip — gradient, matches the icon-chip language
+   used across the rest of the app; swaps to a settled emerald tone once
+   the document has files attached. ── */
+.pa-file-chip {
+  width: 34px; height: 34px; border-radius: 10px; flex-shrink: 0;
+  background: linear-gradient(135deg, rgba(79,91,203,.14), rgba(79,91,203,.02));
+  border: 1px solid rgba(79,91,203,.14);
+  display: flex; align-items: center; justify-content: center;
+  color: #4F5BCB; transition: all .18s;
 }
-.pa-file-tile.done .pa-file-name { color: #065F46; }
+.pa-file-tile-container.done .pa-file-chip {
+  background: linear-gradient(135deg, rgba(5,150,105,.16), rgba(5,150,105,.02));
+  border-color: rgba(5,150,105,.2); color: #059669;
+}
 .pa-file-tags { display: flex; gap: 6px; flex-wrap: wrap; }
 .pa-tag-req {
   font-family: 'DM Sans', sans-serif; font-size: 8px; font-weight: 700;
@@ -407,15 +447,6 @@ const CSS = `
   color: #065F46; background: rgba(5,150,105,.08);
   border: 1px solid rgba(5,150,105,.2); border-radius: 5px; padding: 2px 8px;
 }
-.pa-file-icon-wrap {
-  width: 38px; height: 38px; border-radius: 10px; flex-shrink: 0;
-  background: rgba(28,35,64,.06); border: 1px solid rgba(28,35,64,.09);
-  display: flex; align-items: center; justify-content: center;
-  color: #8A96BC; transition: all .18s;
-}
-.pa-file-tile:hover .pa-file-icon-wrap { background: rgba(79,91,203,.08); border-color: rgba(79,91,203,.15); color: #4F5BCB; }
-.pa-file-tile.done .pa-file-icon-wrap { background: rgba(5,150,105,.1); border-color: rgba(5,150,105,.2); color: #059669; }
-.pa-file-thumb { width: 38px; height: 38px; border-radius: 10px; object-fit: cover; border: 1px solid rgba(5,150,105,.2); flex-shrink: 0; }
 
 /* ── Info notice ─────────────────────────────────────────────────────── */
 .pa-notice {
@@ -433,7 +464,8 @@ const CSS = `
 /* ── Success card ────────────────────────────────────────────────────── */
 .pa-success-icon {
   width: 88px; height: 88px; border-radius: 50%;
-  background: rgba(5,150,105,.08); border: 2px solid rgba(5,150,105,.2);
+  background: linear-gradient(135deg, rgba(5,150,105,.16), rgba(5,150,105,.02));
+  border: 2px solid rgba(5,150,105,.2);
   display: flex; align-items: center; justify-content: center;
   color: #059669; margin: 0 auto 32px;
 }
@@ -465,11 +497,11 @@ const CSS = `
 .pa-success-desc span { color: #1C2340; border-bottom: 1.5px solid rgba(28,35,64,.2); padding-bottom: 1px; }
 
 /* ── Footer ──────────────────────────────────────────────────────────── */
-.pa-footer { background: #FFFFFF; border-top: 1px solid rgba(28,35,64,.07); margin-top: auto; }
-.pa-footer-inner {
-  display: flex; align-items: center; justify-content: space-between;
-  gap: 16px; padding: 22px 0; flex-wrap: wrap;
+.pa-footer {
+  border-top: 1px solid rgba(28,35,64,.07);
+  padding: 20px 40px; text-align: center;
 }
+@media (max-width: 640px) { .pa-footer { padding: 16px 20px; } }
 .pa-footer-copy {
   font-family: 'DM Sans', sans-serif; font-size: 9px; font-weight: 700;
   letter-spacing: .14em; text-transform: uppercase; color: #9AA3CC;
@@ -490,12 +522,20 @@ const CSS = `
   display: flex; align-items: center; justify-content: space-between;
   width: 100%; margin-bottom: 6px;
 }
+.pa-file-title-group { display: flex; align-items: center; gap: 10px; min-width: 0; }
 .pa-file-title-text {
+  display: block;
   font-family: 'Inter', sans-serif;
   font-size: 11.5px; font-weight: 600; color: #1C2340;
   line-height: 1.3;
 }
 .pa-file-tile-container.done .pa-file-title-text { color: #065F46; }
+.pa-file-hint {
+  display: block;
+  font-family: 'Inter', sans-serif;
+  font-size: 10px; font-weight: 500; color: #9AA3CC;
+  line-height: 1.4; margin-top: 1px;
+}
 
 .pa-upload-btn-label {
   display: inline-flex; align-items: center; gap: 6px;
@@ -509,6 +549,53 @@ const CSS = `
 .pa-upload-btn-label:hover {
   background: #4F5BCB; color: #FFFFFF; border-color: #4F5BCB;
 }
+
+/* ── Empty-state dropzone — a full-width, obviously tappable action
+   instead of a small pill button, since most applicants attach these
+   via phone camera and need an unmissable primary target. ── */
+.pa-upload-dropzone {
+  display: flex; align-items: center; gap: 10px; width: 100%;
+  padding: 10px 12px; border-radius: 10px;
+  border: 1.5px dashed rgba(79,91,203,.35); background: rgba(79,91,203,.04);
+  cursor: pointer; transition: all .18s; text-align: left;
+}
+.pa-upload-dropzone:hover { background: rgba(79,91,203,.09); border-color: rgba(79,91,203,.55); }
+.pa-upload-dropzone-icon {
+  width: 30px; height: 30px; border-radius: 8px; flex-shrink: 0;
+  background: rgba(79,91,203,.12); color: #4F5BCB;
+  display: flex; align-items: center; justify-content: center;
+}
+.pa-upload-dropzone-text {
+  font-family: 'DM Sans', sans-serif; font-size: 10.5px; font-weight: 700;
+  color: #4F5BCB; line-height: 1.4;
+}
+
+/* ── Inline thumbnails — seeing the actual photo you just took builds
+   more confidence than a checkmark alone, without forcing a modal open. ── */
+.pa-upload-thumbs-row { display: flex; align-items: center; gap: 6px; width: 100%; flex-wrap: wrap; }
+.pa-upload-thumb-btn {
+  width: 34px; height: 34px; border-radius: 8px; flex-shrink: 0;
+  border: 1px solid rgba(28,35,64,.1); overflow: hidden; padding: 0; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  background: #FFFFFF; color: #8A96BC; transition: border-color .15s;
+}
+.pa-upload-thumb-btn:hover { border-color: rgba(79,91,203,.45); }
+.pa-upload-thumb-img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.pa-upload-thumb-more {
+  width: 34px; height: 34px; border-radius: 8px; flex-shrink: 0;
+  background: rgba(28,35,64,.05); color: #5A6488;
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'DM Sans', sans-serif; font-size: 10px; font-weight: 700;
+}
+.pa-upload-add-more, .pa-upload-view-btn {
+  width: 34px; height: 34px; border-radius: 8px; flex-shrink: 0;
+  border: 1px dashed rgba(28,35,64,.16); background: none; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  color: #8A96BC; transition: all .15s;
+}
+.pa-upload-add-more { margin-left: auto; }
+.pa-upload-view-btn { border-style: solid; }
+.pa-upload-add-more:hover, .pa-upload-view-btn:hover { border-color: rgba(79,91,203,.45); color: #4F5BCB; background: rgba(79,91,203,.06); }
 
 .pa-file-list {
   display: flex; flex-direction: column; gap: 6px; width: 100%;
@@ -546,12 +633,57 @@ const CSS = `
 }
 `;
 
+// Mirrors RegistrationController::store()'s validation rules exactly, so what the user sees
+// per-step is a preview of the same rules the backend enforces — not a separate, potentially
+// looser set of client-only requirements. The backend remains the authoritative/final check.
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+function validateDriverInfo(data) {
+    const errors = {};
+    if (!data.first_name.trim()) errors.first_name = 'First name is required.';
+    if (!data.last_name.trim()) errors.last_name = 'Last name is required.';
+    if (!data.contact.trim()) errors.contact = 'Mobile number is required.';
+    if (!data.barangay) errors.barangay = 'Please select your barangay.';
+    if (!data.email.trim()) errors.email = 'Email address is required.';
+    else if (!EMAIL_PATTERN.test(data.email.trim())) errors.email = 'Please enter a valid email address.';
+    if (!data.password) errors.password = 'Password is required.';
+    else if (data.password.length < 8) errors.password = 'Password must be at least 8 characters.';
+    return errors;
+}
+
+function validateVehicleInfo(data) {
+    const errors = {};
+    const currentYear = new Date().getFullYear();
+    if (!data.toda) errors.toda = 'Please select a TODA assignment.';
+    if (!data.plate_number.trim()) errors.plate_number = 'LTO plate number is required.';
+    if (!data.make_model.trim()) errors.make_model = 'Motorcycle make & model is required.';
+    if (!String(data.year_model).trim()) {
+        errors.year_model = 'Year model is required.';
+    } else {
+        const year = parseInt(data.year_model, 10);
+        if (Number.isNaN(year) || year < 1980 || year > currentYear + 1) {
+            errors.year_model = `Enter a valid year between 1980 and ${currentYear + 1}.`;
+        }
+    }
+    if (!data.body_color.trim()) errors.body_color = 'Body color is required.';
+    if (!data.body_type.trim()) errors.body_type = 'Body type is required.';
+    if (!data.engine_number.trim()) errors.engine_number = 'Engine number is required.';
+    if (!data.chassis_number.trim()) errors.chassis_number = 'Chassis number is required.';
+    if (!data.or_number.trim()) errors.or_number = 'LTO OR number is required.';
+    if (!data.cr_number.trim()) errors.cr_number = 'LTO CR number is required.';
+    return errors;
+}
+
 export default function PublicApply() {
     const { url } = usePage();
     const [step, setStep] = useState(1);
     const [agreed, setAgreed] = useState(false);
     const [scrolledTerms, setScrolledTerms] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    // Field-level errors only render once a field has been touched (blurred), so an empty step
+    // doesn't greet the user with a wall of red text before they've typed anything.
+    const [touched, setTouched] = useState({});
+    const markTouched = (field) => setTouched(t => (t[field] ? t : { ...t, [field]: true }));
 
     const nasugbuBarangays = [
         'Poblacion 1', 'Poblacion 2', 'Poblacion 3', 'Poblacion 4',
@@ -559,22 +691,25 @@ export default function PublicApply() {
     ];
 
     const documentList = [
-        { id: 'prangkisa', label: 'Xerox Prangkisa (Kung Renew)',                         conditional: true  },
-        { id: 'orcr',      label: 'Xerox OR/CR',                                          required:    true  },
-        { id: 'receipt',   label: 'Delivery Receipt (Kung walang OR/CR / New)',            conditional: true  },
-        { id: 'license',   label: "Driver's License Back-to-back (Prof/Restriction 1/A1)", required:    true  },
-        { id: 'brgy',      label: 'Barangay Clearance (Original)',                         required:    true  },
-        { id: 'toda',      label: 'TODA/NAFTODA/ACTODAN Clearance (Original)',             required:    true  },
-        { id: 'driver_id', label: "Driver's ID Issued by NAFTODA/ACTODAN",                required:    true  },
-        { id: 'tariff',    label: 'List of Existing Tariff Fee (For sidecar)',             conditional: true  },
-        { id: 'auth',      label: "Authorization Letter & ID (Kung hindi may-ari)",       conditional: true  },
+        { id: 'orcr',      label: 'Xerox OR/CR',                                          required: true },
+        { id: 'license',   label: "Driver's License Back-to-back (Prof/Restriction 1/A1)", required: true },
+        { id: 'brgy',      label: 'Barangay Clearance (Original)',                         required: true },
+        { id: 'toda',      label: 'TODA/NAFTODA/ACTODAN Clearance (Original)',             required: true },
+        { id: 'driver_id', label: "Driver's ID Issued by NAFTODA/ACTODAN",                required: true },
+        { id: 'prangkisa', label: 'Xerox Prangkisa',              conditional: true, hint: 'Renewals only' },
+        { id: 'receipt',   label: 'Delivery Receipt',             conditional: true, hint: 'New units without OR/CR yet' },
+        { id: 'tariff',    label: 'List of Existing Tariff Fee',  conditional: true, hint: 'Sidecar units only' },
+        { id: 'auth',      label: 'Authorization Letter & ID',    conditional: true, hint: 'If applying on behalf of the owner' },
     ];
+    const requiredDocs = documentList.filter(d => d.required);
+    const applicableConditionalDocs = documentList.filter(d => d.conditional);
 
     const { data, setData, post, processing, errors } = useForm({
         first_name: '', last_name: '', contact: '', barangay: '',
         email: '', password: '',
         plate_number: '', make_model: '', year_model: '', body_color: '', body_type: '',
         engine_number: '', chassis_number: '', or_number: '', cr_number: '', toda: '',
+        terms_accepted: false, privacy_policy_accepted: false,
         documents: {},
     });
 
@@ -590,25 +725,24 @@ export default function PublicApply() {
         return params.get('reference') || 'NSB-26-8812';
     };
 
-    const isStep2Valid =
-        data.first_name.trim() !== '' &&
-        data.last_name.trim()  !== '' &&
-        data.contact.trim()    !== '' &&
-        data.barangay          !== '' &&
-        data.email.trim()      !== '' &&
-        data.password.trim()   !== '';
+    const driverInfoErrors = validateDriverInfo(data);
+    const vehicleInfoErrors = validateVehicleInfo(data);
+    const isStep2Valid = Object.keys(driverInfoErrors).length === 0;
+    const isStep3Valid = Object.keys(vehicleInfoErrors).length === 0;
+    const fieldError = (field, errors) => (touched[field] ? errors[field] : undefined);
 
-    const isStep3Valid =
-        data.toda              !== '' &&
-        data.plate_number.trim()   !== '' &&
-        data.make_model.trim()     !== '' &&
-        data.year_model.trim()     !== '' &&
-        data.body_color.trim()     !== '' &&
-        data.body_type.trim()      !== '' &&
-        data.engine_number.trim()  !== '' &&
-        data.chassis_number.trim() !== '' &&
-        data.or_number.trim()      !== '' &&
-        data.cr_number.trim()      !== '';
+    // Keeps `agreed` (drives the checkbox's own UI state/animation) and useForm's `data` (what
+    // actually gets sent to the backend) as a single source of truth, instead of two variables
+    // that can silently drift apart — which is exactly how the previous "terms accepted field is
+    // required" bug happened: `agreed` was toggled correctly, but nothing wrote it into `data`.
+    const toggleAgreed = () => {
+        if (!scrolledTerms) return;
+        setAgreed(prev => {
+            const next = !prev;
+            setData(current => ({ ...current, terms_accepted: next, privacy_policy_accepted: next }));
+            return next;
+        });
+    };
 
     const handleNext = () => {
         if (step === 1) {
@@ -642,11 +776,12 @@ export default function PublicApply() {
         });
     };
 
-    const requiredDocsIds   = documentList.filter(d => d.required).map(d => d.id);
-    const hasAllRequired    = requiredDocsIds.every(id => {
-        const files = data.documents[id];
-        return Array.isArray(files) && files.length > 0;
+    const missingRequiredDocs = requiredDocs.filter(d => {
+        const files = data.documents[d.id];
+        return !(Array.isArray(files) && files.length > 0);
     });
+    const hasAllRequired = missingRequiredDocs.length === 0;
+    const uploadedRequiredCount = requiredDocs.length - missingRequiredDocs.length;
 
     const handleTermsScroll = (e) => {
         const el = e.target;
@@ -661,7 +796,18 @@ export default function PublicApply() {
         if (!hasAllRequired) {
             Swal.fire({
                 title: 'Missing Requirements',
-                text: 'Pakisumite ang lahat ng required na dokumento bago magpatuloy.',
+                html: 'Pakisumite ang lahat ng required na dokumento bago magpatuloy:<br/><br/>'
+                    + missingRequiredDocs.map(d => `&bull; ${d.label}`).join('<br/>'),
+                icon: 'warning',
+                confirmButtonColor: '#1C2340'
+            });
+            return;
+        }
+
+        if (!agreed) {
+            Swal.fire({
+                title: 'Agreement Required',
+                text: 'Please go back to Step 1 and agree to the Terms & Conditions and Data Privacy Consent before submitting.',
                 icon: 'warning',
                 confirmButtonColor: '#1C2340'
             });
@@ -685,71 +831,87 @@ export default function PublicApply() {
     };
 
     const steps = ['Agreement', 'Tricycle Driver', 'Vehicle', 'Documents'];
+    const stepDescriptions = [
+        'Review terms, data privacy consent, and ordinance compliance.',
+        'Your personal details and account credentials.',
+        'LTO registration and unit specifications.',
+        'Upload required clearances and IDs.',
+    ];
 
     return (
         <div className="pa-root">
             <Head title="Franchise Registration | TRIVORA Nasugbu" />
             <style dangerouslySetInnerHTML={{ __html: CSS }} />
 
-            {/* Hero backdrop */}
-            <div className="pa-hero-backdrop" />
-
-            {/* ── HEADER ── */}
-            <header className="pa-wrap">
-                <div className="pa-header">
-                    <Link href="/" className="pa-logo">
-                        <div className="pa-logo-img-wrap">
-                            <img src="/images/logo.png" alt="TRIVORA" className="pa-logo-img" />
-                        </div>
-                    </Link>
-                </div>
-            </header>
-
-            {/* ── PAGE HEADING ── */}
+            {/* ── SPLIT LEFT: branding + vertical step tracker (hidden once submitted) ── */}
             {step < 5 && (
-                <div className="pa-wrap">
-                    <div className="pa-page-head">
-                        <h1 className="pa-page-title">Register Your<br />Tricycle Unit</h1>
-                        <p className="pa-page-sub">Complete all steps to submit your franchise application</p>
+                <aside className="pa-side">
+                    <div className="pa-hero-glow pa-hero-glow--1" aria-hidden="true" />
+                    <div className="pa-hero-glow pa-hero-glow--2" aria-hidden="true" />
+
+                    <div className="pa-side-top">
+                        <Link href="/" className="pa-logo">
+                            <div className="pa-logo-img-wrap">
+                                <img src="/images/logo.png" alt="TRIVORA" className="pa-logo-img" />
+                            </div>
+                        </Link>
+                        <h1 className="pa-page-title">Register Your Tricycle Unit</h1>
+                        <p className="pa-page-sub">Complete all steps to submit your franchise application to the Nasugbu TMO.</p>
                     </div>
-                </div>
-            )}
 
-            {/* ── MAIN CONTENT ── */}
-            <main style={{ position: 'relative', zIndex: 10, flex: 1, paddingBottom: 64 }}>
-                <div className="pa-wrap">
-
-                    {/* PROGRESS */}
-                    {step < 5 && (
-                        <div className="pa-progress">
+                    <div className="pa-side-mid">
+                        <div className="pa-step-v-list">
                             {steps.map((label, i) => {
                                 const num      = i + 1;
                                 const isDone   = step > num;
                                 const isActive = step === num;
                                 return (
-                                    <div key={label} className="pa-step">
-                                        <div className="pa-step-node">
-                                            <div className={`pa-step-dot ${isDone ? 'done' : isActive ? 'active' : ''}`}>
+                                    <div key={label} className="pa-step-v">
+                                        <div className="pa-step-v-rail">
+                                            <div className={`pa-step-v-dot ${isDone ? 'done' : isActive ? 'active' : ''}`}>
                                                 {isDone ? <Check size={14} strokeWidth={3} /> : num}
                                             </div>
-                                            <span className={`pa-step-label ${isDone ? 'done' : isActive ? 'active' : ''}`}>{label}</span>
+                                            {i < steps.length - 1 && (
+                                                <div className={`pa-step-v-line ${isDone ? 'done' : ''}`} />
+                                            )}
                                         </div>
-                                        {i < steps.length - 1 && (
-                                            <div className={`pa-step-line ${isDone ? 'done' : ''}`} />
-                                        )}
+                                        <div className="pa-step-v-text">
+                                            <p className={`pa-step-v-label ${isDone ? 'done' : isActive ? 'active' : ''}`}>{label}</p>
+                                            <p className="pa-step-v-desc">{stepDescriptions[i]}</p>
+                                        </div>
                                     </div>
                                 );
                             })}
                         </div>
-                    )}
+                    </div>
+
+                    <div className="pa-side-bottom">
+                        <p className="pa-side-note">Authorized LGU Franchise Portal &bull; Nasugbu, Batangas</p>
+                    </div>
+                </aside>
+            )}
+
+            {/* ── SPLIT RIGHT: active step content ── */}
+            <main className="pa-content">
+                {step < 5 && (
+                    <div className="pa-content-topbar">
+                        <Link href="/" className="pa-back-link">Cancel &amp; Return Home</Link>
+                    </div>
+                )}
+
+                <div className="pa-content-center">
+                <div className="pa-content-inner">
 
                     {/* ── STEP 1: AGREEMENT ── */}
                     {step === 1 && (
                         <div className="pa-card">
                             <div className="pa-card-top">
-                                <div>
-                                    <h2 className="pa-card-title">Terms & Agreement</h2>
-                                    <p className="pa-card-sub">Read the full policy before proceeding with your application</p>
+                                <div className="pa-card-top-text">
+                                    <div className="pa-card-icon"><FileText size={20} strokeWidth={1.8} /></div>
+                                    <div>
+                                        <h2 className="pa-card-title">Terms & Agreement</h2>
+                                        <p className="pa-card-sub">Read the full policy before proceeding with your application</p>
+                                    </div>
                                 </div>
                             </div>
 
@@ -812,7 +974,7 @@ export default function PublicApply() {
 
                             <div
                                 className={`pa-checkbox-row${agreed ? ' checked' : ''}${!scrolledTerms ? ' locked' : ''}`}
-                                onClick={() => scrolledTerms && setAgreed(a => !a)}
+                                onClick={toggleAgreed}
                             >
                                 <div className={`pa-checkbox${agreed ? ' checked' : ''}`}>
                                     {agreed && <Check size={11} strokeWidth={3} color="#FFFFFF" />}
@@ -843,42 +1005,72 @@ export default function PublicApply() {
                     {step === 2 && (
                         <div className="pa-card">
                             <div className="pa-card-top">
-                                <div>
-                                    <h2 className="pa-card-title">Tricycle Driver Info</h2>
-                                    <p className="pa-card-sub">Registered Driver of the Tricycle Unit</p>
+                                <div className="pa-card-top-text">
+                                    <div className="pa-card-icon"><User size={20} strokeWidth={1.8} /></div>
+                                    <div>
+                                        <h2 className="pa-card-title">Tricycle Driver Info</h2>
+                                        <p className="pa-card-sub">Registered Driver of the Tricycle Unit</p>
+                                    </div>
                                 </div>
                             </div>
 
                             <div className="pa-fields">
-                                <Field label="First Name">
-                                    <input className="pa-input" placeholder="First Name" autoComplete="off"
-                                        value={data.first_name || ''} onChange={e => setData('first_name', e.target.value)} />
+                                <Field label="First Name" error={fieldError('first_name', driverInfoErrors)}>
+                                    <div className="pa-input-wrap">
+                                        <span className="pa-input-wrap-icon"><User size={15} strokeWidth={2} /></span>
+                                        <input className={`pa-input${fieldError('first_name', driverInfoErrors) ? ' pa-input-error' : ''}`}
+                                            placeholder="First Name" autoComplete="off"
+                                            value={data.first_name || ''} onChange={e => setData('first_name', e.target.value)}
+                                            onBlur={() => markTouched('first_name')} />
+                                    </div>
                                 </Field>
-                                <Field label="Last Name">
-                                    <input className="pa-input" placeholder="Last Name" autoComplete="off"
-                                        value={data.last_name || ''} onChange={e => setData('last_name', e.target.value)} />
+                                <Field label="Last Name" error={fieldError('last_name', driverInfoErrors)}>
+                                    <div className="pa-input-wrap">
+                                        <span className="pa-input-wrap-icon"><User size={15} strokeWidth={2} /></span>
+                                        <input className={`pa-input${fieldError('last_name', driverInfoErrors) ? ' pa-input-error' : ''}`}
+                                            placeholder="Last Name" autoComplete="off"
+                                            value={data.last_name || ''} onChange={e => setData('last_name', e.target.value)}
+                                            onBlur={() => markTouched('last_name')} />
+                                    </div>
                                 </Field>
-                                <Field label="Mobile Number">
-                                    <input className="pa-input" placeholder="0917 123 4567" autoComplete="off"
-                                        value={data.contact || ''} onChange={e => setData('contact', e.target.value)} />
+                                <Field label="Mobile Number" error={fieldError('contact', driverInfoErrors)}>
+                                    <div className="pa-input-wrap">
+                                        <span className="pa-input-wrap-icon"><Phone size={15} strokeWidth={2} /></span>
+                                        <input className={`pa-input${fieldError('contact', driverInfoErrors) ? ' pa-input-error' : ''}`}
+                                            placeholder="0917 123 4567" autoComplete="off"
+                                            value={data.contact || ''} onChange={e => setData('contact', e.target.value)}
+                                            onBlur={() => markTouched('contact')} />
+                                    </div>
                                 </Field>
-                                <Field label="Barangay (Nasugbu)">
+                                <Field label="Barangay (Nasugbu)" error={fieldError('barangay', driverInfoErrors)}>
                                     <div className="pa-select-wrap">
-                                        <select className="pa-select" value={data.barangay || ''}
-                                            onChange={e => setData('barangay', e.target.value)}>
+                                        <select className={`pa-select${fieldError('barangay', driverInfoErrors) ? ' pa-input-error' : ''}`}
+                                            value={data.barangay || ''}
+                                            onChange={e => setData('barangay', e.target.value)}
+                                            onBlur={() => markTouched('barangay')}>
                                             <option value="">Select Barangay</option>
                                             {nasugbuBarangays.map(b => <option key={b} value={b}>{b}</option>)}
                                         </select>
                                         <MapPin size={15} strokeWidth={2} />
                                     </div>
                                 </Field>
-                                <Field label="Email Address">
-                                    <input className="pa-input" type="email" placeholder="name@example.com" autoComplete="off"
-                                        value={data.email || ''} onChange={e => setData('email', e.target.value)} />
+                                <Field label="Email Address" error={fieldError('email', driverInfoErrors)}>
+                                    <div className="pa-input-wrap">
+                                        <span className="pa-input-wrap-icon"><Mail size={15} strokeWidth={2} /></span>
+                                        <input className={`pa-input${fieldError('email', driverInfoErrors) ? ' pa-input-error' : ''}`}
+                                            type="email" placeholder="name@example.com" autoComplete="off"
+                                            value={data.email || ''} onChange={e => setData('email', e.target.value)}
+                                            onBlur={() => markTouched('email')} />
+                                    </div>
                                 </Field>
-                                <Field label="Account Password">
-                                    <input className="pa-input" type="password" placeholder="Min. 8 characters" autoComplete="new-password"
-                                        value={data.password || ''} onChange={e => setData('password', e.target.value)} />
+                                <Field label="Account Password" error={fieldError('password', driverInfoErrors)}>
+                                    <div className="pa-input-wrap">
+                                        <span className="pa-input-wrap-icon"><Lock size={15} strokeWidth={2} /></span>
+                                        <input className={`pa-input${fieldError('password', driverInfoErrors) ? ' pa-input-error' : ''}`}
+                                            type="password" placeholder="Min. 8 characters" autoComplete="new-password"
+                                            value={data.password || ''} onChange={e => setData('password', e.target.value)}
+                                            onBlur={() => markTouched('password')} />
+                                    </div>
                                 </Field>
                             </div>
 
@@ -888,9 +1080,14 @@ export default function PublicApply() {
                                 </button>
                                 <button
                                     className="pa-btn-primary"
-                                    onClick={handleNext}
-                                    disabled={!isStep2Valid}
-                                    style={{ opacity: isStep2Valid ? 1 : 0.45, cursor: isStep2Valid ? 'pointer' : 'not-allowed' }}
+                                    onClick={() => {
+                                        if (!isStep2Valid) {
+                                            setTouched(t => ({ ...t, first_name: true, last_name: true, contact: true, barangay: true, email: true, password: true }));
+                                            return;
+                                        }
+                                        handleNext();
+                                    }}
+                                    style={{ opacity: isStep2Valid ? 1 : 0.55, cursor: 'pointer' }}
                                 >
                                     Continue
                                 </button>
@@ -902,17 +1099,22 @@ export default function PublicApply() {
                     {step === 3 && (
                         <div className="pa-card">
                             <div className="pa-card-top">
-                                <div>
-                                    <h2 className="pa-card-title">Vehicle Specs</h2>
-                                    <p className="pa-card-sub">Tricycle Registration & Unit Details</p>
+                                <div className="pa-card-top-text">
+                                    <div className="pa-card-icon"><Bike size={20} strokeWidth={1.8} /></div>
+                                    <div>
+                                        <h2 className="pa-card-title">Vehicle Specs</h2>
+                                        <p className="pa-card-sub">Tricycle Registration & Unit Details</p>
+                                    </div>
                                 </div>
                             </div>
 
                             <div className="pa-fields">
-                                <Field label="TODA Assignment">
+                                <Field label="TODA Assignment" error={fieldError('toda', vehicleInfoErrors)}>
                                     <div className="pa-select-wrap">
-                                        <select className="pa-select" value={data.toda || ''}
-                                            onChange={e => setData('toda', e.target.value)}>
+                                        <select className={`pa-select${fieldError('toda', vehicleInfoErrors) ? ' pa-input-error' : ''}`}
+                                            value={data.toda || ''}
+                                            onChange={e => setData('toda', e.target.value)}
+                                            onBlur={() => markTouched('toda')}>
                                             <option value="">Select TODA Assignment</option>
                                             <option value="TODA Bucana">TODA Bucana</option>
                                             <option value="TODA Brgy. 10">TODA Brgy. 10</option>
@@ -921,41 +1123,59 @@ export default function PublicApply() {
                                         </select>
                                     </div>
                                 </Field>
-                                <Field label="LTO Plate Number">
-                                    <input className="pa-input" placeholder="LTO Plate Number" autoComplete="off"
-                                        value={data.plate_number || ''} onChange={e => setData('plate_number', e.target.value)} />
+                                <Field label="LTO Plate Number" error={fieldError('plate_number', vehicleInfoErrors)}>
+                                    <input className={`pa-input${fieldError('plate_number', vehicleInfoErrors) ? ' pa-input-error' : ''}`}
+                                        placeholder="LTO Plate Number" autoComplete="off"
+                                        value={data.plate_number || ''} onChange={e => setData('plate_number', e.target.value)}
+                                        onBlur={() => markTouched('plate_number')} />
                                 </Field>
-                                <Field label="Motorcycle Make & Model">
-                                    <input className="pa-input" placeholder="Make & Model" autoComplete="off"
-                                        value={data.make_model || ''} onChange={e => setData('make_model', e.target.value)} />
+                                <Field label="Motorcycle Make & Model" error={fieldError('make_model', vehicleInfoErrors)}>
+                                    <input className={`pa-input${fieldError('make_model', vehicleInfoErrors) ? ' pa-input-error' : ''}`}
+                                        placeholder="Make & Model" autoComplete="off"
+                                        value={data.make_model || ''} onChange={e => setData('make_model', e.target.value)}
+                                        onBlur={() => markTouched('make_model')} />
                                 </Field>
-                                <Field label="Year Model">
-                                    <input className="pa-input" placeholder="Year Model" autoComplete="off"
-                                        value={data.year_model || ''} onChange={e => setData('year_model', e.target.value)} />
+                                <Field label="Year Model" error={fieldError('year_model', vehicleInfoErrors)}>
+                                    <input className={`pa-input${fieldError('year_model', vehicleInfoErrors) ? ' pa-input-error' : ''}`}
+                                        placeholder="Year Model" autoComplete="off"
+                                        value={data.year_model || ''} onChange={e => setData('year_model', e.target.value)}
+                                        onBlur={() => markTouched('year_model')} />
                                 </Field>
-                                <Field label="Body Color">
-                                    <input className="pa-input" placeholder="Body Color" autoComplete="off"
-                                        value={data.body_color || ''} onChange={e => setData('body_color', e.target.value)} />
+                                <Field label="Body Color" error={fieldError('body_color', vehicleInfoErrors)}>
+                                    <input className={`pa-input${fieldError('body_color', vehicleInfoErrors) ? ' pa-input-error' : ''}`}
+                                        placeholder="Body Color" autoComplete="off"
+                                        value={data.body_color || ''} onChange={e => setData('body_color', e.target.value)}
+                                        onBlur={() => markTouched('body_color')} />
                                 </Field>
-                                <Field label="Body Type">
-                                    <input className="pa-input" placeholder="Body Type" autoComplete="off"
-                                        value={data.body_type || ''} onChange={e => setData('body_type', e.target.value)} />
+                                <Field label="Body Type" error={fieldError('body_type', vehicleInfoErrors)}>
+                                    <input className={`pa-input${fieldError('body_type', vehicleInfoErrors) ? ' pa-input-error' : ''}`}
+                                        placeholder="Body Type" autoComplete="off"
+                                        value={data.body_type || ''} onChange={e => setData('body_type', e.target.value)}
+                                        onBlur={() => markTouched('body_type')} />
                                 </Field>
-                                <Field label="Engine Number">
-                                    <input className="pa-input" placeholder="Engine Number" autoComplete="off"
-                                        value={data.engine_number || ''} onChange={e => setData('engine_number', e.target.value)} />
+                                <Field label="Engine Number" error={fieldError('engine_number', vehicleInfoErrors)}>
+                                    <input className={`pa-input${fieldError('engine_number', vehicleInfoErrors) ? ' pa-input-error' : ''}`}
+                                        placeholder="Engine Number" autoComplete="off"
+                                        value={data.engine_number || ''} onChange={e => setData('engine_number', e.target.value)}
+                                        onBlur={() => markTouched('engine_number')} />
                                 </Field>
-                                <Field label="Chassis Number">
-                                    <input className="pa-input" placeholder="Chassis Number" autoComplete="off"
-                                        value={data.chassis_number || ''} onChange={e => setData('chassis_number', e.target.value)} />
+                                <Field label="Chassis Number" error={fieldError('chassis_number', vehicleInfoErrors)}>
+                                    <input className={`pa-input${fieldError('chassis_number', vehicleInfoErrors) ? ' pa-input-error' : ''}`}
+                                        placeholder="Chassis Number" autoComplete="off"
+                                        value={data.chassis_number || ''} onChange={e => setData('chassis_number', e.target.value)}
+                                        onBlur={() => markTouched('chassis_number')} />
                                 </Field>
-                                <Field label="LTO OR Number">
-                                    <input className="pa-input" placeholder="LTO OR Number" autoComplete="off"
-                                        value={data.or_number || ''} onChange={e => setData('or_number', e.target.value)} />
+                                <Field label="LTO OR Number" error={fieldError('or_number', vehicleInfoErrors)}>
+                                    <input className={`pa-input${fieldError('or_number', vehicleInfoErrors) ? ' pa-input-error' : ''}`}
+                                        placeholder="LTO OR Number" autoComplete="off"
+                                        value={data.or_number || ''} onChange={e => setData('or_number', e.target.value)}
+                                        onBlur={() => markTouched('or_number')} />
                                 </Field>
-                                <Field label="LTO CR Number">
-                                    <input className="pa-input" placeholder="LTO CR Number" autoComplete="off"
-                                        value={data.cr_number || ''} onChange={e => setData('cr_number', e.target.value)} />
+                                <Field label="LTO CR Number" error={fieldError('cr_number', vehicleInfoErrors)}>
+                                    <input className={`pa-input${fieldError('cr_number', vehicleInfoErrors) ? ' pa-input-error' : ''}`}
+                                        placeholder="LTO CR Number" autoComplete="off"
+                                        value={data.cr_number || ''} onChange={e => setData('cr_number', e.target.value)}
+                                        onBlur={() => markTouched('cr_number')} />
                                 </Field>
                             </div>
 
@@ -965,9 +1185,18 @@ export default function PublicApply() {
                                 </button>
                                 <button
                                     className="pa-btn-primary"
-                                    onClick={handleNext}
-                                    disabled={!isStep3Valid}
-                                    style={{ opacity: isStep3Valid ? 1 : 0.45, cursor: isStep3Valid ? 'pointer' : 'not-allowed' }}
+                                    onClick={() => {
+                                        if (!isStep3Valid) {
+                                            setTouched(t => ({
+                                                ...t, toda: true, plate_number: true, make_model: true, year_model: true,
+                                                body_color: true, body_type: true, engine_number: true, chassis_number: true,
+                                                or_number: true, cr_number: true,
+                                            }));
+                                            return;
+                                        }
+                                        handleNext();
+                                    }}
+                                    style={{ opacity: isStep3Valid ? 1 : 0.55, cursor: 'pointer' }}
                                 >
                                     Continue
                                 </button>
@@ -979,14 +1208,28 @@ export default function PublicApply() {
                     {step === 4 && (
                         <div className="pa-card" style={{ maxWidth: 900 }}>
                             <div className="pa-card-top">
-                                <div>
-                                    <h2 className="pa-card-title">Requirements</h2>
-                                    <p className="pa-card-sub">Take a clear photo or upload scanned copies of each document</p>
+                                <div className="pa-card-top-text">
+                                    <div className="pa-card-icon"><Upload size={20} strokeWidth={1.8} /></div>
+                                    <div>
+                                        <h2 className="pa-card-title">Requirements</h2>
+                                        <p className="pa-card-sub">Take a clear photo or upload scanned copies of each document</p>
+                                    </div>
                                 </div>
                             </div>
 
+                            {/* Live progress instead of only finding out what's missing on Submit. */}
+                            <div className="pa-req-progress">
+                                <div className="pa-req-progress-bar">
+                                    <div
+                                        className="pa-req-progress-fill"
+                                        style={{ width: `${requiredDocs.length > 0 ? (uploadedRequiredCount / requiredDocs.length) * 100 : 100}%` }}
+                                    />
+                                </div>
+                                <span className="pa-req-progress-text">{uploadedRequiredCount} of {requiredDocs.length} required uploaded</span>
+                            </div>
+
                             <div className="pa-docs-grid">
-                                {documentList.map(doc => (
+                                {requiredDocs.map(doc => (
                                     <FileUpload
                                         key={doc.id}
                                         id={doc.id}
@@ -1000,6 +1243,27 @@ export default function PublicApply() {
                                 ))}
                             </div>
 
+                            {applicableConditionalDocs.length > 0 && (
+                                <>
+                                    <p className="pa-docs-subhead">You may also need to attach</p>
+                                    <div className="pa-docs-grid">
+                                        {applicableConditionalDocs.map(doc => (
+                                            <FileUpload
+                                                key={doc.id}
+                                                id={doc.id}
+                                                label={doc.label}
+                                                hint={doc.hint}
+                                                required={doc.required}
+                                                conditional={doc.conditional}
+                                                files={data.documents[doc.id] || []}
+                                                onUpload={files => handleFileUpload(doc.id, files)}
+                                                onRemove={idx => handleRemoveFile(doc.id, idx)}
+                                            />
+                                        ))}
+                                    </div>
+                                </>
+                            )}
+
                             <div className="pa-notice">
                                 <Info size={17} className="pa-notice-icon" />
                                 <p className="pa-notice-text">
@@ -1012,7 +1276,8 @@ export default function PublicApply() {
                                 <button className="pa-btn-ghost" onClick={back}>
                                     Back
                                 </button>
-                                <button className="pa-btn-success" onClick={submitApplication}>
+                                <button className="pa-btn-success" onClick={submitApplication} disabled={isSubmitting} style={{ opacity: isSubmitting ? .75 : 1, cursor: isSubmitting ? 'not-allowed' : 'pointer' }}>
+                                    {isSubmitting ? <Loader2 size={15} strokeWidth={2.5} style={{ animation: 'paSpin .8s linear infinite' }} /> : null}
                                     {isSubmitting ? 'Submitting...' : 'Submit'}
                                 </button>
                             </div>
@@ -1021,7 +1286,7 @@ export default function PublicApply() {
 
                     {/* ── STEP 5: SUCCESS ── */}
                     {step === 5 && (
-                        <div className="pa-card" style={{ textAlign: 'center', padding: '64px 48px', animation: 'paFadeUp .5s ease both' }}>
+                        <div className="pa-card pa-card--elevated" style={{ textAlign: 'center' }}>
                             <div className="pa-success-icon">
                                 <CheckCircle2 size={38} strokeWidth={2} />
                             </div>
@@ -1056,32 +1321,31 @@ export default function PublicApply() {
                     )}
 
                 </div>
-            </main>
-
-            {/* ── FOOTER ── */}
-            <footer className="pa-footer">
-                <div className="pa-wrap">
-                    <div className="pa-footer-inner">
-                        <p className="pa-footer-copy">&copy; 2026 TRIVORA Fleet Operations &bull; Nasugbu Batangas</p>
-                    </div>
                 </div>
-            </footer>
+
+                {/* Footer sits in its own grid row, so it never fights the
+                    centered content above it for vertical space. */}
+                <footer className="pa-footer">
+                    <p className="pa-footer-copy">&copy; 2026 TRIVORA Fleet Operations &bull; Nasugbu Batangas</p>
+                </footer>
+            </main>
         </div>
     );
 }
 
 /* ── Sub-components ──────────────────────────────────────────────────────── */
 
-function Field({ label, children, className }) {
+function Field({ label, children, className, error }) {
     return (
         <div className={className}>
             <label className="pa-label">{label}</label>
             {children}
+            {error && <p className="pa-field-error">{error}</p>}
         </div>
     );
 }
 
-function FileUpload({ id, label, required, conditional, files = [], onUpload, onRemove }) {
+function FileUpload({ id, label, hint, required, conditional, files = [], onUpload, onRemove }) {
     const [previewUrls, setPreviewUrls] = useState([]);
     const [showGallery, setShowGallery] = useState(false);
     const [activePreviewUrl, setActivePreviewUrl] = useState(null);
@@ -1172,7 +1436,15 @@ function FileUpload({ id, label, required, conditional, files = [], onUpload, on
     return (
         <div className={`pa-file-tile-container${isUploaded ? ' done' : ''}`}>
             <div className="pa-file-tile-header">
-                <span className="pa-file-title-text">{label}</span>
+                <div className="pa-file-title-group">
+                    <span className="pa-file-chip" aria-hidden="true">
+                        {isUploaded ? <CheckCircle2 size={16} strokeWidth={2} /> : <FileText size={16} strokeWidth={2} />}
+                    </span>
+                    <span>
+                        <span className="pa-file-title-text">{label}</span>
+                        {hint && <span className="pa-file-hint">{hint}</span>}
+                    </span>
+                </div>
                 <div className="pa-file-tags">
                     {isUploaded
                         ? <span className="pa-tag-done">✓ {files.length} File(s)</span>
@@ -1185,54 +1457,56 @@ function FileUpload({ id, label, required, conditional, files = [], onUpload, on
                 </div>
             </div>
 
-            {/* Action Row containing upload trigger (left) and view gallery icon (right) */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', gap: '8px', marginTop: '4px' }}>
-                <div>
-                    <input
-                        ref={fileInputRef}
-                        type="file"
-                        id={id}
-                        accept="image/*,.pdf"
-                        multiple
-                        className="sr-only"
-                        style={{ display: 'none' }}
-                        onChange={e => {
-                            if (e.target.files && e.target.files.length > 0) {
-                                onUpload(e.target.files);
-                                e.target.value = '';
-                            }
-                        }}
-                    />
-                    <button
-                        type="button"
-                        className="pa-upload-btn-label"
-                        onClick={() => setShowChoiceModal(true)}
-                        style={{ cursor: 'pointer' }}
-                    >
-                        <Upload size={10} strokeWidth={2.5} />
-                        Add Photo / PDF
+            <input
+                ref={fileInputRef}
+                type="file"
+                id={id}
+                accept="image/*,.pdf"
+                multiple
+                className="sr-only"
+                style={{ display: 'none' }}
+                onChange={e => {
+                    if (e.target.files && e.target.files.length > 0) {
+                        onUpload(e.target.files);
+                        e.target.value = '';
+                    }
+                }}
+            />
+
+            {/* Empty state: one large, obvious tap target — not a small pill button. */}
+            {!isUploaded && (
+                <button type="button" className="pa-upload-dropzone" onClick={() => setShowChoiceModal(true)}>
+                    <span className="pa-upload-dropzone-icon" aria-hidden="true"><Camera size={15} strokeWidth={2} /></span>
+                    <span className="pa-upload-dropzone-text">Tap to add photo or PDF</span>
+                </button>
+            )}
+
+            {/* Uploaded state: inline thumbnails for instant visual confirmation,
+                plus quick add-more / full-gallery actions. */}
+            {isUploaded && (
+                <div className="pa-upload-thumbs-row">
+                    {previewUrls.slice(0, 4).map((url, i) => (
+                        <button
+                            type="button"
+                            key={i}
+                            className="pa-upload-thumb-btn"
+                            onClick={() => setActivePreviewUrl(url)}
+                            title="View file"
+                        >
+                            {url && files[i]?.type?.startsWith('image/')
+                                ? <img src={url} alt="" className="pa-upload-thumb-img" />
+                                : <FileText size={14} strokeWidth={2} />}
+                        </button>
+                    ))}
+                    {files.length > 4 && <span className="pa-upload-thumb-more">+{files.length - 4}</span>}
+                    <button type="button" className="pa-upload-add-more" onClick={() => setShowChoiceModal(true)} title="Add another file">
+                        <Upload size={13} strokeWidth={2.5} />
+                    </button>
+                    <button type="button" className="pa-upload-view-btn" onClick={() => setShowGallery(true)} title="View or remove uploaded files">
+                        <Eye size={14} strokeWidth={2.5} />
                     </button>
                 </div>
-
-                {isUploaded && (
-                    <button
-                        type="button"
-                        style={{
-                            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                            padding: '6px', background: 'none', border: 'none',
-                            color: '#4F5BCB', cursor: 'pointer', transition: 'color .18s'
-                        }}
-                        onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            setShowGallery(true);
-                        }}
-                        title="View Uploaded Photos"
-                    >
-                        <Eye size={16} strokeWidth={2.5} />
-                    </button>
-                )}
-            </div>
+            )}
 
             {/* Choice Modal (Upload vs Take Picture) */}
             {showChoiceModal && createPortal(

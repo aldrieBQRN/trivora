@@ -28,6 +28,10 @@ class User extends Authenticatable
         'role',
         'is_active',
         'profile_photo_path',
+        'employee_id',
+        'position',
+        'contact_number',
+        'address',
     ];
 
     /**
@@ -38,6 +42,17 @@ class User extends Authenticatable
     protected $hidden = [
         'password',
         'remember_token',
+    ];
+
+    /**
+     * Appended to every serialized User (including nested inside a booking's driver.user /
+     * passenger.user relations) so the mobile apps never need to know the storage path scheme —
+     * they only ever see a ready-to-use URL, or null when no photo has been uploaded.
+     *
+     * @var list<string>
+     */
+    protected $appends = [
+        'profile_photo_url',
     ];
 
     /**
@@ -52,6 +67,15 @@ class User extends Authenticatable
             'password'          => 'hashed',
             'is_active'         => 'boolean',
         ];
+    }
+
+    /**
+     * Public URL for the uploaded profile photo, or null when none has been set — never expose
+     * the raw storage path itself.
+     */
+    public function getProfilePhotoUrlAttribute(): ?string
+    {
+        return $this->profile_photo_path ? asset('storage/' . $this->profile_photo_path) : null;
     }
 
     // -------------------------------------------------------------------------
@@ -71,11 +95,6 @@ class User extends Authenticatable
     public function isBploStaff(): bool
     {
         return $this->role === 'bplo_staff';
-    }
-
-    public function isMunicipalTreasurer(): bool
-    {
-        return $this->role === 'municipal_treasurer';
     }
 
     public function isAdmin(): bool
@@ -112,7 +131,7 @@ class User extends Authenticatable
     }
 
     /**
-     * Payments processed by this user (Municipal Treasurer).
+     * Payments verified by this user (BPLO staff / admin).
      */
     public function processedPayments(): HasMany
     {
@@ -141,6 +160,15 @@ class User extends Authenticatable
     public function detectedViolations(): HasMany
     {
         return $this->hasMany(Violation::class, 'detected_by');
+    }
+
+    /**
+     * Violation fine payments confirmed by this user (TMO personnel), after the driver
+     * paid at the Municipal Treasurer's cashier and presented the official receipt.
+     */
+    public function confirmedViolationPayments(): HasMany
+    {
+        return $this->hasMany(Violation::class, 'confirmed_by');
     }
 
     /**

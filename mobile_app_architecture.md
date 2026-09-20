@@ -1,5 +1,7 @@
 # Trivora Mobile App Integration & Architecture Guide
 
+> 📖 **Comprehensive System Specification:** For the complete end-to-end documentation (Passenger App, Driver App, TODA Zoned Dispatching, Dual GPS Telematics, Municipal Violations, and Map Styling), see [APP_PROCESS_AND_ARCHITECTURE.md](../APP_PROCESS_AND_ARCHITECTURE.md).
+
 This document outlines the architectural blueprint, security protocols, and real-time synchronization strategy for connecting the Passenger and Driver mobile applications to the **Trivora** municipal web platform.
 
 ---

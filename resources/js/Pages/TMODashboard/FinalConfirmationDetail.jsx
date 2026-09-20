@@ -1,11 +1,40 @@
 import React from 'react';
-import { Head, useForm } from '@inertiajs/react';
+import { Head, useForm, Link, router } from '@inertiajs/react';
 import TrivoraLayout from '@/Layouts/TrivoraLayout';
 import Swal from 'sweetalert2';
 import {
     ShieldCheck, CheckCircle2, User, Smartphone, Cpu, CheckSquare, Square,
+    Receipt, Tag, Bike, Check, ChevronLeft, Phone,
 } from 'lucide-react';
-import { BackLink, StatusBadge, Button, Textarea, Label } from '@/Components/TMO';
+import { Button, Textarea, Label, StatusBadge } from '@/Components/TMO';
+
+// Shared soft, layered shadow token — same elevation language used across the TMO panel (Index.jsx,
+// Dashboard.jsx, KpiCard.jsx) so this detail page reads as one consistent product.
+const CARD_SHADOW = 'shadow-[0_1px_2px_0_rgba(15,23,42,0.04),0_8px_24px_-8px_rgba(15,23,42,0.10)]';
+
+// Reflects only what the backend has actually received (Tricycle::gpsStatus()) — never implies
+// "Connected" just because a tracking method was selected at activation.
+function GpsStatusBadge({ status, lastSeenAt }) {
+    if (status === 'connected') {
+        return (
+            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-700">
+                Connected{lastSeenAt ? ` · last signal ${lastSeenAt}` : ''}
+            </span>
+        );
+    }
+    if (status === 'stale') {
+        return (
+            <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-700">
+                Signal lost{lastSeenAt ? ` · last seen ${lastSeenAt}` : ''}
+            </span>
+        );
+    }
+    return (
+        <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-600">
+            Awaiting first signal
+        </span>
+    );
+}
 
 export default function FinalConfirmationDetail({ application }) {
     const isAlreadyCompleted = application.status === 'completed';
@@ -16,6 +45,9 @@ export default function FinalConfirmationDetail({ application }) {
         sticker_possession_confirmed: isAlreadyCompleted,
         tracking_method: application.tracking_method || 'mobile_gps',
         iot_device_id: application.iot_device_id || (application.suggested_iot_id || ''),
+        imei: application.device_imei || '',
+        sim_number: application.device_sim_number || '',
+        reassign_confirmed: false,
         officer_notes: '',
     });
 
@@ -28,6 +60,16 @@ export default function FinalConfirmationDetail({ application }) {
         data.tracking_method === 'mobile_gps' ||
         (data.tracking_method === 'iot_device' && data.iot_device_id.trim() !== '')
     );
+
+    const handleToggleAllChecks = () => {
+        if (isAlreadyCompleted) return;
+        setData({
+            ...data,
+            signed_ticket_verified: !allChecked,
+            bplo_approval_confirmed: !allChecked,
+            sticker_possession_confirmed: !allChecked,
+        });
+    };
 
     const handleSubmit = () => {
         if (!canSubmit) {
@@ -42,15 +84,18 @@ export default function FinalConfirmationDetail({ application }) {
 
         const methodText = data.tracking_method === 'iot_device'
             ? `IoT Hardware Device <b>#${data.iot_device_id}</b> (Hardware Issued)`
-            : `<b>Mobile GPS Tracking</b> (Trivora Driver App)`;
+            : `<b>Mobile Device GPS</b> (Driver Smartphone)`;
 
         Swal.fire({
             title: 'Confirm Franchise Activation',
-            html: `Are you sure you want to mark this franchise as <b>COMPLETED / ACTIVE</b>?<br/><br/>
-                   Driver: <b>${application.operator_name}</b><br/>
-                   Franchise Sticker: <b>${application.sticker_number}</b><br/>
-                   Body Number: <b>${application.body_number}</b><br/>
-                   Tracking Method: ${methodText}`,
+            html: `Are you sure you want to mark this franchise permit as <b>COMPLETED / ACTIVE</b>?<br/><br/>
+                   <div style="text-align: left; background: #F8FAFC; padding: 14px 16px; border-radius: 8px; font-size: 13px; line-height: 1.6; border: 1px solid #E2E8F0;">
+                     Operator: <b>${application.operator_name}</b><br/>
+                     TODA Zone: <b>${application.toda_zone}</b><br/>
+                     Tricycle Unit: <b>${application.make_model} (${application.plate_number})</b><br/>
+                     Coding Scheme: <b>#${application.coding_number || application.body_number} (${application.color_scheme} Scheme)</b><br/>
+                     Tracking Method: ${methodText}
+                   </div>`,
             icon: 'question',
             showCancelButton: true,
             confirmButtonColor: '#059669',
@@ -59,19 +104,61 @@ export default function FinalConfirmationDetail({ application }) {
             cancelButtonText: 'Cancel',
         }).then((result) => {
             if (result.isConfirmed) {
-                post(`/tmo/final-confirmation/${application.id}`, {
-                    onSuccess: () => {
-                        Swal.fire({
-                            title: 'Franchise Activated!',
-                            text: `The franchise registration process is complete. Unit is now active in the registry.`,
-                            icon: 'success',
-                            confirmButtonColor: '#059669',
-                            timer: 2500,
-                            showConfirmButton: false,
-                        });
-                    }
-                });
+                submitConfirmation();
             }
+        });
+    };
+
+    const submitConfirmation = () => {
+        post(`/tmo/final-confirmation/${application.id}`, {
+            onSuccess: () => {
+                Swal.fire({
+                    title: 'Franchise Activated!',
+                    text: `The franchise registration process is complete. Unit is now active in the municipal registry.`,
+                    icon: 'success',
+                    confirmButtonColor: '#059669',
+                    timer: 2500,
+                    showConfirmButton: false,
+                });
+            },
+            onError: (errors) => {
+                // The backend refuses to silently move a tracker that's already paired to a
+                // different tricycle — surface that as an explicit choice rather than a generic
+                // validation failure, so the officer can knowingly confirm the reassignment.
+                if (errors.iot_device_id && errors.iot_device_id.includes('already paired')) {
+                    Swal.fire({
+                        title: 'Tracker Already Paired Elsewhere',
+                        html: errors.iot_device_id,
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonColor: '#D97706',
+                        cancelButtonColor: '#8A96BC',
+                        confirmButtonText: 'Reassign to This Tricycle',
+                        cancelButtonText: 'Cancel',
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            // useForm's post() always submits its own (async) `data` state, which
+                            // wouldn't yet reflect a setData() called this tick — router.post()
+                            // with an explicit payload submits the override immediately instead.
+                            router.post(`/tmo/final-confirmation/${application.id}`, {
+                                ...data,
+                                reassign_confirmed: true,
+                            }, {
+                                onSuccess: () => {
+                                    Swal.fire({
+                                        title: 'Franchise Activated!',
+                                        text: 'The franchise registration process is complete. Unit is now active in the municipal registry.',
+                                        icon: 'success',
+                                        confirmButtonColor: '#059669',
+                                        timer: 2500,
+                                        showConfirmButton: false,
+                                    });
+                                },
+                            });
+                        }
+                    });
+                }
+            },
         });
     };
 
@@ -80,11 +167,17 @@ export default function FinalConfirmationDetail({ application }) {
             <Head title={`Final Confirmation: ${application.reference} | TRIVORA`} />
 
             {/* Top Action Bar */}
-            <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-                <BackLink href="/tmo/final-confirmation">Back to Final Confirmation Queue</BackLink>
+            <div className="mb-6 flex flex-wrap items-center justify-between gap-3 border-b border-slate-200/80 pb-4">
+                <Link
+                    href="/tmo/final-confirmation"
+                    className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-600 hover:text-slate-900 transition-colors"
+                >
+                    <ChevronLeft size={16} strokeWidth={2.5} />
+                    <span>Back to Final Confirmation Queue</span>
+                </Link>
 
                 <div className="flex items-center gap-2.5">
-                    <span className="rounded-md bg-gray-100 px-2.5 py-1.5 font-mono text-xs font-bold text-tmo-ink">
+                    <span className="rounded-md bg-slate-100 px-2.5 py-1 font-mono text-xs font-bold text-slate-800 border border-slate-200">
                         {application.reference}
                     </span>
                     {isAlreadyCompleted ? (
@@ -100,13 +193,15 @@ export default function FinalConfirmationDetail({ application }) {
                 {/* ══════════════ LEFT COLUMN: Application Profile & Clearances ══════════════ */}
                 <div className="flex flex-col gap-5">
                     {/* Driver & Vehicle */}
-                    <div className="rounded-2xl border border-tmo-border bg-tmo-surface p-6">
-                        <div className="mb-4 flex items-center justify-between border-b border-tmo-border pb-3.5">
-                            <h3 className="flex items-center gap-2 text-sm font-extrabold text-tmo-ink">
-                                <User size={18} className="text-tmo-primary" />
+                    <div className={`rounded-2xl border border-slate-200/70 bg-white p-6 ${CARD_SHADOW}`}>
+                        <div className="mb-4 flex items-center justify-between border-b border-slate-100 pb-3.5">
+                            <h3 className="flex items-center gap-2 text-sm font-extrabold text-slate-900">
+                                <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-[#1D2542]/[0.10] to-[#1D2542]/[0.02] text-[#1D2542]">
+                                    <User size={16} strokeWidth={2.2} />
+                                </span>
                                 Applicant &amp; Vehicle Registration
                             </h3>
-                            <span className="text-[11px] font-bold text-tmo-muted">{application.application_type} Franchise</span>
+                            <span className="text-[11px] font-bold text-slate-400">{application.application_type} Franchise</span>
                         </div>
 
                         <DetailRow label="Operator / Driver" value={application.operator_name} />
@@ -122,50 +217,59 @@ export default function FinalConfirmationDetail({ application }) {
                         />
                     </div>
 
-                    {/* Clearances: BPLO Sticker Release & Cashier Payment */}
-                    <div className="rounded-2xl border border-tmo-border bg-tmo-surface p-6">
-                        <div className="mb-4 flex items-center justify-between border-b border-tmo-border pb-3.5">
-                            <h3 className="flex items-center gap-2 text-sm font-extrabold text-tmo-ink">
-                                <ShieldCheck size={18} className="text-emerald-600" />
-                                Prerequisite Approvals &amp; Clearances
+                    {/* Clearances: Coding Scheme & Payment Ticket */}
+                    <div className={`rounded-2xl border border-slate-200/70 bg-white p-6 ${CARD_SHADOW}`}>
+                        <div className="mb-4 flex items-center justify-between border-b border-slate-100 pb-3.5">
+                            <h3 className="flex items-center gap-2 text-sm font-extrabold text-slate-900">
+                                <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-500/[0.14] to-emerald-500/[0.02] text-emerald-600">
+                                    <ShieldCheck size={16} strokeWidth={2.2} />
+                                </span>
+                                Completed Steps
                             </h3>
-                            <span className="text-[11px] font-bold text-emerald-600">Verified</span>
+                            <span className="text-[11px] font-bold text-emerald-600">Passed</span>
                         </div>
 
                         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                            <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3.5">
-                                <div className="mb-1 text-[9.5px] font-bold uppercase tracking-wide text-tmo-muted">BPLO Released Sticker</div>
-                                <div className="font-mono text-[13px] font-extrabold text-emerald-700">{application.sticker_number}</div>
-                                <div className="mt-0.5 text-[10px] text-emerald-600">Body #{application.body_number}</div>
+                            <div className="rounded-xl border border-emerald-200 bg-emerald-50/80 p-3.5">
+                                <div className="mb-1 text-[9.5px] font-bold uppercase tracking-wide text-slate-400">Coding Scheme</div>
+                                <div className="font-mono text-[14px] font-extrabold text-emerald-700">#{application.coding_number || application.body_number}</div>
+                                <div className="mt-0.5 flex items-center gap-1.5 text-[10.5px] font-bold text-emerald-700">
+                                    <span className="h-2 w-2 rounded-full" style={{ backgroundColor: application.color_hex }} />
+                                    {application.color_scheme} Scheme
+                                </div>
                             </div>
-                            <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3.5">
-                                <div className="mb-1 text-[9.5px] font-bold uppercase tracking-wide text-tmo-muted">Municipal Cashier OR</div>
-                                <div className="font-mono text-[13px] font-extrabold text-emerald-700">{application.payment?.or_number || 'OR-VERIFIED'}</div>
-                                <div className="mt-0.5 text-[10px] text-emerald-600">₱750.00 Paid OTC</div>
+                            <div className="rounded-xl border border-emerald-200 bg-emerald-50/80 p-3.5">
+                                <div className="mb-1 text-[9.5px] font-bold uppercase tracking-wide text-slate-400">Order of Payment Ticket</div>
+                                <div className="font-mono text-[13px] font-extrabold text-emerald-700">{application.ticket_number}</div>
+                                <div className="mt-0.5 text-[10px] font-medium text-emerald-600">Municipal Cashier OTC Handout</div>
                             </div>
                         </div>
 
                         <div className="mt-4">
-                            <DetailRow
-                                label="Assigned Color-Coding"
-                                value={
-                                    <span className="inline-flex items-center gap-1.5">
-                                        <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: application.color_hex }} />
-                                        {application.color_scheme} Scheme
-                                    </span>
-                                }
-                            />
-                            <DetailRow label="Order of Payment Ticket" value={application.ticket_number} mono last />
+                            <DetailRow label="Document Review" value="Verified & Passed" />
+                            <DetailRow label="Physical Inspection" value="Passed (Handout Issued)" last />
                         </div>
                     </div>
                 </div>
 
                 {/* ══════════════ RIGHT COLUMN: TMO Verification & GPS Tracking ══════════════ */}
                 <div>
-                    <div className="rounded-2xl border-[1.5px] border-tmo-borderStrong bg-tmo-surface p-7 shadow-sm">
-                        <h2 className="mb-1.5 text-lg font-extrabold text-tmo-ink">TMO Final Verification</h2>
-                        <p className="mb-6 text-[12.5px] leading-relaxed text-tmo-muted">
-                            Confirm the driver's signed documents and physical sticker possession, then select the GPS tracking method to activate the franchise permit.
+                    <div className={`rounded-2xl border border-slate-200/70 bg-white p-7 ${CARD_SHADOW}`}>
+                        <div className="mb-1.5 flex items-center justify-between">
+                            <h2 className="text-lg font-extrabold text-slate-900">TMO Final Verification</h2>
+                            {!isAlreadyCompleted && (
+                                <button
+                                    type="button"
+                                    onClick={handleToggleAllChecks}
+                                    className="inline-flex items-center gap-1 rounded-md bg-emerald-100 px-2.5 py-1 text-[11px] font-extrabold text-emerald-800 transition hover:bg-emerald-200"
+                                >
+                                    <Check size={12} strokeWidth={3} />
+                                    {allChecked ? 'Clear Checks' : 'Check All Clearances'}
+                                </button>
+                            )}
+                        </div>
+                        <p className="mb-6 text-[12.5px] leading-relaxed text-slate-500">
+                            Check the driver's payment ticket and coding number, then select GPS tracking to activate this tricycle franchise.
                         </p>
 
                         {/* Checklist */}
@@ -175,79 +279,171 @@ export default function FinalConfirmationDetail({ application }) {
                                 disabled={isAlreadyCompleted}
                                 onClick={() => setData('signed_ticket_verified', !data.signed_ticket_verified)}
                             >
-                                Driver presented the <strong>signed &amp; validated Municipal Payment Ticket</strong> from Cashier.
+                                Driver presented the <strong>signed &amp; validated Municipal Payment Ticket</strong> from the Municipal Treasurer (OTC).
                             </CheckItem>
                             <CheckItem
                                 checked={data.bplo_approval_confirmed}
                                 disabled={isAlreadyCompleted}
                                 onClick={() => setData('bplo_approval_confirmed', !data.bplo_approval_confirmed)}
                             >
-                                Confirmed <strong>BPLO payment verification</strong> and official franchise approval.
+                                Confirmed <strong>BPLO signed off and released</strong> the Franchise Sticker/Body Number for this unit.
                             </CheckItem>
                             <CheckItem
                                 checked={data.sticker_possession_confirmed}
                                 disabled={isAlreadyCompleted}
                                 onClick={() => setData('sticker_possession_confirmed', !data.sticker_possession_confirmed)}
                             >
-                                Confirmed physical possession of <strong>Franchise Sticker #{application.sticker_number}</strong> and plate for coding.
+                                Confirmed physical possession of <strong>Coding Plate #{application.coding_number || application.body_number}</strong> ({application.color_scheme} Scheme).
                             </CheckItem>
                         </div>
 
                         {/* GPS Tracking Method Selection */}
-                        <p className="mb-2 text-[13.5px] font-extrabold text-tmo-ink">Select GPS Tracking Method:</p>
+                        <p className="mb-2 text-[13.5px] font-extrabold text-slate-900">Select GPS Tracking:</p>
 
                         <div className="mb-5 grid grid-cols-1 gap-3.5 sm:grid-cols-2">
                             <MethodCard
-                                icon={Smartphone}
-                                iconTone="bg-emerald-100 text-emerald-700"
-                                title="Mobile GPS"
-                                badge="Driver App"
-                                badgeTone="bg-indigo-100 text-indigo-800"
-                                description="Driver will broadcast GPS locations using the Trivora Driver app. No physical IoT hardware is issued."
-                                selected={data.tracking_method === 'mobile_gps'}
-                                disabled={isAlreadyCompleted}
-                                onClick={() => setData('tracking_method', 'mobile_gps')}
-                            />
-                            <MethodCard
                                 icon={Cpu}
-                                iconTone="bg-tmo-primarySoft text-tmo-primary"
-                                title="IoT Device"
-                                badge="Hardware Unit"
+                                iconTone="bg-amber-100 text-amber-700"
+                                title="GPS Tracker Device"
+                                badge="Installed on Tricycle"
                                 badgeTone="bg-amber-100 text-amber-800"
-                                description="Driver uses an onboard IoT tracking device. TMO is responsible for issuing and recording the device."
+                                description="A dedicated GPS tracker wired into the tricycle battery. Automatically updates location without needing a phone."
                                 selected={data.tracking_method === 'iot_device'}
                                 disabled={isAlreadyCompleted}
                                 onClick={() => setData('tracking_method', 'iot_device')}
                             />
+                            <MethodCard
+                                icon={Smartphone}
+                                iconTone="bg-indigo-100 text-indigo-700"
+                                title="Driver Smartphone"
+                                badge="Driver Phone App"
+                                badgeTone="bg-indigo-100 text-indigo-800"
+                                description="The driver uses their personal smartphone and the Trivora Driver App to share location while driving."
+                                selected={data.tracking_method === 'mobile_gps'}
+                                disabled={isAlreadyCompleted}
+                                onClick={() => setData('tracking_method', 'mobile_gps')}
+                            />
                         </div>
 
-                        {/* IoT Device Serial Input */}
+                        {/* ── OPTION A: GPS TRACKER DEVICE ── */}
                         {data.tracking_method === 'iot_device' && (
-                            <div className="mb-6 rounded-lg border border-tmo-borderStrong bg-tmo-bg p-4">
-                                <Label>IoT Device Hardware ID / Serial Number:</Label>
+                            <div className="mb-6 rounded-xl border border-dashed border-amber-300 bg-amber-50/50 p-4">
+                                <div className="mb-1 flex items-center justify-between">
+                                    <Label>Tracker ID / Device ID:</Label>
+                                    <span className="rounded bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-800">
+                                        Required
+                                    </span>
+                                </div>
                                 <input
                                     type="text"
-                                    className="mt-1.5 w-full rounded-lg border-[1.5px] border-tmo-borderStrong bg-white px-3.5 py-2.5 font-mono text-sm font-bold text-tmo-ink outline-none transition-colors focus:border-tmo-primary focus:ring-2 focus:ring-tmo-primary/15"
-                                    placeholder="e.g. TRV-IOT-2026-0042"
+                                    className="mt-1.5 w-full rounded-lg border-[1.5px] border-slate-300 bg-white px-3.5 py-2.5 font-mono text-sm font-bold text-slate-900 outline-none transition-colors focus:border-[#1D2542] focus:ring-2 focus:ring-[#1D2542]/10"
+                                    placeholder="e.g. TRV-GPS-1011"
                                     value={data.iot_device_id}
                                     onChange={(e) => setData('iot_device_id', e.target.value)}
                                     disabled={isAlreadyCompleted}
                                     required
                                 />
-                                <p className="mt-1.5 text-[11px] text-tmo-muted">
-                                    Record the unique hardware serial printed on the physical tracker issued to the driver.
-                                </p>
+                                <div className="mt-2 flex items-center justify-between text-[11.5px]">
+                                    <span className="text-slate-500">
+                                        Suggested ID: <code className="font-mono font-bold text-slate-800">{application.suggested_iot_id}</code>
+                                    </span>
+                                    {!isAlreadyCompleted && (
+                                        <button
+                                            type="button"
+                                            onClick={() => setData('iot_device_id', application.suggested_iot_id)}
+                                            className="font-bold text-[#1D2542] hover:underline"
+                                        >
+                                            Use Suggested ID
+                                        </button>
+                                    )}
+                                </div>
+
+                                <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                                    <div>
+                                        <Label>IMEI (Optional):</Label>
+                                        <input
+                                            type="text"
+                                            className="mt-1.5 w-full rounded-lg border-[1.5px] border-slate-300 bg-white px-3.5 py-2 font-mono text-xs font-semibold text-slate-900 outline-none transition-colors focus:border-[#1D2542] focus:ring-2 focus:ring-[#1D2542]/10"
+                                            placeholder="15-digit device IMEI, if known"
+                                            value={data.imei}
+                                            onChange={(e) => setData('imei', e.target.value)}
+                                            disabled={isAlreadyCompleted}
+                                        />
+                                    </div>
+                                    <div>
+                                        <Label>SIM Number (Optional):</Label>
+                                        <input
+                                            type="text"
+                                            className="mt-1.5 w-full rounded-lg border-[1.5px] border-slate-300 bg-white px-3.5 py-2 font-mono text-xs font-semibold text-slate-900 outline-none transition-colors focus:border-[#1D2542] focus:ring-2 focus:ring-[#1D2542]/10"
+                                            placeholder="SIM used for 4G connectivity"
+                                            value={data.sim_number}
+                                            onChange={(e) => setData('sim_number', e.target.value)}
+                                            disabled={isAlreadyCompleted}
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="mt-3 flex items-center gap-2 rounded-lg border border-slate-200 bg-white p-2.5 text-[11px] text-slate-700">
+                                    <span className="font-semibold">Device Status:</span>
+                                    <GpsStatusBadge status={application.gps_status || 'awaiting'} lastSeenAt={application.gps_last_seen_at} />
+                                </div>
+                                {!isAlreadyCompleted && (
+                                    <p className="mt-1.5 text-[10.5px] leading-relaxed text-amber-900">
+                                        Pairing only registers this tracker to the tricycle — it will show <strong>Awaiting First Signal</strong> until the physical device is installed and sends its first real GPS transmission.
+                                    </p>
+                                )}
+
+                                <div className="mt-2 rounded-md bg-amber-100/60 px-3 py-2 text-[10.5px] leading-relaxed text-amber-900">
+                                    <strong>Wiring:</strong> Connect Red wire to battery (+), Black to ground (-), and Yellow to ignition key.
+                                </div>
+                            </div>
+                        )}
+
+                        {/* ── OPTION B: DRIVER SMARTPHONE APP ── */}
+                        {data.tracking_method === 'mobile_gps' && (
+                            <div className="mb-6 rounded-xl border border-dashed border-indigo-200 bg-indigo-50/60 p-4">
+                                <div className="flex items-start gap-3">
+                                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-indigo-100 text-indigo-700">
+                                        <Smartphone size={18} strokeWidth={2.2} />
+                                    </div>
+                                    <div className="flex-1 text-xs">
+                                        <div className="flex items-center justify-between">
+                                            <span className="font-extrabold text-slate-900 text-[13px]">
+                                                Driver Smartphone App
+                                            </span>
+                                            <span className="rounded bg-indigo-100 px-2 py-0.5 text-[10px] font-bold text-indigo-800">
+                                                Uses Driver Phone
+                                            </span>
+                                        </div>
+                                        <p className="mt-1 text-slate-600 leading-relaxed">
+                                            The driver shares their location through the Trivora Driver App on their phone.
+                                        </p>
+
+                                        <div className="mt-3 rounded-lg border border-indigo-200/80 bg-white p-3.5 shadow-2xs">
+                                            <div className="flex items-center gap-1.5 font-bold text-slate-800 text-xs">
+                                                <span className="h-2 w-2 rounded-full bg-amber-500" />
+                                                App Account Activation:
+                                            </div>
+                                            <p className="mt-1 text-[11.5px] leading-relaxed text-slate-600">
+                                                The driver <strong>cannot log in</strong> to the Trivora Driver App until this application is approved and activated here by TMO.
+                                            </p>
+                                            <p className="mt-1.5 text-[11.5px] leading-relaxed text-slate-600">
+                                                Once activated, driver <strong>{application.operator_name}</strong> can log in with contact number <strong className="font-mono text-slate-800">{application.contact_number}</strong> and tap <strong>"Go Online"</strong> to start driving.
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         )}
 
                         {/* Officer Notes */}
                         {!isAlreadyCompleted && (
                             <div className="mb-5">
-                                <Label>Officer Notes (Optional):</Label>
+                                <Label>Officer Notes / Remarks (Optional):</Label>
                                 <Textarea
                                     rows={2}
                                     className="mt-1.5"
-                                    placeholder="Any additional remarks regarding document verification or device issuance..."
+                                    placeholder="Any additional notes or remarks..."
                                     value={data.officer_notes}
                                     onChange={(e) => setData('officer_notes', e.target.value)}
                                 />
@@ -268,13 +464,23 @@ export default function FinalConfirmationDetail({ application }) {
                                 {processing ? 'Activating Franchise...' : 'Confirm & Activate Franchise'}
                             </Button>
                         ) : (
-                            <div className="flex items-center gap-2.5 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3.5">
+                            <div className="flex items-center gap-2.5 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3.5">
                                 <CheckCircle2 size={20} className="text-emerald-600" />
                                 <div>
-                                    <p className="text-[13px] font-bold text-emerald-800">Franchise is Active</p>
+                                    <p className="text-[13px] font-bold text-emerald-800">Franchise Permit is Active</p>
                                     <p className="text-[11px] text-emerald-700">
-                                        Tracking Mode: {application.tracking_method === 'iot_device' ? `IoT Hardware (${application.iot_device_id})` : 'Mobile App GPS'}
+                                        Tracking Mode: {application.tracking_method === 'iot_device' ? `GPS Tracker (${application.iot_device_id})` : 'Driver Smartphone App'}
                                     </p>
+                                    {application.tracking_method === 'iot_device' && (application.device_imei || application.device_sim_number) && (
+                                        <p className="text-[11px] text-emerald-700">
+                                            {application.device_imei ? `IMEI: ${application.device_imei}` : ''}
+                                            {application.device_imei && application.device_sim_number ? ' · ' : ''}
+                                            {application.device_sim_number ? `SIM: ${application.device_sim_number}` : ''}
+                                        </p>
+                                    )}
+                                    <div className="mt-1.5">
+                                        <GpsStatusBadge status={application.gps_status} lastSeenAt={application.gps_last_seen_at} />
+                                    </div>
                                 </div>
                             </div>
                         )}
@@ -289,9 +495,9 @@ export default function FinalConfirmationDetail({ application }) {
 
 function DetailRow({ label, value, mono, last }) {
     return (
-        <div className={`flex items-center justify-between py-1.5 text-[12.5px] ${last ? '' : 'border-b border-tmo-bg'}`}>
-            <span className="font-medium text-tmo-muted">{label}</span>
-            <span className={`text-right font-bold text-tmo-ink ${mono ? 'font-mono' : ''}`}>{value}</span>
+        <div className={`flex items-center justify-between py-1.5 text-[12.5px] ${last ? '' : 'border-b border-slate-50'}`}>
+            <span className="font-medium text-slate-500">{label}</span>
+            <span className={`text-right font-bold text-slate-900 ${mono ? 'font-mono' : ''}`}>{value}</span>
         </div>
     );
 }
@@ -302,12 +508,12 @@ function CheckItem({ checked, disabled, onClick, children }) {
             onClick={disabled ? undefined : onClick}
             className={`flex items-start gap-3 rounded-lg border-[1.5px] p-3.5 transition-colors ${
                 disabled ? 'cursor-default opacity-70' : 'cursor-pointer'
-            } ${checked ? 'border-emerald-300 bg-emerald-50' : 'border-tmo-border bg-tmo-bg hover:border-tmo-borderStrong'}`}
+            } ${checked ? 'border-emerald-300 bg-emerald-50/80' : 'border-slate-200 bg-slate-50/70 hover:border-slate-300'}`}
         >
-            <div className={`mt-0.5 shrink-0 ${checked ? 'text-emerald-600' : 'text-gray-400'}`}>
+            <div className={`mt-0.5 shrink-0 ${checked ? 'text-emerald-600' : 'text-slate-400'}`}>
                 {checked ? <CheckSquare size={18} strokeWidth={2.5} /> : <Square size={18} strokeWidth={2} />}
             </div>
-            <div className="text-[12.5px] font-medium leading-relaxed text-tmo-ink">{children}</div>
+            <div className="text-[12.5px] font-medium leading-relaxed text-slate-800">{children}</div>
         </div>
     );
 }
@@ -316,16 +522,16 @@ function MethodCard({ icon: Icon, iconTone, title, badge, badgeTone, description
     return (
         <div
             onClick={disabled ? undefined : onClick}
-            className={`rounded-xl border-2 p-4 transition-colors ${disabled ? 'cursor-default opacity-70' : 'cursor-pointer'} ${
-                selected ? 'border-tmo-primary bg-tmo-primarySoft' : 'border-tmo-border bg-white hover:border-tmo-borderStrong'
+            className={`rounded-xl border-2 p-4 transition-all ${disabled ? 'cursor-default opacity-70' : 'cursor-pointer'} ${
+                selected ? 'border-[#1D2542] bg-slate-50 shadow-sm' : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50/50'
             }`}
         >
             <div className={`mb-3 flex h-9 w-9 items-center justify-center rounded-lg ${iconTone}`}>
                 <Icon size={20} />
             </div>
-            <h4 className="mb-1 text-[13.5px] font-bold text-tmo-ink">{title}</h4>
+            <h4 className="mb-1 text-[13.5px] font-bold text-slate-900">{title}</h4>
             <span className={`mb-2 inline-block rounded px-1.5 py-0.5 text-[9px] font-extrabold uppercase tracking-wide ${badgeTone}`}>{badge}</span>
-            <p className="text-[11px] leading-relaxed text-tmo-muted">{description}</p>
+            <p className="text-[11px] leading-relaxed text-slate-500">{description}</p>
         </div>
     );
 }

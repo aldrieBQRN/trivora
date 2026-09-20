@@ -1,393 +1,459 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Head, Link } from '@inertiajs/react';
 import OperatorLayout from '@/Layouts/OperatorLayout';
 import {
     AlertOctagon,
-    Calendar,
+    AlertCircle,
     MapPin,
-    Search,
-    CreditCard,
     Clock,
     Bike,
-    FileText,
     ShieldAlert,
     Activity,
+    Scale,
     ArrowRight,
+    ChevronLeft,
+    ChevronRight,
+    Search,
     X,
-    Filter
+    RotateCcw,
 } from 'lucide-react';
 
-/* ─────────────────────────────────────────────────────────────────────────
-   OPERATOR PORTAL — Active Violation Records (Color Coding)
-   Path: resources/js/Pages/Operator/Violations/Violations.jsx
-   Prefix: v-*
-───────────────────────────────────────────────────────────────────────── */
-const CSS = `
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600;700&family=DM+Sans:wght@500;600;700&display=swap');
+const PAGE_SIZE = 10;
 
-.v-root { font-family: 'Inter', sans-serif; color: #1C2340; padding-bottom: 64px; max-width: 1440px; margin: 0 auto; }
-.v-root *, .v-root *::before, .v-root *::after { box-sizing: border-box; }
-
-/* ── Page heading ───────────────────────────────────────────────────── */
-.v-eyebrow {
-  font-family: 'DM Sans', sans-serif;
-  font-size: 9.5px; font-weight: 700;
-  letter-spacing: .18em; text-transform: uppercase;
-  color: #4F5BCB;
-  display: flex; align-items: center; gap: 8px;
-  margin-bottom: 6px;
-}
-.v-eyebrow::before {
-  content: '';
-  width: 18px; height: 1.5px;
-  background: #4F5BCB; border-radius: 2px;
-}
-.v-title {
-  font-family: 'Plus Jakarta Sans', sans-serif;
-  font-size: 32px; font-weight: 800; letter-spacing: -.02em;
-  color: #1C2340; line-height: 1.1;
-}
-.v-subtitle {
-  font-family: 'Inter', sans-serif;
-  font-size: 14px; font-weight: 500;
-  color: #5A6488; margin-top: 6px;
-}
-
-/* ── Fleet-Style Horizontal KPI Grid ── */
-.v-stats-grid {
-    display: grid; grid-template-columns: repeat(3, 1fr);
-    gap: 16px; margin-top: 32px; margin-bottom: 32px;
-}
-@media (max-width: 1024px) { .v-stats-grid { grid-template-columns: 1fr; } }
-
-.v-stat {
-    background: #fff; border: 1px solid rgba(28,35,64,.08); border-radius: 14px;
-    padding: 20px 22px; display: flex; align-items: flex-start; gap: 16px;
-    transition: box-shadow .2s, border-color .2s; position: relative; overflow: hidden;
-}
-.v-stat:hover { border-color: rgba(28,35,64,.14); box-shadow: 0 4px 20px rgba(28,35,64,.07); }
-.v-stat::after {
-    content: ''; position: absolute; bottom: 0; right: 0; width: 80px; height: 80px;
-    border-radius: 50%; background: radial-gradient(circle, rgba(79,91,203,.04) 0%, transparent 70%);
-    pointer-events: none;
-}
-.v-stat-icon {
-    width: 42px; height: 42px; border-radius: 10px;
-    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
-}
-.v-stat-rose { background: linear-gradient(135deg, #DC2626 0%, #B91C1C 100%); color: #FFFFFF; }
-.v-stat-amber { background: linear-gradient(135deg, #D97706 0%, #B45309 100%); color: #FFFFFF; }
-.v-stat-blue { background: linear-gradient(135deg, #4F5BCB 0%, #6675A8 100%); color: #FFFFFF; }
-
-.v-stat-val {
-    font-family: 'Plus Jakarta Sans', sans-serif; font-size: 26px;
-    font-weight: 800; color: #1C2340; line-height: 1;
-}
-.v-stat-lbl {
-    font-family: 'DM Sans', sans-serif; font-size: 9px; font-weight: 700;
-    letter-spacing: .13em; text-transform: uppercase; color: #8A96BC; margin-top: 6px;
-}
-
-/* ── Toolbar ────────────────────────────────────────────────────────── */
-.v-toolbar {
-  display: flex; align-items: center; justify-content: space-between;
-  gap: 14px; margin-bottom: 24px; flex-wrap: wrap;
-}
-.v-search {
-  display: flex; align-items: center; gap: 10px;
-  background: #FFFFFF;
-  border: 1px solid rgba(28,35,64,.09);
-  border-radius: 50px; height: 42px; padding: 0 16px;
-  width: 320px; transition: all .2s;
-}
-.v-search:focus-within {
-  border-color: rgba(79,91,203,.45);
-  box-shadow: 0 0 0 3px rgba(79,91,203,.1);
-  width: 360px;
-}
-.v-search input {
-  border: none; outline: none; background: transparent;
-  font-family: 'Inter', sans-serif;
-  font-size: 12.5px; font-weight: 500;
-  color: #1C2340; width: 100%;
-}
-.v-search input::placeholder { color: #8A96BC; font-weight: 400; }
-.v-search-icon { color: #8A96BC; flex-shrink: 0; }
-.v-clear-btn {
-  background: none; border: none; cursor: pointer;
-  color: #8A96BC; display: flex; padding: 0;
-  transition: color .15s;
-}
-.v-clear-btn:hover { color: #1C2340; }
-
-.v-toolbar-right { display: flex; align-items: center; gap: 10px; }
-.v-filter-btn {
-  height: 42px; padding: 0 16px; border-radius: 50px;
-  border: 1px solid rgba(28,35,64,.09);
-  background: #FFFFFF; color: #5A6488;
-  display: flex; align-items: center; gap: 7px;
-  font-family: 'DM Sans', sans-serif; font-size: 10px;
-  font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
-  cursor: pointer; transition: all .18s;
-}
-.v-filter-btn:hover { border-color: rgba(28,35,64,.18); color: #1C2340; }
-
-.v-count-badge {
-  display: flex; align-items: center; gap: 7px;
-  height: 42px; padding: 0 16px; border-radius: 50px;
-  background: rgba(220,38,38,.08);
-  border: 1px solid rgba(220,38,38,.15);
-  font-family: 'DM Sans', sans-serif; font-size: 10px;
-  font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
-  color: #DC2626;
-}
-
-.v-history-link {
-    display: inline-flex; align-items: center; gap: 6px; font-family: 'DM Sans', sans-serif;
-    font-size: 10px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase;
-    color: #4F5BCB; text-decoration: none; padding: 0 16px; height: 42px; background: rgba(79,91,203,.08);
-    border-radius: 50px; transition: all .2s; border: 1px solid rgba(79,91,203,.15);
-}
-.v-history-link:hover { background: rgba(79,91,203,.15); color: #2E3A9E; border-color: rgba(79,91,203,.3); }
-
-/* Table Container */
-.v-card { background: #FFFFFF; border: 1px solid rgba(28,35,64,.08); border-radius: 20px; overflow: hidden; box-shadow: 0 4px 20px rgba(28,35,64,.03); }
-.v-table-wrap { overflow-x: auto; }
-.v-table { width: 100%; border-collapse: collapse; text-align: left; min-width: 1000px; table-layout: fixed; }
-.v-thead { background: #FAFAFC; border-bottom: 1px solid rgba(28,35,64,.06); }
-.v-th { padding: 18px 24px; font-family: 'DM Sans', sans-serif; font-size: 9px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: #8A96BC; }
-.v-tr { border-bottom: 1px solid rgba(28,35,64,.04); transition: background .18s; }
-.v-tr:hover { background: #F8F9FC; }
-.v-td { padding: 20px 24px; vertical-align: middle; }
-
-/* Column Width Specifications */
-.v-col-offense { width: 28%; }
-.v-col-unit { width: 22%; }
-.v-col-detection { width: 35%; }
-.v-col-fine-status { width: 15%; }
-
-/* Status Badges */
-.v-badge {
-    display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 6px;
-    font-family: 'DM Sans', sans-serif; font-size: 8.5px; font-weight: 800; letter-spacing: .05em; text-transform: uppercase;
-}
-.v-badge-unpaid { color: #DC2626; background: rgba(220,38,38,.08); }
-
-.v-iot-tag {
-    display: inline-flex; align-items: center; gap: 4px; padding: 2px 6px;
-    background: #EEF2FF; color: #4F5BCB; border-radius: 4px;
-    font-size: 8px; font-weight: 800; text-transform: uppercase;
-}
-
-.v-pay-btn {
-    display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 8px;
-    background: #1C2340; color: #FFF; font-family: 'DM Sans', sans-serif; font-size: 9px; font-weight: 700;
-    text-transform: uppercase; letter-spacing: .1em; border: none; cursor: pointer; transition: all .2s;
-    text-decoration: none;
-}
-.v-pay-btn:hover { background: #2E3A9E; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(28,35,64,0.2); }
-
-.v-color-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
-
-/* Empty state */
-.v-empty { padding: 64px 0; text-align: center; }
-.v-empty-icon { width: 56px; height: 56px; border-radius: 14px; background: rgba(5,150,105,.08); border: 1px solid rgba(5,150,105,.15); display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; color: #059669; }
-.v-empty-title { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 16px; font-weight: 700; color: #1C2340; margin-bottom: 6px; }
-.v-empty-sub { font-family: 'Inter', sans-serif; font-size: 13px; color: #5A6488; max-width: 400px; margin: 0 auto; }
-`;
+// Shared soft, layered shadow token — same elevation language used across TMODashboard, so this
+// panel reads as one consistent product rather than a different template.
+const CARD_SHADOW = 'shadow-[0_1px_2px_0_rgba(15,23,42,0.04),0_8px_24px_-8px_rgba(15,23,42,0.10)]';
 
 export default function Violations({ violations = [], auth }) {
-    const [searchTerm, setSearchTerm] = useState('');
-    const operatorName = auth?.user?.name || "Driver";
+    const [query, setQuery] = useState('');
+    const [detectionFilter, setDetectionFilter] = useState('all');
+    const [currentPage, setCurrentPage] = useState(1);
+    const operatorName = auth?.user?.name || 'Driver';
 
     const activeViolations = violations;
 
-    // Filter Logic
-    const filteredViolations = activeViolations.filter(v =>
-        v.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        v.unit.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        v.location.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const filtered = useMemo(() => {
+        const q = query.trim().toLowerCase();
+        return activeViolations.filter((v) => {
+            const matchesQuery = !q ||
+                v.id.toLowerCase().includes(q) ||
+                v.unit.toLowerCase().includes(q) ||
+                v.location.toLowerCase().includes(q);
+            const matchesDetection = detectionFilter === 'all' || (detectionFilter === 'iot' ? v.isIot : !v.isIot);
+            return matchesQuery && matchesDetection;
+        });
+    }, [activeViolations, query, detectionFilter]);
+
+    const totalPages = Math.ceil(filtered.length / PAGE_SIZE) || 1;
+    const activePage = Math.min(currentPage, totalPages);
+    const startIndex = (activePage - 1) * PAGE_SIZE;
+    const paginated = filtered.slice(startIndex, startIndex + PAGE_SIZE);
+
+    const isFiltering = query.trim() !== '' || detectionFilter !== 'all';
+
+    const handleClearFilters = () => {
+        setQuery('');
+        setDetectionFilter('all');
+        setCurrentPage(1);
+    };
 
     const totalFines = activeViolations.reduce((sum, v) => sum + v.fine, 0);
     const activeCount = activeViolations.length;
+    const iotCount = activeViolations.filter((v) => v.isIot).length;
     const uniqueUnits = [...new Set(activeViolations.map(v => v.unit))].length;
+    const appealsCount = activeViolations.filter((v) => v.status === 'appeal_pending' || v.status === 'appeal_rejected').length;
 
     return (
         <OperatorLayout title="Active Violations" operatorName={operatorName}>
             <Head title="Active Violations | TRIVORA" />
-            <style dangerouslySetInnerHTML={{ __html: CSS }} />
 
-            <div className="v-root">
-
-                {/* ── PAGE HEADING ── */}
-                <div style={{ marginBottom: 32 }}>
-                    <p className="v-eyebrow">Compliance Management</p>
-                    <h1 className="v-title">Active Violations</h1>
-                    <p className="v-subtitle">Real-time IoT detection logs for the Color Coding Ordinance.</p>
+            {/* 1. CLEAN HEADER */}
+            <div className="mb-6 flex flex-col gap-3 border-b border-slate-200/80 pb-5 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                    <h1 className="text-2xl font-extrabold leading-tight tracking-tight text-slate-900 sm:text-[28px]">
+                        Active Violations
+                    </h1>
+                    <p className="mt-1 max-w-2xl text-xs leading-relaxed text-slate-500 sm:text-sm">
+                        Real-time IoT detection logs for the Color Coding Ordinance.
+                    </p>
                 </div>
 
-                {/* ── FLEET-STYLE HORIZONTAL KPI GRID ── */}
-                <div className="v-stats-grid">
-                    <StatCard
-                        value={`₱${totalFines.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} label="Total Unsettled Fines"
-                        icon={ShieldAlert} iconClass="v-stat-rose" accentColor="#DC2626"
-                    />
-                    <StatCard
-                        value={activeCount} label="Active Violations"
-                        icon={FileText} iconClass="v-stat-amber"
-                    />
-                    <StatCard
-                        value={`${uniqueUnits} Unit${uniqueUnits !== 1 ? 's' : ''}`} label="Units Flagged"
-                        icon={Bike} iconClass="v-stat-blue"
-                    />
+                <div className="flex shrink-0 items-center gap-2 self-start sm:self-center">
+                    <Link
+                        href={route('operator.payments')}
+                        className="inline-flex h-9 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3.5 text-xs font-semibold text-slate-700 shadow-sm transition-all hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900 active:scale-[0.99]"
+                    >
+                        <span>View Settled Records</span>
+                        <ArrowRight size={14} strokeWidth={2.2} className="text-slate-400" />
+                    </Link>
+                </div>
+            </div>
+
+            {/* 2. KPI CARDS */}
+            <div className="mb-5 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+                <div className={`group rounded-2xl border border-slate-200/70 bg-white p-4 ${CARD_SHADOW} transition-all hover:border-slate-300 sm:p-5`}>
+                    <div className="flex items-center justify-between">
+                        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-red-500/[0.12] to-red-500/[0.02] text-red-700 transition-colors group-hover:from-red-500/[0.18]">
+                            <ShieldAlert size={16} strokeWidth={2.2} />
+                        </div>
+                        <span className="inline-flex items-center gap-1 rounded-full border border-red-200/70 bg-red-50 px-2 py-0.5 text-[10px] font-bold text-red-700">
+                            {activeCount} Unsettled
+                        </span>
+                    </div>
+                    <div className="mt-3">
+                        <span className="text-2xl font-extrabold tracking-tight tabular-nums text-slate-900 sm:text-3xl">
+                            ₱{totalFines.toLocaleString('en-US', { minimumFractionDigits: 0 })}
+                        </span>
+                        <p className="mt-0.5 text-xs font-semibold text-slate-700">Total Unsettled Fines</p>
+                    </div>
+                    <div className="mt-3.5 flex items-center justify-between border-t border-slate-100 pt-2.5 text-[11px]">
+                        <span className="text-slate-400">Status</span>
+                        <span className="font-semibold text-red-700">Action Needed</span>
+                    </div>
                 </div>
 
-                {/* ── TOOLBAR ── */}
-                <div className="v-toolbar">
-                    <div className="v-search">
-                        <Search size={14} strokeWidth={2} className="v-search-icon" />
+                <div className={`group rounded-2xl border border-slate-200/70 bg-white p-4 ${CARD_SHADOW} transition-all hover:border-slate-300 sm:p-5`}>
+                    <div className="flex items-center justify-between">
+                        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-amber-500/[0.12] to-amber-500/[0.02] text-amber-700 transition-colors group-hover:from-amber-500/[0.18]">
+                            <AlertCircle size={16} strokeWidth={2.2} />
+                        </div>
+                        <span className="text-[11px] font-semibold text-slate-400">Active</span>
+                    </div>
+                    <div className="mt-3">
+                        <div className="flex items-baseline gap-1.5">
+                            <span className="text-2xl font-extrabold tracking-tight tabular-nums text-slate-900 sm:text-3xl">{activeCount}</span>
+                            <span className="text-xs font-semibold text-slate-400">records</span>
+                        </div>
+                        <p className="mt-0.5 text-xs font-semibold text-slate-700">Active Violations</p>
+                    </div>
+                    <div className="mt-3.5 flex items-center justify-between border-t border-slate-100 pt-2.5 text-[11px]">
+                        <span className="text-slate-400">Detection</span>
+                        <span className="flex items-center gap-1.5 font-semibold text-slate-700">
+                            <span className="h-1.5 w-1.5 rounded-full bg-[#1D2542] animate-pulse" />
+                            {iotCount} IoT-Detected
+                        </span>
+                    </div>
+                </div>
+
+                <div className={`group rounded-2xl border border-slate-200/70 bg-white p-4 ${CARD_SHADOW} transition-all hover:border-slate-300 sm:p-5`}>
+                    <div className="flex items-center justify-between">
+                        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-[#1D2542]/[0.10] to-[#1D2542]/[0.02] text-[#1D2542] transition-colors group-hover:from-[#1D2542]/[0.16]">
+                            <Bike size={16} strokeWidth={2.2} />
+                        </div>
+                        <span className="text-[11px] font-semibold text-slate-400">Flagged</span>
+                    </div>
+                    <div className="mt-3">
+                        <span className="text-2xl font-extrabold tracking-tight tabular-nums text-slate-900 sm:text-3xl">{uniqueUnits}</span>
+                        <p className="mt-0.5 text-xs font-semibold text-slate-700">Unit{uniqueUnits !== 1 ? 's' : ''} Flagged</p>
+                    </div>
+                    <div className="mt-3.5 flex items-center justify-between border-t border-slate-100 pt-2.5 text-[11px]">
+                        <span className="text-slate-400">Fleet</span>
+                        <span className="font-semibold text-slate-700">1 Registered Unit</span>
+                    </div>
+                </div>
+
+                <div className={`group rounded-2xl border border-slate-200/70 bg-white p-4 ${CARD_SHADOW} transition-all hover:border-slate-300 sm:p-5`}>
+                    <div className="flex items-center justify-between">
+                        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500/[0.12] to-indigo-500/[0.02] text-indigo-700 transition-colors group-hover:from-indigo-500/[0.18]">
+                            <Scale size={16} strokeWidth={2.2} />
+                        </div>
+                        <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold border ${
+                            appealsCount > 0
+                                ? 'bg-indigo-50 text-indigo-700 border-indigo-200/70'
+                                : 'bg-slate-100 text-slate-600 border-slate-200/70'
+                        }`}>
+                            {appealsCount > 0 ? 'Pending Review' : 'None Filed'}
+                        </span>
+                    </div>
+                    <div className="mt-3">
+                        <span className="text-2xl font-extrabold tracking-tight tabular-nums text-slate-900 sm:text-3xl">{appealsCount}</span>
+                        <p className="mt-0.5 text-xs font-semibold text-slate-700">Appeals Filed</p>
+                    </div>
+                    <div className="mt-3.5 flex items-center justify-between border-t border-slate-100 pt-2.5 text-[11px]">
+                        <span className="text-slate-400">Review</span>
+                        <span className={`font-semibold ${appealsCount > 0 ? 'text-indigo-700' : 'text-slate-600'}`}>
+                            {appealsCount > 0 ? 'Under TMO Review' : '0 Pending'}
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            {/* 3. FILTER DECK */}
+            <div className={`mb-4 rounded-2xl border border-slate-200/70 bg-white p-3 ${CARD_SHADOW} sm:p-3.5`}>
+                <div className="flex flex-col gap-2.5 lg:flex-row lg:items-center">
+                    <div className="relative min-w-[220px] flex-1">
+                        <Search size={16} strokeWidth={2.2} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
                         <input
                             type="text"
-                            placeholder="Search unit, ID, or location..."
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
+                            value={query}
+                            onChange={(e) => { setQuery(e.target.value); setCurrentPage(1); }}
+                            placeholder="Search by ticket ID, unit, or location…"
+                            className="h-10 w-full rounded-lg border border-slate-200 bg-slate-50/50 pl-10 pr-9 text-xs text-slate-900 placeholder:text-slate-400 shadow-2xs transition-all focus:border-[#1D2542] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#1D2542]/10 sm:text-sm"
                         />
-                        {searchTerm && (
-                            <button className="v-clear-btn" onClick={() => setSearchTerm('')}>
-                                <X size={13} />
+                        {query && (
+                            <button
+                                type="button"
+                                onClick={() => { setQuery(''); setCurrentPage(1); }}
+                                className="absolute right-3 top-1/2 flex h-5 w-5 -translate-y-1/2 items-center justify-center rounded-full text-slate-400 hover:bg-slate-200 hover:text-slate-700"
+                            >
+                                <X size={12} strokeWidth={2.5} />
                             </button>
                         )}
                     </div>
-                    <div className="v-toolbar-right">
-                        <Link href={route('operator.payments')} className="v-history-link">
-                            View Settled Records <ArrowRight size={14} />
-                        </Link>
-                        <button className="v-filter-btn">
-                            <Filter size={14} strokeWidth={2} />
-                            Filter
-                        </button>
-                        <div className="v-count-badge">
-                            <ShieldAlert size={13} strokeWidth={2} />
-                            Pending: {filteredViolations.length}
-                        </div>
+
+                    <div className="grid grid-cols-1 items-center gap-2 sm:flex sm:flex-wrap">
+                        <select
+                            value={detectionFilter}
+                            onChange={(e) => { setDetectionFilter(e.target.value); setCurrentPage(1); }}
+                            className="h-10 w-full cursor-pointer rounded-lg border border-slate-200 bg-white px-3 pr-8 text-xs font-semibold text-slate-700 shadow-2xs transition-colors focus:border-[#1D2542] focus:outline-none focus:ring-2 focus:ring-[#1D2542]/10 sm:w-48"
+                        >
+                            <option value="all">All Detection Methods</option>
+                            <option value="iot">IoT Auto ({iotCount})</option>
+                            <option value="manual">Manual ({activeCount - iotCount})</option>
+                        </select>
                     </div>
                 </div>
+            </div>
 
-                {/* ── RECORDS TABLE ── */}
-                <div className="v-card">
-                    {filteredViolations.length > 0 ? (
-                        <div className="v-table-wrap">
-                            <table className="v-table">
-                                <thead className="v-thead">
-                                    <tr>
-                                        <th className="v-th v-col-offense">Offense Details</th>
-                                        <th className="v-th v-col-unit">Tricycle Unit</th>
-                                        <th className="v-th v-col-detection">Detection Info</th>
-                                        <th className="v-th v-col-fine-status" style={{ textAlign: 'right' }}>Fine & Status</th>
+            {/* 4. DATA DISPLAY */}
+            {filtered.length === 0 ? (
+                <div className={`rounded-2xl border border-slate-200/70 bg-white p-12 text-center ${CARD_SHADOW}`}>
+                    <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-emerald-500/[0.12] to-emerald-500/[0.02] text-emerald-600">
+                        <ShieldAlert size={24} strokeWidth={1.8} />
+                    </div>
+                    <h3 className="mt-3.5 text-base font-bold text-slate-900">
+                        {isFiltering ? 'No results found' : 'No Active Violations'}
+                    </h3>
+                    <p className="mx-auto mt-1 max-w-sm text-xs leading-relaxed text-slate-500">
+                        {isFiltering
+                            ? 'No violations match your search or filters.'
+                            : 'Your tricycles currently have no active color coding offenses. Keep up the good work!'}
+                    </p>
+                    {isFiltering && (
+                        <button
+                            type="button"
+                            onClick={handleClearFilters}
+                            className="mt-4 inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-xs font-bold text-slate-700 shadow-sm hover:bg-slate-50"
+                        >
+                            <RotateCcw size={13} strokeWidth={2.2} />
+                            Clear Search &amp; Filters
+                        </button>
+                    )}
+                </div>
+            ) : (
+                <>
+                    {/* Desktop table */}
+                    <div className={`hidden overflow-hidden rounded-2xl border border-slate-200/70 bg-white ${CARD_SHADOW} md:block`}>
+                        <div className="overflow-x-auto">
+                            <table className="w-full border-collapse text-left">
+                                <thead>
+                                    <tr className="border-b border-slate-200 bg-slate-50/75">
+                                        <th scope="col" className="py-3 pl-5 pr-3 text-[11px] font-bold uppercase tracking-wider text-slate-500">Offense Details</th>
+                                        <th scope="col" className="px-4 py-3 text-[11px] font-bold uppercase tracking-wider text-slate-500">Tricycle Unit</th>
+                                        <th scope="col" className="px-4 py-3 text-[11px] font-bold uppercase tracking-wider text-slate-500">Detection Info</th>
+                                        <th scope="col" className="px-4 py-3 text-[11px] font-bold uppercase tracking-wider text-slate-500">Fine Amount</th>
+                                        <th scope="col" className="px-4 py-3 text-[11px] font-bold uppercase tracking-wider text-slate-500">Status</th>
+                                        <th scope="col" className="py-3 pl-3 pr-5 text-right text-[11px] font-bold uppercase tracking-wider text-slate-500">Action</th>
                                     </tr>
                                 </thead>
-                                <tbody>
-                                    {filteredViolations.map((v) => (
-                                        <tr key={v.id} className="v-tr">
-                                            <td className="v-td v-col-offense">
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-                                                    <p style={{ fontWeight: 700, fontSize: 13.5, color: '#1C2340' }}>{v.type}</p>
-                                                    {v.isIot ? (
-                                                        <span className="v-iot-tag" style={{ background: 'rgba(79,91,203,.08)', color: '#4F5BCB', padding: '2px 6px', borderRadius: 4, fontSize: 9, fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                                                            <Activity size={8}/> IoT Auto
-                                                        </span>
-                                                    ) : (
-                                                        <span className="v-iot-tag" style={{ background: 'rgba(217,119,6,.08)', color: '#B45309', padding: '2px 6px', borderRadius: 4, fontSize: 9, fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                                                            Manual
-                                                        </span>
-                                                    )}
-                                                </div>
-                                                <p style={{ fontSize: 11, color: '#5A6488', fontWeight: 700, fontFamily: 'monospace' }}>
-                                                    {v.id}
-                                                </p>
-                                            </td>
-                                            <td className="v-td v-col-unit">
-                                                <p style={{ fontWeight: 700, fontSize: 13, color: '#1C2340', marginBottom: 4 }}>
-                                                    Unit #{v.unit}
-                                                </p>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                                                    <span className="v-color-dot" style={{ background: v.colorHex, width: 8, height: 8, borderRadius: '50%', display: 'inline-block' }}></span>
-                                                    <span style={{ fontSize: 11, color: '#8A96BC', fontWeight: 600 }}>{v.colorCode} Coding</span>
-                                                </div>
-                                            </td>
-                                            <td className="v-td v-col-detection">
-                                                <p style={{ fontSize: 12, color: '#1C2340', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
-                                                    <MapPin size={12} color="#8A96BC" style={{ flexShrink: 0 }} />
-                                                    <span style={{ wordBreak: 'break-word', whiteSpace: 'normal', lineHeight: '1.4' }}>{v.location}</span>
-                                                </p>
-                                                <p style={{ fontSize: 11, color: '#8A96BC', display: 'flex', alignItems: 'center', gap: 4, paddingLeft: 18 }}>
-                                                    <Clock size={11} /> {v.date} • {v.time}
-                                                </p>
-                                            </td>
-                                            <td className="v-td v-col-fine-status" style={{ textAlign: 'right' }}>
-                                                <p style={{ fontWeight: 800, fontSize: 15, color: '#DC2626', marginBottom: 6 }}>
-                                                    ₱{v.fine.toFixed(2)}
-                                                </p>
-                                                <span className="v-badge v-badge-unpaid" style={{ background: 'rgba(220,38,38,.08)', color: '#DC2626', border: '1px solid rgba(220,38,38,.15)' }}>
-                                                    <Clock size={9} strokeWidth={3}/> Unpaid
-                                                </span>
-                                            </td>
-                                        </tr>
+                                <tbody className="divide-y divide-slate-100 text-sm">
+                                    {paginated.map((v) => (
+                                        <DesktopViolationRow key={v.id} v={v} />
                                     ))}
                                 </tbody>
                             </table>
                         </div>
-                    ) : (
-                        /* Empty State */
-                        <div className="v-empty">
-                            <div className="v-empty-icon">
-                                <ShieldAlert size={28} strokeWidth={1.8} />
-                            </div>
-                            <h3 className="v-empty-title">{searchTerm ? 'No results found' : 'No Active Violations'}</h3>
-                            <p className="v-empty-sub">
-                                {searchTerm ? 'Try searching for a different ID or unit.' : 'Your tricycles currently have no active color coding offenses. Keep up the good work!'}
-                            </p>
-                        </div>
-                    )}
-                </div>
 
-                {/* ── SYSTEM NOTICE ── */}
-                <div style={{
-                    marginTop: 32,
-                    display: 'flex',
-                    gap: 16,
-                    padding: '20px 24px',
-                    background: 'rgba(245,158,11,.04)',
-                    border: '1px solid rgba(245,158,11,.2)',
-                    borderRadius: 16
-                }}>
-                    <AlertOctagon size={22} color="#D97706" style={{ flexShrink: 0 }} />
-                    <div>
-                        <p style={{ fontSize: '13px', color: '#92400E', fontWeight: '700', marginBottom: 4 }}>Color Coding Policy Reminder</p>
-                        <p style={{ fontSize: '12px', color: '#B45309', lineHeight: 1.6 }}>
-                            Violations flagged with the <strong>IoT Detected</strong> tag indicate that your tricycle operated on a restricted coding day based on its assigned color zone. Unpaid fines after 30 days will result in an automatic suspension of MTOP renewal privileges. Settled violations are automatically moved to your Payment History.
-                        </p>
+                        <PaginationFooter activePage={activePage} totalPages={totalPages} totalItems={filtered.length} onPageChange={setCurrentPage} noun="records" />
                     </div>
+
+                    {/* Mobile cards */}
+                    <div className="flex flex-col gap-2.5 md:hidden">
+                        {paginated.map((v) => (
+                            <MobileViolationCard key={v.id} v={v} />
+                        ))}
+
+                        <div className={`mt-1 flex items-center justify-between rounded-2xl border border-slate-200/70 bg-white px-4 py-3 ${CARD_SHADOW}`}>
+                            <p className="text-xs text-slate-500">
+                                <span className="font-bold text-slate-800">{activePage}</span> of {totalPages}
+                                <span className="ml-1 text-[11px] text-slate-400">({filtered.length} violations)</span>
+                            </p>
+                            <div className="flex items-center gap-1.5">
+                                <button type="button" disabled={activePage <= 1} onClick={() => setCurrentPage(p => Math.max(1, p - 1))} className="inline-flex h-8 items-center gap-1 rounded-md border border-slate-200 bg-white px-2.5 text-xs font-semibold text-slate-700 shadow-sm disabled:pointer-events-none disabled:opacity-40">
+                                    <ChevronLeft size={13} strokeWidth={2.5} /><span>Prev</span>
+                                </button>
+                                <button type="button" disabled={activePage >= totalPages} onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} className="inline-flex h-8 items-center gap-1 rounded-md border border-slate-200 bg-white px-2.5 text-xs font-semibold text-slate-700 shadow-sm disabled:pointer-events-none disabled:opacity-40">
+                                    <span>Next</span><ChevronRight size={13} strokeWidth={2.5} />
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </>
+            )}
+
+            <div className={`mt-6 flex gap-4 rounded-2xl border border-amber-200/70 bg-amber-50 p-5 ${CARD_SHADOW}`}>
+                <AlertOctagon size={22} className="shrink-0 text-amber-600" />
+                <div>
+                    <p className="mb-1 text-[13px] font-bold text-amber-900">Color Coding Policy Reminder</p>
+                    <p className="text-xs leading-relaxed text-amber-800">
+                        Violations flagged with the <strong>IoT Detected</strong> tag indicate that your tricycle operated on a restricted coding day based on its assigned color zone. Unpaid fines after 30 days will result in an automatic suspension of MTOP renewal privileges. Settled violations are automatically moved to your Payment History.
+                    </p>
                 </div>
             </div>
         </OperatorLayout>
     );
 }
 
-/* ── SUB-COMPONENT: STAT CARD ── */
-function StatCard({ value, label, icon: Icon, iconClass, accentColor }) {
-    // Only apply top border if an accentColor is provided
-    const cardStyle = accentColor ? { borderTop: `2.5px solid ${accentColor}` } : {};
-
+function PaginationFooter({ activePage, totalPages, totalItems, onPageChange, noun }) {
     return (
-        <div className="v-stat" style={cardStyle}>
-            <div className={`v-stat-icon ${iconClass}`}>
-                <Icon size={20} strokeWidth={2.5} />
+        <div className="flex items-center justify-between border-t border-slate-200/80 bg-slate-50/60 px-5 py-3">
+            <p className="text-xs text-slate-500">
+                Page <span className="font-bold text-slate-800 tabular-nums">{activePage}</span> of{' '}
+                <span className="font-bold text-slate-800 tabular-nums">{totalPages}</span>
+                <span className="mx-2 text-slate-300">&middot;</span>
+                <span className="font-semibold text-slate-700 tabular-nums">{totalItems}</span> {noun}
+            </p>
+            <div className="flex items-center gap-1.5">
+                <button type="button" disabled={activePage <= 1} onClick={() => onPageChange(p => Math.max(1, p - 1))} className="inline-flex h-8 items-center gap-1 rounded-md border border-slate-200 bg-white px-2.5 text-xs font-semibold text-slate-700 shadow-sm transition-colors hover:bg-slate-50 disabled:pointer-events-none disabled:opacity-40">
+                    <ChevronLeft size={13} strokeWidth={2.5} /><span>Prev</span>
+                </button>
+                <div className="flex items-center gap-1">
+                    {Array.from({ length: totalPages }, (_, i) => i + 1)
+                        .filter((p) => totalPages <= 5 || p === 1 || p === totalPages || Math.abs(p - activePage) <= 1)
+                        .map((p, idx, arr) => {
+                            const prev = arr[idx - 1];
+                            const hasGap = prev && p - prev > 1;
+                            return (
+                                <React.Fragment key={p}>
+                                    {hasGap && <span className="px-0.5 text-xs text-slate-400">&hellip;</span>}
+                                    <button
+                                        type="button"
+                                        onClick={() => onPageChange(p)}
+                                        className={`flex h-8 w-8 items-center justify-center rounded-md text-xs font-bold transition-all ${
+                                            activePage === p ? 'bg-[#1D2542] text-white shadow-sm' : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
+                                        }`}
+                                    >
+                                        {p}
+                                    </button>
+                                </React.Fragment>
+                            );
+                        })}
+                </div>
+                <button type="button" disabled={activePage >= totalPages} onClick={() => onPageChange(p => Math.min(totalPages, p + 1))} className="inline-flex h-8 items-center gap-1 rounded-md border border-slate-200 bg-white px-2.5 text-xs font-semibold text-slate-700 shadow-sm transition-colors hover:bg-slate-50 disabled:pointer-events-none disabled:opacity-40">
+                    <span>Next</span><ChevronRight size={13} strokeWidth={2.5} />
+                </button>
             </div>
-            <div>
-                <p className="v-stat-val">{value}</p>
-                <p className="v-stat-lbl">{label}</p>
+        </div>
+    );
+}
+
+function DetectionTag({ isIot }) {
+    return isIot ? (
+        <span className="inline-flex items-center gap-1 rounded bg-[#1D2542]/[0.08] px-1.5 py-0.5 text-[9px] font-extrabold uppercase text-[#1D2542]">
+            <Activity size={8} /> IoT Auto
+        </span>
+    ) : (
+        <span className="inline-flex items-center gap-1 rounded bg-amber-50 px-1.5 py-0.5 text-[9px] font-extrabold uppercase text-amber-700">Manual</span>
+    );
+}
+
+const STATUS_PILL = {
+    unpaid: { label: 'Unpaid', dot: 'bg-red-500 animate-pulse', className: 'border-red-200/90 bg-red-50 text-red-700' },
+    appeal_pending: { label: 'Appeal Pending', dot: 'bg-[#1D2542]', className: 'border-[#1D2542]/25 bg-[#1D2542]/[0.08] text-[#1D2542]' },
+    appeal_rejected: { label: 'Appeal Rejected', dot: 'bg-red-500', className: 'border-red-200/90 bg-red-50 text-red-700' },
+};
+
+function StatusPill({ status }) {
+    const s = STATUS_PILL[status] || STATUS_PILL.unpaid;
+    return (
+        <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-semibold shadow-2xs ${s.className}`}>
+            {s.label}
+        </span>
+    );
+}
+
+function DesktopViolationRow({ v }) {
+    return (
+        <tr className="group transition-colors hover:bg-slate-50/80">
+            <td className="py-3.5 pl-5 pr-3 align-middle">
+                <div className="mb-1.5 flex items-center gap-2">
+                    <p className="text-[13px] font-bold text-slate-900">{v.type}</p>
+                    <DetectionTag isIot={v.isIot} />
+                </div>
+                <p className="font-mono text-[11px] text-slate-400">{v.id}</p>
+            </td>
+            <td className="px-4 py-3.5 align-middle">
+                <p className="text-[13px] font-bold text-slate-900">Unit #{v.unit}</p>
+                <div className="mt-0.5 flex items-center gap-1.5">
+                    <span className="inline-block h-2 w-2 shrink-0 rounded-full" style={{ background: v.colorHex }} />
+                    <span className="text-[11px] font-medium text-slate-500">{v.colorCode} Coding</span>
+                </div>
+            </td>
+            <td className="px-4 py-3.5 align-middle">
+                <p className="flex items-center gap-1.5 text-xs font-medium text-slate-700">
+                    <MapPin size={12} className="shrink-0 text-slate-400" />
+                    <span className="whitespace-normal break-words leading-relaxed">{v.location}</span>
+                </p>
+                <p className="mt-0.5 flex items-center gap-1 pl-[18px] text-[11px] text-slate-400">
+                    <Clock size={11} /> {v.date} &bull; {v.time}
+                </p>
+            </td>
+            <td className="px-4 py-3.5 align-middle">
+                <span className="text-[13px] font-bold tabular-nums text-red-600">₱{v.fine.toFixed(2)}</span>
+            </td>
+            <td className="px-4 py-3.5 align-middle">
+                <StatusPill status={v.status} />
+            </td>
+            <td className="py-3.5 pl-3 pr-5 text-right align-middle">
+                <Link
+                    href={route('operator.violations.ticket', { id: v.db_id })}
+                    className="inline-flex items-center gap-1 rounded-full bg-[#1D2542] px-3.5 py-1.5 text-xs font-semibold text-white shadow-2xs transition-all hover:bg-[#283256] active:scale-[0.98]"
+                >
+                    <span>View Details</span>
+                    <ChevronRight size={13} strokeWidth={2.5} className="text-slate-300" />
+                </Link>
+            </td>
+        </tr>
+    );
+}
+
+function MobileViolationCard({ v }) {
+    return (
+        <div className={`rounded-2xl border border-slate-200/70 bg-white p-3.5 ${CARD_SHADOW} transition-all hover:border-slate-300`}>
+            <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-2">
+                <span className="font-mono text-sm font-bold tracking-wide text-slate-900">{v.id}</span>
+                <StatusPill status={v.status} />
+            </div>
+
+            <div className="mt-2.5 flex items-center justify-between gap-2">
+                <div className="min-w-0">
+                    <p className="truncate text-xs font-semibold text-slate-900">{v.type}</p>
+                    <div className="mt-1"><DetectionTag isIot={v.isIot} /></div>
+                </div>
+                <div className="shrink-0 text-right">
+                    <span className="text-sm font-extrabold tabular-nums text-red-600">₱{v.fine.toFixed(2)}</span>
+                    <p className="text-[9px] font-bold uppercase tracking-wider text-slate-400">Fine</p>
+                </div>
+            </div>
+
+            <div className="mt-2.5 flex items-center justify-between gap-2 border-t border-slate-100 pt-2 text-xs">
+                <div className="flex min-w-0 items-center gap-1.5 truncate text-slate-600">
+                    <span className="inline-block h-2 w-2 shrink-0 rounded-full" style={{ background: v.colorHex }} />
+                    <span className="truncate">Unit #{v.unit} &bull; {v.location}</span>
+                </div>
+                <span className="flex shrink-0 items-center gap-1 text-[10px] text-slate-400">
+                    <Clock size={10} /> {v.date}
+                </span>
+            </div>
+
+            <div className="mt-2.5 border-t border-slate-100 pt-2">
+                <Link
+                    href={route('operator.violations.ticket', { id: v.db_id })}
+                    className="flex w-full items-center justify-center gap-1.5 rounded-full bg-[#1D2542] py-2 text-xs font-bold text-white shadow-2xs transition-all hover:bg-[#283256] active:scale-[0.98]"
+                >
+                    <span>View Details</span>
+                    <ChevronRight size={13} strokeWidth={2.5} className="text-slate-300" />
+                </Link>
             </div>
         </div>
     );

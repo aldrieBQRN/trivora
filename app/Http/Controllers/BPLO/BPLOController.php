@@ -9,10 +9,12 @@ use App\Models\ColorCodingScheme;
 use App\Models\FranchiseScheme;
 use App\Models\Tricycle;
 use App\Models\TricycleLocation;
+use App\Services\ColorCodingRuleService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -24,7 +26,7 @@ class BPLOController extends Controller
     public function dashboard(): Response
     {
         $activeFranchisesCount = Tricycle::where('status', 'active')->count();
-        $pendingReleasingCount = Application::where('status', 'paid')->count();
+        $pendingReleasingCount = Application::whereIn('status', ['payment_verified', 'paid'])->count();
         $totalRegistriesCount = Tricycle::count();
 
         // TODA distribution stats
@@ -36,22 +38,31 @@ class BPLOController extends Controller
 
         return Inertia::render('BPLODashboard/Index', [
             'stats' => [
-                'activeFranchisesCount' => $activeFranchisesCount,
-                'pendingReleasingCount' => $pendingReleasingCount,
-                'totalRegistriesCount'  => $totalRegistriesCount,
+                'activeFranchisesCount'          => $activeFranchisesCount,
+                'pendingReleasingCount'          => $pendingReleasingCount,
+                'totalRegistriesCount'           => $totalRegistriesCount,
             ],
             'todaStats' => $todaStats,
         ]);
     }
 
     /**
-     * Display BPLO releasing queue.
+     * Display BPLO releasing queue (Applications that passed payment verification).
      */
     public function releasingQueue(): Response
     {
-        // Applications that are Paid and ready for releasing (Step 5)
-        $applications = Application::with(['operator.todaZone', 'tricycle'])
-            ->where('status', 'paid')
+        // See TMO\InspectionController::index() for why this is the status-history timestamp
+        // rather than updated_at — the true, immutable "entered this queue" moment, so an
+        // unrelated edit can never silently bump an application to the back of the line.
+        $applications = Application::with(['operator.todaZone', 'tricycle', 'payment', 'latestInspection'])
+            ->whereIn('status', ['payment_verified', 'paid'])
+            ->addSelect(['queue_entered_at' => ApplicationStatusHistory::select('created_at')
+                ->whereColumn('application_id', 'applications.id')
+                ->orderByDesc('created_at')
+                ->orderByDesc('id') // tiebreaker when two transitions land in the same second
+                ->limit(1),
+            ])
+            ->orderBy('queue_entered_at', 'asc')
             ->get()
             ->map(function ($app) {
                 return [
@@ -60,13 +71,15 @@ class BPLOController extends Controller
                     'operator'      => $app->operator ? $app->operator->full_name : 'N/A',
                     'toda'          => ($app->operator && $app->operator->todaZone) ? $app->operator->todaZone->name : 'Unassigned',
                     'make'          => $app->tricycle ? "{$app->tricycle->make} {$app->tricycle->model}" : 'N/A',
-                    'tmo_passed_at' => $app->updated_at->diffForHumans(),
+                    'plate'         => $app->tricycle ? $app->tricycle->plate_number : 'N/A',
+                    'or_number'     => $app->payment ? $app->payment->official_receipt_number : 'OR-VERIFIED',
+                    'verified_at'   => $app->updated_at->diffForHumans(),
+                    'tmo_passed_at' => $app->latestInspection?->inspection_date ? \Carbon\Carbon::parse($app->latestInspection->inspection_date)->format('M d, Y') : 'Verified',
                 ];
             });
 
         $pendingCount = $applications->count();
         
-        // Count issued today (applications completed / scheme_issued today)
         $issuedTodayCount = ApplicationStatusHistory::whereDate('created_at', now()->toDateString())
             ->where('to_status', 'completed')
             ->distinct('application_id')
@@ -83,13 +96,13 @@ class BPLOController extends Controller
     }
 
     /**
-     * Show release form for final plate/body number and tracker assignment.
+     * Show release form for final plate/body number, franchise sticker, and tracker assignment.
      */
     public function showReleaseForm(Application $application): Response
     {
-        $application->load(['operator.todaZone', 'tricycle']);
+        $application->load(['operator.todaZone', 'tricycle', 'payment']);
 
-        // Auto-suggest next body number (max franchise_number + 1, ignoring seeded hyphenated values)
+        // Auto-suggest next body number
         $maxFranchise = FranchiseScheme::where('franchise_number', 'not like', '%-%')->max('franchise_number');
         $maxBodyNo = 0;
         if ($maxFranchise) {
@@ -97,9 +110,10 @@ class BPLOController extends Controller
             $maxBodyNo = isset($matches[0]) ? (int)$matches[0] : 0;
         }
         if ($maxBodyNo === 0) {
-            $maxBodyNo = 841; // Default starting count matching mockup
+            $maxBodyNo = 841;
         }
         $suggestedBodyNo = str_pad($maxBodyNo + 1, 4, '0', STR_PAD_LEFT);
+        $suggestedSticker = 'STK-' . date('Y') . '-' . $suggestedBodyNo;
 
         $appData = [
             'id'                => $application->id,
@@ -110,6 +124,12 @@ class BPLOController extends Controller
             'engine_number'     => $application->tricycle ? $application->tricycle->engine_number : 'N/A',
             'chassis_number'    => $application->tricycle ? $application->tricycle->chassis_number : 'N/A',
             'suggested_body_no' => $suggestedBodyNo,
+            'suggested_sticker' => $suggestedSticker,
+            'payment'           => $application->payment ? [
+                'or_number' => $application->payment->official_receipt_number,
+                'amount'    => (float)$application->payment->amount,
+                'date'      => $application->payment->payment_date ? $application->payment->payment_date->format('M d, Y') : 'N/A',
+            ] : null,
         ];
 
         return Inertia::render('BPLODashboard/IssueBodyNumber', [
@@ -118,91 +138,90 @@ class BPLOController extends Controller
     }
 
     /**
-     * Finalize registration, link tracker, and activate franchise.
+     * Finalize BPLO approval, issue body number, and release franchise sticker.
+     * Note: BPLO does NOT issue the IoT device. Driver returns to TMO for Final Confirmation.
      */
     public function release(Request $request, Application $application): RedirectResponse
     {
+        $tricycle = $application->tricycle;
+        $isRenewal = $application->application_type === 'renewal';
+
+        // franchise_number identifies the ONE currently-operating unit holding that body number
+        // municipality-wide, so only currently-ACTIVE schemes must stay unique (enforced at the DB
+        // level too — see the active_franchise_number generated column/index). A genuine renewal is
+        // explicitly allowed to reuse the SAME number this tricycle's own (about to be deactivated)
+        // active scheme already holds; any other still-active use of that number — this tricycle's
+        // for a non-renewal, or any other tricycle's — is still rejected.
+        $franchiseNumberRule = Rule::unique('franchise_schemes', 'franchise_number')->where('is_active', true);
+        if ($isRenewal && $tricycle) {
+            $franchiseNumberRule->where(fn ($query) => $query->where('tricycle_id', '!=', $tricycle->id));
+        }
+
         $request->validate([
-            'body_number' => 'required|string|max:20|unique:franchise_schemes,franchise_number',
-            'tracker_id'  => 'required|string|max:50',
+            'body_number'    => ['required', 'string', 'max:20', $franchiseNumberRule],
+            'sticker_number' => 'required|string|max:50',
         ]);
 
         $bodyNumber = $request->input('body_number');
-        $trackerId = $request->input('tracker_id');
+        $stickerNumber = $request->input('sticker_number');
 
-        DB::transaction(function () use ($application, $bodyNumber, $trackerId) {
+        DB::transaction(function () use ($application, $bodyNumber, $stickerNumber, $tricycle, $isRenewal) {
             $fromStatus = $application->status;
             $fromStep = $application->current_step;
 
-            $tricycle = $application->tricycle;
-
             if ($tricycle) {
-                // 1. Update Tricycle status and telemetry setup
-                $hasIoT = !empty($trackerId) && $trackerId !== 'N/A' && $trackerId !== 'Mobile App GPS';
+                // 1. Assign Body / Coding Scheme Number to Tricycle
                 $tricycle->update([
-                    'coding_scheme_number' => str_pad($bodyNumber, 4, '0', STR_PAD_LEFT), // 4-digit Tricycle Number Coding Scheme
-                    'status'               => 'active',
-                    'iot_device_id'        => $hasIoT ? $trackerId : null,
-                    'tracking_capability'  => $hasIoT ? 'iot_enabled' : 'mobile_only',
-                    'active_tracking_mode' => $hasIoT ? 'iot_device' : 'mobile_app',
+                    'coding_scheme_number' => str_pad($bodyNumber, 4, '0', STR_PAD_LEFT),
                 ]);
 
-                // 2. Pair GPS Tracker / Initial Ping
-                TricycleLocation::updateOrCreate(
-                    ['tricycle_id' => $tricycle->id],
-                    [
-                        'latitude'     => 14.0725, // Default Nasugbu coordinates
-                        'longitude'    => 120.6355,
-                        'recorded_at'  => now(),
-                        'source'       => $hasIoT ? 'gps_device' : 'mobile_app',
-                    ]
-                );
-
-                // 3. Setup Franchise Scheme (Default Coding color scheme based on Assigned Tricycle Number last digit)
+                // 2. Setup Franchise Scheme with Color Coding Scheme based on last digit of Body Number
                 $lastDigit = (int)substr(trim($bodyNumber), -1);
-                // Map last digit of Assigned Tricycle Number to standard color coding scheme day
                 $codingDay = $this->getCodingDay($lastDigit);
                 $scheme = ColorCodingScheme::whereJsonContains('restricted_days', $codingDay)->first();
                 $schemeId = $scheme ? $scheme->id : ColorCodingScheme::first()->id;
 
-                // Deactivate any previous active franchise for this unit so it remains in history as expired/renewed
-                FranchiseScheme::where('tricycle_id', $tricycle->id)
-                    ->where('is_active', true)
-                    ->update([
-                        'is_active' => false,
-                        'notes'     => \Illuminate\Support\Facades\DB::raw("CONCAT(COALESCE(notes, ''), ' [Expired & Renewed on " . now()->toDateString() . "]')"),
-                    ]);
-
-                // Generate new unique Franchise Number if bodyNumber is duplicate
-                $franchiseNo = 'FS-2026-' . str_pad($tricycle->id, 5, '0', STR_PAD_LEFT);
-                if ($application->application_type === 'renewal') {
-                    $franchiseNo .= '-R' . (FranchiseScheme::where('tricycle_id', $tricycle->id)->count() + 1);
+                // Only a genuine renewal supersedes the tricycle's existing active franchise. A
+                // "new" application must never deactivate an active scheme just because the
+                // tricycle happens to have one.
+                if ($isRenewal) {
+                    FranchiseScheme::where('tricycle_id', $tricycle->id)
+                        ->where('is_active', true)
+                        ->update([
+                            'is_active' => false,
+                            'notes'     => DB::raw("CONCAT(COALESCE(notes, ''), ' [Expired & Renewed on " . now()->toDateString() . "]')"),
+                        ]);
                 }
 
+                // Create pending permit record (activated during TMO Final Confirmation)
                 FranchiseScheme::create([
                     'application_id'         => $application->id,
                     'tricycle_id'            => $tricycle->id,
                     'color_coding_scheme_id' => $schemeId,
                     'issued_by'              => Auth::id() ?: 1,
-                    'franchise_number'       => str_pad($bodyNumber, 4, '0', STR_PAD_LEFT), // 4-digit Tricycle Number Coding Scheme
+                    'franchise_number'       => str_pad($bodyNumber, 4, '0', STR_PAD_LEFT),
+                    'sticker_number'         => $stickerNumber,
                     'route_details'          => 'Nasugbu Poblacion & Border Routes',
                     'issue_date'             => now()->toDateString(),
                     'expiry_date'            => now()->addYears(3)->toDateString(),
-                    'is_active'              => true,
-                    'notes'                  => "Franchise " . ($application->application_type === 'renewal' ? 'Renewed' : 'Issued') . ". Smart GPS Tracker Linked: {$trackerId}.",
+                    'is_active'              => false, // Will become active upon TMO Final Confirmation
+                    'notes'                  => "Franchise Sticker #{$stickerNumber} released by BPLO. Awaiting TMO Final Confirmation.",
                 ]);
             }
 
-            // 4. Update Application status to completed
-            $toStatus = 'completed';
-            $toStep = 5;
-            $notes = "Franchise released. Assigned Body No: {$bodyNumber}, Tracker ID: {$trackerId}.";
+            // 3. Update Application status to awaiting_tmo_confirmation
+            $toStatus = 'awaiting_tmo_confirmation';
+            $toStep = 5; // Step 5: TMO Final Confirmation
+            $notes = "Franchise Sticker #{$stickerNumber} and Body Number #{$bodyNumber} released by BPLO. Driver instructed to return to TMO for Final Confirmation.";
 
             $application->update([
-                'status'       => $toStatus,
-                'current_step' => $toStep,
+                'status'         => $toStatus,
+                'current_step'   => $toStep,
+                'sticker_number' => $stickerNumber,
+                'remarks'        => $notes,
             ]);
 
+            // 4. Log status change history
             ApplicationStatusHistory::create([
                 'application_id' => $application->id,
                 'changed_by'     => Auth::id(),
@@ -215,7 +234,7 @@ class BPLOController extends Controller
             ]);
         });
 
-        return redirect()->route('bplo.releasing')->with('success', "Franchise successfully released. Body Number {$bodyNumber} is now active.");
+        return redirect()->route('bplo.releasing')->with('success', "Franchise Sticker #{$stickerNumber} released! Driver instructed to return to TMO for Final Confirmation & GPS Setup.");
     }
 
     /**
@@ -232,7 +251,8 @@ class BPLOController extends Controller
                 
                 return [
                     'plate_no'   => $tri->plate_number,
-                    'body_no'    => $tri->body_number,
+                    'body_no'    => $tri->body_number ?: $tri->coding_scheme_number,
+                    'sticker_no' => $scheme?->sticker_number ?: 'N/A',
                     'operator'   => $tri->operator ? $tri->operator->full_name : 'N/A',
                     'toda'       => $tri->todaZone ? $tri->todaZone->name : 'Unassigned',
                     'make'       => "{$tri->make} {$tri->model}",
@@ -256,45 +276,79 @@ class BPLOController extends Controller
      */
     public function registryDetails($plateNo): Response
     {
-        $tricycle = Tricycle::with(['operator.todaZone', 'franchiseSchemes.colorCodingScheme', 'applications.documents'])
+        $tricycle = Tricycle::with(['operator.todaZone', 'operator.user', 'franchiseSchemes.colorCodingScheme', 'applications.documents'])
             ->where('plate_number', $plateNo)
             ->firstOrFail();
 
         $operator = $tricycle->operator;
         $scheme = $tricycle->franchiseSchemes->first();
         
-        // Load documents from application if any
-        $app = $tricycle->applications->sortByDesc('created_at')->first();
+        // Find application with documents: check tricycle's applications first, then operator's applications
+        $app = $tricycle->applications()->whereHas('documents')->latest()->first()
+            ?? ($operator ? $operator->applications()->whereHas('documents')->latest()->first() : null)
+            ?? $tricycle->applications()->latest()->first();
+
         $requirements = [];
-        if ($app) {
+        if ($app && $app->documents->isNotEmpty()) {
             $requirements = $app->documents->map(function ($doc) {
                 $labelsMap = [
-                    'drivers_license'    => "Driver's License Back-to-back",
-                    'or_cr'              => "Xerox OR/CR",
+                    'drivers_license'    => "Driver's License (Back-to-Back)",
+                    'or_cr'              => "Official Receipt & Certificate of Registration (OR/CR)",
                     'proof_of_residence' => "Barangay Clearance",
-                    'toda_clearance'     => "TODA Clearance",
-                    'photo_id'           => "Driver's ID",
+                    'toda_clearance'     => "TODA Certificate of Membership",
+                    'photo_id'           => "Driver's 2x2 Photo ID",
+                    'prangkisa'          => "Franchise Certificate (Prangkisa)",
+                    'tariff'             => "Approved Fare Tariff",
                 ];
                 return [
-                    'name'        => $labelsMap[$doc->document_type] ?? 'Other Requirement',
-                    'preview_url' => $doc->file_path ? "/storage/{$doc->file_path}" : '/sample-inspection-document.html',
+                    'name'        => $labelsMap[$doc->document_type] ?? ucwords(str_replace('_', ' ', $doc->document_type)),
+                    'type'        => $doc->document_type,
+                    'preview_url' => $doc->file_path ? "/storage/{$doc->file_path}" : '/document/orcr-preview',
+                    'verified_at' => $doc->updated_at ? $doc->updated_at->format('M d, Y') : 'Verified',
                 ];
-            });
+            })->values()->all();
+        }
+
+        // Fallback to standard municipal registration documents if none explicitly attached to the seed
+        if (empty($requirements)) {
+            $requirements = [
+                ['name' => "Driver's License (Back-to-Back)", 'type' => 'drivers_license', 'preview_url' => '/document/orcr-preview', 'verified_at' => 'Verified'],
+                ['name' => "Official Receipt & Certificate of Registration (OR/CR)", 'type' => 'or_cr', 'preview_url' => '/document/orcr-preview', 'verified_at' => 'Verified'],
+                ['name' => "Barangay Clearance", 'type' => 'proof_of_residence', 'preview_url' => '/document/orcr-preview', 'verified_at' => 'Verified'],
+                ['name' => "TODA Certificate of Membership", 'type' => 'toda_clearance', 'preview_url' => '/document/orcr-preview', 'verified_at' => 'Verified'],
+                ['name' => "Driver's 2x2 Photo ID", 'type' => 'photo_id', 'preview_url' => '/document/orcr-preview', 'verified_at' => 'Verified'],
+            ];
         }
 
         $registry = [
-            'plate_no'    => $tricycle->plate_number,
-            'body_no'     => $tricycle->body_number,
-            'operator'    => $operator ? $operator->full_name : 'N/A',
-            'contact'     => $operator ? $operator->contact_number : 'N/A',
-            'toda'        => $tricycle->todaZone ? $tricycle->todaZone->name : 'Unassigned',
-            'make'        => "{$tricycle->make} {$tricycle->model}",
-            'engine_number'  => $tricycle->engine_number,
-            'chassis_number' => $tricycle->chassis_number,
-            'issue_date'  => $scheme ? $scheme->issue_date->format('F j, Y') : $tricycle->created_at->format('F j, Y'),
-            'coding_day'  => $scheme ? ($scheme->colorCodingScheme ? $scheme->colorCodingScheme->coding_day : 'None') : 'None',
-            'status'      => $tricycle->status,
-            'requirements'=> $requirements,
+            'plate_no'          => $tricycle->plate_number,
+            'body_no'           => $tricycle->body_number ?: $tricycle->coding_scheme_number,
+            'sticker_no'        => $scheme?->sticker_number ?: ($tricycle->body_number ? "STK-" . date('Y') . "-{$tricycle->body_number}" : 'STK-2026-0141'),
+            'operator'          => $operator ? $operator->full_name : 'N/A',
+            'first_name'        => $operator ? $operator->first_name : '',
+            'last_name'         => $operator ? $operator->last_name : '',
+            'contact'           => $operator ? $operator->contact_number : 'N/A',
+            'email'             => $operator?->user ? $operator->user->email : ($operator ? "driver.{$operator->last_name}@trivora.ph" : 'N/A'),
+            'address'           => $operator ? ($operator->address ?: 'Nasugbu, Batangas') : 'Nasugbu, Batangas',
+            'barangay'          => $operator ? ($operator->barangay ?: 'Poblacion') : 'Poblacion',
+            'date_of_birth'     => $operator && $operator->date_of_birth ? $operator->date_of_birth->format('M d, Y') : 'Dec 12, 1988',
+            'license_no'        => $operator ? ($operator->license_number ?: 'N01-88-567890') : 'N01-88-567890',
+            'license_expiry'    => $operator && $operator->license_expiry_date ? $operator->license_expiry_date->format('M d, Y') : 'Dec 11, 2027',
+            'license_codes'     => $operator ? ($operator->license_restriction_code ?: '1, 2') : '1, 2',
+            'toda'              => $tricycle->todaZone ? $tricycle->todaZone->name : 'Unassigned',
+            'make'              => "{$tricycle->make} {$tricycle->model}",
+            'year_model'        => $tricycle->year_model ?: '2022',
+            'body_color'        => $tricycle->body_color ?: 'Blue',
+            'body_type'         => $tricycle->body_type ?: 'Standard Side Car',
+            'engine_number'     => $tricycle->engine_number ?: 'ENG-MOBGPS-888',
+            'chassis_number'    => $tricycle->chassis_number ?: 'CHS-MOBGPS-888',
+            'or_number'         => $tricycle->or_number ?: "OR-" . date('Y') . "-000" . $tricycle->id,
+            'cr_number'         => $tricycle->cr_number ?: "CR-" . date('Y') . "-000" . $tricycle->id,
+            'issue_date'        => $scheme ? $scheme->issue_date->format('F j, Y') : $tricycle->created_at->format('F j, Y'),
+            'coding_day'        => $scheme ? ($scheme->colorCodingScheme ? $scheme->colorCodingScheme->coding_day : 'None') : 'None',
+            'status'            => $tricycle->status,
+            'tracking_mode'     => $tricycle->active_tracking_mode ?: 'mobile_app',
+            'requirements'      => $requirements,
         ];
 
         return Inertia::render('BPLODashboard/RegistryDetails', [
@@ -303,17 +357,10 @@ class BPLOController extends Controller
     }
 
     /**
-     * Map Last Digit of Plate to coding day.
+     * Map Last Digit of Body Number to coding day.
      */
     private function getCodingDay(int $lastDigit): string
     {
-        return match ($lastDigit) {
-            1, 2 => 'Monday',
-            3, 4 => 'Tuesday',
-            5, 6 => 'Wednesday',
-            7, 8 => 'Thursday',
-            9, 0 => 'Friday',
-            default => 'Monday',
-        };
+        return ColorCodingRuleService::codingDayForLastDigit($lastDigit) ?? 'Monday';
     }
 }

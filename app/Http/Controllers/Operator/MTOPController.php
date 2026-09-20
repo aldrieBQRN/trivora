@@ -66,6 +66,30 @@ class MTOPController extends Controller
         $appType = $request->input('application_type', 'new');
         $unitId  = $request->input('unit_id');
 
+        // For a renewal, resolve and authorize the tricycle, and enforce the SAME server-side
+        // eligibility rule the tracker UI uses to decide whether to show the "Renew" button —
+        // a direct POST must not be able to bypass it. This must happen BEFORE the transaction
+        // below, so a rejected request creates no Application/Payment/Inspection/Documents at all.
+        if ($appType === 'renewal') {
+            if (!$unitId) {
+                return redirect()->back()->withErrors(['unit_id' => 'Select the tricycle unit you want to renew.']);
+            }
+
+            $tricycle = \App\Models\Tricycle::where('id', $unitId)
+                ->where('operator_id', $operator->id)
+                ->first();
+
+            if (!$tricycle) {
+                return redirect()->back()->withErrors(['unit_id' => 'That tricycle unit was not found on your account.']);
+            }
+
+            if (!$this->renewalEligibility($tricycle)['can_renew']) {
+                return redirect()->back()->withErrors([
+                    'application_type' => 'This tricycle does not currently have a franchise that is eligible for renewal.',
+                ]);
+            }
+        }
+
         return \Illuminate\Support\Facades\DB::transaction(function () use ($request, $user, $operator, $appType, $unitId) {
             $tricycle = null;
 
@@ -76,7 +100,10 @@ class MTOPController extends Controller
                     ->first();
             }
 
-            if (!$tricycle) {
+            // Renewal always targets an existing, operator-owned unit resolved above (and
+            // re-authorized/re-validated here since we're inside a fresh transaction) — it must
+            // never fall back to a global plate/engine lookup or create a brand-new tricycle.
+            if ($appType !== 'renewal' && !$tricycle) {
                 // Find by plate or engine if already registered
                 $plate = $request->input('plate');
                 $engine = $request->input('engine_number');
@@ -90,7 +117,7 @@ class MTOPController extends Controller
                 }
             }
 
-            if (!$tricycle) {
+            if (!$tricycle && $appType !== 'renewal') {
                 // Create a new Tricycle record
                 $makeModel = $request->input('make_model', 'Generic Tricycle');
                 $parts = explode(' ', $makeModel, 2);
@@ -118,6 +145,12 @@ class MTOPController extends Controller
                     'body_color'     => 'Red',
                     'status'         => 'unregistered',
                 ]);
+            }
+
+            if (!$tricycle) {
+                // Should be unreachable — the renewal path above already validated and returned
+                // early if no eligible, owned tricycle was found — but never proceed without one.
+                abort(422, 'No tricycle unit could be resolved for this application.');
             }
 
             // 2. Create Application
@@ -206,7 +239,7 @@ class MTOPController extends Controller
         }
 
         $applications = Application::where('operator_id', $operator->id)
-            ->with(['tricycle.franchiseScheme', 'statusHistories'])
+            ->with(['tricycle', 'franchiseScheme', 'statusHistories'])
             ->orderByDesc('created_at')
             ->get()
             ->map(function ($app) {
@@ -214,7 +247,10 @@ class MTOPController extends Controller
                 $status = 'in-progress';
                 $message = 'Undergoing document review.';
 
-                $fs = $app->tricycle?->franchiseScheme;
+                // This application's OWN franchise period (application_id-scoped), not simply the
+                // tricycle's currently active one — an old, superseded renewal must keep showing
+                // its own historical expiry, not whatever period is active on the unit today.
+                $fs = $app->franchiseScheme;
                 $isCompletedApp = in_array($app->status, ['completed', 'scheme_issued']);
                 $isExpired = $isCompletedApp && $fs && $fs->expiry_date ? $fs->expiry_date->isPast() : false;
 
@@ -228,35 +264,47 @@ class MTOPController extends Controller
                     case 'under_review':
                         $phase = 'tmo-docs';
                         $status = 'in-progress';
-                        $message = 'Awaiting Traffic Management Office validation of your requirements.';
+                        $message = 'Awaiting Traffic Management Office validation of your online documents.';
                         break;
                     case 'rejected':
                         $phase = 'tmo-docs';
                         $status = 'action-req';
                         $lastHistory = $app->statusHistories()->where('to_status', 'rejected')->latest()->first();
-                        $message = $lastHistory ? $lastHistory->notes : 'Requirements rejected. Please correct files.';
+                        $message = $lastHistory ? $lastHistory->notes : 'Online requirements rejected. Please correct files.';
                         break;
                     case 'pending_inspection':
                     case 'under_inspection':
-                        $phase = 'tmo-phys';
+                        $phase = 'tmo-phys-inspect';
                         $status = 'in-progress';
-                        $message = 'Please bring your tricycle to the physical inspection center.';
+                        $message = 'Requirements approved! Please bring your tricycle unit to the TMO inspection compound.';
                         break;
                     case 'failed_inspection':
-                        $phase = 'tmo-phys';
+                        $phase = 'tmo-phys-inspect';
                         $status = 'action-req';
                         $lastHistory = $app->statusHistories()->where('to_status', 'failed_inspection')->latest()->first();
                         $message = $lastHistory ? $lastHistory->notes : 'Physical inspection failed. Fix defects and request re-inspection.';
                         break;
                     case 'pending_payment':
                         $phase = 'cashier-pay';
-                        $status = 'in-progress';
-                        $message = 'Awaiting payment. Proceed to Cashier walk-in counter.';
+                        $status = 'action-req';
+                        $message = 'Inspection cleared! Payment ticket issued. Pay ₱750.00 in person (cash) at the Municipal Treasurer\'s cashier counter.';
                         break;
+                    case 'payment_issue':
+                        $phase = 'tmo-payment';
+                        $status = 'action-req';
+                        $lastHistory = $app->statusHistories()->where('to_status', 'payment_issue')->latest()->first();
+                        $message = $lastHistory ? $lastHistory->notes : 'TMO flagged an issue with your payment receipt. Please visit TMO with your Official Receipt.';
+                        break;
+                    case 'payment_verified':
                     case 'paid':
                         $phase = 'bplo-release';
                         $status = 'in-progress';
-                        $message = 'Awaiting BPLO final releasing and Tricycle Number Coding Scheme assignment.';
+                        $message = 'Payment verified by TMO! Awaiting BPLO release of franchise sticker and number coding.';
+                        break;
+                    case 'awaiting_tmo_confirmation':
+                        $phase = 'tmo-final-confirm';
+                        $status = 'action-req';
+                        $message = 'Franchise sticker and plate released by BPLO! Return to TMO with your signed payment ticket for GPS tracking setup and final activation.';
                         break;
                     case 'completed':
                     case 'scheme_issued':
@@ -271,23 +319,15 @@ class MTOPController extends Controller
                         break;
                 }
 
-                $hasActiveValidFranchise = false;
-                $hasPendingRenewal = false;
-
-                if ($app->tricycle_id) {
-                    $hasActiveValidFranchise = \App\Models\FranchiseScheme::where('tricycle_id', $app->tricycle_id)
-                        ->where('is_active', true)
-                        ->where('expiry_date', '>', now())
-                        ->exists();
-
-                    $hasPendingRenewal = \App\Models\Application::where('tricycle_id', $app->tricycle_id)
-                        ->where('application_type', 'renewal')
-                        ->whereNotIn('status', ['completed', 'rejected'])
-                        ->where('id', '!=', $app->id)
-                        ->exists();
-                }
-
-                $canRenew = $isExpired && !$hasActiveValidFranchise && !$hasPendingRenewal;
+                // Eligibility (can this UNIT be renewed right now?) is inherently about the
+                // tricycle's current state, not this specific historical application — reuse the
+                // exact same rule enforced server-side in store().
+                $eligibility = $app->tricycle ? $this->renewalEligibility($app->tricycle, $app->id) : null;
+                $hasActiveValidFranchise = $eligibility['has_active_valid'] ?? false;
+                $hasPendingRenewal = $eligibility['has_pending_renewal'] ?? false;
+                // Same rule enforced server-side in store() — reuse its result directly rather
+                // than recomputing from this application's own (possibly historical) $isExpired.
+                $canRenew = $eligibility['can_renew'] ?? false;
 
                 $cardColor = 'standard';
                 if ($app->status === 'completed' || $app->status === 'scheme_issued') {
@@ -517,20 +557,29 @@ class MTOPController extends Controller
                 break;
             case 'pending_inspection':
             case 'under_inspection':
-                $phase = 'tmo-phys';
+                $phase = 'tmo-phys-inspect';
                 $status = 'in-progress';
                 break;
             case 'failed_inspection':
-                $phase = 'tmo-phys';
+                $phase = 'tmo-phys-inspect';
                 $status = 'action-req';
                 break;
             case 'pending_payment':
                 $phase = 'cashier-pay';
-                $status = 'in-progress';
+                $status = 'action-req';
                 break;
+            case 'payment_issue':
+                $phase = 'tmo-payment';
+                $status = 'action-req';
+                break;
+            case 'payment_verified':
             case 'paid':
                 $phase = 'bplo-release';
                 $status = 'in-progress';
+                break;
+            case 'awaiting_tmo_confirmation':
+                $phase = 'tmo-final-confirm';
+                $status = 'action-req';
                 break;
             case 'completed':
             case 'scheme_issued':
@@ -539,27 +588,16 @@ class MTOPController extends Controller
                 break;
         }
 
-        $fs = $app->tricycle?->franchiseScheme;
+        // This application's OWN franchise period, not simply the tricycle's currently active
+        // one — see the identical comment in index() for why.
+        $fs = $app->franchiseScheme;
         $isCompletedApp = in_array($app->status, ['completed', 'scheme_issued']);
         $isExpired = $isCompletedApp && $fs && $fs->expiry_date ? $fs->expiry_date->isPast() : false;
 
-        $hasActiveValidFranchise = false;
-        $hasPendingRenewal = false;
-
-        if ($app->tricycle_id) {
-            $hasActiveValidFranchise = \App\Models\FranchiseScheme::where('tricycle_id', $app->tricycle_id)
-                ->where('is_active', true)
-                ->where('expiry_date', '>', now())
-                ->exists();
-
-            $hasPendingRenewal = \App\Models\Application::where('tricycle_id', $app->tricycle_id)
-                ->where('application_type', 'renewal')
-                ->whereNotIn('status', ['completed', 'rejected'])
-                ->where('id', '!=', $app->id)
-                ->exists();
-        }
-
-        $canRenew = $isExpired && !$hasActiveValidFranchise && !$hasPendingRenewal;
+        $eligibility = $app->tricycle ? $this->renewalEligibility($app->tricycle, $app->id) : null;
+        $hasActiveValidFranchise = $eligibility['has_active_valid'] ?? false;
+        $hasPendingRenewal = $eligibility['has_pending_renewal'] ?? false;
+        $canRenew = $eligibility['can_renew'] ?? false;
 
         if ($isCompletedApp) {
             $phase = 'completed';
@@ -576,9 +614,11 @@ class MTOPController extends Controller
 
         $appData = [
             'id'                     => $app->reference_number,
+            'db_id'                  => $app->id,
             'type'                   => $app->application_type === 'new' ? 'New Franchise' : 'Renewal',
             'status'                 => $status,
             'phase'                  => $phase,
+            'raw_status'             => $app->status,
             'date'                   => $app->created_at->format('F d, Y'),
             'toda'                   => $app->tricycle?->todaZone ? $app->tricycle->todaZone->name : 'N/A',
             'make'                   => $app->tricycle ? "{$app->tricycle->make} {$app->tricycle->model}" : 'N/A',
@@ -589,7 +629,9 @@ class MTOPController extends Controller
             'documents'              => $documents,
             'inspections'            => $inspections,
             'payment'                => $payment,
-            'payment_due'            => $paymentRecord ? (float)$paymentRecord->amount : 1500.00,
+            'payment_due'            => $paymentRecord ? (float)$paymentRecord->amount : 750.00,
+            'payment_ticket'         => $app->payment_ticket,
+            'sticker_number'         => $app->sticker_number,
             'bplo'                   => $bplo,
             'tricycle_id'            => $app->tricycle_id,
             'is_expired'             => $isExpired,
@@ -903,5 +945,87 @@ class MTOPController extends Controller
         });
 
         return redirect()->route('operator.mtop.details', ['id' => $app->id]);
+    }
+
+    /**
+     * Display the official Payment Ticket for an application.
+     */
+    public function paymentTicket(Request $request, $id)
+    {
+        $user = $request->user();
+
+        // Staff members (TMO, BPLO, Admin) can view any application's ticket
+        if (in_array($user->role, ['tmo_personnel', 'bplo_staff', 'admin'])) {
+            $app = Application::where(function ($query) use ($id) {
+                    $query->where('id', $id)
+                          ->orWhere('reference_number', $id);
+                })
+                ->with(['tricycle.todaZone', 'operator'])
+                ->firstOrFail();
+        } else {
+            $operator = $user->operator;
+            if (!$operator) {
+                abort(403);
+            }
+
+            $app = Application::where('operator_id', $operator->id)
+                ->where(function ($query) use ($id) {
+                    $query->where('id', $id)
+                          ->orWhere('reference_number', $id);
+                })
+                ->with(['tricycle.todaZone', 'operator'])
+                ->firstOrFail();
+        }
+
+        return Inertia::render('Operator/Compliance/PaymentTicket', [
+            'application' => [
+                'id'               => $app->id,
+                'reference_number' => $app->reference_number,
+                'status'           => $app->status,
+                'payment_ticket'   => $app->payment_ticket,
+                'operator_name'    => $app->operator?->full_name ?? 'N/A',
+            ],
+        ]);
+    }
+
+    /**
+     * The single source of truth for whether a tricycle currently has a franchise eligible for
+     * renewal — the exact same business rule the tracker UI already used to compute `can_renew`
+     * (index()/show()), now also enforced server-side in store() so a direct POST can't bypass it.
+     *
+     * A tricycle is renewable when its current active franchise scheme exists and has expired,
+     * there is no OTHER currently-valid active scheme on the unit, and no renewal application for
+     * it is already in progress.
+     *
+     * @param  int|null  $excludeApplicationId  Exclude this application from the "pending renewal
+     *         already in progress" check — used when evaluating can_renew for that same application.
+     */
+    private function renewalEligibility(\App\Models\Tricycle $tricycle, ?int $excludeApplicationId = null): array
+    {
+        $scheme = $tricycle->franchiseScheme; // is_active = true scoped relation
+        $isExpired = $scheme && $scheme->expiry_date ? $scheme->expiry_date->isPast() : false;
+
+        $hasActiveValidFranchise = FranchiseScheme::where('tricycle_id', $tricycle->id)
+            ->where('is_active', true)
+            ->where('expiry_date', '>', now())
+            ->exists();
+
+        $pendingRenewalQuery = Application::where('tricycle_id', $tricycle->id)
+            ->where('application_type', 'renewal')
+            ->whereNotIn('status', ['completed', 'rejected']);
+
+        if ($excludeApplicationId) {
+            $pendingRenewalQuery->where('id', '!=', $excludeApplicationId);
+        }
+
+        $hasPendingRenewal = $pendingRenewalQuery->exists();
+
+        return [
+            'can_renew'           => $isExpired && !$hasActiveValidFranchise && !$hasPendingRenewal,
+            'is_expired'          => $isExpired,
+            'has_active_valid'    => $hasActiveValidFranchise,
+            'has_pending_renewal' => $hasPendingRenewal,
+            'scheme'              => $scheme,
+        ];
     }
 }

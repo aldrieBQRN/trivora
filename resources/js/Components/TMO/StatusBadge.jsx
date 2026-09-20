@@ -11,23 +11,21 @@ const VARIANTS = {
  * should ever change per status — keeps every badge in the panel visually
  * identical instead of each page re-deriving its own shade of green/red/amber.
  * Pass `onClick` to render it as a clickable toggle instead of a static span.
+ *
+ * Text-only by design — no bullet/dot/circle/icon before the label. The `icon`
+ * prop is still accepted (so existing callers don't need to change) but is
+ * deliberately never rendered, keeping every badge consistent.
  */
-export default function StatusBadge({ children, variant = 'neutral', icon: Icon, className = '', onClick, ...props }) {
+export default function StatusBadge({ children, variant = 'neutral', icon: _icon, className = '', onClick, ...props }) {
     const classes = `inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide ${VARIANTS[variant] || VARIANTS.neutral} ${onClick ? 'cursor-pointer transition-opacity hover:opacity-75 disabled:cursor-not-allowed disabled:opacity-40' : ''} ${className}`;
-    const content = (
-        <>
-            {Icon && <Icon size={11} strokeWidth={3} />}
-            {children}
-        </>
-    );
 
     if (onClick) {
         return (
             <button type="button" onClick={onClick} className={classes} {...props}>
-                {content}
+                {children}
             </button>
         );
     }
 
-    return <span className={classes} {...props}>{content}</span>;
+    return <span className={classes} {...props}>{children}</span>;
 }

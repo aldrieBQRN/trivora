@@ -81,7 +81,6 @@ class OperatorAuthController extends Controller
         return match ($role) {
             'tmo_personnel'      => route('tmo.dashboard'),
             'bplo_staff'         => route('bplo.dashboard'),
-            'municipal_treasurer'=> route('treasurer.dashboard'),
             'tricycle_driver'    => route('operator.dashboard'),
             default              => route('dashboard'), // admin
         };

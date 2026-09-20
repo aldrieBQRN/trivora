@@ -1,11 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Link, usePage, router } from '@inertiajs/react';
 import {
-    Bell, Menu, Search, Settings, LogOut,
-    ChevronDown, Command,
+    Bell, Menu, Settings, LogOut,
+    ChevronDown, ChevronRight,
     LayoutDashboard, ShieldCheck,
-    FileSearch, ClipboardCheck,
-    Bike, ShieldAlert, Users, X
+    FileSearch, ClipboardCheck, Receipt,
+    Bike, ShieldAlert, Users, X, Radio, BarChart3, MapPin
 } from 'lucide-react';
 
 /* ─────────────────────────────────────────────────────────────────────────
@@ -13,7 +13,7 @@ import {
    Brand token: tmo-primary (#1D2542). See tailwind.config.js `tmo.*` colors.
 ───────────────────────────────────────────────────────────────────────── */
 
-export default function TrivoraLayout({ children, title, role = "TMO Personnel" }) {
+export default function TrivoraLayout({ children, title, role = "TMO Personnel", breadcrumbs = null }) {
     const { url, props } = usePage();
     const isAdmin = props?.auth?.user?.role === 'admin';
     const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -24,24 +24,27 @@ export default function TrivoraLayout({ children, title, role = "TMO Personnel" 
         {
             group: "Operations",
             links: [
-                { name: 'Live Monitoring',      icon: LayoutDashboard, route: '/tmo-dashboard' },
-
+                { name: 'Dashboard',            icon: LayoutDashboard, route: '/tmo-dashboard' },
+                { name: 'Live Monitoring',      icon: Radio,           route: '/tmo/live' },
                 { name: 'Tricycle Registry',    icon: Bike,            route: '/tmo/registry' },
                 { name: 'Violation Records',    icon: ShieldAlert,     route: '/violations' },
+                { name: 'Reports & Analytics',  icon: BarChart3,       route: '/tmo/reports' },
             ]
         },
         {
             group: "TMO Pipeline",
             links: [
-                { name: 'Document Review',     icon: FileSearch,     route: '/tmo/docs'               },
-                { name: 'Physical Inspection', icon: ClipboardCheck, route: '/tmo/physical'           },
-                { name: 'Final Confirmation',  icon: ShieldCheck,    route: '/tmo/final-confirmation' },
+                { name: 'Document Review',       icon: FileSearch,     route: '/tmo/docs'               },
+                { name: 'Physical Inspection',   icon: ClipboardCheck, route: '/tmo/physical'           },
+                { name: 'Payment Verification',  icon: Receipt,        route: '/tmo/payments'           },
+                { name: 'Final Confirmation',    icon: ShieldCheck,    route: '/tmo/final-confirmation' },
             ]
         },
         {
             group: "Management",
             links: [
-                { name: 'Staff Management', icon: Users, route: '/tmo/users' },
+                { name: 'TODA Management',  icon: MapPin, route: '/tmo/toda' },
+                { name: 'Staff Management', icon: Users,  route: '/tmo/users' },
             ]
         },
     ];
@@ -50,6 +53,150 @@ export default function TrivoraLayout({ children, title, role = "TMO Personnel" 
 
     // Fallback matching to determine active state visually
     const activePage = allLinks.find(l => url.startsWith(l.route))?.name || title;
+
+    // Helper to check if a navigation link is active (including its subpages)
+    const isLinkActive = (link) => {
+        const path = (url || '').split('?')[0];
+        if (path === link.route || path.startsWith(link.route + '/')) return true;
+        if (link.route === '/tmo/docs' && path.startsWith('/tmo/review/docs')) return true;
+        if (link.route === '/tmo/physical' && (path.startsWith('/tmo/review/physical') || path.startsWith('/tmo/ticket'))) return true;
+        if (link.route === '/tmo/payments' && path.startsWith('/tmo/verify-payment')) return true;
+        if (link.route === '/tmo/registry' && path.startsWith('/tmo/tricycle')) return true;
+        if (link.route === '/violations' && (path.startsWith('/violations/') || path.startsWith('/tmo/violations'))) return true;
+        return false;
+    };
+
+    // Dynamic breadcrumb trail resolution
+    const computedBreadcrumbs = useMemo(() => {
+        if (breadcrumbs && Array.isArray(breadcrumbs) && breadcrumbs.length > 0) {
+            return breadcrumbs;
+        }
+
+        const crumbs = [
+            { label: 'TMO', href: '/tmo-dashboard' }
+        ];
+
+        const path = (url || '').split('?')[0];
+
+        if (path === '/tmo-dashboard' || path === '') {
+            crumbs.push({ label: 'Dashboard' });
+            return crumbs;
+        }
+
+        // Subpage mapping for pipeline and detail views (Short action names)
+        const SUBPAGE_MAP = [
+            {
+                prefix: '/tmo/review/docs',
+                group: 'TMO Pipeline',
+                parentName: 'Document Review',
+                parentRoute: '/tmo/docs',
+                defaultLeaf: 'Review',
+            },
+            {
+                prefix: '/tmo/review/physical',
+                group: 'TMO Pipeline',
+                parentName: 'Physical Inspection',
+                parentRoute: '/tmo/physical',
+                defaultLeaf: 'Inspection',
+            },
+            {
+                prefix: '/tmo/ticket',
+                group: 'TMO Pipeline',
+                parentName: 'Physical Inspection',
+                parentRoute: '/tmo/physical',
+                defaultLeaf: 'Ticket',
+            },
+            {
+                prefix: '/tmo/verify-payment',
+                group: 'TMO Pipeline',
+                parentName: 'Payment Verification',
+                parentRoute: '/tmo/payments',
+                defaultLeaf: 'Verify Payment',
+            },
+            {
+                prefix: '/tmo/final-confirmation/',
+                group: 'TMO Pipeline',
+                parentName: 'Final Confirmation',
+                parentRoute: '/tmo/final-confirmation',
+                defaultLeaf: 'Confirmation',
+            },
+            {
+                prefix: '/tmo/tricycle',
+                group: 'Operations',
+                parentName: 'Tricycle Registry',
+                parentRoute: '/tmo/registry',
+                defaultLeaf: 'Details',
+            },
+            {
+                prefix: '/tmo/toda/',
+                group: 'Management',
+                parentName: 'TODA Management',
+                parentRoute: '/tmo/toda',
+                defaultLeaf: 'Details',
+            },
+            {
+                prefix: '/tmo/violations/create',
+                group: 'Operations',
+                parentName: 'Violation Records',
+                parentRoute: '/violations',
+                defaultLeaf: 'File Ticket',
+            },
+            {
+                prefix: '/violations/create',
+                group: 'Operations',
+                parentName: 'Violation Records',
+                parentRoute: '/violations',
+                defaultLeaf: 'File Ticket',
+            },
+            {
+                prefix: '/violations/',
+                group: 'Operations',
+                parentName: 'Violation Records',
+                parentRoute: '/violations',
+                defaultLeaf: 'Details',
+            },
+        ];
+
+        // 1. Check if path matches a known subpage
+        const matchedSubpage = SUBPAGE_MAP.find(s => path.startsWith(s.prefix));
+        if (matchedSubpage) {
+            crumbs.push({ label: matchedSubpage.group });
+            crumbs.push({ label: matchedSubpage.parentName, href: matchedSubpage.parentRoute });
+            crumbs.push({ label: matchedSubpage.defaultLeaf });
+            return crumbs;
+        }
+
+        // 2. Standard top-level navigation matches
+        let matchedGroup = null;
+        let matchedLink = null;
+
+        for (const g of navigation) {
+            for (const l of g.links) {
+                if (path === l.route || path.startsWith(l.route + '/')) {
+                    if (!matchedLink || l.route.length > matchedLink.route.length) {
+                        matchedGroup = g;
+                        matchedLink = l;
+                    }
+                }
+            }
+        }
+
+        if (matchedGroup && matchedLink) {
+            crumbs.push({ label: matchedGroup.group });
+
+            const isSubpage = path !== matchedLink.route;
+            if (isSubpage) {
+                crumbs.push({ label: matchedLink.name, href: matchedLink.route });
+                crumbs.push({ label: (title && title !== matchedLink.name) ? title : 'Details' });
+            } else {
+                crumbs.push({ label: matchedLink.name });
+            }
+        } else if (title) {
+            crumbs.push({ label: title });
+        }
+
+        return crumbs;
+    }, [breadcrumbs, url, title]);
 
     const handleLogout = () => {
         setIsExiting(true);
@@ -77,10 +224,18 @@ export default function TrivoraLayout({ children, title, role = "TMO Personnel" 
                     sidebarOpen ? 'translate-x-0' : '-translate-x-full'
                 }`}
             >
-                <div className="flex h-[72px] shrink-0 items-center justify-between px-5">
-                    <Link href="/tmo-dashboard" className="flex items-center">
-                        <div className="flex items-center justify-center rounded-lg bg-white px-2 py-1">
-                            <img src="/images/logo.png" alt="Trivora" className="h-8 w-auto object-contain" />
+                <div className="flex h-[72px] shrink-0 items-center justify-between px-4">
+                    <Link href="/tmo-dashboard" className="flex items-center gap-3 group">
+                        <div className="flex h-10 shrink-0 items-center justify-center rounded-xl bg-white px-2.5 py-1 shadow-xs ring-1 ring-white/10 transition-transform group-hover:scale-105">
+                            <img src="/images/logo.png" alt="Trivora" className="h-6 w-auto object-contain" />
+                        </div>
+                        <div className="flex flex-col justify-center">
+                            <span className="text-sm font-black tracking-wider text-white leading-tight">
+                                TRIVORA
+                            </span>
+                            <span className="text-[9.5px] font-bold uppercase tracking-[0.14em] text-white/50 leading-tight mt-0.5">
+                                TMO Portal
+                            </span>
                         </div>
                     </Link>
                     <button
@@ -104,7 +259,7 @@ export default function TrivoraLayout({ children, title, role = "TMO Personnel" 
 
                                 {group.links.map((link) => {
                                     const Icon     = link.icon;
-                                    const isActive = url.startsWith(link.route);
+                                    const isActive = isLinkActive(link);
                                     return (
                                         <Link
                                             key={link.name}
@@ -124,14 +279,28 @@ export default function TrivoraLayout({ children, title, role = "TMO Personnel" 
                         ))}
                     </div>
 
-                    {/* Bottom Logout Button */}
-                    <div className="shrink-0 border-t border-white/10 pt-3.5">
+                    {/* Bottom Logout Dock */}
+                    <div className="shrink-0 border-t border-white/10 p-3">
                         <button
                             onClick={handleLogout}
-                            className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-[13.5px] font-semibold text-red-300 transition-colors hover:bg-red-500/10 hover:text-red-200"
+                            className="group flex w-full items-center justify-between rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2.5 text-left transition-all duration-200 hover:border-rose-500/30 hover:bg-rose-500/10 active:scale-[0.99]"
                         >
-                            <LogOut size={16} strokeWidth={2.5} className="shrink-0" />
-                            <span>Sign Out</span>
+                            <div className="flex items-center gap-2.5 min-w-0">
+                                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-white/10 text-white/70 transition-colors group-hover:bg-rose-500/20 group-hover:text-rose-300">
+                                    <LogOut size={14} strokeWidth={2.2} />
+                                </div>
+                                <div className="flex flex-col min-w-0">
+                                    <span className="text-xs font-bold text-white transition-colors group-hover:text-rose-200 leading-tight">
+                                        Sign Out
+                                    </span>
+                                    <span className="text-[10px] font-medium text-white/40 group-hover:text-rose-300/70 transition-colors leading-tight">
+                                        End session
+                                    </span>
+                                </div>
+                            </div>
+                            <span className="rounded bg-white/10 px-2 py-0.5 text-[9.5px] font-bold text-white/60 transition-colors group-hover:bg-rose-500/25 group-hover:text-rose-200 shrink-0">
+                                Exit
+                            </span>
                         </button>
                     </div>
                 </nav>
@@ -141,31 +310,52 @@ export default function TrivoraLayout({ children, title, role = "TMO Personnel" 
             <div className="flex min-w-0 flex-1 flex-col">
 
                 {/* Header */}
-                <header className="sticky top-0 z-30 flex h-16 shrink-0 items-center justify-between border-b border-tmo-border bg-white px-5 print:hidden sm:px-8">
+                <header className="sticky top-0 z-30 flex h-16 shrink-0 items-center justify-between border-b border-tmo-border bg-white px-3.5 print:hidden sm:px-8">
 
-                    <button
-                        className="flex h-9 w-9 items-center justify-center rounded-lg border border-tmo-border text-tmo-muted hover:border-tmo-borderStrong hover:text-tmo-ink lg:hidden"
-                        onClick={() => setSidebarOpen(true)}
-                    >
-                        <Menu size={18} strokeWidth={2} />
-                    </button>
-                    <div className="hidden lg:block" />
+                    {/* Left: Mobile Toggle & Page Breadcrumbs */}
+                    <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 pr-4">
+                        <button
+                            className="flex h-9 w-9 items-center justify-center rounded-lg border border-tmo-border text-tmo-muted hover:border-tmo-borderStrong hover:text-tmo-ink lg:hidden shrink-0"
+                            onClick={() => setSidebarOpen(true)}
+                        >
+                            <Menu size={18} strokeWidth={2} />
+                        </button>
 
-                    <div className="flex items-center gap-2">
+                        {/* Breadcrumbs Trail */}
+                        <nav aria-label="Breadcrumb" className="flex items-center gap-1.5 sm:gap-2 text-[12.5px] font-medium overflow-hidden">
+                            {computedBreadcrumbs.map((crumb, idx) => {
+                                const isLast = idx === computedBreadcrumbs.length - 1;
+                                return (
+                                    <React.Fragment key={idx}>
+                                        {idx > 0 && (
+                                            <ChevronRight size={13} className="text-slate-300 shrink-0" strokeWidth={2.2} />
+                                        )}
+                                        {crumb.href && !isLast ? (
+                                            <Link
+                                                href={crumb.href}
+                                                className="text-slate-500 hover:text-tmo-primary transition-colors shrink-0 font-medium"
+                                            >
+                                                {crumb.label}
+                                            </Link>
+                                        ) : (
+                                            <span
+                                                className={`truncate ${
+                                                    isLast
+                                                        ? 'text-tmo-primary font-bold'
+                                                        : 'text-slate-500 font-medium'
+                                                }`}
+                                            >
+                                                {crumb.label}
+                                            </span>
+                                        )}
+                                    </React.Fragment>
+                                );
+                            })}
+                        </nav>
+                    </div>
 
-                        {/* Search (decorative — not wired to a search endpoint) */}
-                        <div className="hidden items-center gap-2 rounded-lg border border-tmo-border bg-tmo-bg px-3 h-9 w-[230px] xl:flex focus-within:border-tmo-primary focus-within:ring-2 focus-within:ring-tmo-primary/15">
-                            <Search size={14} strokeWidth={2} className="shrink-0 text-tmo-subtle" />
-                            <input
-                                placeholder="Search records…"
-                                className="w-full bg-transparent text-xs font-medium text-tmo-ink placeholder:text-tmo-subtle focus:outline-none"
-                            />
-                            <div className="hidden items-center gap-0.5 rounded border border-tmo-border bg-white px-1.5 py-0.5 lg:flex">
-                                <Command size={9} className="text-tmo-subtle" />
-                                <span className="text-[9px] font-bold text-tmo-subtle">K</span>
-                            </div>
-                        </div>
-
+                    {/* Right: Notifications & Profile Menu */}
+                    <div className="flex items-center gap-2 shrink-0">
                         {/* Bell */}
                         <button className="relative flex h-9 w-9 items-center justify-center rounded-lg text-tmo-muted hover:bg-tmo-bg hover:text-tmo-ink">
                             <Bell size={18} strokeWidth={1.8} />
@@ -222,7 +412,7 @@ export default function TrivoraLayout({ children, title, role = "TMO Personnel" 
                 </header>
 
                 {/* Page content */}
-                <main className="flex-1 overflow-y-auto px-5 py-7 sm:px-8">
+                <main className="flex-1 overflow-y-auto px-3.5 py-4 sm:px-8 sm:py-7">
                     <div className="mx-auto max-w-[1500px]">
                         {children}
                     </div>

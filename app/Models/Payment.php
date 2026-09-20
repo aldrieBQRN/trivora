@@ -43,7 +43,7 @@ class Payment extends Model
     }
 
     /**
-     * The municipal treasurer who processed this payment.
+     * The TMO personnel who verified this offline Municipal Treasurer payment.
      */
     public function processedBy(): BelongsTo
     {

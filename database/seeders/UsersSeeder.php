@@ -80,18 +80,6 @@ class UsersSeeder extends Seeder
             );
         }
 
-        // ---------------------------------------------------------------------
-        // 4. Municipal Treasurer
-        // ---------------------------------------------------------------------
-        User::firstOrCreate(
-            ['email' => 'treasurer@trivora.gov.ph'],
-            [
-                'name'      => 'Roberto Aquino',
-                'password'  => Hash::make('Treasurer@123'),
-                'role'      => 'municipal_treasurer',
-                'is_active' => true,
-            ]
-        );
 
         // ---------------------------------------------------------------------
         // 4b. Sample Passengers
@@ -376,6 +364,6 @@ class UsersSeeder extends Seeder
             'submitted_at'     => now(),
         ]);
 
-        $this->command->info('✔ Users seeded (1 admin, 2 TMO, 2 BPLO, 1 treasurer, 3 drivers, unlinked permits N01-99-999999, N01-88-888888).');
+        $this->command->info('✔ Users seeded (1 admin, 2 TMO, 2 BPLO, 3 drivers, unlinked permits N01-99-999999, N01-88-888888).');
     }
 }

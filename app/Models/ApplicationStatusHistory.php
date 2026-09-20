@@ -50,4 +50,12 @@ class ApplicationStatusHistory extends Model
     {
         return $this->belongsTo(User::class, 'changed_by');
     }
+
+    /**
+     * Alias for changedBy relationship.
+     */
+    public function changer(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'changed_by');
+    }
 }

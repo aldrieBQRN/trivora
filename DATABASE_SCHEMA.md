@@ -32,7 +32,7 @@ erDiagram
 ## Table Definitions
 
 ### 1. `users`
-> The unified authentication table for all system actors — Tricycle Drivers, TMO Personnel, BPLO Staff, and Municipal Treasurer. Role-based access is handled via the `role` column.
+> The unified authentication table for system actors — Tricycle Drivers/Operators, TMO Personnel, BPLO Staff, and System Admins. Role-based access is handled via the `role` column. Note: The municipal treasurer role is not part of Trivora; physical payments are conducted at the municipal cashier counter.
 
 | Column | Type | Constraints | Description |
 |--------|------|-------------|-------------|
@@ -41,7 +41,7 @@ erDiagram
 | `email` | `VARCHAR(255)` | UNIQUE, NOT NULL | Login email |
 | `email_verified_at` | `TIMESTAMP` | NULLABLE | Email verification time |
 | `password` | `VARCHAR(255)` | NOT NULL | Hashed password |
-| `role` | `ENUM('tricycle_driver','tmo_personnel','bplo_staff','municipal_treasurer','admin')` | NOT NULL, DEFAULT `tricycle_driver` | System role |
+| `role` | `ENUM('tricycle_driver','tmo_personnel','bplo_staff','admin')` | NOT NULL, DEFAULT `tricycle_driver` | System role |
 | `is_active` | `BOOLEAN` | NOT NULL, DEFAULT `true` | Account status |
 | `profile_photo_path` | `VARCHAR(255)` | NULLABLE | Avatar image path |
 | `remember_token` | `VARCHAR(100)` | NULLABLE | Laravel remember token |
@@ -129,7 +129,7 @@ erDiagram
 ---
 
 ### 6. `applications`
-> The master record for each franchise application submitted by an operator. Tracks the full lifecycle from submission to scheme issuance.
+> The master record for each franchise application submitted by an operator. Tracks the full 6-phase lifecycle from online submission through physical verification, inspection, cashier payment, BPLO verification, and sticker issuance.
 
 | Column | Type | Constraints | Description |
 |--------|------|-------------|-------------|
@@ -138,8 +138,11 @@ erDiagram
 | `operator_id` | `BIGINT UNSIGNED` | FK → `operators.id`, NOT NULL | Applying operator |
 | `tricycle_id` | `BIGINT UNSIGNED` | FK → `tricycles.id`, NOT NULL | Subject tricycle unit |
 | `application_type` | `ENUM('new','renewal','transfer')` | NOT NULL, DEFAULT `new` | Type of franchise application |
-| `current_step` | `TINYINT UNSIGNED` | NOT NULL, DEFAULT `1` | Workflow step (1–5) |
-| `status` | `ENUM('draft','pending_review','under_review','rejected','pending_inspection','under_inspection','failed_inspection','pending_payment','paid','scheme_issued','completed','cancelled')` | NOT NULL, DEFAULT `draft` | Current application status |
+| `current_step` | `TINYINT UNSIGNED` | NOT NULL, DEFAULT `1` | Workflow step (1–6) |
+| `status` | `VARCHAR(50)` | NOT NULL, DEFAULT `draft` | Current status (`pending_review`, `pending_inspection`, `failed_inspection`, `pending_payment`, `payment_issue`, `payment_verified`, `awaiting_tmo_confirmation`, `completed`, `rejected`, `cancelled`) |
+| `sticker_number` | `VARCHAR(50)` | NULLABLE | Official municipal franchise sticker serial number released by BPLO |
+| `tracking_method` | `ENUM('mobile_gps','iot_device')` | NULLABLE | GPS tracking method selected by TMO during final confirmation |
+| `iot_device_id` | `VARCHAR(50)` | NULLABLE | Physical IoT Tracker hardware serial number issued by TMO |
 | `submitted_at` | `TIMESTAMP` | NULLABLE | When the applicant submitted |
 | `completed_at` | `TIMESTAMP` | NULLABLE | When fully processed |
 | `remarks` | `TEXT` | NULLABLE | General notes from any officer |
@@ -212,21 +215,21 @@ erDiagram
 ---
 
 ### 10. `payments`
-> Records the payment transaction processed by the Municipal Treasurer after a successful inspection.
+> Stores Official Receipt (OR) details from the physical Municipal Cashier payment, verified and recorded by BPLO staff. (Payments are made physically OTC at the Municipal Hall cashier; Trivora does not process online transactions).
 
 | Column | Type | Constraints | Description |
 |--------|------|-------------|-------------|
 | `id` | `BIGINT UNSIGNED` | PK, AUTO_INCREMENT | Primary key |
 | `application_id` | `BIGINT UNSIGNED` | FK → `applications.id`, UNIQUE, NOT NULL | One payment per application |
-| `processed_by` | `BIGINT UNSIGNED` | FK → `users.id`, NOT NULL | Municipal treasurer who recorded it |
-| `official_receipt_number` | `VARCHAR(50)` | UNIQUE, NOT NULL | OR number issued |
-| `amount` | `DECIMAL(10, 2)` | NOT NULL | Total amount paid |
-| `payment_method` | `ENUM('cash','gcash','bank_transfer','check')` | NOT NULL, DEFAULT `cash` | Mode of payment |
-| `payment_date` | `DATE` | NOT NULL | Date of payment |
+| `processed_by` | `BIGINT UNSIGNED` | FK → `users.id`, NOT NULL | BPLO staff member who verified the receipt |
+| `official_receipt_number` | `VARCHAR(50)` | UNIQUE, NOT NULL | Municipal Cashier OR number |
+| `amount` | `DECIMAL(10, 2)` | NOT NULL | Total amount paid (₱750.00 standard municipal fee) |
+| `payment_method` | `ENUM('cash','gcash','bank_transfer','check')` | NOT NULL, DEFAULT `cash` | Mode of payment at physical cashier |
+| `payment_date` | `DATE` | NOT NULL | Date on the official receipt |
 | `payment_time` | `TIME` | NULLABLE | Time of payment |
-| `is_verified` | `BOOLEAN` | NOT NULL, DEFAULT `false` | Treasurer confirmation flag |
-| `verified_at` | `TIMESTAMP` | NULLABLE | When confirmed |
-| `notes` | `TEXT` | NULLABLE | Treasurer remarks |
+| `is_verified` | `BOOLEAN` | NOT NULL, DEFAULT `false` | BPLO verification confirmation flag |
+| `verified_at` | `TIMESTAMP` | NULLABLE | When verified by BPLO staff |
+| `notes` | `TEXT` | NULLABLE | Cashier / BPLO verification remarks |
 | `created_at` | `TIMESTAMP` | NULLABLE | — |
 | `updated_at` | `TIMESTAMP` | NULLABLE | — |
 
@@ -246,19 +249,10 @@ erDiagram
 | `created_at` | `TIMESTAMP` | NULLABLE | — |
 | `updated_at` | `TIMESTAMP` | NULLABLE | — |
 
-> **Example Rows:**
-> | name | color_hex | restricted_days |
-> |------|-----------|-----------------|
-> | Red | `#EF4444` | `["Monday"]` |
-> | Blue | `#3B82F6` | `["Tuesday"]` |
-> | Yellow | `#EAB308` | `["Wednesday"]` |
-> | Green | `#22C55E` | `["Thursday"]` |
-> | White | `#F1F5F9` | `["Friday"]` |
-
 ---
 
 ### 12. `franchise_schemes`
-> The official franchise record issued by BPLO after full payment. This is the tricycle's operational permit, linked to a color-coding scheme.
+> The official franchise permit record issued by BPLO after cashier receipt verification. Links the tricycle unit to an official body number, smart GPS tracker, and color-coding scheme.
 
 | Column | Type | Constraints | Description |
 |--------|------|-------------|-------------|
@@ -267,7 +261,8 @@ erDiagram
 | `tricycle_id` | `BIGINT UNSIGNED` | FK → `tricycles.id`, UNIQUE, NOT NULL | Subject tricycle |
 | `color_coding_scheme_id` | `BIGINT UNSIGNED` | FK → `color_coding_schemes.id`, NOT NULL | Assigned color code |
 | `issued_by` | `BIGINT UNSIGNED` | FK → `users.id`, NOT NULL | BPLO staff who issued |
-| `franchise_number` | `VARCHAR(30)` | UNIQUE, NOT NULL | Official franchise No. |
+| `franchise_number` | `VARCHAR(30)` | UNIQUE, NOT NULL | Official franchise No. / Body No. |
+| `sticker_number` | `VARCHAR(50)` | NULLABLE | Official franchise sticker serial number |
 | `issue_date` | `DATE` | NOT NULL | Date of issuance |
 | `expiry_date` | `DATE` | NOT NULL | Permit expiration date |
 | `is_active` | `BOOLEAN` | NOT NULL, DEFAULT `true` | Currently valid flag |
@@ -364,20 +359,31 @@ erDiagram
 ## Workflow Step → Table Mapping
 
 ```
-Step 1 — Submission       → applications (INSERT) + application_documents (INSERT)
-Step 2 — Document Review  → application_documents (UPDATE review_status)
-                          → application_status_histories (INSERT)
-Step 3 — Inspection       → inspections (INSERT/UPDATE)
-                          → application_status_histories (INSERT)
-Step 4 — Payment          → payments (INSERT)
-                          → application_status_histories (INSERT)
-Step 5 — Scheme Issuance  → franchise_schemes (INSERT)
-                          → tricycles.status → 'active' (UPDATE)
-                          → applications.status → 'completed' (UPDATE)
+Step 1 — Online Driver Registration         → applications (INSERT: 'pending_review')
+                                             + application_documents (INSERT: 'pending')
+Step 2 — TMO Document Review                → application_documents (UPDATE: 'approved'/'rejected')
+                                             → applications.status → 'pending_inspection' (UPDATE)
+Step 3 — TMO Physical Tricycle Inspection   → inspections (INSERT: 'passed'/'failed')
+         (Payment Ticket Issued on Pass)    → applications.status → 'pending_payment' (UPDATE)
+Step 4 — Physical Municipal Cashier Payment → Driver pays ₱750 cash OTC at Municipal Hall
+         (Over-the-Counter Physical Cashier) (Receives validated Payment Ticket + Official Receipt)
+Step 5 — Submission to BPLO Counter         → Driver submits validated ticket & Official Receipt
+Step 6 — BPLO Cashier Payment Verification  → payments (INSERT: OR#, date, amount, processed_by)
+                                             → applications.status → 'payment_verified' (UPDATE)
+Step 7 — BPLO Sticker Release for Coding    → applications.sticker_number (UPDATE)
+         (BPLO does NOT issue IoT device)   → franchise_schemes (INSERT: franchise_number, sticker_number, is_active=false)
+                                             → applications.status → 'awaiting_tmo_confirmation' (UPDATE)
+Step 8 — Driver Returns to TMO Counter      → TMO verifies signed ticket, BPLO approval & sticker
+Step 9 — TMO Tracking Setup & Activation    → applications.tracking_method (UPDATE: 'mobile_gps' or 'iot_device')
+         (Mobile GPS or IoT Device Issued)  → applications.iot_device_id & tricycles.iot_device_id (UPDATE if IoT)
+                                             → tricycles.status → 'active' (UPDATE)
+                                             → franchise_schemes.is_active → true (UPDATE)
+                                             → applications.status → 'completed' (UPDATE)
 
-Step 6 — Map Monitoring   → tricycle_locations (continuous INSERT)
-Step 7 — Auto-Violation   → violations (automated INSERT when location is
-                            detected on a restricted day per color_coding_schemes)
+Monitoring & Enforcement:
+Step 10 — Map Monitoring                    → tricycle_locations (continuous GPS stream via IoT or Driver App)
+Step 11 — Auto-Violation                    → violations (automated INSERT when location is
+                                              detected on restricted day per color_coding_schemes)
 ```
 
 ---

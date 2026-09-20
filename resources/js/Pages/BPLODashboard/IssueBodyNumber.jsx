@@ -1,350 +1,159 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Head, Link, useForm } from '@inertiajs/react';
 import BPLOLayout from '@/Layouts/BPLOLayout';
 import Swal from 'sweetalert2';
 import {
-    ArrowLeft, Hash, ShieldCheck,
-    Printer, Loader2,
-    CheckCircle2, ClipboardList, Info, Lock,
-    Wifi, ScanLine
+    ChevronLeft, Hash, ShieldCheck, Printer, Loader2,
+    CheckCircle2, Info, Lock, Bike, User,
+    Phone, MapPin, Receipt, Calendar, Gauge, AlertCircle
 } from 'lucide-react';
 
-/* ─────────────────────────────────────────────────────────────────────────
-   Civic Prestige — IssueBodyNumber page
-   Matches BPLOLayout's slate-indigo system (TMO color palette)
-───────────────────────────────────────────────────────────────────────── */
-const CSS = `
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600;700&family=DM+Sans:wght@500;600;700&display=swap');
+/**
+ * Determine coding day and color scheme based on the last digit of the body number.
+ * Conforms with Nasugbu Municipal Traffic Management Ordinance.
+ */
+function getCodingSchemeInfo(bodyNumber) {
+    if (!bodyNumber) {
+        return { day: 'Unassigned', scheme: 'Standard', colorClass: 'bg-slate-100 text-slate-700 border-slate-200' };
+    }
+    const clean = String(bodyNumber).trim();
+    const lastChar = clean.charAt(clean.length - 1);
+    const lastDigit = parseInt(lastChar, 10);
 
-.ibn-root *, .ibn-root *::before, .ibn-root *::after { box-sizing: border-box; }
-.ibn-root {
-  font-family: 'Inter', sans-serif;
-  color: #1C2340;
-  padding-bottom: 64px;
-}
+    if (isNaN(lastDigit)) {
+        return { day: 'Unassigned', scheme: 'Standard', colorClass: 'bg-slate-100 text-slate-700 border-slate-200' };
+    }
 
-/* ── Back nav ───────────────────────────────────────────────────────── */
-.ibn-back {
-  display: inline-flex; align-items: center; gap: 6px;
-  font-family: 'DM Sans', sans-serif;
-  font-size: 9px; font-weight: 700;
-  letter-spacing: .16em; text-transform: uppercase;
-  color: #8A96BC; text-decoration: none;
-  margin-bottom: 40px;
-  transition: color .18s;
-}
-.ibn-back:hover { color: #1C2340; }
-
-/* ── Two-column grid ────────────────────────────────────────────────── */
-.ibn-grid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 28px;
-}
-@media (min-width: 1024px) {
-  .ibn-grid { grid-template-columns: 340px 1fr; }
-}
-
-/* ── Shared right card base ─────────────────────────────────────────── */
-.ibn-card {
-  background: #fff;
-  border: 1px solid rgba(28,35,64,.08);
-  border-radius: 20px;
-  overflow: hidden;
-  box-shadow: 0 1px 6px rgba(28,35,64,.05);
-}
-
-/* ── LEFT: Unit Summary card (SaaS Theme) ───────────────────────────── */
-.ibn-side-card {
-  background: linear-gradient(135deg, #FFFFFF 0%, rgba(79,91,203,.04) 100%);
-  border: 1.5px solid rgba(79, 91, 203, 0.35) !important;
-  border-radius: 16px;
-  box-shadow: 0 4px 20px rgba(79, 91, 203, 0.12), 0 1px 3px rgba(28, 35, 64, 0.05);
-  overflow: hidden;
-}
-.ibn-summary-head {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 18px 28px;
-  border-bottom: 1px solid rgba(79,91,203,.15);
-  background: rgba(236,242,255,.4);
-}
-.ibn-summary-head-title {
-  font-family: 'DM Sans', sans-serif;
-  font-size: 9px; font-weight: 700;
-  letter-spacing: .18em; text-transform: uppercase;
-  color: #1C2340;
-}
-.ibn-summary-body { padding: 32px 28px; }
-.ibn-data-row { margin-bottom: 28px; }
-.ibn-data-row:last-of-type { margin-bottom: 0; }
-.ibn-data-label {
-  display: block;
-  font-family: 'DM Sans', sans-serif;
-  font-size: 8.5px; font-weight: 700;
-  letter-spacing: .15em; text-transform: uppercase;
-  color: #8A96BC; margin-bottom: 6px;
-}
-.ibn-data-value {
-  display: block;
-  font-family: 'Inter', sans-serif;
-  font-size: 15px; font-weight: 700;
-  color: #1C2340; letter-spacing: -.01em; line-height: 1;
-}
-.ibn-data-value.mono {
-  font-family: 'Inter', monospace;
-  color: #4F5BCB; font-size: 13px; letter-spacing: .08em;
-}
-.ibn-verified {
-  display: flex; align-items: center; gap: 14px;
-  padding-top: 24px;
-  margin-top: 24px;
-  border-top: 1px solid rgba(28,35,64,.06);
-  color: #065F46;
-}
-.ibn-verified-text { font-size: 11px; font-weight: 700; text-transform: uppercase; line-height: 1; }
-.ibn-verified-sub  { font-size: 9.5px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: #8A96BC; margin-top: 4px; }
-
-/* ── RIGHT: Issuance Terminal ───────────────────────────────────────── */
-.ibn-terminal {
-  border-radius: 24px;
-  position: relative;
-}
-.ibn-terminal-stripe {
-  position: absolute; top: 0; left: 0; right: 0;
-  height: 3px;
-  background: linear-gradient(90deg, #4F5BCB 0%, #8A96BC 100%);
-  border-radius: 24px 24px 0 0;
-}
-.ibn-terminal-inner { padding: 44px 44px 40px; }
-
-/* Terminal header */
-.ibn-terminal-head {
-  display: flex; align-items: center; gap: 18px;
-  padding-bottom: 28px;
-  margin-bottom: 28px;
-  border-bottom: 1px solid rgba(28,35,64,.06);
-}
-.ibn-terminal-icon {
-  width: 50px; height: 50px; border-radius: 14px; flex-shrink: 0;
-  background: #1C2340;
-  display: flex; align-items: center; justify-content: center;
-  color: #FFFFFF;
-  box-shadow: 0 4px 12px rgba(28,35,64,.15);
-}
-.ibn-terminal-title {
-  font-family: 'Plus Jakarta Sans', sans-serif;
-  font-size: 22px; font-weight: 800;
-  color: #1C2340; line-height: 1;
-  letter-spacing: -.01em;
-}
-.ibn-terminal-sub {
-  font-family: 'DM Sans', sans-serif;
-  font-size: 9px; font-weight: 700;
-  letter-spacing: .18em; text-transform: uppercase;
-  color: #8A96BC; margin-top: 6px;
+    switch (lastDigit) {
+        case 1:
+        case 2:
+            return {
+                day: 'Monday',
+                digits: '1 & 2',
+                scheme: 'Blue Scheme',
+                badgeClass: 'bg-blue-50 text-blue-700 border-blue-200/80',
+                dotClass: 'bg-blue-500'
+            };
+        case 3:
+        case 4:
+            return {
+                day: 'Tuesday',
+                digits: '3 & 4',
+                scheme: 'Green Scheme',
+                badgeClass: 'bg-emerald-50 text-emerald-700 border-emerald-200/80',
+                dotClass: 'bg-emerald-500'
+            };
+        case 5:
+        case 6:
+            return {
+                day: 'Wednesday',
+                digits: '5 & 6',
+                scheme: 'Yellow Scheme',
+                badgeClass: 'bg-amber-50 text-amber-700 border-amber-200/80',
+                dotClass: 'bg-amber-500'
+            };
+        case 7:
+        case 8:
+            return {
+                day: 'Thursday',
+                digits: '7 & 8',
+                scheme: 'Purple Scheme',
+                badgeClass: 'bg-purple-50 text-purple-700 border-purple-200/80',
+                dotClass: 'bg-purple-500'
+            };
+        case 9:
+        case 0:
+            return {
+                day: 'Friday',
+                digits: '9 & 0',
+                scheme: 'Red Scheme',
+                badgeClass: 'bg-rose-50 text-rose-700 border-rose-200/80',
+                dotClass: 'bg-rose-500'
+            };
+        default:
+            return {
+                day: 'Monday',
+                digits: '1 & 2',
+                scheme: 'Blue Scheme',
+                badgeClass: 'bg-blue-50 text-blue-700 border-blue-200/80',
+                dotClass: 'bg-blue-500'
+            };
+    }
 }
 
-/* Number display zone */
-.ibn-number-zone {
-  display: flex; flex-direction: column; align-items: center; justify-content: center;
-  padding: 40px 32px;
-  background: rgba(236,242,255,.5);
-  border: 1.5px dashed rgba(79,91,203,.2);
-  border-radius: 20px;
-  margin-bottom: 28px;
-}
-.ibn-number-label {
-  display: flex; align-items: center; gap: 8px;
-  font-family: 'DM Sans', sans-serif;
-  font-size: 9px; font-weight: 700;
-  letter-spacing: .22em; text-transform: uppercase;
-  color: #8A96BC; margin-bottom: 20px;
-}
-.ibn-number-display {
-  font-family: 'Plus Jakarta Sans', sans-serif;
-  font-size: 64px; font-weight: 800;
-  color: #1C2340;
-  letter-spacing: .15em;
-  line-height: 1;
-  background: #F4F6FF;
-  padding: 24px 54px;
-  border-radius: 16px;
-  border: 1px solid rgba(79,91,203,.2);
-  box-shadow: inset 0 3px 6px rgba(28,35,64,.06), 0 4px 16px rgba(79,91,203,.08);
-  user-select: none;
-}
-.ibn-number-hint {
-  margin-top: 24px;
-  font-family: 'DM Sans', sans-serif;
-  font-size: 8.5px; font-weight: 700;
-  letter-spacing: .14em; text-transform: uppercase;
-  color: #8A96BC; text-align: center; line-height: 1.8;
-}
-
-/* Device Assignment Zone */
-.ibn-device-zone {
-  margin-bottom: 32px;
-}
-.ibn-device-header {
-  display: flex; align-items: center; gap: 8px;
-  font-family: 'DM Sans', sans-serif;
-  font-size: 10px; font-weight: 700;
-  letter-spacing: .15em; text-transform: uppercase;
-  color: #1C2340; margin-bottom: 12px;
-}
-.ibn-device-input-wrap {
-  position: relative;
-}
-.ibn-device-input {
-  width: 100%; height: 52px; border-radius: 12px;
-  border: 1.5px solid rgba(28,35,64,.15);
-  background: #FAFAFC; padding: 0 16px 0 44px;
-  font-family: 'Inter', monospace; font-size: 14px; font-weight: 600; letter-spacing: 1px;
-  color: #1C2340; transition: all .2s; outline: none;
-}
-.ibn-device-input:focus {
-  border-color: #4F5BCB; background: #FFFFFF;
-  box-shadow: 0 0 0 3px rgba(79,91,203,.1);
-}
-.ibn-device-input::placeholder { color: #8A96BC; font-family: 'Inter', sans-serif; font-weight: 500; letter-spacing: normal; }
-.ibn-device-icon {
-  position: absolute; left: 16px; top: 50%; transform: translateY(-50%);
-  color: #4F5BCB; pointer-events: none;
-}
-.ibn-device-scan {
-  position: absolute; right: 16px; top: 50%; transform: translateY(-50%);
-  color: #8A96BC; pointer-events: none;
-}
-
-/* Action buttons */
-.ibn-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-@media (max-width: 480px) { .ibn-actions { grid-template-columns: 1fr; } }
-
-.ibn-btn {
-  height: 52px; border-radius: 14px;
-  font-family: 'DM Sans', sans-serif;
-  font-size: 9.5px; font-weight: 700;
-  letter-spacing: .13em; text-transform: uppercase;
-  display: flex; align-items: center; justify-content: center; gap: 10px;
-  cursor: pointer; border: none; transition: all .2s;
-}
-.ibn-btn-secondary {
-  background: rgba(28,35,64,.05);
-  color: #3A4570;
-  border: 1px solid rgba(28,35,64,.1);
-}
-.ibn-btn-secondary:hover {
-  background: rgba(28,35,64,.09);
-  color: #1C2340;
-  border-color: rgba(28,35,64,.18);
-}
-.ibn-btn-primary {
-  background: #1C2340;
-  color: #FFFFFF;
-  box-shadow: 0 4px 14px rgba(28,35,64,.25);
-}
-.ibn-btn-primary:hover:not(:disabled) {
-  background: #2E3A9E;
-  box-shadow: 0 6px 20px rgba(79,91,203,.3);
-  transform: translateY(-1px);
-}
-.ibn-btn-primary:active:not(:disabled) { transform: translateY(0); }
-.ibn-btn-primary:disabled {
-  background: rgba(28,35,64,.08);
-  color: rgba(28,35,64,.3);
-  cursor: not-allowed;
-  transform: none;
-  box-shadow: none;
-}
-
-/* ── Warning Notice panel ──────────────────────────────────── */
-.ibn-notice {
-  margin-top: 16px;
-  background: rgba(217,119,6,.03);
-  border: 1px solid rgba(217,119,6,.15);
-  border-left: 3px solid #D97706;
-  border-radius: 20px;
-  padding: 24px 28px;
-  display: flex; align-items: flex-start; gap: 18px;
-}
-.ibn-notice-icon {
-  width: 42px; height: 42px; border-radius: 12px; flex-shrink: 0;
-  background: rgba(217,119,6,.1);
-  display: flex; align-items: center; justify-content: center;
-  color: #D97706;
-}
-.ibn-notice-title {
-  font-family: 'DM Sans', sans-serif;
-  font-size: 10px; font-weight: 700;
-  letter-spacing: .14em; text-transform: uppercase;
-  color: #92400E; margin-bottom: 8px;
-}
-.ibn-notice-body {
-  font-family: 'DM Sans', sans-serif;
-  font-size: 9px; font-weight: 600;
-  letter-spacing: .1em; text-transform: uppercase;
-  color: #78350F; opacity: 0.8; line-height: 1.9;
-}
-
-/* ── Animations ─────────────────────────────────────────────────────── */
-.ibn-side-card { animation: ibnFadeUp .4s .05s cubic-bezier(.2,0,.2,1) both; }
-.ibn-terminal  { animation: ibnFadeUp .4s .12s cubic-bezier(.2,0,.2,1) both; }
-.ibn-notice    { animation: ibnFadeUp .4s .20s cubic-bezier(.2,0,.2,1) both; }
-@keyframes ibnFadeUp {
-  from { opacity: 0; transform: translateY(12px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-@keyframes ibnSpin {
-  from { transform: rotate(0deg); }
-  to   { transform: rotate(360deg); }
-}
-.ibn-spin { animation: ibnSpin 1s linear infinite; }
-`;
+// Shared soft, layered shadow token — matches the elevation language used across the TMO panel
+// pages so every dashboard in the product reads as one consistent system.
+const CARD_SHADOW = 'shadow-[0_1px_2px_0_rgba(15,23,42,0.04),0_8px_24px_-8px_rgba(15,23,42,0.10)]';
 
 export default function IssueBodyNumber({ application }) {
     const autoGeneratedPlateNumber = application.suggested_body_no || "0842";
+    const suggestedSticker = application.suggested_sticker || `STK-${new Date().getFullYear()}-${autoGeneratedPlateNumber}`;
 
     const { data, setData, post, processing, errors } = useForm({
         body_number: autoGeneratedPlateNumber,
-        tracker_id: '',
+        sticker_number: suggestedSticker,
     });
+
+    const codingInfo = getCodingSchemeInfo(data.body_number);
 
     const handleFinalize = (e) => {
         if (e) e.preventDefault();
 
-        if (!data.tracker_id) {
+        if (!data.sticker_number || !data.sticker_number.trim()) {
             Swal.fire({
-                title: 'Tracker ID Required',
-                text: 'Please scan or type a Smart GPS Tracker ID to complete issuance.',
+                title: 'Sticker Number Required',
+                text: 'Please provide the physical Franchise Sticker Number to be released to the operator.',
                 icon: 'warning',
-                confirmButtonColor: '#1C2340'
+                confirmButtonColor: '#1D2542'
             });
             return;
         }
 
         Swal.fire({
-            title: 'Confirm Issuance',
-            html: `Are you sure you want to finalize the registration and assign Smart GPS Tracker <b>${data.tracker_id}</b> to Tricycle Number Coding Scheme <b>${data.body_number}</b>?`,
-            icon: 'warning',
+            title: 'Confirm Franchise Sticker & Plate Release',
+            html: `
+                <div class="text-left text-xs text-slate-600 space-y-2 mt-2 p-3.5 bg-slate-50 rounded-xl border border-slate-200/80">
+                    <div class="flex justify-between pb-1.5 border-b border-slate-200/60">
+                        <span class="text-slate-400 font-bold uppercase tracking-wider text-[10px]">Operator:</span>
+                        <span class="font-bold text-slate-800">${application.operator}</span>
+                    </div>
+                    <div class="flex justify-between pb-1.5 border-b border-slate-200/60">
+                        <span class="text-slate-400 font-bold uppercase tracking-wider text-[10px]">TODA Zone:</span>
+                        <span class="font-bold text-slate-800">${application.toda}</span>
+                    </div>
+                    <div class="flex justify-between pb-1.5 border-b border-slate-200/60">
+                        <span class="text-slate-400 font-bold uppercase tracking-wider text-[10px]">Coding Scheme No:</span>
+                        <span class="font-mono font-bold text-[#1D2542] text-sm">${data.body_number}</span>
+                    </div>
+                    <div class="flex justify-between pb-1.5 border-b border-slate-200/60">
+                        <span class="text-slate-400 font-bold uppercase tracking-wider text-[10px]">Franchise Sticker:</span>
+                        <span class="font-mono font-bold text-slate-800">${data.sticker_number}</span>
+                    </div>
+                    <div class="flex justify-between pt-0.5">
+                        <span class="text-slate-400 font-bold uppercase tracking-wider text-[10px]">Coding Restriction:</span>
+                        <span class="font-bold text-amber-700">${codingInfo.day} (${codingInfo.scheme})</span>
+                    </div>
+                </div>
+                <p class="mt-3 text-[11px] text-slate-500 text-left">
+                    Note: Driver must report to <b>TMO for Final Confirmation</b> to turn on GPS tracking and get final clearance.
+                </p>
+            `,
+            icon: 'question',
             showCancelButton: true,
-            confirmButtonColor: '#1C2340',
+            confirmButtonColor: '#1D2542',
             cancelButtonColor: '#8A96BC',
-            confirmButtonText: 'Yes, Finalize Registration',
-            cancelButtonText: 'Cancel',
-            customClass: {
-                title: 'font-jakarta',
-                popup: 'font-inter'
-            }
+            confirmButtonText: 'Yes, Release Sticker & Plate',
+            cancelButtonText: 'Cancel'
         }).then((result) => {
             if (result.isConfirmed) {
                 post(`/bplo/issue/${application.id}`, {
                     onSuccess: () => {
                         Swal.fire({
-                            title: 'Registration Finalized!',
-                            text: `Tricycle Number Coding Scheme ${data.body_number} is now active.`,
+                            title: 'Franchise Released!',
+                            text: `Tricycle Number Coding Scheme #${data.body_number} and Sticker #${data.sticker_number} have been released. Unit advanced to TMO Final Confirmation.`,
                             icon: 'success',
                             confirmButtonColor: '#059669',
-                            timer: 2000,
+                            timer: 2500,
                             showConfirmButton: false
                         });
                     }
@@ -353,126 +162,355 @@ export default function IssueBodyNumber({ application }) {
         });
     };
 
+    const handlePrintStub = () => {
+        window.print();
+    };
+
     return (
         <BPLOLayout title="Final Issuance" role="BPLO Officer">
-            <Head title={`Finalize | ${application.id}`} />
+            <Head title={`Finalize Release | ${application.reference || application.id} - TRIVORA`} />
 
-            <style dangerouslySetInnerHTML={{ __html: CSS }} />
+            <div className="mx-auto max-w-7xl space-y-6 pb-12">
 
-            <div className="ibn-root">
+                {/* ══════════════════════════════════════════════════════════════
+                    1. TOP NAVIGATION BAR
+                   ══════════════════════════════════════════════════════════════ */}
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                    <Link
+                        href="/bplo/releasing"
+                        className="group inline-flex items-center gap-1.5 text-xs sm:text-sm font-semibold text-slate-500 hover:text-slate-900 transition-colors"
+                    >
+                        <ChevronLeft size={16} strokeWidth={2.5} className="text-slate-400 group-hover:text-slate-700 transition-colors" />
+                        <span>Back to Releasing Queue</span>
+                    </Link>
 
-                {/* ── Back nav ── */}
-                <Link href="/bplo/releasing" className="ibn-back">
-                    <ArrowLeft size={14} strokeWidth={3} />
-                    Return to Queue
-                </Link>
-
-                <div className="ibn-grid">
-
-                    {/* ── LEFT: Unit Summary (SaaS Theme) ── */}
-                    <div className="ibn-side-card">
-                        <div className="ibn-summary-head">
-                            <span className="ibn-summary-head-title">Trycicle Unit Summary</span>
-                            <ClipboardList size={17} strokeWidth={1.8} style={{ color: '#4F5BCB' }} />
-                        </div>
-                        <div className="ibn-summary-body">
-                            <DataRow label="Application ID"           value={application.id}       mono />
-                            <DataRow label="Driver Name"            value={application.operator} />
-                            <DataRow label="Route / TODA"          value={application.toda}     />
-                            <DataRow label="Vehicle Make"          value={application.make}     />
-                            <DataRow label="Engine Number"         value={application.engine_number || 'N/A'} />
-                            <DataRow label="Chassis Number"        value={application.chassis_number || 'N/A'} />
-
-                            <div className="ibn-verified">
-                                <CheckCircle2 size={22} strokeWidth={2.5} />
-                                <div>
-                                    <p className="ibn-verified-text">TMO Verified</p>
-                                    <p className="ibn-verified-sub">Ready for Issuance</p>
-                                </div>
-                            </div>
-                        </div>
+                    <div className="flex items-center gap-2">
+                        {application.reference && (
+                            <span className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-mono font-bold text-[#1D2542] shadow-2xs">
+                                {application.reference}
+                            </span>
+                        )}
+                        <span className="rounded-lg bg-slate-100 px-2 py-1 text-xs font-mono font-semibold text-slate-500">
+                            ID: #{application.id}
+                        </span>
                     </div>
+                </div>
 
-                    {/* ── RIGHT: Issuance Terminal + Notice ── */}
-                    <div>
-                        <div className="ibn-card ibn-terminal">
-                            <div className="ibn-terminal-stripe" />
-                            <div className="ibn-terminal-inner">
+                {/* ══════════════════════════════════════════════════════════════
+                    2. CLEAN PAGE HEADER (Consistent with TMO Standard)
+                   ══════════════════════════════════════════════════════════════ */}
+                <div className="border-b border-slate-200/80 pb-5">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                        <div>
+                            <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                                BPLO Franchise Operations · Step 4 of 5
+                            </div>
+                            <h1 className="mt-0.5 text-2xl sm:text-[28px] font-extrabold tracking-tight text-slate-900 leading-tight">
+                                Number Coding Scheme &amp; Sticker Release
+                            </h1>
+                            <p className="mt-1 text-xs sm:text-sm text-slate-500 max-w-2xl leading-relaxed">
+                                Assign official tricycle number coding scheme, verify cashier receipt, and release franchise decal sticker for municipal coding compliance.
+                            </p>
+                        </div>
 
-                                {/* Header */}
-                                <div className="ibn-terminal-head">
-                                    <div className="ibn-terminal-icon">
-                                        <Hash size={24} strokeWidth={2} />
+                        <span className="inline-flex items-center gap-1.5 self-start sm:self-center px-3 py-1 rounded-full text-xs font-bold bg-indigo-50 text-[#1D2542] border border-indigo-200/80 shadow-2xs shrink-0">
+                            <Bike size={13} strokeWidth={2.2} />
+                            <span>Ready for Plate Issuance</span>
+                        </span>
+                    </div>
+                </div>
+
+                {/* ══════════════════════════════════════════════════════════════
+                    3. TWO-COLUMN WORKSTATION (Dossier Left, Terminal Right)
+                   ══════════════════════════════════════════════════════════════ */}
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+
+                    {/* ── LEFT COLUMN: APPLICANT & CLEARANCE SUMMARY (5 cols) ── */}
+                    <div className="space-y-6 lg:col-span-5">
+
+                        {/* Card 1: Applicant & Tricycle Dossier */}
+                        <div className={`overflow-hidden rounded-2xl border border-slate-200/70 bg-white ${CARD_SHADOW}`}>
+                            <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50/75 px-5 py-3.5">
+                                <div className="flex items-center gap-2">
+                                    <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-[#1D2542]/[0.10] to-[#1D2542]/[0.02] text-[#1D2542]">
+                                        <User size={15} strokeWidth={2.2} />
                                     </div>
+                                    <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700">
+                                        Applicant &amp; Tricycle Information
+                                    </h3>
+                                </div>
+                                <span className="text-[11px] font-semibold text-slate-400 font-mono">
+                                    #{application.id}
+                                </span>
+                            </div>
+
+                            <div className="p-5 divide-y divide-slate-100 text-xs">
+                                {/* Operator */}
+                                <div className="pb-3.5 flex items-start justify-between gap-3">
                                     <div>
-                                        <p className="ibn-terminal-title">Tricycle Number Coding Scheme Issuance</p>
-                                        <p className="ibn-terminal-sub">Nasugbu Municipal Licensing</p>
+                                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Operator / Driver</span>
+                                        <span className="text-sm font-bold text-slate-900 mt-0.5 block">{application.operator || '—'}</span>
+                                    </div>
+                                    <div className="h-8 w-8 rounded-full bg-gradient-to-br from-[#1D2542] to-[#2A3560] text-white flex items-center justify-center text-xs font-bold shadow-2xs shrink-0">
+                                        {application.operator ? application.operator.charAt(0).toUpperCase() : 'O'}
                                     </div>
                                 </div>
 
-                                {/* Number display */}
-                                <div className="ibn-number-zone">
-                                    <div className="ibn-number-label">
-                                        <Lock size={13} strokeWidth={2} />
-                                        Official Tricycle Number Coding Scheme
-                                    </div>
-                                    <div className="ibn-number-display">
-                                        {autoGeneratedPlateNumber}
-                                    </div>
-                                    <p className="ibn-number-hint">
-                                        This tricycle number coding scheme is automatically assigned to prevent<br />
-                                        duplication in the {application.toda} registry.
-                                    </p>
+                                {/* TODA */}
+                                <div className="py-3 flex items-center justify-between gap-2">
+                                    <span className="text-slate-500 font-medium flex items-center gap-1.5">
+                                        <MapPin size={13} className="text-slate-400" />
+                                        Route / TODA
+                                    </span>
+                                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-bold bg-indigo-50 text-[#1D2542] border border-indigo-100">
+                                        {application.toda || 'Unassigned'}
+                                    </span>
                                 </div>
 
-                                {/* Actions */}
-                                <div className="ibn-actions">
-                                    <button className="ibn-btn ibn-btn-secondary" type="button">
-                                        <Printer size={16} strokeWidth={2} />
-                                        Print Plate Copy
-                                    </button>
-                                    <button
-                                        className="ibn-btn ibn-btn-primary"
-                                        onClick={handleFinalize}
-                                        disabled={processing}
-                                    >
-                                        {processing
-                                            ? <Loader2 size={16} strokeWidth={2} className="ibn-spin" />
-                                            : <ShieldCheck size={16} strokeWidth={2} />
-                                        }
-                                        Finalize Registration
-                                    </button>
+                                {/* Make & Model */}
+                                <div className="py-3 flex items-center justify-between gap-2">
+                                    <span className="text-slate-500 font-medium flex items-center gap-1.5">
+                                        <Bike size={13} className="text-slate-400" />
+                                        Make &amp; Model
+                                    </span>
+                                    <span className="font-semibold text-slate-800">{application.make || '—'}</span>
                                 </div>
 
+                                {/* Engine Number */}
+                                <div className="py-3 flex items-center justify-between gap-2">
+                                    <span className="text-slate-500 font-medium flex items-center gap-1.5">
+                                        <Gauge size={13} className="text-slate-400" />
+                                        Engine Serial
+                                    </span>
+                                    <span className="font-mono font-semibold text-slate-700 bg-slate-50 px-2 py-0.5 rounded border border-slate-100">
+                                        {application.engine_number || 'N/A'}
+                                    </span>
+                                </div>
+
+                                {/* Chassis Number */}
+                                <div className="pt-3 flex items-center justify-between gap-2">
+                                    <span className="text-slate-500 font-medium flex items-center gap-1.5">
+                                        <Hash size={13} className="text-slate-400" />
+                                        Chassis Serial
+                                    </span>
+                                    <span className="font-mono font-semibold text-slate-700 bg-slate-50 px-2 py-0.5 rounded border border-slate-100">
+                                        {application.chassis_number || 'N/A'}
+                                    </span>
+                                </div>
                             </div>
                         </div>
 
-                        {/* Notice */}
-                        <div className="ibn-notice">
-                            <div className="ibn-notice-icon">
-                                <Info size={20} strokeWidth={1.8} />
+                        {/* Card 2: Municipal Cashier Settlement Clearance */}
+                        <div className={`overflow-hidden rounded-2xl border border-slate-200/70 bg-white ${CARD_SHADOW}`}>
+                            <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50/75 px-5 py-3.5">
+                                <div className="flex items-center gap-2">
+                                    <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-500/[0.12] to-emerald-500/[0.02] text-emerald-600">
+                                        <Receipt size={15} strokeWidth={2.2} />
+                                    </div>
+                                    <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700">
+                                        Municipal Cashier Settlement
+                                    </h3>
+                                </div>
+                                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700 border border-emerald-200/80">
+                                    Verified
+                                </span>
                             </div>
-                            <div>
-                                <p className="ibn-notice-title">Administrative Notice</p>
-                                <p className="ibn-notice-body">
-                                    Final confirmation officially activates the MTOP Franchise Permit and issues the assigned Tricycle Number Coding Scheme. The driver will configure location telemetry directly in the Driver Mobile App.
+
+                            <div className="p-5 space-y-3 text-xs">
+                                {application.payment ? (
+                                    <>
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-slate-500 font-medium">Official Receipt (OR)</span>
+                                            <span className="font-mono font-bold text-slate-900 bg-slate-100 px-2 py-0.5 rounded">
+                                                {application.payment.or_number || '—'}
+                                            </span>
+                                        </div>
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-slate-500 font-medium">Payment Date</span>
+                                            <span className="font-medium text-slate-700">
+                                                {application.payment.date || '—'}
+                                            </span>
+                                        </div>
+                                        <div className="flex items-center justify-between pt-2 border-t border-slate-100">
+                                            <span className="text-slate-600 font-bold uppercase tracking-wider text-[10.5px]">Amount Settled</span>
+                                            <span className="text-sm font-extrabold text-emerald-700 tabular-nums">
+                                                ₱{Number(application.payment.amount || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}
+                                            </span>
+                                        </div>
+                                    </>
+                                ) : (
+                                    <div className="text-center py-2 text-slate-400">
+                                        No cashier settlement details recorded.
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Card 3: Handover Notice to TMO */}
+                        <div className="rounded-2xl border border-amber-200 bg-amber-50/60 p-4 shadow-2xs flex items-start gap-3.5">
+                            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-amber-500/[0.14] to-amber-500/[0.03] text-amber-600 shrink-0 mt-0.5">
+                                <Info size={18} strokeWidth={2.2} />
+                            </div>
+                            <div className="min-w-0">
+                                <h4 className="text-xs font-bold uppercase tracking-wider text-amber-900">
+                                    Next Step: Final Confirmation at TMO
+                                </h4>
+                                <p className="mt-1 text-xs text-amber-800 leading-relaxed font-medium">
+                                    BPLO releases the franchise sticker and coding plate. <strong>BPLO does not install GPS devices.</strong> After releasing the sticker and plate, tell the driver to go to <strong>TMO for Final Confirmation</strong> to turn on GPS tracking.
                                 </p>
                             </div>
                         </div>
+
+                    </div>
+
+                    {/* ── RIGHT COLUMN: ISSUANCE TERMINAL (7 cols) ── */}
+                    <div className="space-y-6 lg:col-span-7">
+
+                        <div className={`overflow-hidden rounded-2xl border border-slate-200/70 bg-white ${CARD_SHADOW}`}>
+                            <div className="p-6 sm:p-7 space-y-6">
+
+                                {/* Terminal Header */}
+                                <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+                                    <div className="flex items-center gap-2.5">
+                                        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-[#1D2542]/[0.10] to-[#1D2542]/[0.02] text-[#1D2542] shadow-2xs">
+                                            <Hash size={18} strokeWidth={2.4} />
+                                        </div>
+                                        <div>
+                                            <h3 className="text-base font-bold text-slate-900">
+                                                Tricycle Number Coding Scheme &amp; Sticker Assignment
+                                            </h3>
+                                            <p className="text-xs text-slate-400">
+                                                Nasugbu Municipal Licensing Ordinance &bull; Final Step
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <span className="hidden sm:inline-flex rounded-md bg-slate-100 px-2.5 py-1 text-[11px] font-mono font-bold text-slate-600">
+                                        LGU-NASUGBU
+                                    </span>
+                                </div>
+
+                                {/* ── AUTHENTIC MUNICIPAL PLATE SHOWCASE BOX ── */}
+                                <div className="space-y-2">
+                                    <div className="flex items-center justify-between text-xs">
+                                        <span className="font-bold text-slate-700 flex items-center gap-1.5">
+                                            <Lock size={12} className="text-slate-400" />
+                                            Assigned Tricycle Number Coding Plate
+                                        </span>
+                                        <span className="text-[11px] text-slate-400 font-medium">
+                                            Sequence Guaranteed Non-collision
+                                        </span>
+                                    </div>
+
+                                    {/* Embossed Plate Card */}
+                                    <div className="relative rounded-2xl border-2 border-slate-300 bg-gradient-to-b from-slate-50 via-white to-slate-100 p-6 sm:p-7 shadow-xs text-center overflow-hidden">
+                                        {/* Four corner faux bolts */}
+                                        <span className="absolute top-3 left-3 h-2 w-2 rounded-full border border-slate-400 bg-slate-300 shadow-inner" />
+                                        <span className="absolute top-3 right-3 h-2 w-2 rounded-full border border-slate-400 bg-slate-300 shadow-inner" />
+                                        <span className="absolute bottom-3 left-3 h-2 w-2 rounded-full border border-slate-400 bg-slate-300 shadow-inner" />
+                                        <span className="absolute bottom-3 right-3 h-2 w-2 rounded-full border border-slate-400 bg-slate-300 shadow-inner" />
+
+                                        {/* Top Header on Plate */}
+                                        <div className="text-[10px] sm:text-[11px] font-extrabold uppercase tracking-widest text-slate-500">
+                                            MUNICIPALITY OF NASUGBU &bull; BATANGAS
+                                        </div>
+
+                                        {/* Stamped Number */}
+                                        <div className="my-2.5 sm:my-3">
+                                            <span className="text-5xl sm:text-6xl font-black font-mono tracking-widest text-slate-900 select-all drop-shadow-2xs">
+                                                {data.body_number}
+                                            </span>
+                                        </div>
+
+                                        {/* Plate Bottom Metadata Bar */}
+                                        <div className="flex flex-wrap items-center justify-between gap-2 pt-3 border-t border-slate-200/80 text-[11px] font-semibold text-slate-500">
+                                            <span className="uppercase tracking-wider text-[10px] text-slate-400">Tricycle for Hire</span>
+                                            
+                                            {/* Dynamic Coding Scheme Badge */}
+                                            <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[10.5px] font-bold border shadow-2xs ${codingInfo.badgeClass}`}>
+                                                <span>{codingInfo.day} Coding ({codingInfo.scheme})</span>
+                                            </span>
+
+                                            <span className="font-bold text-slate-700">{application.toda}</span>
+                                        </div>
+                                    </div>
+
+                                    <p className="text-[11px] text-slate-400 text-center leading-relaxed pt-1">
+                                        This tricycle number coding scheme is automatically assigned from the municipal sequence to prevent duplication in the {application.toda} registry.
+                                    </p>
+                                </div>
+
+                                {/* ── FRANCHISE STICKER FORM INPUT ── */}
+                                <div className="space-y-1.5 pt-2">
+                                    <label htmlFor="sticker_number" className="flex items-center justify-between text-xs font-bold text-slate-700">
+                                        <span className="flex items-center gap-1.5">
+                                            <ShieldCheck size={14} className="text-emerald-600" />
+                                            <span>Official Franchise Sticker Serial Number</span>
+                                            <span className="text-rose-500">*</span>
+                                        </span>
+                                        <span className="text-[11px] font-normal text-slate-400">
+                                            Barcoded Physical Decal
+                                        </span>
+                                    </label>
+
+                                    <div className="relative">
+                                        <input
+                                            type="text"
+                                            id="sticker_number"
+                                            value={data.sticker_number}
+                                            onChange={(e) => setData('sticker_number', e.target.value)}
+                                            placeholder="e.g. STK-2026-0842"
+                                            required
+                                            className="w-full rounded-xl border border-slate-300 bg-slate-50/50 px-3.5 py-2.5 font-mono text-sm font-bold text-slate-900 shadow-2xs focus:border-[#1D2542] focus:bg-white focus:ring-2 focus:ring-[#1D2542]/10 transition-all uppercase"
+                                        />
+                                    </div>
+
+                                    {errors.sticker_number && (
+                                        <p className="text-[11px] font-medium text-rose-600 flex items-center gap-1 mt-1">
+                                            <AlertCircle size={12} />
+                                            {errors.sticker_number}
+                                        </p>
+                                    )}
+                                </div>
+
+                                {/* ── ACTION BUTTONS ── */}
+                                <div className="flex flex-col sm:flex-row items-center gap-3 pt-4 border-t border-slate-100">
+                                    <button
+                                        type="button"
+                                        onClick={handlePrintStub}
+                                        className="w-full sm:w-auto flex-1 inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-50 hover:text-slate-900 shadow-2xs active:scale-[0.98] transition-all"
+                                    >
+                                        <Printer size={15} strokeWidth={2} className="text-slate-500" />
+                                        <span>Print Issuance Stub</span>
+                                    </button>
+
+                                    <button
+                                        type="button"
+                                        onClick={handleFinalize}
+                                        disabled={processing}
+                                        className="w-full sm:w-auto flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-[#1D2542] px-6 py-2.5 text-xs font-bold text-white hover:bg-[#2A3B5C] shadow-sm active:scale-[0.98] transition-all disabled:opacity-50"
+                                    >
+                                        {processing ? (
+                                            <>
+                                                <Loader2 size={15} className="animate-spin" />
+                                                <span>Releasing Franchise...</span>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <ShieldCheck size={15} strokeWidth={2.2} />
+                                                <span>Release Sticker &amp; Plate for Coding</span>
+                                            </>
+                                        )}
+                                    </button>
+                                </div>
+
+                            </div>
+                        </div>
+
                     </div>
 
                 </div>
+
             </div>
         </BPLOLayout>
-    );
-}
-
-/* ── Sub-component ───────────────────────────────────────────────────── */
-function DataRow({ label, value, mono = false }) {
-    return (
-        <div className="ibn-data-row">
-            <span className="ibn-data-label">{label}</span>
-            <span className={`ibn-data-value${mono ? ' mono' : ''}`}>{value}</span>
-        </div>
     );
 }

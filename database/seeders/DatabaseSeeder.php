@@ -45,7 +45,6 @@ class DatabaseSeeder extends Seeder
                 ['TMO Personnel',       'tmo.msantos@trivora.gov.ph',     'TmoUser@123'],
                 ['BPLO Staff',          'bplo.areyes@trivora.gov.ph',     'BploUser@123'],
                 ['BPLO Staff',          'bplo.cmendoza@trivora.gov.ph',   'BploUser@123'],
-                ['Municipal Treasurer', 'treasurer@trivora.gov.ph',       'Treasurer@123'],
                 ['Tricycle Driver',     'driver.pramos@trivora.ph',       'Driver@123'],
                 ['Tricycle Driver',     'driver.jbautista@trivora.ph',    'Driver@123'],
                 ['Tricycle Driver',     'driver.evillanueva@trivora.ph',  'Driver@123'],
