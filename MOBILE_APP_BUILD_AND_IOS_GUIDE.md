@@ -113,3 +113,79 @@ The next time the app is opened on the phone, **it automatically downloads the u
   EXPO_PUBLIC_API_URL=https://trivora-mh55.onrender.com/api/v1
   ```
   *(This is public and tells the phones where your Render backend is located).*
+
+---
+
+## 🔄 Part 5: Step-by-Step Guide for Pushing Updates & Changes
+
+### A. How to Update the Mobile Apps (Driver & Passenger)
+
+#### Scenario 1: UI, Logic, Screen, or Bug Fix Changes (Over-The-Air Update)
+Whenever you change React Native code, fix a map pin, edit button colors, or update text:
+1. Save your code changes in VS Code.
+2. In your terminal, run:
+   ```bash
+   # For Driver App:
+   cd c:\laragon\www\trivora-capstone\trivora-driver-app
+   eas update --channel preview --message "Fix: updated trip dispatch view"
+
+   # For Passenger App:
+   cd c:\laragon\www\trivora-capstone\trivora-passenger-app
+   eas update --channel preview --message "Fix: improved pickup marker selection"
+   ```
+3. **Phones update automatically!** The next time someone opens the app on their phone, it downloads the update silently. **No need to reinstall the APK!**
+
+#### Scenario 2: Save Changes to Your GitHub Repositories
+```bash
+# Push Driver App updates to https://github.com/aldrieBQRN/trivora-driver-app:
+cd c:\laragon\www\trivora-capstone\trivora-driver-app
+git add .
+git commit -m "feat: your update description"
+git push origin main
+
+# Push Passenger App updates to https://github.com/aldrieBQRN/trivora-passenger-app:
+cd c:\laragon\www\trivora-capstone\trivora-passenger-app
+git add .
+git commit -m "feat: your update description"
+git push origin main
+```
+
+#### Scenario 3: When Do You Need to Build a New APK?
+You only need to run `eas build -p android --profile preview` if:
+* You installed a new library that requires new Android OS native permissions (e.g. bluetooth, new background services).
+* You changed the app icon or splash screen in `app.json`.
+* You changed the Android package name.
+* *For 95% of normal coding, UI, and logic changes, Scenario 1 (EAS Update) is all you need!*
+
+---
+
+### B. How to Update the Web Application & Backend (Render.com)
+
+Whenever you edit Laravel controllers, Blade/Inertia React pages, API routes, or CSS in `trivora`:
+
+1. Save your files.
+2. Commit and push to GitHub:
+   ```bash
+   cd c:\laragon\www\trivora-capstone\trivora
+   git add .
+   git commit -m "feat: update dashboard analytics and export"
+   git push origin main
+   ```
+3. **Render auto-deploys!** Within 2 minutes, Render detects your commit, compiles Vite, restarts the container, and updates **`https://trivora-mh55.onrender.com`** with zero downtime.
+
+---
+
+### C. How to Update Database Schema (TiDB Cloud)
+
+If you add a new table or add new columns to the database (`php artisan make:migration ...`):
+
+1. Commit and push your migration to `main`:
+   ```bash
+   cd c:\laragon\www\trivora-capstone\trivora
+   git add database/migrations/
+   git commit -m "feat: add new migration"
+   git push origin main
+   ```
+2. Render automatically runs `php artisan migrate --force` inside the container entrypoint whenever a new build is deployed!
+3. *(Optional)* You can also visit your live URL anytime to run migrations manually in your browser:
+   👉 **`https://trivora-mh55.onrender.com/seed-database`**
