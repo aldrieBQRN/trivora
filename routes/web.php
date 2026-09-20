@@ -226,6 +226,13 @@ Route::middleware(['auth', 'role:bplo_staff,admin'])->group(function () {
     Route::get('/bplo/registry/{plateNo}', [App\Http\Controllers\BPLO\BPLOController::class, 'registryDetails'])->name('bplo.registry.details');
     Route::get('/bplo/ticket/{application}', [App\Http\Controllers\Operator\MTOPController::class, 'paymentTicket'])->name('bplo.ticket');
 
+    // Reports & Analytics
+    Route::get('/bplo/reports', [App\Http\Controllers\BPLO\BPLOReportController::class, 'index'])->name('bplo.reports');
+    Route::get('/bplo/reports/export/overview-excel', [App\Http\Controllers\BPLO\BPLOReportController::class, 'exportOverviewExcel'])->name('bplo.reports.export-overview-excel');
+    Route::get('/bplo/reports/export/trends-excel', [App\Http\Controllers\BPLO\BPLOReportController::class, 'exportTrendsExcel'])->name('bplo.reports.export-trends-excel');
+    Route::get('/bplo/reports/export/releasing-excel', [App\Http\Controllers\BPLO\BPLOReportController::class, 'exportReleasingExcel'])->name('bplo.reports.export-releasing-excel');
+    Route::get('/bplo/reports/export/records-excel', [App\Http\Controllers\BPLO\BPLOReportController::class, 'exportRecordsExcel'])->name('bplo.reports.export-records-excel');
+
     // --- STAFF MANAGEMENT (BPLO STAFF) ---
     Route::get('/bplo/users', [App\Http\Controllers\BPLO\BPLOUserController::class, 'index'])->name('bplo.users');
     Route::post('/bplo/users', [App\Http\Controllers\BPLO\BPLOUserController::class, 'store'])->name('bplo.users.store');
