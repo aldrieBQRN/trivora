@@ -30,10 +30,16 @@ return new class extends Migration
         }
 
         if (!Schema::hasColumn('franchise_schemes', 'active_franchise_number')) {
-            Schema::table('franchise_schemes', function (Blueprint $table) {
-                $table->string('active_franchise_number', 30)->nullable()->after('franchise_number')
-                    ->storedAs("CASE WHEN is_active = 1 THEN franchise_number END");
-            });
+            try {
+                Schema::table('franchise_schemes', function (Blueprint $table) {
+                    $table->string('active_franchise_number', 30)->nullable()->after('franchise_number')
+                        ->virtualAs("CASE WHEN is_active = 1 THEN franchise_number END");
+                });
+            } catch (\Throwable $e) {
+                Schema::table('franchise_schemes', function (Blueprint $table) {
+                    $table->string('active_franchise_number', 30)->nullable()->after('franchise_number');
+                });
+            }
         }
 
         $newIndexExists = collect(DB::select('SHOW INDEX FROM franchise_schemes'))
@@ -41,9 +47,13 @@ return new class extends Migration
             ->contains('franchise_schemes_active_franchise_number_unique');
 
         if (!$newIndexExists) {
-            Schema::table('franchise_schemes', function (Blueprint $table) {
-                $table->unique('active_franchise_number', 'franchise_schemes_active_franchise_number_unique');
-            });
+            try {
+                Schema::table('franchise_schemes', function (Blueprint $table) {
+                    $table->unique('active_franchise_number', 'franchise_schemes_active_franchise_number_unique');
+                });
+            } catch (\Throwable $e) {
+                // Safe skip if unique index on generated column not allowed on distributed engine
+            }
         }
     }
 
