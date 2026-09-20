@@ -19,18 +19,18 @@ jobs:
       - name: 2. Setup PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.2'
+          php-version: '8.3'
           coverage: none
-          extensions: mbstring, xml, ctype, iconv, intl, pdo_mysql, bcmath, gd
+          extensions: mbstring, xml, ctype, iconv, intl, pdo_mysql, bcmath, gd, zip
 
       - name: 3. Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
           cache: 'npm'
 
       - name: 4. Install Composer Dependencies
-        run: composer install --no-dev --optimize-autoloader --no-progress --prefer-dist
+        run: composer install --no-dev --optimize-autoloader --no-progress --prefer-dist --ignore-platform-reqs
 
       - name: 5. Install NPM Dependencies & Build Vite Assets
         run: |
