@@ -40,6 +40,17 @@ Route::get('/', function () {
 Route::get('/register-mtop', [RegistrationController::class, 'publicWizard'])->name('register.public');
 Route::post('/register-mtop', [RegistrationController::class, 'store'])->name('register.public.submit');
 
+// Cloud Database Seeder Route (for initial cloud setup and verification)
+Route::get('/seed-database', function () {
+    try {
+        \Illuminate\Support\Facades\Artisan::call('db:seed', ['--force' => true]);
+        $output = \Illuminate\Support\Facades\Artisan::output();
+        return response("<pre style='font-family:monospace;background:#1e293b;color:#10b981;padding:24px;border-radius:8px;font-size:14px;line-height:1.6;'>✅ Database Seeded Successfully:\n\n" . htmlspecialchars($output) . "\n\n👉 <a href='/login' style='color:#38bdf8;'>Back to Login</a></pre>");
+    } catch (\Throwable $e) {
+        return response("<pre style='font-family:monospace;background:#1e293b;color:#ef4444;padding:24px;border-radius:8px;font-size:14px;line-height:1.6;'>❌ Seeder Error:\n\n" . htmlspecialchars($e->getMessage() . "\n\n" . $e->getTraceAsString()) . "</pre>", 500);
+    }
+});
+
 // Public Plate/Franchise Verification (no auth required)
 Route::get('/api/public/verify-plate', function (Request $request) {
     $plate = strtoupper(trim($request->query('plate', '')));
