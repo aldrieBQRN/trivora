@@ -48,11 +48,11 @@ echo "<p>Running environment checks and initial database setup...</p><hr style='
 try {
     // 1. Verify environment config exists
     echo "<strong>Step 1: Checking environment configuration...</strong><br>";
-    $hasEnv = file_exists($corePath . '/.env') || file_exists($corePath . '/env.php') || file_exists($corePath . '/env.txt');
+    $hasEnv = file_exists($corePath . '/.env') || file_exists($corePath . '/env.php') || file_exists($corePath . '/env.txt') || getenv('DB_HOST') || isset($_ENV['DB_HOST']);
     if (!$hasEnv) {
         throw new Exception("No .env, env.php, or env.txt found in {$corePath}. Please create your database credentials first.");
     }
-    echo "<span class='success'>✓ Environment file found.</span><br><br>";
+    echo "<span class='success'>✓ Environment configuration found.</span><br><br>";
 
     // 2. Load Composer & Laravel
     echo "<strong>Step 2: Loading Laravel application...</strong><br>";
