@@ -42,6 +42,7 @@ Route::post('/register-mtop', [RegistrationController::class, 'store'])->name('r
 
 // Cloud Database Seeder Route (for initial cloud setup and verification)
 Route::get('/seed-database', function () {
+    @set_time_limit(300);
     try {
         // 1. Run any pending migrations first
         \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
