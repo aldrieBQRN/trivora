@@ -289,7 +289,10 @@ const CSS = `
   color: #8A96BC; margin-bottom: 12px; text-align: center;
 }
 .ol-demo-grid {
-  display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;
+}
+@media (max-width: 480px) {
+  .ol-demo-grid { grid-template-columns: 1fr; }
 }
 .ol-demo-btn {
   background: #FAFAFC; border: 1px solid rgba(28,35,64,.08);
@@ -303,11 +306,10 @@ const CSS = `
   transform: translateY(-1px);
 }
 /* Role-tinted accents — each demo account gets its own icon color instead of
-   one flat gray, so the four roles are distinguishable at a glance. */
+   one flat gray, so the roles are distinguishable at a glance. */
 .ol-demo-btn--tmo:hover      { border-color: #1C2340; color: #1C2340; }
 .ol-demo-btn--bplo:hover     { border-color: #B45309; color: #B45309; }
 .ol-demo-btn--operator:hover { border-color: #059669; color: #059669; }
-.ol-demo-btn--admin:hover    { border-color: #4F5BCB; color: #4F5BCB; }
 `;
 
 export default function Login() {
@@ -329,14 +331,15 @@ export default function Login() {
             tmo: { login_id: 'tmo.jdelacruz@trivora.gov.ph', password: 'TmoUser@123' },
             bplo: { login_id: 'bplo.areyes@trivora.gov.ph', password: 'BploUser@123' },
             operator: { login_id: 'driver.pramos@trivora.ph', password: 'Driver@123' },
-            admin: { login_id: 'admin@trivora.gov.ph', password: 'AdminUser@123' }
         };
 
-        setData({
-            login_id: credentials[role].login_id,
-            password: credentials[role].password,
-            remember: false
-        });
+        if (credentials[role]) {
+            setData({
+                login_id: credentials[role].login_id,
+                password: credentials[role].password,
+                remember: false
+            });
+        }
     };
 
     return (
@@ -492,9 +495,6 @@ export default function Login() {
                             </button>
                             <button type="button" className="ol-demo-btn ol-demo-btn--operator" onClick={() => setDemoAccount('operator')}>
                                 <Bike size={14} strokeWidth={2} /> Driver
-                            </button>
-                            <button type="button" className="ol-demo-btn ol-demo-btn--admin" onClick={() => setDemoAccount('admin')}>
-                                <ShieldCheck size={14} strokeWidth={2} /> Admin
                             </button>
                         </div>
                     </div>

@@ -98,30 +98,31 @@ try {
     $migrateOutput = \Illuminate\Support\Facades\Artisan::output();
     echo "<pre>" . htmlspecialchars($migrateOutput ?: 'Database already up to date.') . "</pre><br>";
 
-    // 7. Optional Database Seeder (?seed=1 or ?seed=DatabaseSeeder)
-    if (isset($_GET['seed'])) {
-        $seederClass = is_string($_GET['seed']) && strlen($_GET['seed']) > 1 ? trim($_GET['seed']) : 'DatabaseSeeder';
-        echo "<strong>Step 7: Running database seeder ({$seederClass})...</strong><br>";
-        try {
-            $kernel->call('db:seed', ['--class' => $seederClass, '--force' => true]);
-            echo "<pre>" . htmlspecialchars(\Illuminate\Support\Facades\Artisan::output()) . "</pre><br>";
-        } catch (\Throwable $se) {
-            echo "<p class='warn'>⚠️ Seeder notice: " . htmlspecialchars($se->getMessage()) . "</p><br>";
-        }
-    } else {
-        echo "<em>Tip: To run seeders, re-visit this page with <code>?seed=DatabaseSeeder</code> or <code>?seed=TestAccountsSeeder</code></em><br><br>";
+    // 7. Database Seeder (Populates full database: TODA zones, tricycles, applications, violations, and users)
+    $seederClass = isset($_GET['seed']) && is_string($_GET['seed']) && strlen($_GET['seed']) > 1
+        ? trim($_GET['seed'])
+        : 'DatabaseSeeder';
+
+    echo "<strong>Step 7: Seeding full database with demo accounts ({$seederClass})...</strong><br>";
+    try {
+        $kernel->call('db:seed', ['--class' => $seederClass, '--force' => true]);
+        echo "<pre style='max-height:260px;overflow:auto;'>" . htmlspecialchars(\Illuminate\Support\Facades\Artisan::output()) . "</pre>";
+        echo "<div style='background:#f1f5f9;border-left:4px solid #0d9488;padding:14px;margin:12px 0;border-radius:6px;'>";
+        echo "<strong style='color:#0f766e;'>✓ Ready Logins on Live Website:</strong><br><br>";
+        echo "• <strong>TMO:</strong> <code>tmo.jdelacruz@trivora.gov.ph</code> &mdash; Pass: <code>TmoUser@123</code><br>";
+        echo "• <strong>BPLO:</strong> <code>bplo.areyes@trivora.gov.ph</code> &mdash; Pass: <code>BploUser@123</code><br>";
+        echo "• <strong>Driver:</strong> <code>driver.pramos@trivora.ph</code> &mdash; Pass: <code>Driver@123</code><br>";
+        echo "</div>";
+    } catch (\Throwable $se) {
+        echo "<p class='warn'>⚠️ Seeder notice: " . htmlspecialchars($se->getMessage()) . "</p><br>";
     }
 
-    // 8. Safe Storage Directory Check
+    // 8. Safe Storage Symlink
     echo "<strong>Step 8: Verifying storage permissions and directories...</strong><br>";
     $storagePublic = $corePath . '/storage/app/public';
     $publicLink = __DIR__ . '/storage';
-    if (!file_exists($publicLink)) {
-        if (function_exists('symlink') && is_dir($storagePublic)) {
-            @symlink($storagePublic, $publicLink);
-        } else {
-            @mkdir($publicLink, 0775, true);
-        }
+    if (!file_exists($publicLink) && is_dir($storagePublic)) {
+        @symlink($storagePublic, $publicLink);
     }
     echo "<span class='success'>✓ Storage path verified.</span><br><br>";
 

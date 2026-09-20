@@ -18,7 +18,7 @@ class UsersSeeder extends Seeder
         // ---------------------------------------------------------------------
         // 1. Admin
         // ---------------------------------------------------------------------
-        User::firstOrCreate(
+        User::updateOrCreate(
             ['email' => 'admin@trivora.gov.ph'],
             [
                 'name'      => 'System Administrator',
@@ -43,7 +43,7 @@ class UsersSeeder extends Seeder
         ];
 
         foreach ($tmoUsers as $data) {
-            User::firstOrCreate(
+            User::updateOrCreate(
                 ['email' => $data['email']],
                 [
                     'name'      => $data['name'],
@@ -69,7 +69,7 @@ class UsersSeeder extends Seeder
         ];
 
         foreach ($bploUsers as $data) {
-            User::firstOrCreate(
+            User::updateOrCreate(
                 ['email' => $data['email']],
                 [
                     'name'      => $data['name'],
@@ -152,9 +152,9 @@ class UsersSeeder extends Seeder
         // ---------------------------------------------------------------------
         // 5. Tricycle Drivers (with Operator profiles)
         // ---------------------------------------------------------------------
-        $toda1 = TodaZone::where('code', 'TODA-01')->first();
-        $toda2 = TodaZone::where('code', 'TODA-02')->first();
-        $toda3 = TodaZone::where('code', 'TODA-03')->first();
+        $toda1 = TodaZone::where('code', 'TODA-BRGY1')->first() ?? TodaZone::first();
+        $toda2 = TodaZone::where('code', 'TODA-BRGY2')->first() ?? TodaZone::first();
+        $toda3 = TodaZone::where('code', 'TODA-BRGY3')->first() ?? TodaZone::first();
 
         $drivers = [
             [
@@ -255,7 +255,7 @@ class UsersSeeder extends Seeder
         ];
 
         foreach ($drivers as $entry) {
-            $user = User::firstOrCreate(
+            $user = User::updateOrCreate(
                 ['email' => $entry['user']['email']],
                 [
                     'name'      => $entry['user']['name'],

@@ -32,6 +32,7 @@ class DatabaseSeeder extends Seeder
             ApplicationsSeeder::class,
             ViolationsSeeder::class,
             MobileAppDataSeeder::class,
+            TestAccountsSeeder::class,
         ]);
 
         $this->command->info('');
