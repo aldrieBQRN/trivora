@@ -96,6 +96,7 @@ class TestAccountsSeeder extends Seeder
             [
                 'operator_id' => $operator->id,
                 'toda_zone_id' => $zone->id,
+                'body_number' => '9999',
                 'engine_number' => 'TEST-ENG-0001',
                 'chassis_number' => 'TEST-CHS-0001',
                 'make' => 'Honda',
