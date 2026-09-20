@@ -34,12 +34,23 @@ eas build -p android --profile preview
 ```
 * **Live Build Status:** [https://expo.dev/accounts/aldrie_bqrn/projects/trivora-passenger-app/builds](https://expo.dev/accounts/aldrie_bqrn/projects/trivora-passenger-app/builds)
 
-### 2. Installing the APK on an Android Phone
-1. Once the cloud build finishes, Expo will provide a direct download link and a QR code.
-2. Scan the QR code or open the download link on your Android phone's browser (Chrome).
-3. Tap **Download Anyway** and then tap **Install**.
-4. If prompted, toggle **"Allow from this source"** in your phone's Settings.
-5. The Trivora app will install directly on your home screen!
+### 2. Latest Standalone APK Downloads (Ready to Install)
+
+| App | Version | Direct Download Link |
+| :--- | :---: | :--- |
+| 🚕 **Trivora Driver App** | 1.0.0 | [Download Driver APK](https://expo.dev/artifacts/eas/lHOljW5R4O4efljQD_hs1FPiPHzFCnMK5dzSMJJs6jc.apk) |
+| 👤 **Trivora Passenger App** | 1.0.0 | [Download Passenger APK](https://expo.dev/artifacts/eas/i5OY4TdR8DYZbMOizLVogoHmRznrcVSoY0SXZTUrKDM.apk) |
+
+> 💡 **Can I rename the APK file after downloading?**  
+> **Yes!** The downloaded filename is a random hash from EAS (e.g. `lHOljW5R...apk`). You can safely rename it to:
+> - `Trivora-Driver.apk`
+> - `Trivora-Passenger.apk`  
+> Renaming the `.apk` file does not affect the app's internal package name, icons, or functionality in any way.
+
+### 3. Installing the APK on an Android Phone
+1. Once downloaded, tap the file in your notification bar or your phone's **Files / Downloads** app.
+2. Tap **Install**. If Android says *"Blocked by Play Protect / Unknown Source"*, tap **"More details"** -> **"Install anyway"**.
+3. The Trivora app will install directly on your home screen with its official icon and branding!
 
 ---
 
@@ -189,3 +200,26 @@ If you add a new table or add new columns to the database (`php artisan make:mig
 2. Render automatically runs `php artisan migrate --force` inside the container entrypoint whenever a new build is deployed!
 3. *(Optional)* You can also visit your live URL anytime to run migrations manually in your browser:
    👉 **`https://trivora-mh55.onrender.com/seed-database`**
+
+---
+
+## 📶 Part 6: Internet Connection Checking & Offline Mode Handling
+
+Both mobile apps feature automatic internet connectivity monitoring and offline handling:
+
+### 1. When Does the App Check for Internet?
+* **App Startup:** Checks immediately upon launch when opening the app.
+* **Background to Foreground:** When you switch away to another app and come back, it instantly re-tests connection.
+* **Live Heartbeat:** Runs periodic background ping checks every 25 seconds.
+* **On Login / Register Action:** Verifies if the cloud server is reachable before attempting authentication.
+
+### 2. Visual Indicators:
+* **Offline Alert Banner:** If internet drops or the server cannot be reached, a top banner slides into view:  
+  `🔴 No Internet Connection (Offline Mode)`
+* **Reconnection Toast:** When internet is restored, the banner changes:  
+  `🟢 Back Online`  
+  and smoothly animates out after 2.5 seconds.
+* **Login Screen Offline Fallback:** If you attempt to sign in while offline, the app prompts you:
+  > *"Unable to reach the Trivora cloud server. Please check your internet connection."*
+  - **[Check Connection / Retry]**: Re-tests network connection.
+  - **[Continue in Demo Mode]**: Allows you to enter the app using local demo data for presentations or testing without active internet!
