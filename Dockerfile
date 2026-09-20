@@ -20,6 +20,7 @@ FROM php:8.3-fpm-alpine
 RUN apk add --no-cache \
     nginx \
     curl \
+    mysql-client \
     libpng-dev \
     libjpeg-turbo-dev \
     freetype-dev \
