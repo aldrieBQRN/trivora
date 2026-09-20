@@ -71,6 +71,10 @@ class MobileAppDataSeeder extends Seeder
         $activeTricycles = Tricycle::whereIn('plate_number', ['AAA-1234', 'BBB-5678', 'DDD-3456', 'TRV-MOBGPS'])->get();
 
         foreach ($activeTricycles as $tri) {
+            if (TricycleLocation::where('tricycle_id', $tri->id)->exists()) {
+                continue;
+            }
+
             $baseLat = 14.0650 + (rand(-20, 20) / 10000);
             $baseLng = 120.6300 + (rand(-20, 20) / 10000);
 
@@ -119,126 +123,136 @@ class MobileAppDataSeeder extends Seeder
         // ---------------------------------------------------------------------
 
         // Booking A: PENDING Request (TODA Bucana) - Appears in Driver's Request Feed
-        Booking::create([
-            'booking_code'            => 'BK-' . date('Ymd') . '-PND1',
-            'passenger_id'            => $p1->id,
-            'toda_zone_id'            => $zBucana?->id,
-            'pickup_name'             => 'Poblacion Public Market',
-            'pickup_lat'              => 14.0725,
-            'pickup_lng'              => 120.6322,
-            'dropoff_name'            => 'Bucana Beach Park',
-            'dropoff_lat'             => 14.0640,
-            'dropoff_lng'             => 120.6298,
-            'fare_amount'             => 45.00,
-            'distance_km'             => 1.8,
-            'estimated_duration_mins' => 7,
-            'passenger_notes'         => 'Wait at market gate 2 near bakery',
-            'status'                  => 'pending',
-            'payment_method'          => 'cash',
-            'payment_status'          => 'pending',
-            'requested_at'            => now()->subMinutes(3),
-        ]);
+        Booking::updateOrCreate(
+            ['booking_code' => 'BK-' . date('Ymd') . '-PND1'],
+            [
+                'passenger_id'            => $p1->id,
+                'toda_zone_id'            => $zBucana?->id,
+                'pickup_name'             => 'Poblacion Public Market',
+                'pickup_lat'              => 14.0725,
+                'pickup_lng'              => 120.6322,
+                'dropoff_name'            => 'Bucana Beach Park',
+                'dropoff_lat'             => 14.0640,
+                'dropoff_lng'             => 120.6298,
+                'fare_amount'             => 45.00,
+                'distance_km'             => 1.8,
+                'estimated_duration_mins' => 7,
+                'passenger_notes'         => 'Wait at market gate 2 near bakery',
+                'status'                  => 'pending',
+                'payment_method'          => 'cash',
+                'payment_status'          => 'pending',
+                'requested_at'            => now()->subMinutes(3),
+            ]
+        );
 
         // Booking B: PENDING Request (TODA Brgy 8)
-        Booking::create([
-            'booking_code'            => 'BK-' . date('Ymd') . '-PND2',
-            'passenger_id'            => $p2->id,
-            'toda_zone_id'            => $zBrgy8?->id,
-            'pickup_name'             => 'Nasugbu Municipal Hall',
-            'pickup_lat'              => 14.0715,
-            'pickup_lng'              => 120.6330,
-            'dropoff_name'            => 'Barangay 8 Chapel',
-            'dropoff_lat'             => 14.0691,
-            'dropoff_lng'             => 120.6335,
-            'fare_amount'             => 35.00,
-            'distance_km'             => 1.2,
-            'estimated_duration_mins' => 5,
-            'passenger_notes'         => 'With 2 small bags',
-            'status'                  => 'pending',
-            'payment_method'          => 'gcash',
-            'payment_status'          => 'pending',
-            'requested_at'            => now()->subMinutes(1),
-        ]);
+        Booking::updateOrCreate(
+            ['booking_code' => 'BK-' . date('Ymd') . '-PND2'],
+            [
+                'passenger_id'            => $p2->id,
+                'toda_zone_id'            => $zBrgy8?->id,
+                'pickup_name'             => 'Nasugbu Municipal Hall',
+                'pickup_lat'              => 14.0715,
+                'pickup_lng'              => 120.6330,
+                'dropoff_name'            => 'Barangay 8 Chapel',
+                'dropoff_lat'             => 14.0691,
+                'dropoff_lng'             => 120.6335,
+                'fare_amount'             => 35.00,
+                'distance_km'             => 1.2,
+                'estimated_duration_mins' => 5,
+                'passenger_notes'         => 'With 2 small bags',
+                'status'                  => 'pending',
+                'payment_method'          => 'gcash',
+                'payment_status'          => 'pending',
+                'requested_at'            => now()->subMinutes(1),
+            ]
+        );
 
         // Booking C: ACCEPTED (Pedro Ramos accepted passenger Juan Mercado)
         if ($dPedro) {
-            Booking::create([
-                'booking_code'            => 'BK-' . date('Ymd') . '-ACT1',
-                'passenger_id'            => $p3->id,
-                'driver_id'               => $dPedro->id,
-                'tricycle_id'             => $dPedro->tricycle_id,
-                'toda_zone_id'            => $zBucana?->id,
-                'pickup_name'             => 'San Isidro Parish Church',
-                'pickup_lat'              => 14.0710,
-                'pickup_lng'              => 120.6318,
-                'dropoff_name'            => 'Coastal View Subdivision Gate 1',
-                'dropoff_lat'             => 14.0642,
-                'dropoff_lng'             => 120.6285,
-                'fare_amount'             => 55.00,
-                'distance_km'             => 2.4,
-                'estimated_duration_mins' => 8,
-                'passenger_notes'         => 'Wearing blue shirt near church portal',
-                'status'                  => 'accepted',
-                'payment_method'          => 'cash',
-                'payment_status'          => 'pending',
-                'requested_at'            => now()->subMinutes(8),
-                'accepted_at'             => now()->subMinutes(6),
-            ]);
+            Booking::updateOrCreate(
+                ['booking_code' => 'BK-' . date('Ymd') . '-ACT1'],
+                [
+                    'passenger_id'            => $p3->id,
+                    'driver_id'               => $dPedro->id,
+                    'tricycle_id'             => $dPedro->tricycle_id,
+                    'toda_zone_id'            => $zBucana?->id,
+                    'pickup_name'             => 'San Isidro Parish Church',
+                    'pickup_lat'              => 14.0710,
+                    'pickup_lng'              => 120.6318,
+                    'dropoff_name'            => 'Coastal View Subdivision Gate 1',
+                    'dropoff_lat'             => 14.0642,
+                    'dropoff_lng'             => 120.6285,
+                    'fare_amount'             => 55.00,
+                    'distance_km'             => 2.4,
+                    'estimated_duration_mins' => 8,
+                    'passenger_notes'         => 'Wearing blue shirt near church portal',
+                    'status'                  => 'accepted',
+                    'payment_method'          => 'cash',
+                    'payment_status'          => 'pending',
+                    'requested_at'            => now()->subMinutes(8),
+                    'accepted_at'             => now()->subMinutes(6),
+                ]
+            );
         }
 
         // Booking D: ARRIVED (Jose Bautista arrived at pickup for Ana Reyes)
         if ($dJose) {
-            Booking::create([
-                'booking_code'            => 'BK-' . date('Ymd') . '-ACT2',
-                'passenger_id'            => $p4->id,
-                'driver_id'               => $dJose->id,
-                'tricycle_id'             => $dJose->tricycle_id,
-                'toda_zone_id'            => $zBrgy10?->id,
-                'pickup_name'             => 'Brgy. 10 Elementary School',
-                'pickup_lat'              => 14.0726,
-                'pickup_lng'              => 120.6327,
-                'dropoff_name'            => 'Nasugbu Doctors Hospital',
-                'dropoff_lat'             => 14.0700,
-                'dropoff_lng'             => 120.6345,
-                'fare_amount'             => 40.00,
-                'distance_km'             => 1.5,
-                'estimated_duration_mins' => 6,
-                'passenger_notes'         => 'Senior passenger assistance requested',
-                'status'                  => 'arrived',
-                'payment_method'          => 'gcash',
-                'payment_status'          => 'pending',
-                'requested_at'            => now()->subMinutes(12),
-                'accepted_at'             => now()->subMinutes(10),
-                'arrived_at'              => now()->subMinutes(2),
-            ]);
+            Booking::updateOrCreate(
+                ['booking_code' => 'BK-' . date('Ymd') . '-ACT2'],
+                [
+                    'passenger_id'            => $p4->id,
+                    'driver_id'               => $dJose->id,
+                    'tricycle_id'             => $dJose->tricycle_id,
+                    'toda_zone_id'            => $zBrgy10?->id,
+                    'pickup_name'             => 'Brgy. 10 Elementary School',
+                    'pickup_lat'              => 14.0726,
+                    'pickup_lng'              => 120.6327,
+                    'dropoff_name'            => 'Nasugbu Doctors Hospital',
+                    'dropoff_lat'             => 14.0700,
+                    'dropoff_lng'             => 120.6345,
+                    'fare_amount'             => 40.00,
+                    'distance_km'             => 1.5,
+                    'estimated_duration_mins' => 6,
+                    'passenger_notes'         => 'Senior passenger assistance requested',
+                    'status'                  => 'arrived',
+                    'payment_method'          => 'gcash',
+                    'payment_status'          => 'pending',
+                    'requested_at'            => now()->subMinutes(12),
+                    'accepted_at'             => now()->subMinutes(10),
+                    'arrived_at'              => now()->subMinutes(2),
+                ]
+            );
         }
 
         // Booking E: IN_TRANSIT (Ricardo Santos driving Carlo Mendoza)
         if ($dRicardo) {
-            Booking::create([
-                'booking_code'            => 'BK-' . date('Ymd') . '-ACT3',
-                'passenger_id'            => $p5->id,
-                'driver_id'               => $dRicardo->id,
-                'tricycle_id'             => $dRicardo->tricycle_id,
-                'toda_zone_id'            => $zBucana?->id,
-                'pickup_name'             => 'Wawa Fish Port Terminal',
-                'pickup_lat'              => 14.0673,
-                'pickup_lng'              => 120.6325,
-                'dropoff_name'            => 'Batangas State University Gate',
-                'dropoff_lat'             => 14.0750,
-                'dropoff_lng'             => 120.6300,
-                'fare_amount'             => 60.00,
-                'distance_km'             => 2.8,
-                'estimated_duration_mins' => 10,
-                'passenger_notes'         => null,
-                'status'                  => 'in_transit',
-                'payment_method'          => 'cash',
-                'payment_status'          => 'pending',
-                'requested_at'            => now()->subMinutes(15),
-                'accepted_at'             => now()->subMinutes(13),
-                'arrived_at'              => now()->subMinutes(8),
-                'started_at'              => now()->subMinutes(6),
-            ]);
+            Booking::updateOrCreate(
+                ['booking_code' => 'BK-' . date('Ymd') . '-ACT3'],
+                [
+                    'passenger_id'            => $p5->id,
+                    'driver_id'               => $dRicardo->id,
+                    'tricycle_id'             => $dRicardo->tricycle_id,
+                    'toda_zone_id'            => $zBucana?->id,
+                    'pickup_name'             => 'Wawa Fish Port Terminal',
+                    'pickup_lat'              => 14.0673,
+                    'pickup_lng'              => 120.6325,
+                    'dropoff_name'            => 'Batangas State University Gate',
+                    'dropoff_lat'             => 14.0750,
+                    'dropoff_lng'             => 120.6300,
+                    'fare_amount'             => 60.00,
+                    'distance_km'             => 2.8,
+                    'estimated_duration_mins' => 10,
+                    'passenger_notes'         => null,
+                    'status'                  => 'in_transit',
+                    'payment_method'          => 'cash',
+                    'payment_status'          => 'pending',
+                    'requested_at'            => now()->subMinutes(15),
+                    'accepted_at'             => now()->subMinutes(13),
+                    'arrived_at'              => now()->subMinutes(8),
+                    'started_at'              => now()->subMinutes(6),
+                ]
+            );
         }
 
         // ---------------------------------------------------------------------
@@ -286,40 +300,45 @@ class MobileAppDataSeeder extends Seeder
             $startTime= (clone $arrTime)->addMinutes(1);
             $compTime = (clone $startTime)->addMinutes($dur);
 
-            $bk = Booking::create([
-                'booking_code'            => 'BK-' . $reqTime->format('Ymd') . '-' . str_pad($idx + 100, 4, '0', STR_PAD_LEFT),
-                'passenger_id'            => $pass->id,
-                'driver_id'               => $driver->id,
-                'tricycle_id'             => $driver->tricycle_id,
-                'toda_zone_id'            => $zone?->id,
-                'pickup_name'             => $pick,
-                'pickup_lat'              => 14.0700 + (rand(-10, 10) / 1000),
-                'pickup_lng'              => 120.6300 + (rand(-10, 10) / 1000),
-                'dropoff_name'            => $drop,
-                'dropoff_lat'             => 14.0650 + (rand(-10, 10) / 1000),
-                'dropoff_lng'             => 120.6280 + (rand(-10, 10) / 1000),
-                'fare_amount'             => $fare,
-                'distance_km'             => $dist,
-                'estimated_duration_mins' => $dur,
-                'status'                  => 'completed',
-                'payment_method'          => $idx % 2 === 0 ? 'cash' : 'gcash',
-                'payment_status'          => 'paid',
-                'requested_at'            => $reqTime,
-                'accepted_at'             => $accTime,
-                'arrived_at'              => $arrTime,
-                'started_at'              => $startTime,
-                'completed_at'            => $compTime,
-            ]);
+            $bookingCode = 'BK-' . $reqTime->format('Ymd') . '-' . str_pad($idx + 100, 4, '0', STR_PAD_LEFT);
+            $bk = Booking::updateOrCreate(
+                ['booking_code' => $bookingCode],
+                [
+                    'passenger_id'            => $pass->id,
+                    'driver_id'               => $driver->id,
+                    'tricycle_id'             => $driver->tricycle_id,
+                    'toda_zone_id'            => $zone?->id,
+                    'pickup_name'             => $pick,
+                    'pickup_lat'              => 14.0700 + (rand(-10, 10) / 1000),
+                    'pickup_lng'              => 120.6300 + (rand(-10, 10) / 1000),
+                    'dropoff_name'            => $drop,
+                    'dropoff_lat'             => 14.0650 + (rand(-10, 10) / 1000),
+                    'dropoff_lng'             => 120.6280 + (rand(-10, 10) / 1000),
+                    'fare_amount'             => $fare,
+                    'distance_km'             => $dist,
+                    'estimated_duration_mins' => $dur,
+                    'status'                  => 'completed',
+                    'payment_method'          => $idx % 2 === 0 ? 'cash' : 'gcash',
+                    'payment_status'          => 'paid',
+                    'requested_at'            => $reqTime,
+                    'accepted_at'             => $accTime,
+                    'arrived_at'              => $arrTime,
+                    'started_at'              => $startTime,
+                    'completed_at'            => $compTime,
+                ]
+            );
 
             // Ride Rating
-            RideRating::create([
-                'booking_id'   => $bk->id,
-                'passenger_id' => $pass->id,
-                'driver_id'    => $driver->id,
-                'score'        => $score,
-                'feedback_tags'=> $tags,
-                'comment'      => $comment,
-            ]);
+            RideRating::updateOrCreate(
+                ['booking_id' => $bk->id],
+                [
+                    'passenger_id' => $pass->id,
+                    'driver_id'    => $driver->id,
+                    'score'        => $score,
+                    'feedback_tags'=> $tags,
+                    'comment'      => $comment,
+                ]
+            );
         }
 
         // ---------------------------------------------------------------------
@@ -335,30 +354,33 @@ class MobileAppDataSeeder extends Seeder
             [$pass, $driver, $zone, $pick, $drop, $fare, $by, $reason, $daysAgo] = $cs;
 
             $reqTime = now()->subDays($daysAgo)->setTime(rand(8, 17), rand(10, 50), 0);
+            $bookingCode = 'BK-' . $reqTime->format('Ymd') . '-CXL' . ($idx + 1);
 
-            Booking::create([
-                'booking_code'            => 'BK-' . $reqTime->format('Ymd') . '-CXL' . ($idx + 1),
-                'passenger_id'            => $pass->id,
-                'driver_id'               => $driver?->id,
-                'tricycle_id'             => $driver?->tricycle_id,
-                'toda_zone_id'            => $zone?->id,
-                'pickup_name'             => $pick,
-                'pickup_lat'              => 14.0710,
-                'pickup_lng'              => 120.6320,
-                'dropoff_name'            => $drop,
-                'dropoff_lat'             => 14.0660,
-                'dropoff_lng'             => 120.6290,
-                'fare_amount'             => $fare,
-                'distance_km'             => 1.5,
-                'estimated_duration_mins' => 6,
-                'status'                  => 'cancelled',
-                'payment_method'          => 'cash',
-                'payment_status'          => 'pending',
-                'cancelled_by'            => $by,
-                'cancellation_reason'     => $reason,
-                'requested_at'            => $reqTime,
-                'cancelled_at'            => (clone $reqTime)->addMinutes(4),
-            ]);
+            Booking::updateOrCreate(
+                ['booking_code' => $bookingCode],
+                [
+                    'passenger_id'            => $pass->id,
+                    'driver_id'               => $driver?->id,
+                    'tricycle_id'             => $driver?->tricycle_id,
+                    'toda_zone_id'            => $zone?->id,
+                    'pickup_name'             => $pick,
+                    'pickup_lat'              => 14.0710,
+                    'pickup_lng'              => 120.6320,
+                    'dropoff_name'            => $drop,
+                    'dropoff_lat'             => 14.0660,
+                    'dropoff_lng'             => 120.6290,
+                    'fare_amount'             => $fare,
+                    'distance_km'             => 1.5,
+                    'estimated_duration_mins' => 6,
+                    'status'                  => 'cancelled',
+                    'payment_method'          => 'cash',
+                    'payment_status'          => 'pending',
+                    'cancelled_by'            => $by,
+                    'cancellation_reason'     => $reason,
+                    'requested_at'            => $reqTime,
+                    'cancelled_at'            => (clone $reqTime)->addMinutes(4),
+                ]
+            );
         }
 
         $this->command->info('✔ Mobile application data seeded (5 linked drivers, live GPS pings, 5 active bookings, 15 completed rides with ratings, 3 cancelled bookings).');
