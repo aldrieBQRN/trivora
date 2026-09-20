@@ -112,12 +112,16 @@ try {
         echo "<em>Tip: To run seeders, re-visit this page with <code>?seed=DatabaseSeeder</code> or <code>?seed=TestAccountsSeeder</code></em><br><br>";
     }
 
-    // 8. Safe Storage Symlink
+    // 8. Safe Storage Directory Check
     echo "<strong>Step 8: Verifying storage permissions and directories...</strong><br>";
     $storagePublic = $corePath . '/storage/app/public';
     $publicLink = __DIR__ . '/storage';
-    if (!file_exists($publicLink) && is_dir($storagePublic)) {
-        @symlink($storagePublic, $publicLink);
+    if (!file_exists($publicLink)) {
+        if (function_exists('symlink') && is_dir($storagePublic)) {
+            @symlink($storagePublic, $publicLink);
+        } else {
+            @mkdir($publicLink, 0775, true);
+        }
     }
     echo "<span class='success'>✓ Storage path verified.</span><br><br>";
 

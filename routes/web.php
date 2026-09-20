@@ -432,8 +432,12 @@ Route::get('/artisan-migrate', function (\Illuminate\Http\Request $request) {
             try {
                 $target = storage_path('app/public');
                 $link = public_path('storage');
-                if (!file_exists($link) && is_dir($target)) {
-                    @symlink($target, $link);
+                if (!file_exists($link)) {
+                    if (function_exists('symlink') && is_dir($target)) {
+                        @symlink($target, $link);
+                    } else {
+                        @mkdir($link, 0775, true);
+                    }
                 }
                 $output[] = "=== Storage Link: Checked / Handled ===\n";
             } catch (\Throwable $e) {
