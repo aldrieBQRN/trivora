@@ -29,12 +29,11 @@ class TestAccountsSeeder extends Seeder
 {
     public function run(): void
     {
-        // Reuses the existing TODA zone seeder instead of inventing zone data — it's already
-        // idempotent (TodaZone::firstOrCreate keyed by code), so calling it here is safe
-        // regardless of whether zones have been seeded before.
+        // Ensure TODA zones and system web users (TMO, BPLO, Driver) exist first
         $this->call(TodaZonesSeeder::class);
+        $this->call(UsersSeeder::class);
 
-        $zone = TodaZone::where('code', 'TODA-BRGY10')->first();
+        $zone = TodaZone::where('code', 'TODA-BRGY10')->first() ?? TodaZone::first();
 
         if (! $zone) {
             $this->command->error('TestAccountsSeeder: no TODA zone available even after TodaZonesSeeder ran — aborting.');

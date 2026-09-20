@@ -432,12 +432,8 @@ Route::get('/artisan-migrate', function (\Illuminate\Http\Request $request) {
             try {
                 $target = storage_path('app/public');
                 $link = public_path('storage');
-                if (!file_exists($link)) {
-                    if (function_exists('symlink') && is_dir($target)) {
-                        @symlink($target, $link);
-                    } else {
-                        @mkdir($link, 0775, true);
-                    }
+                if (!file_exists($link) && is_dir($target)) {
+                    @symlink($target, $link);
                 }
                 $output[] = "=== Storage Link: Checked / Handled ===\n";
             } catch (\Throwable $e) {
@@ -456,11 +452,8 @@ Route::get('/artisan-migrate', function (\Illuminate\Http\Request $request) {
         }
 
         // 5. Migrations & Seeders
-        $seedClass = $request->query('class');
-        $seedParams = ['--force' => true];
-        if ($seedClass) {
-            $seedParams['--class'] = $seedClass;
-        }
+        $seedClass = $request->query('class', 'DatabaseSeeder');
+        $seedParams = ['--force' => true, '--class' => $seedClass];
 
         if ($request->boolean('fresh')) {
             $params = ['--force' => true];
