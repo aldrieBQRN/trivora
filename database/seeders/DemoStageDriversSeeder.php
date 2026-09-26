@@ -14,7 +14,9 @@ use App\Models\Operator;
 use App\Models\Payment;
 use App\Models\TodaZone;
 use App\Models\Tricycle;
+use App\Models\TricycleLocation;
 use App\Models\User;
+use App\Models\Violation;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Hash;
@@ -343,6 +345,131 @@ class DemoStageDriversSeeder extends Seeder
 
         // No Payment rows for any of them — offline payment workflow
         Payment::whereIn('application_id', $appIds)->delete();
+
+        // -----------------------------------------------------------------
+        // Seed demo violations (settled & unpaid) for demo workflow drivers
+        // -----------------------------------------------------------------
+        $triExpired = Tricycle::where('plate_number', 'STG-0005')->first();
+        $triRenewed = Tricycle::where('plate_number', 'STG-0008')->first();
+        $redScheme  = ColorCodingScheme::where('name', 'Red')->first();
+
+        if ($triExpired) {
+            $fsExpired = FranchiseScheme::where('tricycle_id', $triExpired->id)->first();
+            $ping1 = TricycleLocation::create([
+                'tricycle_id' => $triExpired->id,
+                'latitude'    => 14.0722,
+                'longitude'   => 120.6315,
+                'speed_kmh'   => 21.0,
+                'heading_deg' => 45,
+                'accuracy_m'  => 5.0,
+                'source'      => 'mobile_app',
+                'recorded_at' => now()->subDays(20)->setTime(9, 30, 0),
+            ]);
+            Violation::updateOrCreate(
+                ['tricycle_id' => $triExpired->id, 'status' => 'resolved'],
+                [
+                    'franchise_scheme_id'    => $fsExpired?->id,
+                    'color_coding_scheme_id' => $redScheme?->id,
+                    'location_snapshot_id'   => $ping1->id,
+                    'detected_by'            => null,
+                    'violation_type'         => 'color_coding',
+                    'detected_at'            => now()->subDays(20)->setTime(9, 30, 0),
+                    'day_of_week'            => 'Monday',
+                    'detection_method'       => 'automated',
+                    'status'                 => 'resolved',
+                    'fine_amount'            => 500.00,
+                    'fine_paid_at'           => now()->subDays(18),
+                    'notes'                  => 'Automated Telematics: Red coding restricted day violation. Paid at Municipal Treasurer.',
+                ]
+            );
+
+            $ping2 = TricycleLocation::create([
+                'tricycle_id' => $triExpired->id,
+                'latitude'    => 14.0735,
+                'longitude'   => 120.6320,
+                'speed_kmh'   => 19.5,
+                'heading_deg' => 180,
+                'accuracy_m'  => 4.0,
+                'source'      => 'mobile_app',
+                'recorded_at' => now()->subDays(3)->setTime(11, 15, 0),
+            ]);
+            Violation::updateOrCreate(
+                ['tricycle_id' => $triExpired->id, 'status' => 'open'],
+                [
+                    'franchise_scheme_id'    => $fsExpired?->id,
+                    'color_coding_scheme_id' => $redScheme?->id,
+                    'location_snapshot_id'   => $ping2->id,
+                    'detected_by'            => null,
+                    'violation_type'         => 'color_coding',
+                    'detected_at'            => now()->subDays(3)->setTime(11, 15, 0),
+                    'day_of_week'            => 'Monday',
+                    'detection_method'       => 'automated',
+                    'status'                 => 'open',
+                    'fine_amount'            => 500.00,
+                    'fine_paid_at'           => null,
+                    'notes'                  => 'Automated Telematics: Operating unit with expired franchise and Monday coding restriction.',
+                ]
+            );
+        }
+
+        if ($triRenewed) {
+            $fsRenewed = FranchiseScheme::where('tricycle_id', $triRenewed->id)->first();
+            $ping3 = TricycleLocation::create([
+                'tricycle_id' => $triRenewed->id,
+                'latitude'    => 14.0705,
+                'longitude'   => 120.6305,
+                'speed_kmh'   => 23.0,
+                'heading_deg' => 270,
+                'accuracy_m'  => 5.0,
+                'source'      => 'mobile_app',
+                'recorded_at' => now()->subDays(15)->setTime(14, 0, 0),
+            ]);
+            Violation::updateOrCreate(
+                ['tricycle_id' => $triRenewed->id, 'status' => 'resolved'],
+                [
+                    'franchise_scheme_id'    => $fsRenewed?->id,
+                    'color_coding_scheme_id' => $redScheme?->id,
+                    'location_snapshot_id'   => $ping3->id,
+                    'detected_by'            => null,
+                    'violation_type'         => 'color_coding',
+                    'detected_at'            => now()->subDays(15)->setTime(14, 0, 0),
+                    'day_of_week'            => 'Monday',
+                    'detection_method'       => 'automated',
+                    'status'                 => 'resolved',
+                    'fine_amount'            => 500.00,
+                    'fine_paid_at'           => now()->subDays(13),
+                    'notes'                  => 'Automated Telematics: Color coding restriction violation. Settled.',
+                ]
+            );
+
+            $ping4 = TricycleLocation::create([
+                'tricycle_id' => $triRenewed->id,
+                'latitude'    => 14.0718,
+                'longitude'   => 120.6322,
+                'speed_kmh'   => 20.0,
+                'heading_deg' => 90,
+                'accuracy_m'  => 4.5,
+                'source'      => 'mobile_app',
+                'recorded_at' => now()->subDays(1)->setTime(16, 20, 0),
+            ]);
+            Violation::updateOrCreate(
+                ['tricycle_id' => $triRenewed->id, 'status' => 'open'],
+                [
+                    'franchise_scheme_id'    => $fsRenewed?->id,
+                    'color_coding_scheme_id' => $redScheme?->id,
+                    'location_snapshot_id'   => $ping4->id,
+                    'detected_by'            => null,
+                    'violation_type'         => 'color_coding',
+                    'detected_at'            => now()->subDays(1)->setTime(16, 20, 0),
+                    'day_of_week'            => 'Monday',
+                    'detection_method'       => 'automated',
+                    'status'                 => 'open',
+                    'fine_amount'            => 500.00,
+                    'fine_paid_at'           => null,
+                    'notes'                  => 'Automated Telematics: Monday coding restricted corridor operation detected.',
+                ]
+            );
+        }
 
         $this->command->info('✔ 8 demo workflow records seeded:');
         $this->command->table(
