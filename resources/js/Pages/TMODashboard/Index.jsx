@@ -1,17 +1,12 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Head, Link, router } from '@inertiajs/react';
+import { Head, Link } from '@inertiajs/react';
+import useBackgroundRefresh from '@/hooks/useBackgroundRefresh';
 import TrivoraLayout from '@/Layouts/TrivoraLayout';
 import TricycleMap from '@/Components/TricycleMap';
 import {
-    Bike, Navigation, ShieldAlert, BarChart3, Clock, ChevronRight, CheckCircle2,
-    Activity, Search, X, Radio, Eye, Layers, Gauge, ExternalLink, ShieldCheck,
-    AlertTriangle, Sparkles, Filter, Calendar, MapPin
+    Bike, ShieldAlert, BarChart3, ChevronRight, CheckCircle2,
+    Activity, Search, X, ShieldCheck, Calendar, MapPin
 } from 'lucide-react';
-
-import routeA from '../../data/routeA.json';
-import routeB from '../../data/routeB.json';
-import routeC from '../../data/routeC.json';
-import routeD from '../../data/routeD.json';
 
 const CODING_SCHEDULE = {
     Monday:    { color: 'Red',    hex: '#EF4444', digits: '1, 2',  bg: '#FEF2F2', border: '#FECACA' },
@@ -23,50 +18,8 @@ const CODING_SCHEDULE = {
 
 const WEEKDAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
-// Shared soft, layered shadow token — same elevation language used on the TMO Dashboard page, so
-// both pages read as one consistent product rather than two different templates.
+// Shared soft, layered shadow token — same elevation language used across TMO dashboards.
 const CARD_SHADOW = 'shadow-[0_1px_2px_0_rgba(15,23,42,0.04),0_8px_24px_-8px_rgba(15,23,42,0.10)]';
-
-// Polling cadence for real backend GPS refresh. The driver app reports at most once every 60s
-// (WATCH_TIME_INTERVAL_MS in the driver app), so this only needs to be frequent enough to feel
-// live without hammering the server — it re-requests the exact same props DashboardController
-// already computes for this page (initialTricycles, stats), nothing bespoke.
-const REAL_GPS_POLL_INTERVAL_MS = 15000;
-
-// Frontend-only demo units for testing the monitoring UI with a single physical device. These
-// IDs can never collide with a real tricycle's id (real ids are either a 4-digit body number or
-// "TRV-<db id>", see DashboardController::index()). Coordinates are seeded along the SAME real
-// TODA GeoJSON routes already used for the map's route lines — not arbitrary made-up points.
-const SIMULATED_UNIT_SEEDS = [
-    { id: 'SIM-001', plate: 'SIM-001', operator: 'Simulation Unit 1', todaKey: 'bucana',  todaName: 'TODA Bucana',    baseSpeed: 22 },
-    { id: 'SIM-002', plate: 'SIM-002', operator: 'Simulation Unit 2', todaKey: 'brgy10',  todaName: 'TODA Brgy. 10',  baseSpeed: 26 },
-    { id: 'SIM-003', plate: 'SIM-003', operator: 'Simulation Unit 3', todaKey: 'brgy8',   todaName: 'TODA Brgy. 8',   baseSpeed: 24 },
-    { id: 'SIM-004', plate: 'SIM-004', operator: 'Simulation Unit 4', todaKey: 'brgy14',  todaName: 'TODA Brgy. 4',   baseSpeed: 28 },
-    { id: 'SIM-005', plate: 'SIM-005', operator: 'Simulation Unit 5', todaKey: 'bucana',  todaName: 'TODA Bucana',    baseSpeed: 25 },
-];
-
-const getCodingDetails = () => {
-    const today = WEEKDAY_NAMES[new Date().getDay()] || 'Monday';
-    const schedule = {
-        'Monday': '1, 2', 'Tuesday': '3, 4', 'Wednesday': '5, 6',
-        'Thursday': '7, 8', 'Friday': '9, 0', 'Saturday': 'None', 'Sunday': 'None',
-    };
-    return { day: today, restricted: schedule[today] || 'None' };
-};
-
-const extractRouteCoordinates = (geoJson) => {
-    try {
-        if (!geoJson) return [];
-        const features = geoJson.features ? geoJson.features : [geoJson];
-        let allCoords = [];
-        features.forEach(f => {
-            const geom = f.geometry ? f.geometry : f;
-            if (geom.type === 'LineString') allCoords.push(...geom.coordinates);
-            else if (geom.type === 'MultiLineString' || geom.type === 'Polygon') allCoords.push(...geom.coordinates[0]);
-        });
-        return allCoords.map(coord => [coord[1], coord[0]]);
-    } catch { return []; }
-};
 
 /** "8 seconds ago" / "3 minutes ago", ticking off the real backend recorded_at timestamp and the
  * page's own live clock — no extra network request needed between polls. */
@@ -81,56 +34,17 @@ const formatElapsed = (isoTimestamp, now) => {
     return `${hours} hour${hours === 1 ? '' : 's'} ago`;
 };
 
-const seedSimulatedUnits = (todaRoutes) => {
-    const routeCounters = {};
-    return SIMULATED_UNIT_SEEDS.map((seed) => {
-        const coords = todaRoutes[seed.todaKey] || todaRoutes.bucana || [];
-        const countOnRoute = routeCounters[seed.todaKey] || 0;
-        routeCounters[seed.todaKey] = countOnRoute + 1;
-
-        const totalPoints = coords.length || 1;
-        const startIdx = Math.floor((countOnRoute * totalPoints) / 3) % totalPoints;
-        const [lat, lng] = coords[startIdx] || [14.0733, 120.6320];
-
-        return {
-            ...seed,
-            source: 'simulated',
-            toda: seed.todaName,
-            coding_scheme: seed.id,
-            status: 'compliant', // simulated units never count toward real enforcement breaches
-            hasRealGPS: false,
-            routeIndex: startIdx,
-            lat, lng,
-            speed_kmh: seed.baseSpeed,
-            last_seen: 'Just now',
-        };
-    });
-};
-
-export default function LiveMonitoring({ initialTricycles = [], stats = {}, todaZones = [] }) {
+export default function LiveMonitoring({ initialTricycles = [], stats = {} }) {
     const [currentTime, setCurrentTime] = useState(new Date());
-    const [activeTab, setActiveTab] = useState('units'); // 'units' | 'alerts' | 'toda'
-    const [selectedToda, setSelectedToda] = useState('all');
-    const [selectedTodaId, setSelectedTodaId] = useState(null);
+    const [activeTab, setActiveTab] = useState('units'); // 'units' | 'alerts'
     const [selectedUnitId, setSelectedUnitId] = useState(null);
     const [unitSearch, setUnitSearch] = useState('');
-    const [simulationEnabled, setSimulationEnabled] = useState(false);
-
-    const codingInfo = getCodingDetails();
+    const [unitStatusFilter, setUnitStatusFilter] = useState('all'); // 'all' | 'online' | 'offline'
 
     useEffect(() => {
         const clockTimer = setInterval(() => setCurrentTime(new Date()), 1000);
         return () => clearInterval(clockTimer);
     }, []);
-
-    // TODA GeoJSON Route Coordinate Sets — real municipal route shapes, used both to draw the
-    // route lines on the map and to seed/move the frontend-only simulated units along them.
-    const todaRoutes = useMemo(() => ({
-        bucana: extractRouteCoordinates(routeD),
-        brgy10: extractRouteCoordinates(routeC),
-        brgy8:  extractRouteCoordinates(routeA),
-        brgy14: extractRouteCoordinates(routeB),
-    }), []);
 
     // ── REAL: sourced exclusively from the backend (DashboardController::index() -> tricycle_locations) ──
     const realTricycles = useMemo(
@@ -140,49 +54,12 @@ export default function LiveMonitoring({ initialTricycles = [], stats = {}, toda
 
     // Poll the SAME Laravel route this page already renders from, requesting only the props that
     // change (initialTricycles, stats) — no separate API, no client-side coordinate fabrication.
-    // A fresh telemetry ping from the driver app becomes visible here on the next poll tick.
-    useEffect(() => {
-        const { stop } = router.poll(REAL_GPS_POLL_INTERVAL_MS, { only: ['initialTricycles', 'stats'] });
-        return () => stop();
-    }, []);
+    useBackgroundRefresh(['initialTricycles', 'stats']);
 
-    // ── SIMULATED: frontend-only, for testing the monitoring UI with a single physical device.
-    // Never touches tricycle_locations, never calls /v1/driver/telematics, never creates a
-    // Violation — it is pure client-side presentation state. ──
-    const [simulatedTricycles, setSimulatedTricycles] = useState(() => seedSimulatedUnits(todaRoutes));
-
-    useEffect(() => {
-        if (!simulationEnabled) return;
-        const timer = setInterval(() => {
-            setSimulatedTricycles((prevList) => prevList.map((unit) => {
-                const coords = todaRoutes[unit.todaKey] || todaRoutes.bucana;
-                if (!coords || coords.length === 0) return unit;
-                const nextIdx = (unit.routeIndex + 1) % coords.length;
-                const [lat, lng] = coords[nextIdx];
-                // Deterministic speed drift (not Math.random()) so movement is reproducible, not jittery.
-                const speed = unit.baseSpeed + ((nextIdx % 3) - 1) * 2;
-                return { ...unit, routeIndex: nextIdx, lat, lng, speed_kmh: speed, last_seen: 'Just now' };
-            }));
-        }, 2000);
-        return () => clearInterval(timer);
-    }, [simulationEnabled, todaRoutes]);
-
-    // ── DISPLAYED: what the map/list actually render. Real units are always present; simulated
-    // units are appended only while the toggle is on, and can never replace/overwrite a real one
-    // (distinct id namespaces by construction). ──
-    const displayedTricycles = useMemo(
-        () => (simulationEnabled ? [...realTricycles, ...simulatedTricycles] : realTricycles),
-        [realTricycles, simulatedTricycles, simulationEnabled]
-    );
-
-    // Regulatory numbers (breach counts, per-TODA compliance) are computed from REAL data only —
-    // turning simulation on must never inflate or dilute an actual enforcement statistic.
+    // Regulatory numbers (breach counts, compliance) are computed from real coordinate data only.
     const realViolations = useMemo(() => realTricycles.filter(t => t.status === 'violator'), [realTricycles]);
 
-    // Units that have ever actually reported a GPS ping (recorded_at is set). realTricycles now
-    // also includes tricycles that have NEVER reported (kept visible, marked Offline/No Signal per
-    // the fleet's offline-status requirement) — GPS-reporting KPIs must keep counting only units
-    // that genuinely have telemetry, so this denominator's meaning doesn't silently shift.
+    // Units reporting GPS (recorded_at is set).
     const reportingTricycles = useMemo(() => realTricycles.filter(t => t.recorded_at), [realTricycles]);
     const realComplianceRate = reportingTricycles.length > 0
         ? Math.round(((reportingTricycles.length - realViolations.length) / reportingTricycles.length) * 100)
@@ -192,23 +69,13 @@ export default function LiveMonitoring({ initialTricycles = [], stats = {}, toda
     const isWeekend = todayName === 'Saturday' || todayName === 'Sunday';
     const todayCodingRule = !isWeekend ? CODING_SCHEDULE[todayName] : null;
 
-    // Average speed of whatever is currently on screen — a presentational figure, not an
-    // enforcement statistic, so it's fine for it to include simulated units when the toggle is on.
-    const averageSpeed = useMemo(() => {
-        if (!displayedTricycles.length) return 0;
-        const totalSpeed = displayedTricycles.reduce((acc, t) => acc + (t.speed_kmh || 0), 0);
-        return Math.round(totalSpeed / displayedTricycles.length);
-    }, [displayedTricycles]);
-
     const registeredFleet = stats.active_fleet ?? realTricycles.length;
 
-    // Real fleet status composition — reuses the exact same status categories
-    // DashboardController::index() already assigns per tricycle (compliant / coding_no_operation /
-    // violator / offline), just tallied for display. Real data only, by construction (realTricycles).
+    // Real fleet status composition
     const STATUS_META = {
-        compliant:           { label: 'Compliant',        color: '#10B981' },
-        coding_no_operation: { label: 'Restricted Today',  color: '#F59E0B' },
-        violator:            { label: 'Violation',         color: '#E11D48' },
+        compliant:           { label: 'Compliant',          color: '#10B981' },
+        coding_no_operation: { label: 'Restricted Today',   color: '#F59E0B' },
+        violator:            { label: 'Violation',          color: '#E11D48' },
         offline:             { label: 'Offline / No Signal', color: '#94A3B8' },
     };
     const statusBreakdown = useMemo(() => {
@@ -219,41 +86,32 @@ export default function LiveMonitoring({ initialTricycles = [], stats = {}, toda
         return Object.keys(STATUS_META).map((key) => ({ key, count: counts[key], ...STATUS_META[key] }));
     }, [realTricycles]);
 
-    // Filter units for the sidebar list — searches across whatever is currently displayed.
-    const filteredUnits = useMemo(() => {
-        let list = displayedTricycles;
-        if (selectedToda !== 'all') {
-            list = list.filter(t => (t.toda === selectedToda || t.todaName === selectedToda));
-        }
-        if (unitSearch.trim() !== '') {
-            const q = unitSearch.toLowerCase().trim();
-            list = list.filter(t =>
-                (t.plate || '').toLowerCase().includes(q) ||
-                (t.coding_scheme && t.coding_scheme.toLowerCase().includes(q)) ||
-                (t.operator && t.operator.toLowerCase().includes(q)) ||
-                (t.toda && t.toda.toLowerCase().includes(q))
-            );
-        }
-        return list;
-    }, [displayedTricycles, selectedToda, unitSearch]);
+    // Filter units for the sidebar list by search term
+    const searchFilteredUnits = useMemo(() => {
+        if (!unitSearch.trim()) return realTricycles;
+        const q = unitSearch.toLowerCase().trim();
+        return realTricycles.filter(t =>
+            (t.plate || '').toLowerCase().includes(q) ||
+            (t.id && String(t.id).toLowerCase().includes(q)) ||
+            (t.operator && t.operator.toLowerCase().includes(q))
+        );
+    }, [realTricycles, unitSearch]);
 
-    // TODA Groups definition — uses dynamically managed todaZones when available, with fallback defaults
-    const todaGroups = useMemo(() => {
-        if (todaZones && todaZones.length > 0) {
-            return todaZones.map((z) => ({
-                id: z.id,
-                name: z.name,
-                code: z.code,
-                terminal_name: z.terminal_name,
-            }));
-        }
-        return [
-            { name: 'TODA Bucana' },
-            { name: 'TODA Brgy. 10' },
-            { name: 'TODA Brgy. 8' },
-            { name: 'TODA Brgy. 4' },
-        ];
-    }, [todaZones]);
+    // All / Online / Offline status filter — derives from the same server-side freshness flag
+    // (is_online, computed in DashboardController::index(): drivers.is_online first, then the
+    // 20s GPS threshold from config/tracking.fleet_online_threshold_seconds) that the roster's Online/Offline badges
+    // and the map already display. No separate client-side timing logic.
+    const statusCounts = useMemo(() => ({
+        all:    searchFilteredUnits.length,
+        online: searchFilteredUnits.filter(t => t.is_online).length,
+        offline: searchFilteredUnits.filter(t => !t.is_online).length,
+    }), [searchFilteredUnits]);
+
+    const filteredUnits = useMemo(() => {
+        if (unitStatusFilter === 'online') return searchFilteredUnits.filter(t => t.is_online);
+        if (unitStatusFilter === 'offline') return searchFilteredUnits.filter(t => !t.is_online);
+        return searchFilteredUnits;
+    }, [searchFilteredUnits, unitStatusFilter]);
 
     return (
         <TrivoraLayout title="Live Monitoring" role="TMO Supervisor">
@@ -264,65 +122,14 @@ export default function LiveMonitoring({ initialTricycles = [], stats = {}, toda
                ══════════════════════════════════════════════════════════════ */}
             <div className="mb-6 flex flex-col gap-4 border-b border-slate-200/80 pb-5 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                    <div className="flex items-center gap-2">
-                        <span className="relative flex h-2 w-2">
-                            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-                            <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
-                        </span>
-                        <span className="text-[10.5px] font-bold uppercase tracking-widest text-slate-400">Live Command Center</span>
-                    </div>
-                    <h1 className="mt-1.5 text-2xl sm:text-[28px] font-extrabold tracking-tight text-slate-900 leading-tight">
+                    <h1 className="text-2xl sm:text-[28px] font-extrabold tracking-tight text-slate-900 leading-tight">
                         Live Fleet Monitoring
                     </h1>
                     <p className="mt-1 text-xs sm:text-sm text-slate-500 max-w-2xl leading-relaxed">
                         Real-time GPS tracking and color coding compliance for tricycles operating in Nasugbu.
                     </p>
                 </div>
-
-                {/* Right: Simulation Toggle + Clock & Active Day Ticker */}
-                <div className="flex items-center gap-3 self-start sm:self-center shrink-0">
-                        <button
-                            type="button"
-                            onClick={() => setSimulationEnabled(v => !v)}
-                            title="Show frontend-only test units for single-device UI testing. Never touches real GPS/violation data."
-                            className={`flex h-11 items-center gap-2 rounded-xl border px-3 text-xs font-bold transition-colors ${
-                                simulationEnabled
-                                    ? 'border-[#1D2542]/20 bg-[#1D2542]/[0.06] text-[#1D2542]'
-                                    : 'border-slate-200 bg-white text-slate-500 hover:bg-slate-50'
-                            }`}
-                        >
-                            <Radio size={14} strokeWidth={2.2} />
-                            <span className="hidden sm:inline">Simulation</span>
-                            <span className={`rounded-full px-1.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wider ${
-                                simulationEnabled ? 'bg-[#1D2542] text-white' : 'bg-slate-100 text-slate-500'
-                            }`}>
-                                {simulationEnabled ? 'On' : 'Off'}
-                            </span>
-                        </button>
-
-                        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#1D2542]/[0.09] to-[#1D2542]/[0.02] text-[#1D2542]">
-                            <Clock size={18} strokeWidth={2.2} />
-                        </div>
-                        <div>
-                            <p className="font-mono text-xl font-extrabold leading-none text-slate-900 tabular-nums tracking-tight">
-                                {currentTime.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: true })}
-                            </p>
-                            <p className="mt-1.5 text-[11px] font-medium text-slate-500 flex items-center gap-1.5">
-                                <span className="font-bold text-slate-700">{codingInfo.day}</span>
-                                <span className="text-slate-300">·</span>
-                                {codingInfo.restricted !== 'None' ? (
-                                    <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10.5px] font-semibold text-slate-700">
-                                        Restricted: <strong className="text-[#1D2542]">{codingInfo.restricted}</strong>
-                                    </span>
-                                ) : (
-                                    <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10.5px] font-medium text-slate-600">
-                                        No Coding Rest Day
-                                    </span>
-                                )}
-                            </p>
-                        </div>
-                    </div>
-                </div>
+            </div>
 
             {/* ══════════════════════════════════════════════════════════════
                 2. COMPACT OPERATIONAL KPI DECK (Matching Registry Design)
@@ -351,7 +158,6 @@ export default function LiveMonitoring({ initialTricycles = [], stats = {}, toda
                         </div>
                         <p className="mt-1 text-[11px] text-slate-500">
                             {realComplianceRate}% coding compliance
-                            {simulationEnabled && ` · +${simulatedTricycles.length} simulated on map`}
                         </p>
                     </div>
 
@@ -416,33 +222,33 @@ export default function LiveMonitoring({ initialTricycles = [], stats = {}, toda
                     </div>
                 </div>
 
-                {/* ─ Card 3: Franchise Zones (TODA Route Coverage) ─ */}
+                {/* ─ Card 3: Franchise Validity (Permit Standing) ─ */}
                 <div className={`flex flex-col justify-between rounded-2xl border border-slate-200/70 bg-white p-4 sm:p-5 ${CARD_SHADOW}`}>
                     <div>
                         <div className="flex items-center justify-between">
                             <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                                Franchise Zones
+                                Franchise Standing
                             </span>
                             <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-[#1D2542]/[0.10] to-[#1D2542]/[0.02] text-[#1D2542]">
-                                <MapPin size={14} />
+                                <ShieldCheck size={14} />
                             </span>
                         </div>
                         <div className="mt-2 flex items-baseline gap-2">
                             <span className="text-2xl sm:text-3xl font-extrabold tracking-tight tabular-nums text-[#1D2542]">
-                                4
+                                Active
                             </span>
                             <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                                Active TODAs
+                                MTOP Standing
                             </span>
                         </div>
                         <p className="mt-1 text-[11px] text-slate-500">
-                            Designated TODA route network
+                            Zero expired or suspended permits
                         </p>
                     </div>
 
                     <div className="mt-3 rounded-xl bg-slate-50 p-2.5 flex items-center justify-between text-xs">
-                        <span className="text-[11px] font-medium text-slate-500">LGU District:</span>
-                        <span className="text-xs font-bold text-[#1D2542]">Nasugbu Central</span>
+                        <span className="text-[11px] font-medium text-slate-500">Regulatory Oversight:</span>
+                        <span className="text-xs font-bold text-[#1D2542]">TMO &amp; BPLO</span>
                     </div>
                 </div>
 
@@ -493,28 +299,18 @@ export default function LiveMonitoring({ initialTricycles = [], stats = {}, toda
 
                 {/* ── LEFT MAIN: LIVE INTERACTIVE MAP CANVAS (8 COLS) ── */}
                 <div className={`lg:col-span-8 overflow-hidden rounded-2xl border border-slate-200/70 bg-white p-2 ${CARD_SHADOW}`}>
-                    <div className="relative h-[500px] sm:h-[600px] w-full overflow-hidden rounded-xl">
+                    <div className="relative h-[360px] sm:h-[500px] lg:h-[600px] w-full overflow-hidden rounded-xl">
                         <TricycleMap
-                            tricycles={displayedTricycles}
-                            todaZones={todaZones}
-                            selectedToda={selectedToda}
-                            onSelectToda={(todaId) => {
-                                setSelectedTodaId(todaId);
-                                setSelectedUnitId(null);
-                            }}
-                            selectedTodaId={selectedTodaId}
+                            tricycles={realTricycles}
                             selectedUnitId={selectedUnitId}
-                            onSelectUnit={(unitId) => {
-                                setSelectedUnitId(unitId);
-                                if (unitId) setSelectedTodaId(null);
-                            }}
+                            onSelectUnit={(unitId) => setSelectedUnitId(unitId)}
                         />
                     </div>
                 </div>
 
                 {/* ── RIGHT DOCKED: SAAS TELEMETRY CONSOLE (4 COLS) ── */}
                 <div className="lg:col-span-4 flex flex-col gap-4">
-                    <div className={`overflow-hidden rounded-2xl border border-slate-200/70 bg-white flex flex-col h-[520px] sm:h-[616px] ${CARD_SHADOW}`}>
+                    <div className={`overflow-hidden rounded-2xl border border-slate-200/70 bg-white flex flex-col h-[420px] sm:h-[520px] lg:h-[616px] ${CARD_SHADOW}`}>
 
                         {/* Top Console Navigation Tabs */}
                         <div className="flex items-center border-b border-slate-200/70 bg-slate-50/80 p-1.5 gap-1 shrink-0">
@@ -555,49 +351,47 @@ export default function LiveMonitoring({ initialTricycles = [], stats = {}, toda
                                     {realViolations.length}
                                 </span>
                             </button>
-
-                            <button
-                                type="button"
-                                onClick={() => setActiveTab('toda')}
-                                className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-2.5 rounded-lg text-xs font-bold transition-all ${
-                                    activeTab === 'toda'
-                                        ? 'bg-[#1D2542] text-white shadow-xs'
-                                        : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/70'
-                                }`}
-                            >
-                                <Navigation size={13} />
-                                <span>TODA</span>
-                                <span className={`rounded px-1.5 py-0.2 text-[10px] font-mono ${
-                                    activeTab === 'toda' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600'
-                                }`}>
-                                    {todaGroups.length}
-                                </span>
-                            </button>
                         </div>
 
                         {/* ── TAB 1: LIVE UNITS ROSTER ── */}
                         {activeTab === 'units' && (
                             <div className="flex flex-col flex-1 min-h-0">
-                                {/* Search Filter Box */}
+                                {/* Search + status filter — one row */}
                                 <div className="p-3 border-b border-slate-100 bg-white shrink-0">
-                                    <div className="relative">
-                                        <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                                        <input
-                                            type="text"
-                                            placeholder="Filter by plate, coding #, or driver..."
-                                            value={unitSearch}
-                                            onChange={(e) => setUnitSearch(e.target.value)}
-                                            className="w-full h-8 rounded-lg border border-slate-200 bg-slate-50 pl-8 pr-7 text-xs font-medium text-slate-800 placeholder:text-slate-400 focus:bg-white focus:outline-none focus:border-[#1D2542] focus:ring-1 focus:ring-[#1D2542]"
-                                        />
-                                        {unitSearch && (
-                                            <button
-                                                type="button"
-                                                onClick={() => setUnitSearch('')}
-                                                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
-                                            >
-                                                <X size={12} />
-                                            </button>
-                                        )}
+                                    <div className="flex items-center gap-2">
+                                        <div className="relative flex-1 min-w-0">
+                                            <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                                            <input
+                                                type="text"
+                                                placeholder="Filter by plate, sticker number, or driver..."
+                                                value={unitSearch}
+                                                onChange={(e) => setUnitSearch(e.target.value)}
+                                                className="w-full h-8 rounded-lg border border-slate-200 bg-slate-50 pl-9 pr-8 text-xs font-medium text-slate-800 placeholder:text-slate-400 focus:bg-white focus:outline-none focus:border-[#1D2542] focus:ring-1 focus:ring-[#1D2542]"
+                                            />
+                                            {unitSearch && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setUnitSearch('')}
+                                                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                                                >
+                                                    <X size={12} />
+                                                </button>
+                                            )}
+                                        </div>
+
+                                        {/* All / Online / Offline dropdown — same is_online freshness
+                                            flag as the badges and map, with live counts. pl/pr reserves
+                                            room so the label never runs under the dropdown arrow icon. */}
+                                        <select
+                                            value={unitStatusFilter}
+                                            onChange={(e) => setUnitStatusFilter(e.target.value)}
+                                            aria-label="Filter units by status"
+                                            className="h-8 min-w-[108px] shrink-0 rounded-lg border border-slate-200 bg-slate-50 pl-2.5 pr-7 text-xs font-semibold text-slate-700 focus:border-[#1D2542] focus:outline-none focus:ring-1 focus:ring-[#1D2542]"
+                                        >
+                                            <option value="all">All ({statusCounts.all})</option>
+                                            <option value="online">Online ({statusCounts.online})</option>
+                                            <option value="offline">Offline ({statusCounts.offline})</option>
+                                        </select>
                                     </div>
                                 </div>
 
@@ -605,19 +399,19 @@ export default function LiveMonitoring({ initialTricycles = [], stats = {}, toda
                                 <div className="flex-1 overflow-y-auto p-2.5 divide-y divide-slate-100/80 space-y-1">
                                     {filteredUnits.length > 0 ? (
                                         filteredUnits.map((unit) => {
-                                            const isSelected = selectedUnitId === unit.id;
-                                            const isSimulated = unit.source === 'simulated';
-                                            const isOffline = !isSimulated && !unit.is_online;
-                                            const lastUpdateLabel = isSimulated
-                                                ? 'Just now'
-                                                : !unit.recorded_at
-                                                    ? 'No Signal'
-                                                    : (formatElapsed(unit.recorded_at, currentTime) || unit.last_seen || 'Unknown');
+                                            const isSelected = selectedUnitId === unit.db_id;
+                                            const isOffline = !unit.is_online;
+                                            const lastUpdateLabel = !unit.recorded_at
+                                                ? 'No Signal'
+                                                : (formatElapsed(unit.recorded_at, currentTime) || unit.last_seen || 'Unknown');
 
                                             return (
                                                 <div
-                                                    key={unit.id}
-                                                    onClick={() => setSelectedUnitId(unit.id)}
+                                                    // db_id (the tricycle's primary key) is the row identity, not `id` —
+                                                    // `id` is the display Sticker Number, which legitimately repeats
+                                                    // across units (see DashboardController::index()).
+                                                    key={unit.db_id}
+                                                    onClick={() => setSelectedUnitId(unit.db_id)}
                                                     className={`p-2.5 rounded-xl border transition-all cursor-pointer ${
                                                         isSelected
                                                             ? 'border-[#1D2542] bg-slate-50 shadow-xs'
@@ -625,52 +419,53 @@ export default function LiveMonitoring({ initialTricycles = [], stats = {}, toda
                                                     }`}
                                                 >
                                                     <div className="flex items-center justify-between">
-                                                        <div className="flex items-center gap-1.5">
-                                                            {isSimulated && (
-                                                                <span className="rounded px-1.5 py-0.2 text-[9px] font-extrabold uppercase tracking-wider border border-dashed border-slate-300 text-slate-500">
-                                                                    Sim
-                                                                </span>
-                                                            )}
+                                                        <div className="flex items-center gap-2">
                                                             <span className="font-mono text-xs font-extrabold text-slate-900">
                                                                 {unit.plate}
                                                             </span>
+                                                            {unit.id && unit.id !== unit.plate && (
+                                                                <span className="rounded bg-slate-100 px-1.5 py-0.5 font-mono text-[10px] font-bold text-slate-600">
+                                                                    #{unit.id}
+                                                                </span>
+                                                            )}
                                                         </div>
-                                                        <span className="font-mono text-xs font-extrabold text-[#1D2542]">
-                                                            {unit.speed_kmh != null ? `${unit.speed_kmh} km/h` : '—'}
+                                                        <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                                                            unit.is_online
+                                                                ? 'bg-emerald-50 text-emerald-700 border border-emerald-200/60'
+                                                                : 'bg-slate-100 text-slate-600 border border-slate-200'
+                                                        }`}>
+                                                            <span className={`h-1.5 w-1.5 rounded-full ${unit.is_online ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'}`} />
+                                                            {unit.is_online ? 'Online' : 'Offline'}
                                                         </span>
                                                     </div>
 
-                                                    <div className="mt-1 flex items-center justify-between text-[11px] text-slate-500">
-                                                        <span className="truncate max-w-[160px] font-medium text-slate-700">
+                                                    <div className="mt-1.5 flex items-center justify-between text-[11px] text-slate-500">
+                                                        <span className="truncate max-w-[170px] font-medium text-slate-700">
                                                             {unit.operator}
                                                         </span>
-                                                        <span className="text-[10.5px] font-semibold text-slate-500">
-                                                            {unit.toda}
+                                                        <span className="text-[10px] font-medium text-slate-400 font-mono">
+                                                            GPS Acquired
                                                         </span>
                                                     </div>
 
                                                     <div className="mt-2 flex items-center justify-between text-[10.5px] border-t border-slate-100 pt-1.5">
                                                         <span className="flex items-center gap-1.5 font-semibold text-slate-700">
                                                             <span className={`h-1.5 w-1.5 rounded-full ${
-                                                                isSimulated
+                                                                isOffline
                                                                     ? 'bg-slate-400'
-                                                                    : isOffline
-                                                                        ? 'bg-slate-400'
-                                                                        : unit.status === 'violator'
-                                                                            ? 'bg-rose-500'
-                                                                            : unit.status === 'coding_no_operation'
-                                                                                ? 'bg-amber-500'
-                                                                                : 'bg-emerald-500'
-                                                            }`} />
-                                                            {isSimulated
-                                                                ? 'Simulation'
-                                                                : isOffline
-                                                                    ? 'Offline'
                                                                     : unit.status === 'violator'
-                                                                        ? 'Violation'
+                                                                        ? 'bg-rose-500'
                                                                         : unit.status === 'coding_no_operation'
-                                                                            ? 'GPS Active · Restricted'
-                                                                            : 'GPS Active'}
+                                                                            ? 'bg-amber-500'
+                                                                            : 'bg-emerald-500'
+                                                            }`} />
+                                                            {isOffline
+                                                                ? 'Offline'
+                                                                : unit.status === 'violator'
+                                                                    ? 'Coding Violation'
+                                                                    : unit.status === 'coding_no_operation'
+                                                                        ? 'Restricted Today'
+                                                                        : 'Compliant'}
                                                         </span>
                                                         <span className="text-slate-400 font-medium font-mono text-[10px]">
                                                             {lastUpdateLabel}
@@ -681,11 +476,8 @@ export default function LiveMonitoring({ initialTricycles = [], stats = {}, toda
                                         })
                                     ) : (
                                         <div className="py-12 text-center text-slate-400 text-xs px-4">
-                                            {realTricycles.length === 0 && !simulationEnabled ? (
-                                                <>
-                                                    No real GPS signals yet. Turn on Simulation above to test the
-                                                    monitoring interface with sample units.
-                                                </>
+                                            {realTricycles.length === 0 ? (
+                                                <>No units reporting real GPS coordinates currently.</>
                                             ) : (
                                                 <>No units matching "{unitSearch}"</>
                                             )}
@@ -695,13 +487,13 @@ export default function LiveMonitoring({ initialTricycles = [], stats = {}, toda
                             </div>
                         )}
 
-                        {/* ── TAB 2: ACTIVE INCIDENTS FEED (real data only — simulation never appears here) ── */}
+                        {/* ── TAB 2: ACTIVE INCIDENTS FEED ── */}
                         {activeTab === 'alerts' && (
                             <div className="flex-1 overflow-y-auto p-3 flex flex-col gap-2">
                                 {realViolations.length > 0 ? (
                                     realViolations.map((v) => (
                                         <div
-                                            key={v.id}
+                                            key={v.db_id}
                                             className="p-3 rounded-xl border border-rose-200 bg-rose-50/50 shadow-2xs"
                                         >
                                             <div className="flex items-center justify-between">
@@ -720,7 +512,7 @@ export default function LiveMonitoring({ initialTricycles = [], stats = {}, toda
                                                 <span className="text-slate-400">Live Location</span>
                                                 <button
                                                     type="button"
-                                                    onClick={() => setSelectedUnitId(v.id)}
+                                                    onClick={() => setSelectedUnitId(v.db_id)}
                                                     className="font-bold text-[#1D2542] hover:underline inline-flex items-center gap-0.5"
                                                 >
                                                     Locate on Map <ChevronRight size={11} />
@@ -742,84 +534,6 @@ export default function LiveMonitoring({ initialTricycles = [], stats = {}, toda
                             </div>
                         )}
 
-                        {/* ── TAB 3: TODA GROUPS (real data only) ── */}
-                        {activeTab === 'toda' && (
-                            <div className="flex-1 overflow-y-auto p-3 flex flex-col gap-2.5">
-                                <p className="text-[11px] text-slate-500 mb-1">
-                                    Active tricycles and compliance rate per municipal TODA group:
-                                </p>
-
-                                {todaGroups.map((g) => {
-                                    const total = reportingTricycles.filter(t => (t.toda === g.name || t.todaName === g.name || (g.code && t.toda === g.code))).length;
-                                    const violCount = realViolations.filter(t => (t.toda === g.name || t.todaName === g.name || (g.code && t.toda === g.code))).length;
-                                    const pct = total > 0 ? Math.round(((total - violCount) / total) * 100) : 100;
-                                    const isSelected = selectedTodaId === g.id;
-
-                                    return (
-                                        <div
-                                            key={g.id || g.name}
-                                            onClick={() => {
-                                                setSelectedTodaId(g.id);
-                                                setSelectedUnitId(null);
-                                            }}
-                                            className={`rounded-xl border transition-all cursor-pointer p-3.5 shadow-2xs ${
-                                                isSelected
-                                                    ? 'border-[#1D2542] bg-slate-100/90 ring-1 ring-[#1D2542]'
-                                                    : 'border-slate-200/90 bg-slate-50/50 hover:border-slate-300 hover:bg-slate-100/60'
-                                            }`}
-                                        >
-                                            <div className="flex items-center justify-between">
-                                                <div>
-                                                    <span className="text-xs font-bold text-slate-800 block">{g.name}</span>
-                                                    {g.terminal_name && (
-                                                        <span className="text-[10px] text-slate-500 font-medium flex items-center gap-1 mt-0.5">
-                                                            <MapPin size={10} className="text-slate-400 shrink-0" />
-                                                            <span>{g.terminal_name}</span>
-                                                        </span>
-                                                    )}
-                                                </div>
-                                                <span className="rounded bg-white px-2 py-0.5 text-[10.5px] font-bold text-slate-700 border border-slate-200 shadow-3xs font-mono">
-                                                    {total} active
-                                                </span>
-                                            </div>
-
-                                            <div className="mt-2.5 flex items-center justify-between text-[11px] text-slate-500">
-                                                <span>Compliance Rate</span>
-                                                <span className="font-bold text-[#1D2542]">{pct}%</span>
-                                            </div>
-
-                                            <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-slate-200/80">
-                                                <div
-                                                    className="h-full rounded-full transition-all duration-500 bg-[#1D2542]"
-                                                    style={{ width: `${pct}%` }}
-                                                />
-                                            </div>
-
-                                            <div className="mt-2.5 flex items-center justify-between pt-2 border-t border-slate-200/60 text-[10.5px]">
-                                                <span className="text-slate-400 font-medium">Terminal Pin</span>
-                                                <span className="font-bold text-[#1D2542] inline-flex items-center gap-0.5">
-                                                    Locate on Map <ChevronRight size={11} />
-                                                </span>
-                                            </div>
-                                        </div>
-                                    );
-                                })}
-
-                                <div className="mt-3 p-3 rounded-xl border border-slate-200 bg-slate-50/80 text-xs text-slate-700 leading-relaxed">
-                                    <strong>Municipal Ordinance Enforcement:</strong> Trivora tracks coding compliance across managed TODA zones.
-                                </div>
-
-                                <Link
-                                    href="/tmo/toda"
-                                    className="flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl border border-slate-200 bg-white text-xs font-bold text-[#1D2542] hover:bg-slate-50 shadow-xs transition-colors"
-                                >
-                                    <MapPin size={13} />
-                                    <span>Manage TODA Terminals</span>
-                                    <ChevronRight size={13} className="text-slate-400" />
-                                </Link>
-                            </div>
-                        )}
-
                     </div>
                 </div>
 
@@ -835,17 +549,17 @@ export default function LiveMonitoring({ initialTricycles = [], stats = {}, toda
                     available from the backend, so this deliberately shows a real current snapshot
                     rather than a fabricated trend. */}
                 <div className={`rounded-2xl border border-slate-200/70 bg-white p-5 ${CARD_SHADOW} lg:col-span-8 flex flex-col h-full`}>
-                    <div className="mb-4 flex items-center justify-between border-b border-slate-100 pb-3.5">
-                        <div className="flex items-center gap-2.5">
-                            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-[#1D2542]/[0.10] to-[#1D2542]/[0.02] text-[#1D2542]">
+                    <div className="mb-4 flex items-center justify-between gap-3 border-b border-slate-100 pb-3.5">
+                        <div className="flex min-w-0 items-center gap-2.5">
+                            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#1D2542]/[0.10] to-[#1D2542]/[0.02] text-[#1D2542]">
                                 <BarChart3 size={16} strokeWidth={2.2} />
                             </div>
-                            <div>
-                                <h3 className="text-[13.5px] font-bold text-slate-900">Fleet Status Breakdown</h3>
-                                <p className="text-[11px] text-slate-400">Current status of every registered unit, right now</p>
+                            <div className="min-w-0">
+                                <h3 className="truncate text-[13.5px] font-bold text-slate-900">Fleet Status Breakdown</h3>
+                                <p className="truncate text-[11px] text-slate-400">Current status of every registered unit, right now</p>
                             </div>
                         </div>
-                        <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[10.5px] font-bold text-slate-600">
+                        <span className="shrink-0 rounded-full bg-slate-100 px-2.5 py-1 text-[10.5px] font-bold text-slate-600">
                             {realTricycles.length} tricycles
                         </span>
                     </div>
@@ -929,7 +643,7 @@ export default function LiveMonitoring({ initialTricycles = [], stats = {}, toda
                                     </div>
                                     <div>
                                         <div className="text-xs font-bold text-slate-900 group-hover:text-rose-600 transition-colors">
-                                            Violation Log &amp; Citations
+                                            Violation Records
                                         </div>
                                         <div className="text-[10.5px] text-slate-500">Review citations and driver appeals</div>
                                     </div>

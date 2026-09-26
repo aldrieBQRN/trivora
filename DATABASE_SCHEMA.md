@@ -140,7 +140,7 @@ erDiagram
 | `application_type` | `ENUM('new','renewal','transfer')` | NOT NULL, DEFAULT `new` | Type of franchise application |
 | `current_step` | `TINYINT UNSIGNED` | NOT NULL, DEFAULT `1` | Workflow step (1–6) |
 | `status` | `VARCHAR(50)` | NOT NULL, DEFAULT `draft` | Current status (`pending_review`, `pending_inspection`, `failed_inspection`, `pending_payment`, `payment_issue`, `payment_verified`, `awaiting_tmo_confirmation`, `completed`, `rejected`, `cancelled`) |
-| `sticker_number` | `VARCHAR(50)` | NULLABLE | Official municipal franchise sticker serial number released by BPLO |
+| `sticker_number` | `VARCHAR(50)` | NULLABLE | Franchise Number (STK-YYYY-NNNN) released by BPLO |
 | `tracking_method` | `ENUM('mobile_gps','iot_device')` | NULLABLE | GPS tracking method selected by TMO during final confirmation |
 | `iot_device_id` | `VARCHAR(50)` | NULLABLE | Physical IoT Tracker hardware serial number issued by TMO |
 | `submitted_at` | `TIMESTAMP` | NULLABLE | When the applicant submitted |
@@ -252,7 +252,7 @@ erDiagram
 ---
 
 ### 12. `franchise_schemes`
-> The official franchise permit record issued by BPLO after cashier receipt verification. Links the tricycle unit to an official body number, smart GPS tracker, and color-coding scheme.
+> The official franchise permit record issued by BPLO after cashier receipt verification. Links the tricycle unit to its Sticker Number, smart GPS tracker, and color-coding scheme.
 
 | Column | Type | Constraints | Description |
 |--------|------|-------------|-------------|
@@ -261,8 +261,8 @@ erDiagram
 | `tricycle_id` | `BIGINT UNSIGNED` | FK → `tricycles.id`, UNIQUE, NOT NULL | Subject tricycle |
 | `color_coding_scheme_id` | `BIGINT UNSIGNED` | FK → `color_coding_schemes.id`, NOT NULL | Assigned color code |
 | `issued_by` | `BIGINT UNSIGNED` | FK → `users.id`, NOT NULL | BPLO staff who issued |
-| `franchise_number` | `VARCHAR(30)` | UNIQUE, NOT NULL | Official franchise No. / Body No. |
-| `sticker_number` | `VARCHAR(50)` | NULLABLE | Official franchise sticker serial number |
+| `franchise_number` | `VARCHAR(30)` | UNIQUE, NOT NULL | Sticker Number (legacy column name) |
+| `sticker_number` | `VARCHAR(50)` | NULLABLE | Franchise Number (STK-YYYY-NNNN) |
 | `issue_date` | `DATE` | NOT NULL | Date of issuance |
 | `expiry_date` | `DATE` | NOT NULL | Permit expiration date |
 | `is_active` | `BOOLEAN` | NOT NULL, DEFAULT `true` | Currently valid flag |

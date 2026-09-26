@@ -17,14 +17,17 @@ class UsersSeeder extends Seeder
     {
         // ---------------------------------------------------------------------
         // 1. Admin
+        // (contact_number is the login identifier — the web portal authenticates by
+        // a person's existing mobile number, never an email address.)
         // ---------------------------------------------------------------------
         User::updateOrCreate(
             ['email' => 'admin@trivora.gov.ph'],
             [
-                'name'      => 'System Administrator',
-                'password'  => Hash::make('Admin@123'),
-                'role'      => 'admin',
-                'is_active' => true,
+                'name'           => 'System Administrator',
+                'password'       => Hash::make('Admin@123'),
+                'role'           => 'admin',
+                'is_active'      => true,
+                'contact_number' => '09170000001',
             ]
         );
 
@@ -33,12 +36,14 @@ class UsersSeeder extends Seeder
         // ---------------------------------------------------------------------
         $tmoUsers = [
             [
-                'name'  => 'Juan dela Cruz',
-                'email' => 'tmo.jdelacruz@trivora.gov.ph',
+                'name'    => 'Juan dela Cruz',
+                'email'   => 'tmo.jdelacruz@trivora.gov.ph',
+                'contact' => '09170000002',
             ],
             [
-                'name'  => 'Maria Santos',
-                'email' => 'tmo.msantos@trivora.gov.ph',
+                'name'    => 'Maria Santos',
+                'email'   => 'tmo.msantos@trivora.gov.ph',
+                'contact' => '09170000003',
             ],
         ];
 
@@ -46,10 +51,11 @@ class UsersSeeder extends Seeder
             User::updateOrCreate(
                 ['email' => $data['email']],
                 [
-                    'name'      => $data['name'],
-                    'password'  => Hash::make('TmoUser@123'),
-                    'role'      => 'tmo_personnel',
-                    'is_active' => true,
+                    'name'           => $data['name'],
+                    'password'       => Hash::make('TmoUser@123'),
+                    'role'           => 'tmo_personnel',
+                    'is_active'      => true,
+                    'contact_number' => $data['contact'],
                 ]
             );
         }
@@ -59,12 +65,14 @@ class UsersSeeder extends Seeder
         // ---------------------------------------------------------------------
         $bploUsers = [
             [
-                'name'  => 'Ana Reyes',
-                'email' => 'bplo.areyes@trivora.gov.ph',
+                'name'    => 'Ana Reyes',
+                'email'   => 'bplo.areyes@trivora.gov.ph',
+                'contact' => '09170000004',
             ],
             [
-                'name'  => 'Carlos Mendoza',
-                'email' => 'bplo.cmendoza@trivora.gov.ph',
+                'name'    => 'Carlos Mendoza',
+                'email'   => 'bplo.cmendoza@trivora.gov.ph',
+                'contact' => '09170000005',
             ],
         ];
 
@@ -72,10 +80,11 @@ class UsersSeeder extends Seeder
             User::updateOrCreate(
                 ['email' => $data['email']],
                 [
-                    'name'      => $data['name'],
-                    'password'  => Hash::make('BploUser@123'),
-                    'role'      => 'bplo_staff',
-                    'is_active' => true,
+                    'name'           => $data['name'],
+                    'password'       => Hash::make('BploUser@123'),
+                    'role'           => 'bplo_staff',
+                    'is_active'      => true,
+                    'contact_number' => $data['contact'],
                 ]
             );
         }

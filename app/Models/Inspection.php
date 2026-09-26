@@ -43,6 +43,33 @@ class Inspection extends Model
     // -------------------------------------------------------------------------
 
     /**
+     * The overall inspection note, normalized for display. Physical inspection is a single
+     * overall approve/reject decision — inspector_notes is always plain text going forward.
+     * This transparently rewrites the retired per-item JSON format
+     * (`{"statuses":{...},"defects":{...}}`, written only by old demo seeders/records) into one
+     * overall sentence, so no caller needs to know that legacy format ever existed.
+     */
+    public function getOverallNotesAttribute(): ?string
+    {
+        $notes = $this->inspector_notes;
+        if (!is_string($notes) || trim($notes) === '' || $notes[0] !== '{') {
+            return $notes;
+        }
+
+        $decoded = json_decode($notes, true);
+        if (!is_array($decoded)) {
+            return $notes;
+        }
+
+        $defects = array_values(array_filter((array) ($decoded['defects'] ?? [])));
+        if (empty($defects)) {
+            return 'Physical inspection requires reinspection.';
+        }
+
+        return 'Physical inspection requires reinspection. ' . implode(' ', $defects);
+    }
+
+    /**
      * Returns true only if every checklist item has passed.
      */
     public function getAllChecksPassedAttribute(): bool

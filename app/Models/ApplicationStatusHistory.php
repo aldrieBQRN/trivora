@@ -20,6 +20,11 @@ class ApplicationStatusHistory extends Model
         'from_step',
         'to_step',
         'notes',
+        // Seed fixtures pass an explicit created_at so the append-only trail reads as a
+        // realistic timeline (the Application Tracker derives its step dates from this
+        // column). Without it in here, mass assignment silently discards the value and
+        // every demo row collapses to the moment the seeder ran.
+        'created_at',
     ];
 
     protected function casts(): array

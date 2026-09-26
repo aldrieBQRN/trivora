@@ -107,26 +107,38 @@ class TricyclesSeeder extends Seeder
                 ? $operators[$idx % $operators->count()]
                 : $fallbackOperator;
 
+            $existing = Tricycle::where('plate_number', $data['plate'])->first();
+            // Never re-home a unit that already has MTOP applications: Driver → Application →
+            // franchise is the single source of truth for ownership, so a re-run of this
+            // seeder must not silently move a unit away from the operator whose Application
+            // Tracker and My Tricycles show it (ApplicationsSeeder repairs any historical
+            // mismatch explicitly).
+            $hasApplications = $existing && $existing->applications()->exists();
+
+            $payload = [
+                'toda_zone_id'         => $data['toda']?->id,
+                'coding_scheme_number' => $data['coding_number'],
+                'engine_number'        => 'ENG-' . str_pad($idx + 100, 6, '0', STR_PAD_LEFT),
+                'chassis_number'       => 'CHS-' . str_pad($idx + 100, 6, '0', STR_PAD_LEFT),
+                'make'                 => $data['make'],
+                'model'                => $data['model'],
+                'year_model'           => 2022 + ($idx % 3),
+                'body_color'           => ($idx % 2 === 0) ? 'Black/Red' : 'Blue/Silver',
+                'body_type'            => 'Pass-Thru Sidecar',
+                'or_number'            => 'OR-2026-' . str_pad($idx + 100, 5, '0', STR_PAD_LEFT),
+                'cr_number'            => 'CR-2026-' . str_pad($idx + 100, 5, '0', STR_PAD_LEFT),
+                'status'               => $data['status'],
+                'iot_device_id'        => $data['iot'],
+                'tracking_capability'  => 'iot_enabled',
+                'active_tracking_mode' => 'iot_device',
+            ];
+            if (! $hasApplications) {
+                $payload['operator_id'] = $operator?->id;
+            }
+
             $trike = Tricycle::updateOrCreate(
                 ['plate_number' => $data['plate']],
-                [
-                    'operator_id'          => $operator?->id,
-                    'toda_zone_id'         => $data['toda']?->id,
-                    'coding_scheme_number' => $data['coding_number'],
-                    'engine_number'        => 'ENG-' . str_pad($idx + 100, 6, '0', STR_PAD_LEFT),
-                    'chassis_number'       => 'CHS-' . str_pad($idx + 100, 6, '0', STR_PAD_LEFT),
-                    'make'                 => $data['make'],
-                    'model'                => $data['model'],
-                    'year_model'           => 2022 + ($idx % 3),
-                    'body_color'           => ($idx % 2 === 0) ? 'Black/Red' : 'Blue/Silver',
-                    'body_type'            => 'Pass-Thru Sidecar',
-                    'or_number'            => 'OR-2026-' . str_pad($idx + 100, 5, '0', STR_PAD_LEFT),
-                    'cr_number'            => 'CR-2026-' . str_pad($idx + 100, 5, '0', STR_PAD_LEFT),
-                    'status'               => $data['status'],
-                    'iot_device_id'        => $data['iot'],
-                    'tracking_capability'  => 'iot_enabled',
-                    'active_tracking_mode' => 'iot_device',
-                ]
+                $payload
             );
 
             // Determine matching color coding scheme by last digit of 4-digit number
@@ -141,17 +153,39 @@ class TricyclesSeeder extends Seeder
 
             $schemeModel = $colorSchemes[$colorName] ?? null;
             if ($schemeModel) {
-                FranchiseScheme::updateOrCreate(
-                    ['tricycle_id' => $trike->id],
-                    [
-                        'color_coding_scheme_id' => $schemeModel->id,
-                        'franchise_number'       => $data['coding_number'],
-                        'issued_by'              => $adminUser?->id ?: 1,
-                        'issue_date'             => now()->subMonths(6),
-                        'expiry_date'            => now()->addMonths(6),
-                        'is_active'              => true,
-                    ]
-                );
+                // Never clobber a franchise issued by a real application (application_id set):
+                // e.g. Pedro Ramos's completed APP-2026-00001 deliberately holds an EXPIRED
+                // permit, and an awaiting-confirmation permit is deliberately inactive —
+                // overwriting either here would break the expired/pending states the
+                // Application Tracker and My Tricycles show.
+                $applicationIssued = FranchiseScheme::where('tricycle_id', $trike->id)
+                    ->whereNotNull('application_id')
+                    ->exists();
+
+                if (! $applicationIssued) {
+                    $franchiseScheme = FranchiseScheme::updateOrCreate(
+                        ['tricycle_id' => $trike->id],
+                        [
+                            'color_coding_scheme_id' => $schemeModel->id,
+                            'franchise_number'       => $data['coding_number'],
+                            'issued_by'              => $adminUser?->id ?: 1,
+                            'issue_date'             => now()->subMonths(6),
+                            'expiry_date'            => now()->addMonths(6),
+                            'is_active'              => true,
+                        ]
+                    );
+
+                    // Franchise Number (STK-YYYY-NNNN). These units have no application —
+                    // their franchise predates the MTOP application workflow — so the serial
+                    // is built from the unit's Sticker Number exactly the way
+                    // BPLOController::showReleaseForm() builds one. Once issued it is never
+                    // regenerated: a re-run must not hand the same unit a different number.
+                    if (! $franchiseScheme->sticker_number) {
+                        $franchiseScheme->update([
+                            'sticker_number' => 'STK-' . now()->format('Y') . '-' . str_pad($data['coding_number'], 4, '0', STR_PAD_LEFT),
+                        ]);
+                    }
+                }
             }
         }
 
@@ -163,7 +197,7 @@ class TricyclesSeeder extends Seeder
                 'coding_scheme_number' => '0141',
             ]);
             if (!empty($colorSchemes['Red'])) {
-                FranchiseScheme::updateOrCreate(
+                $mobScheme = FranchiseScheme::updateOrCreate(
                     ['tricycle_id' => $mobTrike->id],
                     [
                         'color_coding_scheme_id' => $colorSchemes['Red']->id,
@@ -174,6 +208,13 @@ class TricyclesSeeder extends Seeder
                         'is_active'              => true,
                     ]
                 );
+
+                // Same Franchise Number rule as above — see the note in the loop.
+                if (! $mobScheme->sticker_number) {
+                    $mobScheme->update([
+                        'sticker_number' => 'STK-' . now()->format('Y') . '-0141',
+                    ]);
+                }
             }
         }
 

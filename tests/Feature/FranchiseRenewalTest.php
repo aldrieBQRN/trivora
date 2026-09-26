@@ -49,11 +49,11 @@ class FranchiseRenewalTest extends TestCase
     }
 
     /** Drives a single Application from pending_review all the way to completed/Franchise Active. */
-    private function driveApplicationToActive(Application $application, User $tmo, User $bplo, string $bodyNumber, string $stickerNumber): void
+    private function driveApplicationToActive(Application $application, User $tmo, User $bplo, string $codingNumber, string $stickerNumber): void
     {
         $this->actingAs($tmo)->post(route('tmo.review.submit', $application), [
             'action' => 'approve',
-            'docStatuses' => ['orcr' => 'approved', 'license' => 'approved', 'brgy' => 'approved', 'toda' => 'approved'],
+            'docStatuses' => ['orcr_photocopy' => 'approved', 'drivers_license' => 'approved', 'barangay_clearance' => 'approved', 'toda_clearance' => 'approved'],
         ])->assertRedirect();
 
         $this->actingAs($tmo)->post(route('tmo.review.physical.submit', $application), [
@@ -61,17 +61,10 @@ class FranchiseRenewalTest extends TestCase
             'inspectionStatuses' => $this->allInspectionItemsPassed(),
         ])->assertRedirect();
 
-        // Keyed off the sticker number (always unique per call), not the body number, since some
-        // tests deliberately reuse the same body number across an original + renewal release.
-        $this->actingAs($tmo)->post(route('tmo.verify-payment.submit', $application), [
-            'action' => 'verify',
-            'official_receipt_number' => 'OR-' . $stickerNumber,
-            'amount' => 750,
-            'payment_date' => now()->toDateString(),
-        ])->assertRedirect();
-
+        // Payment (Municipal Treasurer's Office) happens entirely offline — no in-system route to
+        // drive here. Inspection pass moves straight to pending_bplo_release.
         $response = $this->actingAs($bplo)->post(route('bplo.release.submit', $application), [
-            'body_number' => $bodyNumber,
+            'body_number' => $codingNumber,
             'sticker_number' => $stickerNumber,
         ]);
         $response->assertRedirect();
@@ -88,16 +81,37 @@ class FranchiseRenewalTest extends TestCase
         $application->refresh();
     }
 
+    /**
+     * Same vehicle-field set and canonical document vocabulary as Public Registration
+     * (RegistrationController::store()) — Operator\MTOPController::store() validates both
+     * identically now, for either application_type. Includes Prangkisa, required only for a
+     * renewal (App\Models\ApplicationDocument::CANONICAL_REQUIREMENTS['prangkisa']).
+     */
     private function submitRenewal(User $driverUser, int $tricycleId, array $overrides = []): \Illuminate\Testing\TestResponse
     {
         return $this->actingAs($driverUser)->post(route('operator.mtop.store'), array_merge([
             'application_type' => 'renewal',
             'unit_id' => $tricycleId,
+            'plate_number' => 'RENEW-UNIT-' . $tricycleId,
+            'make_model' => 'Honda TMX155',
+            'year_model' => 2022,
+            'body_color' => 'Red',
+            'body_type' => 'Standard',
+            'engine_number' => 'ENG-RENEW-' . $tricycleId,
+            'chassis_number' => 'CHS-RENEW-' . $tricycleId,
+            'or_number' => 'OR-RENEW-' . $tricycleId,
+            'cr_number' => 'CR-RENEW-' . $tricycleId,
             'documents' => [
-                'orcr' => [$this->fakeDocument('renew-orcr.pdf')],
-                'license' => [$this->fakeDocument('renew-license.pdf')],
-                'brgy' => [$this->fakeDocument('renew-brgy.pdf')],
-                'toda' => [$this->fakeDocument('renew-toda.pdf')],
+                'police_clearance'   => [$this->fakeDocument('renew-police.pdf')],
+                'health_certificate' => [$this->fakeDocument('renew-health.pdf')],
+                'orcr_photocopy'     => [$this->fakeDocument('renew-orcr.pdf')],
+                'drivers_license'    => [$this->fakeDocument('renew-license.pdf')],
+                'barangay_clearance' => [$this->fakeDocument('renew-brgy.pdf')],
+                'toda_clearance'     => [$this->fakeDocument('renew-toda.pdf')],
+                'cedula'             => [$this->fakeDocument('renew-cedula.pdf')],
+                'driver_id'          => [$this->fakeDocument('renew-driverid.pdf')],
+                'tariff_list'        => [$this->fakeDocument('renew-tariff.pdf')],
+                'prangkisa'          => [$this->fakeDocument('renew-prangkisa.pdf')],
             ],
         ], $overrides));
     }
@@ -142,7 +156,6 @@ class FranchiseRenewalTest extends TestCase
         $activeScheme = FranchiseScheme::where('tricycle_id', $tricycle->id)->where('is_active', true)->firstOrFail();
         $this->assertFalse($activeScheme->is_expired, 'Sanity check: freshly activated franchise is not expired.');
 
-        $paymentCountBefore = Payment::count();
         $inspectionCountBefore = Inspection::count();
         $documentCountBefore = ApplicationDocument::count();
 
@@ -151,7 +164,6 @@ class FranchiseRenewalTest extends TestCase
         $response->assertRedirect();
         $response->assertSessionHasErrors('application_type');
         $this->assertSame(1, Application::where('tricycle_id', $tricycle->id)->count(), 'No renewal Application should have been created.');
-        $this->assertSame($paymentCountBefore, Payment::count(), 'No Payment should have been created for a rejected renewal.');
         $this->assertSame($inspectionCountBefore, Inspection::count(), 'No Inspection should have been created for a rejected renewal.');
         $this->assertSame($documentCountBefore, ApplicationDocument::count(), 'No Documents should have been created for a rejected renewal.');
     }
@@ -186,11 +198,26 @@ class FranchiseRenewalTest extends TestCase
 
         $response = $this->actingAs($driverUser)->post(route('operator.mtop.store'), [
             'application_type' => 'renewal',
+            'plate_number' => 'RENEW-NOUNIT-0002',
+            'make_model' => 'Honda TMX155',
+            'year_model' => 2022,
+            'body_color' => 'Red',
+            'body_type' => 'Standard',
+            'engine_number' => 'ENG-NOUNIT-0001',
+            'chassis_number' => 'CHS-NOUNIT-0001',
+            'or_number' => 'OR-NOUNIT-0001',
+            'cr_number' => 'CR-NOUNIT-0001',
             'documents' => [
-                'orcr' => [$this->fakeDocument('a.pdf')],
-                'license' => [$this->fakeDocument('b.pdf')],
-                'brgy' => [$this->fakeDocument('c.pdf')],
-                'toda' => [$this->fakeDocument('d.pdf')],
+                'police_clearance'   => [$this->fakeDocument('a.pdf')],
+                'health_certificate' => [$this->fakeDocument('b.pdf')],
+                'orcr_photocopy'     => [$this->fakeDocument('c.pdf')],
+                'drivers_license'    => [$this->fakeDocument('d.pdf')],
+                'barangay_clearance' => [$this->fakeDocument('e.pdf')],
+                'toda_clearance'     => [$this->fakeDocument('f.pdf')],
+                'cedula'             => [$this->fakeDocument('g.pdf')],
+                'driver_id'          => [$this->fakeDocument('h.pdf')],
+                'tariff_list'        => [$this->fakeDocument('i.pdf')],
+                'prangkisa'          => [$this->fakeDocument('j.pdf')],
             ],
         ]);
 
@@ -222,13 +249,12 @@ class FranchiseRenewalTest extends TestCase
             'expiry_date'      => $originalScheme->expiry_date->toDateString(),
         ];
 
-        $originalPayment = Payment::where('application_id', $originalApplication->id)->firstOrFail();
         $originalInspection = Inspection::where('application_id', $originalApplication->id)->firstOrFail();
         $originalDocCount = ApplicationDocument::where('application_id', $originalApplication->id)->count();
-        $this->assertSame(4, $originalDocCount);
+        $this->assertSame(9, $originalDocCount);
 
         // ── ACT: submit + drive an eligible renewal through the SAME real pipeline, reusing the
-        // SAME body number the old (about to be deactivated) scheme already holds. ──
+        // SAME Sticker Number the old (about to be deactivated) scheme already holds. ──
         $this->submitRenewal($driverUser, $tricycle->id)->assertRedirect()->assertSessionDoesntHaveErrors();
 
         $renewalApplication = Application::where('tricycle_id', $tricycle->id)
@@ -237,7 +263,8 @@ class FranchiseRenewalTest extends TestCase
         $this->assertSame('renewal', $renewalApplication->application_type);
         $this->assertSame($operator->id, $renewalApplication->operator_id);
         $this->assertSame($tricycle->id, $renewalApplication->tricycle_id);
-        $this->assertSame(4, ApplicationDocument::where('application_id', $renewalApplication->id)->count());
+        // 9 mandatory canonical documents + Prangkisa (renewal-only requirement).
+        $this->assertSame(10, ApplicationDocument::where('application_id', $renewalApplication->id)->count());
 
         $this->driveApplicationToActive($renewalApplication, $tmo, $bplo, $before['franchise_number'], 'STK-FULL-0002');
 
@@ -257,10 +284,10 @@ class FranchiseRenewalTest extends TestCase
         $this->assertSame($before['expiry_date'], $originalScheme->expiry_date->toDateString());
 
         // New FranchiseScheme created, active, linked to the renewal Application, reusing the SAME
-        // body number (proves the active-only uniqueness fix).
+        // Sticker Number (proves the active-only uniqueness fix).
         $this->assertTrue($newScheme->is_active);
         $this->assertSame($renewalApplication->id, $newScheme->application_id);
-        $this->assertSame($before['franchise_number'], $newScheme->franchise_number, 'Renewal reused the same body number.');
+        $this->assertSame($before['franchise_number'], $newScheme->franchise_number, 'Renewal reused the same Sticker Number.');
         $this->assertSame(now()->toDateString(), $newScheme->issue_date->toDateString());
         $this->assertSame(now()->addYears(3)->toDateString(), $newScheme->expiry_date->toDateString());
         $this->assertNotSame($originalScheme->id, $newScheme->id);
@@ -272,15 +299,13 @@ class FranchiseRenewalTest extends TestCase
         $this->assertSame(1, Tricycle::where('id', $tricycle->id)->count());
         $this->assertSame($operator->id, $renewalApplication->operator_id);
 
-        // Payment/Inspection/Documents: new rows for the renewal, old ones untouched.
-        $this->assertDatabaseHas('payments', ['id' => $originalPayment->id, 'application_id' => $originalApplication->id]);
+        // Inspection/Documents: new rows for the renewal, old ones untouched. No Payment rows
+        // exist for either application — the system never records payment under this workflow.
         $this->assertDatabaseHas('inspections', ['id' => $originalInspection->id, 'application_id' => $originalApplication->id]);
-        $renewalPayment = Payment::where('application_id', $renewalApplication->id)->first();
         $renewalInspection = Inspection::where('application_id', $renewalApplication->id)->first();
-        $this->assertNotNull($renewalPayment);
         $this->assertNotNull($renewalInspection);
-        $this->assertNotSame($originalPayment->id, $renewalPayment->id);
         $this->assertNotSame($originalInspection->id, $renewalInspection->id);
+        $this->assertSame(0, Payment::count());
     }
 
     // -------------------------------------------------------------------------
@@ -303,13 +328,10 @@ class FranchiseRenewalTest extends TestCase
         $renewalApplication = Application::where('tricycle_id', $tricycle->id)->where('id', '!=', $originalApplication->id)->firstOrFail();
 
         $this->actingAs($tmo)->post(route('tmo.review.submit', $renewalApplication), [
-            'action' => 'approve', 'docStatuses' => ['orcr' => 'approved', 'license' => 'approved', 'brgy' => 'approved', 'toda' => 'approved'],
+            'action' => 'approve', 'docStatuses' => ['orcr_photocopy' => 'approved', 'drivers_license' => 'approved', 'barangay_clearance' => 'approved', 'toda_clearance' => 'approved'],
         ]);
         $this->actingAs($tmo)->post(route('tmo.review.physical.submit', $renewalApplication), [
             'action' => 'pass', 'inspectionStatuses' => $this->allInspectionItemsPassed(),
-        ]);
-        $this->actingAs($tmo)->post(route('tmo.verify-payment.submit', $renewalApplication), [
-            'action' => 'verify', 'official_receipt_number' => 'OR-GATE', 'amount' => 750, 'payment_date' => now()->toDateString(),
         ]);
 
         $this->actingAs($bplo)->post(route('bplo.release.submit', $renewalApplication), [
@@ -351,9 +373,6 @@ class FranchiseRenewalTest extends TestCase
         $this->actingAs($tmo)->post(route('tmo.review.physical.submit', $secondApplication), [
             'action' => 'pass', 'inspectionStatuses' => $this->allInspectionItemsPassed(),
         ]);
-        $this->actingAs($tmo)->post(route('tmo.verify-payment.submit', $secondApplication), [
-            'action' => 'verify', 'official_receipt_number' => 'OR-NONGATE', 'amount' => 750, 'payment_date' => now()->toDateString(),
-        ]);
 
         $response = $this->actingAs($bplo)->post(route('bplo.release.submit', $secondApplication), [
             'body_number' => '0008',
@@ -377,7 +396,7 @@ class FranchiseRenewalTest extends TestCase
     // -------------------------------------------------------------------------
 
     #[Test]
-    public function bplo_release_still_rejects_a_body_number_currently_held_by_another_active_franchise(): void
+    public function bplo_release_still_rejects_a_sticker_number_currently_held_by_another_active_franchise(): void
     {
         [, , $applicationA] = $this->registerNewApplication(['plate_number' => 'RENEW-DUP-A']);
         [, $driverB, $applicationB] = $this->registerNewApplication(['plate_number' => 'RENEW-DUP-B']);
@@ -387,15 +406,12 @@ class FranchiseRenewalTest extends TestCase
         $this->driveApplicationToActive($applicationA, $tmo, $bplo, '0009', 'STK-DUP-A');
 
         // applicationB is a fresh 'new' application for a DIFFERENT tricycle — attempting to
-        // release it with tricycle A's still-ACTIVE body number must still be rejected.
+        // release it with tricycle A's still-ACTIVE Sticker Number must still be rejected.
         $this->actingAs($tmo)->post(route('tmo.review.submit', $applicationB), [
-            'action' => 'approve', 'docStatuses' => ['orcr' => 'approved', 'license' => 'approved', 'brgy' => 'approved', 'toda' => 'approved'],
+            'action' => 'approve', 'docStatuses' => ['orcr_photocopy' => 'approved', 'drivers_license' => 'approved', 'barangay_clearance' => 'approved', 'toda_clearance' => 'approved'],
         ]);
         $this->actingAs($tmo)->post(route('tmo.review.physical.submit', $applicationB), [
             'action' => 'pass', 'inspectionStatuses' => $this->allInspectionItemsPassed(),
-        ]);
-        $this->actingAs($tmo)->post(route('tmo.verify-payment.submit', $applicationB), [
-            'action' => 'verify', 'official_receipt_number' => 'OR-DUP-B', 'amount' => 750, 'payment_date' => now()->toDateString(),
         ]);
 
         $response = $this->actingAs($bplo)->post(route('bplo.release.submit', $applicationB), [
@@ -405,11 +421,11 @@ class FranchiseRenewalTest extends TestCase
 
         $response->assertSessionHasErrors('body_number');
         $applicationB->refresh();
-        $this->assertSame('payment_verified', $applicationB->status);
+        $this->assertSame('pending_bplo_release', $applicationB->status);
     }
 
     #[Test]
-    public function reusing_the_same_body_number_on_renewal_keeps_both_historical_and_active_rows_queryable(): void
+    public function reusing_the_same_sticker_number_on_renewal_keeps_both_historical_and_active_rows_queryable(): void
     {
         [, $driverUser, $originalApplication] = $this->registerNewApplication(['plate_number' => 'RENEW-HIST-0001']);
         $tmo = $this->makeTmoUser();
@@ -424,16 +440,13 @@ class FranchiseRenewalTest extends TestCase
         $renewalApplication = Application::where('tricycle_id', $tricycle->id)->where('id', '!=', $originalApplication->id)->firstOrFail();
 
         $this->actingAs($tmo)->post(route('tmo.review.submit', $renewalApplication), [
-            'action' => 'approve', 'docStatuses' => ['orcr' => 'approved', 'license' => 'approved', 'brgy' => 'approved', 'toda' => 'approved'],
+            'action' => 'approve', 'docStatuses' => ['orcr_photocopy' => 'approved', 'drivers_license' => 'approved', 'barangay_clearance' => 'approved', 'toda_clearance' => 'approved'],
         ]);
         $this->actingAs($tmo)->post(route('tmo.review.physical.submit', $renewalApplication), [
             'action' => 'pass', 'inspectionStatuses' => $this->allInspectionItemsPassed(),
         ]);
-        $this->actingAs($tmo)->post(route('tmo.verify-payment.submit', $renewalApplication), [
-            'action' => 'verify', 'official_receipt_number' => 'OR-HIST', 'amount' => 750, 'payment_date' => now()->toDateString(),
-        ]);
 
-        // Reuse the exact SAME body number '0010' — must now succeed (previously blocked by the
+        // Reuse the exact SAME Sticker Number '0010' — must now succeed (previously blocked by the
         // global unique constraint).
         $response = $this->actingAs($bplo)->post(route('bplo.release.submit', $renewalApplication), [
             'body_number' => '0010',
@@ -444,7 +457,7 @@ class FranchiseRenewalTest extends TestCase
 
         $this->assertDatabaseCount('franchise_schemes', 2);
         $rows = FranchiseScheme::where('tricycle_id', $tricycle->id)->get();
-        // Both rows share the same body number — proving reuse succeeded — and are both
+        // Both rows share the same Sticker Number — proving reuse succeeded — and are both
         // independently queryable by id. The new one is still is_active=false at this point
         // (BPLO release only; TMO Final Confirmation, not run here, is what activates it), so
         // BOTH rows are inactive right now — that itself proves nothing was silently overwritten.
@@ -537,16 +550,25 @@ class FranchiseRenewalTest extends TestCase
 
         $response = $this->actingAs($user)->post(route('operator.mtop.store'), [
             'application_type' => 'new',
-            'plate' => 'BRAND-NEW-0001',
+            'plate_number' => 'BRAND-NEW-0001',
+            'make_model' => 'Honda TMX155',
+            'year_model' => 2023,
+            'body_color' => 'Blue',
+            'body_type' => 'Standard',
             'engine_number' => 'ENG-BRANDNEW-0001',
             'chassis_number' => 'CHS-BRANDNEW-0001',
-            'make_model' => 'Honda TMX155',
-            'toda' => 'TODA Bucana',
+            'or_number' => 'OR-BRANDNEW-0001',
+            'cr_number' => 'CR-BRANDNEW-0001',
             'documents' => [
-                'orcr' => [$this->fakeDocument('a.pdf')],
-                'license' => [$this->fakeDocument('b.pdf')],
-                'brgy' => [$this->fakeDocument('c.pdf')],
-                'toda' => [$this->fakeDocument('d.pdf')],
+                'police_clearance'   => [$this->fakeDocument('a.pdf')],
+                'health_certificate' => [$this->fakeDocument('b.pdf')],
+                'orcr_photocopy'     => [$this->fakeDocument('c.pdf')],
+                'drivers_license'    => [$this->fakeDocument('d.pdf')],
+                'barangay_clearance' => [$this->fakeDocument('e.pdf')],
+                'toda_clearance'     => [$this->fakeDocument('f.pdf')],
+                'cedula'             => [$this->fakeDocument('g.pdf')],
+                'driver_id'          => [$this->fakeDocument('h.pdf')],
+                'tariff_list'        => [$this->fakeDocument('i.pdf')],
             ],
         ]);
 

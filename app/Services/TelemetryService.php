@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\Driver;
 use App\Models\Tricycle;
 use App\Models\TricycleLocation;
 use App\Models\Violation;
@@ -95,17 +96,19 @@ class TelemetryService
         $dayName = $today->format('l');
         $restrictedEndings = ColorCodingRuleService::restrictedDigitsForDay($dayName);
 
-        $bodyNo = $tricycle->body_number ?: $tricycle->plate_number;
-        $lastDigit = $bodyNo ? (int) substr(trim($bodyNo), -1) : null;
+        $identifier = $tricycle->coding_scheme_number ?: $tricycle->plate_number;
+        $lastDigit = $identifier ? (int) substr(trim($identifier), -1) : null;
 
         if ($lastDigit === null || !in_array($lastDigit, $restrictedEndings, true)) {
             return ['flagged' => false];
         }
 
         // Receiving a GPS ping alone must not trigger a violation — the tricycle must have
-        // actually operated (accumulated real movement) today, not merely be parked and
-        // transmitting. Checked only once the cheap day/digit rule already matches.
-        if (!$this->hasMovedEnoughToday($tricycle, $today)) {
+        // genuinely MOVED at least the configured threshold from where it first reported after
+        // going Online, confirmed by a second consecutive reading, not merely be parked and
+        // transmitting (or produce a violation off one single GPS jump/glitch). Checked only once
+        // the cheap day/digit rule already matches.
+        if (!$this->hasConfirmedMovementSinceOnline($tricycle, $location)) {
             return ['flagged' => false];
         }
 
@@ -128,7 +131,7 @@ class TelemetryService
                 'detection_method'       => 'automated',
                 'status'                 => 'open',
                 'fine_amount'            => 500.00,
-                'notes'                  => "Automated GPS detection: operating on restricted color-coding day ({$dayName}), tricycle number ending {$lastDigit}.",
+                'notes'                  => "Automated GPS detection: operating on restricted color-coding day ({$dayName}), Sticker Number ending {$lastDigit}.",
             ]);
         } catch (QueryException $e) {
             if (str_contains($e->getMessage(), 'violations_color_coding_daily_unique')) {
@@ -148,49 +151,68 @@ class TelemetryService
     }
 
     /**
-     * True once the tricycle's valid GPS readings for the given day accumulate at least 100
-     * meters of real movement. Recomputed fresh from today's TricycleLocation rows each call
-     * (cheap at this fleet's scale, and served entirely by the existing (tricycle_id,
-     * recorded_at) index) rather than kept as running state — always correct, nothing to
-     * invalidate at day boundaries.
+     * The coding/restricted-day 100-meter movement rule:
      *
-     * Distance is summed between consecutive readings using the same Haversine primitive
-     * TodaRouteMatcher already uses for TODA-route matching (no second distance function).
-     * Segments below a small noise floor are ignored so GPS jitter on a parked tricycle can
-     * never slowly accumulate into a false 100m of "movement".
+     *   1. Going Online alone never creates a violation.
+     *   2. The tricycle's first valid GPS reading received after going Online becomes that
+     *      session's movement anchor (never the TODA zone center, never a fixed/default point).
+     *   3. Movement is measured as straight-line (Haversine) distance from that anchor, using the
+     *      same GeoService primitive every other distance calculation in this codebase already
+     *      shares — not a second/parallel distance system.
+     *   4. A single reading at/beyond the configured threshold is only a CANDIDATE — the very
+     *      next valid reading must also be at/beyond the threshold before a violation is actually
+     *      created, so a single GPS jump/glitch can never trigger one on its own.
+     *   5. Going Offline (Driver::online_since cleared, see DriverAuthController::updateStatus())
+     *      ends the session; the next Online establishes a brand-new anchor from scratch.
+     *
+     * Recomputed fresh from the current online session's TricycleLocation rows each call (cheap
+     * at this fleet's scale, served by the existing (tricycle_id, recorded_at) index) rather than
+     * kept as separately-persisted running state — nothing to invalidate, no second source of
+     * truth to drift out of sync with the location history itself.
      */
-    protected function hasMovedEnoughToday(Tricycle $tricycle, \Carbon\Carbon $today): bool
+    protected function hasConfirmedMovementSinceOnline(Tricycle $tricycle, TricycleLocation $location): bool
     {
-        $thresholdMeters = 100.0;
-        $noiseFloorMeters = 10.0;
+        $driver = Driver::where('tricycle_id', $tricycle->id)->first();
 
-        $points = TricycleLocation::where('tricycle_id', $tricycle->id)
-            ->whereDate('recorded_at', $today->toDateString())
-            ->orderBy('recorded_at')
-            ->get(['latitude', 'longitude']);
-
-        $totalMeters = 0.0;
-        for ($i = 1; $i < $points->count(); $i++) {
-            $prev = $points[$i - 1];
-            $curr = $points[$i];
-            $segmentMeters = TodaRouteMatcher::haversineKm(
-                (float) $prev->latitude,
-                (float) $prev->longitude,
-                (float) $curr->latitude,
-                (float) $curr->longitude
-            ) * 1000;
-
-            if ($segmentMeters < $noiseFloorMeters) {
-                continue;
-            }
-
-            $totalMeters += $segmentMeters;
-            if ($totalMeters >= $thresholdMeters) {
-                return true;
-            }
+        // No active online session (never gone online through the tracked endpoint, or currently
+        // offline) — there is no anchor to measure movement from yet.
+        if (!$driver || !$driver->online_since) {
+            return false;
         }
 
-        return $totalMeters >= $thresholdMeters;
+        $sessionReadings = TricycleLocation::where('tricycle_id', $tricycle->id)
+            ->where('recorded_at', '>=', $driver->online_since)
+            ->where('recorded_at', '<=', $location->recorded_at)
+            ->orderBy('recorded_at')
+            ->orderBy('id')
+            ->get(['id', 'latitude', 'longitude']);
+
+        $currentIndex = $sessionReadings->search(fn (TricycleLocation $reading) => $reading->id === $location->id);
+
+        // The current reading IS this session's anchor (the first one received since going
+        // Online) — nothing to compare it against yet, so it can never itself be a violation.
+        if ($currentIndex === false || $currentIndex === 0) {
+            return false;
+        }
+
+        $thresholdMeters = (float) config('tracking.coding_violation_movement_threshold_meters', 100);
+        $anchor = $sessionReadings->first();
+
+        $metersFromAnchor = fn (TricycleLocation $reading): float => GeoService::haversineKm(
+            (float) $anchor->latitude,
+            (float) $anchor->longitude,
+            (float) $reading->latitude,
+            (float) $reading->longitude
+        ) * 1000;
+
+        $current = $sessionReadings[$currentIndex];
+        $previous = $sessionReadings[$currentIndex - 1];
+
+        // Confirmed only when BOTH the current reading and the one immediately before it (within
+        // this same online session) are at/beyond the threshold — a lone reading crossing it is
+        // just a candidate, never enough on its own.
+        return $metersFromAnchor($current) >= $thresholdMeters
+            && $metersFromAnchor($previous) >= $thresholdMeters;
     }
 
     /**

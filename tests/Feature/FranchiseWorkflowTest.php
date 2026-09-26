@@ -13,14 +13,15 @@ use Tests\TestCase;
 
 /**
  * Drives ONE application record through the real franchise workflow end-to-end — public
- * registration → TMO document review → TMO physical inspection → offline cashier payment → TMO
- * payment verification → BPLO releasing → TMO Final Confirmation — hitting the actual HTTP routes
- * with the actual authenticated roles, never creating a second Application for a later stage.
+ * registration → TMO document review → TMO physical inspection → BPLO releasing → TMO Final
+ * Confirmation — hitting the actual HTTP routes with the actual authenticated roles, never
+ * creating a second Application for a later stage.
  *
- * There is no Treasurer controller/role in the real implementation (confirmed by direct code
- * audit — removed by migration 2026_09_12_000000_update_workflow_for_cashier_and_bplo.php): the
- * "cashier payment" step is genuinely offline, and TMO records + verifies it in one action via
- * TMO\PaymentVerificationController::verify(). This test does not fabricate a Treasurer login.
+ * There is no Treasurer controller/role, and no in-system payment verification step at all
+ * (removed entirely — see TMO\InspectionController::store() and BPLO\BPLOController::release()).
+ * Cashier payment happens genuinely offline: the applicant pays at the Municipal Treasurer's
+ * Office and presents the receipt in person at BPLO before release; the system never records or
+ * verifies it. This test does not fabricate a Treasurer login or an online payment record.
  */
 class FranchiseWorkflowTest extends TestCase
 {
@@ -47,7 +48,7 @@ class FranchiseWorkflowTest extends TestCase
         $tmo = $this->makeTmoUser();
         $this->actingAs($tmo)->post(route('tmo.review.submit', $application), [
             'action'      => 'approve',
-            'docStatuses' => ['orcr' => 'approved', 'license' => 'approved', 'brgy' => 'approved', 'toda' => 'approved'],
+            'docStatuses' => ['orcr_photocopy' => 'approved', 'drivers_license' => 'approved', 'barangay_clearance' => 'approved', 'toda_clearance' => 'approved'],
         ])->assertRedirect(route('tmo.docs'));
 
         $application->refresh();
@@ -58,43 +59,26 @@ class FranchiseWorkflowTest extends TestCase
         $this->actingAs($tmo)->post(route('tmo.review.physical.submit', $application), [
             'action'             => 'pass',
             'inspectionStatuses' => $this->allInspectionItemsPassed(),
-        ])->assertRedirect(route('tmo.ticket', $application->id));
+        ])->assertRedirect(route('tmo.physical'));
 
         $application->refresh();
-        $this->assertSame('pending_payment', $application->status);
-        $this->assertSame(4, $application->current_step);
+        $this->assertSame('pending_bplo_release', $application->status);
+        $this->assertSame(3, $application->current_step);
         $this->assertSame(1, $application->inspections()->count());
         $this->assertSame('passed', $application->inspections()->first()->result);
 
-        // 4. Offline Municipal Treasurer / Cashier payment — no online Payment row exists yet,
-        // the driver-facing payment ticket reflects the real fee, and there is no online payment
-        // creation path to test (it's a real-world cash counter).
+        // 4. Offline Municipal Treasurer / Cashier payment — the system never records or
+        // verifies this. No online Payment row exists, and there is no route to create one; the
+        // TMO ticket the driver was redirected to is the only thing the system generates here.
         $this->assertNull($application->payment()->first());
         $ticket = $application->payment_ticket;
         $this->assertEquals(750.00, $ticket['total_amount']);
 
-        // 5. TMO Payment Verification — verify (this is what actually records the Payment row;
-        // BPLO must never be able to do this).
-        $this->actingAs($tmo)->post(route('tmo.verify-payment.submit', $application), [
-            'action'                  => 'verify',
-            'official_receipt_number' => 'OR-0001',
-            'amount'                  => 750,
-            'payment_date'            => now()->toDateString(),
-        ])->assertRedirect(route('tmo.payments'));
-
-        $application->refresh();
-        $this->assertSame('payment_verified', $application->status);
-        $this->assertSame(5, $application->current_step);
-        $payment = $application->payment()->first();
-        $this->assertNotNull($payment);
-        $this->assertTrue((bool) $payment->is_verified);
-        $this->assertSame($tmo->id, $payment->processed_by);
-        $this->assertSame(1, $application->payment()->count());
-
-        // 6. BPLO Releasing.
+        // 5. BPLO Releasing — BPLO only visually checks the TMO ticket/receipt in person; it
+        // never records a Payment row.
         $bplo = $this->makeBploUser();
         $this->actingAs($bplo)->post(route('bplo.release.submit', $application), [
-            'body_number'    => '0001',
+            'coding_scheme_number' => '0001',
             'sticker_number' => 'STK-0001',
         ])->assertRedirect(route('bplo.releasing'));
 
@@ -104,7 +88,7 @@ class FranchiseWorkflowTest extends TestCase
         $franchiseScheme = FranchiseScheme::where('tricycle_id', $tricycleId)->where('is_active', false)->first();
         $this->assertNotNull($franchiseScheme, 'BPLO release must create the franchise scheme, inactive until Final Confirmation.');
 
-        // 7. TMO Final Confirmation & GPS Setup — mobile GPS branch.
+        // 6. TMO Final Confirmation & GPS Setup — mobile GPS branch.
         $this->assertSame(0, TricycleLocation::where('tricycle_id', $tricycleId)->count());
 
         $this->actingAs($tmo)->post(route('tmo.final-confirmation.confirm', $application), [
@@ -132,34 +116,36 @@ class FranchiseWorkflowTest extends TestCase
 
         // Database integrity: no duplicate records were created by advancing through stages.
         $this->assertSame(1, Application::where('id', $applicationId)->count());
-        $this->assertSame(6, $application->statusHistories()->count(), 'registration + 5 real transitions');
+        $this->assertSame(5, $application->statusHistories()->count(), 'registration + 4 real transitions');
     }
 
+    /**
+     * Regression guard for the removal itself — the TMO payment-verification step no longer
+     * exists in this system at all (not just restricted to a role). Neither TMO nor BPLO can
+     * reach it, for anyone, because the routes are gone.
+     */
     #[Test]
-    public function bplo_has_no_route_or_ability_to_verify_payment(): void
+    public function tmo_payment_verification_routes_no_longer_exist(): void
     {
         [, , $application] = $this->registerNewApplication(['plate_number' => 'WFL-BPLOPAY']);
         $tmo = $this->makeTmoUser();
         $bplo = $this->makeBploUser();
 
         $this->actingAs($tmo)->post(route('tmo.review.submit', $application), [
-            'action' => 'approve', 'docStatuses' => ['orcr' => 'approved', 'license' => 'approved', 'brgy' => 'approved', 'toda' => 'approved'],
+            'action' => 'approve', 'docStatuses' => ['orcr_photocopy' => 'approved', 'drivers_license' => 'approved', 'barangay_clearance' => 'approved', 'toda_clearance' => 'approved'],
         ]);
         $this->actingAs($tmo)->post(route('tmo.review.physical.submit', $application), [
             'action' => 'pass', 'inspectionStatuses' => $this->allInspectionItemsPassed(),
         ]);
         $application->refresh();
-        $this->assertSame('pending_payment', $application->status);
+        $this->assertSame('pending_bplo_release', $application->status);
 
-        // BPLO staff cannot reach the TMO payment-verification route at all — role middleware
-        // rejects it before the controller ever runs.
-        $response = $this->actingAs($bplo)->post(route('tmo.verify-payment.submit', $application), [
-            'action' => 'verify', 'official_receipt_number' => 'OR-9999', 'amount' => 750, 'payment_date' => now()->toDateString(),
-        ]);
-        $response->assertForbidden();
+        $this->assertFalse(\Illuminate\Support\Facades\Route::has('tmo.payments'));
+        $this->assertFalse(\Illuminate\Support\Facades\Route::has('tmo.verify-payment'));
+        $this->assertFalse(\Illuminate\Support\Facades\Route::has('tmo.verify-payment.submit'));
 
         $application->refresh();
-        $this->assertSame('pending_payment', $application->status, 'Status must not change from an unauthorized actor.');
+        $this->assertSame('pending_bplo_release', $application->status, 'Status must be untouched.');
         $this->assertNull($application->payment()->first());
     }
 
@@ -171,14 +157,14 @@ class FranchiseWorkflowTest extends TestCase
 
         $this->actingAs($tmo)->post(route('tmo.review.submit', $application), [
             'action'           => 'reject',
-            'docStatuses'      => ['orcr' => 'rejected'],
-            'rejectionReasons' => ['orcr' => 'Blurry scan, please resubmit.'],
+            'docStatuses'      => ['orcr_photocopy' => 'rejected'],
+            'rejectionReasons' => ['orcr_photocopy' => 'Blurry scan, please resubmit.'],
         ])->assertRedirect(route('tmo.docs'));
 
         $application->refresh();
         $this->assertSame('rejected', $application->status);
         $this->assertSame(1, $application->current_step);
-        $rejectedDoc = $application->documents()->where('document_type', 'or_cr')->first();
+        $rejectedDoc = $application->documents()->where('document_type', 'orcr_photocopy')->first();
         $this->assertSame('rejected', $rejectedDoc->review_status);
         $this->assertSame('Blurry scan, please resubmit.', $rejectedDoc->rejection_reason);
     }
@@ -190,7 +176,7 @@ class FranchiseWorkflowTest extends TestCase
         $tmo = $this->makeTmoUser();
 
         $this->actingAs($tmo)->post(route('tmo.review.submit', $application), [
-            'action' => 'approve', 'docStatuses' => ['orcr' => 'approved', 'license' => 'approved', 'brgy' => 'approved', 'toda' => 'approved'],
+            'action' => 'approve', 'docStatuses' => ['orcr_photocopy' => 'approved', 'drivers_license' => 'approved', 'barangay_clearance' => 'approved', 'toda_clearance' => 'approved'],
         ]);
 
         $failedItems = array_merge($this->allInspectionItemsPassed(), ['mirrors' => 'failed']);
@@ -217,38 +203,12 @@ class FranchiseWorkflowTest extends TestCase
         $this->actingAs($tmo)->post(route('tmo.review.physical.submit', $application), [
             'action'             => 'pass',
             'inspectionStatuses' => $this->allInspectionItemsPassed(),
-        ])->assertRedirect(route('tmo.ticket', $application->id));
+        ])->assertRedirect(route('tmo.physical'));
 
         $application->refresh();
-        $this->assertSame('pending_payment', $application->status);
+        $this->assertSame('pending_bplo_release', $application->status);
         $this->assertSame(2, $application->inspections()->count());
         $this->assertSame(2, $application->inspections()->max('attempt_number'));
-    }
-
-    #[Test]
-    public function tmo_flagging_a_payment_issue_keeps_the_application_at_the_payment_stage(): void
-    {
-        [, , $application] = $this->registerNewApplication(['plate_number' => 'WFL-PAYISSUE']);
-        $tmo = $this->makeTmoUser();
-
-        $this->actingAs($tmo)->post(route('tmo.review.submit', $application), [
-            'action' => 'approve', 'docStatuses' => ['orcr' => 'approved', 'license' => 'approved', 'brgy' => 'approved', 'toda' => 'approved'],
-        ]);
-        $this->actingAs($tmo)->post(route('tmo.review.physical.submit', $application), [
-            'action' => 'pass', 'inspectionStatuses' => $this->allInspectionItemsPassed(),
-        ]);
-        $application->refresh();
-        $this->assertSame('pending_payment', $application->status);
-
-        $this->actingAs($tmo)->post(route('tmo.verify-payment.submit', $application), [
-            'action'       => 'flag_issue',
-            'issue_notes'  => 'Official receipt number does not match treasury records.',
-        ])->assertRedirect(route('tmo.payments'));
-
-        $application->refresh();
-        $this->assertSame('payment_issue', $application->status);
-        $this->assertSame(4, $application->current_step);
-        $this->assertNull($application->payment()->first(), 'A flagged issue must not create a Payment row.');
     }
 
     /**

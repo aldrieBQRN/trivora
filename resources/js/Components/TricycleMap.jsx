@@ -4,39 +4,7 @@ import L from 'leaflet';
 import { Navigation, Maximize2, Minimize2, MapPin, Compass } from 'lucide-react';
 import 'leaflet/dist/leaflet.css';
 
-const createTodaIcon = (zone) => {
-    return L.divIcon({
-        className: 'custom-toda-marker',
-        html: `
-            <div class="relative flex items-center justify-center cursor-pointer" style="filter: drop-shadow(0 2px 5px rgba(0,0,0,0.28));">
-                <div style="
-                    background: #1D2542;
-                    color: #FFFFFF;
-                    width: 28px;
-                    height: 28px;
-                    border-radius: 50% 50% 50% 0;
-                    transform: rotate(-45deg);
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    border: 2px solid #FFFFFF;
-                ">
-                    <div style="transform: rotate(45deg); display: flex; align-items: center; justify-content: center;">
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/>
-                            <circle cx="12" cy="10" r="3"/>
-                        </svg>
-                    </div>
-                </div>
-            </div>
-        `,
-        iconSize: [28, 28],
-        iconAnchor: [14, 28],
-        popupAnchor: [0, -26]
-    });
-};
-
-const createCustomIcon = (status, source = 'real', isOnline = true) => {
+const createCustomIcon = (status, isOnline = true) => {
     let color, pulse, hasAnimation;
 
     if (!isOnline || status === 'offline') {
@@ -60,18 +28,12 @@ const createCustomIcon = (status, source = 'real', isOnline = true) => {
         hasAnimation = true;
     }
 
-    // Simulated units get a dashed outline instead of a solid ring so they read as distinct from
-    // real GPS markers at a glance, without adding another color to the map.
-    const ringStyle = source === 'simulated'
-        ? 'border: 2px dashed #FFFFFF;'
-        : 'border: 2px solid #FFFFFF;';
-
     return L.divIcon({
         className: 'custom-tricycle-marker',
         html: `
             <div class="relative flex items-center justify-center w-6 h-6">
                 ${hasAnimation ? `<span class="animate-ping absolute inline-flex h-full w-full rounded-full ${pulse} opacity-75"></span>` : ''}
-                <div class="relative inline-flex rounded-full h-3.5 w-3.5 ${color} shadow-md z-10" style="${ringStyle}"></div>
+                <div class="relative inline-flex rounded-full h-3.5 w-3.5 ${color} shadow-md z-10" style="border: 2px solid #FFFFFF;"></div>
             </div>
         `,
         iconSize: [24, 24],
@@ -106,11 +68,8 @@ const MAP_THEMES = {
 
 export default function TricycleMap({
     tricycles = [],
-    todaZones = [],
     selectedUnitId = null,
-    selectedTodaId = null,
     onSelectUnit = () => {},
-    onSelectToda = () => {},
 }) {
     const [mapType, setMapType] = useState('roadmap');
     const [selectedTricycle, setSelectedTricycle] = useState(null);
@@ -121,51 +80,20 @@ export default function TricycleMap({
     const [isFlying, setIsFlying] = useState(false);
 
     const markerRefs = useRef({});
-    const todaMarkerRefs = useRef({});
     const containerRef = useRef(null);
 
     const nasugbuCenter = [14.0733, 120.6320];
-    const hasSimulated = tricycles.some((t) => t.source === 'simulated');
 
-    // Listen to external selection from parent
+    // Listen to external selection from parent. `db_id` — the tricycle's primary key — is the
+    // identity here (and the marker key/ref below) because `id` is only the display body/coding
+    // number and can legitimately repeat across units; see DashboardController::index().
     useEffect(() => {
         if (!selectedUnitId) return;
-        const target = tricycles.find(t => t.id === selectedUnitId);
+        const target = tricycles.find(t => t.db_id === selectedUnitId);
         if (target) {
             trackTricycle(target);
         }
     }, [selectedUnitId]);
-
-    // Listen to external TODA selection from parent (e.g. clicking TODA card in sidebar)
-    useEffect(() => {
-        if (!selectedTodaId) return;
-        const target = todaZones.find(z => z.id === selectedTodaId || z.code === selectedTodaId || z.name === selectedTodaId);
-        if (target && target.latitude && target.longitude) {
-            focusToda(target);
-        }
-    }, [selectedTodaId, todaZones]);
-
-    const focusToda = (zone) => {
-        setIsFollowing(false);
-        setIsFlying(true);
-        setSelectedTricycle(null);
-        onSelectUnit(null);
-
-        if (mapRef) {
-            mapRef.flyTo([Number(zone.latitude), Number(zone.longitude)], 17, {
-                duration: 1.2
-            });
-
-            mapRef.once('moveend', () => {
-                setIsFlying(false);
-            });
-        }
-
-        const marker = todaMarkerRefs.current[zone.id];
-        if (marker) {
-            marker.openPopup();
-        }
-    };
 
     // Fullscreen change listener & map invalidateSize trigger
     useEffect(() => {
@@ -222,10 +150,10 @@ export default function TricycleMap({
         }
     };
 
-    // Camera follow logic (keeps focused pin centered during live simulation)
+    // Camera follow logic (keeps focused pin centered during live tracking)
     useEffect(() => {
         if (isFollowing && !isFlying && selectedTricycle && mapRef) {
-            const currentTricycle = tricycles.find(t => t.id === selectedTricycle.id);
+            const currentTricycle = tricycles.find(t => t.db_id === selectedTricycle.db_id);
             if (currentTricycle) {
                 mapRef.setView([currentTricycle.lat, currentTricycle.lng], mapRef.getZoom(), {
                     animate: false
@@ -237,7 +165,7 @@ export default function TricycleMap({
     // Smooth fly to vehicle & open popup
     const trackTricycle = (tricycle) => {
         setSelectedTricycle(tricycle);
-        onSelectUnit(tricycle.id);
+        onSelectUnit(tricycle.db_id);
         setIsFollowing(true);
         setIsFlying(true);
 
@@ -251,8 +179,8 @@ export default function TricycleMap({
             });
         }
 
-        if (markerRefs.current[tricycle.id]) {
-            markerRefs.current[tricycle.id].openPopup();
+        if (markerRefs.current[tricycle.db_id]) {
+            markerRefs.current[tricycle.db_id].openPopup();
         }
     };
 
@@ -270,7 +198,6 @@ export default function TricycleMap({
         setIsFlying(true);
         setSelectedTricycle(null);
         onSelectUnit(null);
-        if (onSelectToda) onSelectToda(null);
 
         if (mapRef) {
             mapRef.closePopup();
@@ -296,23 +223,24 @@ export default function TricycleMap({
             {/* ══════════════════════════════════════════════════════════════
                 TOP CONTROLS: MAP THEME SELECTOR + FULL VIEW BUTTON
                ══════════════════════════════════════════════════════════════ */}
-            <div className="absolute top-3.5 right-3.5 z-[1000] pointer-events-auto flex items-center gap-2">
-                {/* Auto-focus Default Nasugbu View Button */}
+            <div className="absolute top-2 left-2 right-2 sm:top-3.5 sm:left-auto sm:right-3.5 z-[1000] pointer-events-none flex flex-wrap items-center justify-end gap-1.5 sm:gap-2">
+                {/* Auto-focus Default Nasugbu View Button — icon-only on mobile so this row
+                    doesn't overflow the map's width on narrow screens. */}
                 <button
                     type="button"
                     onClick={resetToNasugbuView}
                     title="Focus Default Nasugbu View"
-                    className="inline-flex items-center gap-1.5 rounded-xl bg-white px-3 py-1.5 text-xs font-bold text-[#1D2542] shadow-sm border border-slate-200 hover:bg-slate-50 transition-colors cursor-pointer"
+                    className="pointer-events-auto inline-flex items-center gap-1.5 rounded-xl bg-white px-2 sm:px-3 py-1.5 text-xs font-bold text-[#1D2542] shadow-sm border border-slate-200 hover:bg-slate-50 transition-colors cursor-pointer"
                 >
                     <Compass size={13} className="text-[#1D2542]" />
-                    <span>Nasugbu View</span>
+                    <span className="hidden sm:inline">Nasugbu View</span>
                 </button>
 
-                <div className="flex items-center rounded-xl bg-white p-0.5 shadow-sm border border-slate-200">
+                <div className="pointer-events-auto flex items-center rounded-xl bg-white p-0.5 shadow-sm border border-slate-200">
                     <button
                         type="button"
                         onClick={() => setMapType('roadmap')}
-                        className={`rounded-lg px-2.5 py-1 text-xs font-bold transition-all ${
+                        className={`rounded-lg px-2 sm:px-2.5 py-1 text-xs font-bold transition-all ${
                             mapType === 'roadmap'
                                 ? 'bg-[#1D2542] text-white shadow-xs'
                                 : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
@@ -323,18 +251,20 @@ export default function TricycleMap({
                     <button
                         type="button"
                         onClick={() => setMapType('satellite')}
-                        className={`rounded-lg px-2.5 py-1 text-xs font-bold transition-all ${
+                        title="Satellite"
+                        className={`rounded-lg px-2 sm:px-2.5 py-1 text-xs font-bold transition-all ${
                             mapType === 'satellite'
                                 ? 'bg-[#1D2542] text-white shadow-xs'
                                 : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
                         }`}
                     >
-                        Satellite
+                        <span className="sm:hidden">Sat</span>
+                        <span className="hidden sm:inline">Satellite</span>
                     </button>
                     <button
                         type="button"
                         onClick={() => setMapType('carto')}
-                        className={`rounded-lg px-2.5 py-1 text-xs font-bold transition-all ${
+                        className={`rounded-lg px-2 sm:px-2.5 py-1 text-xs font-bold transition-all ${
                             mapType === 'carto'
                                 ? 'bg-[#1D2542] text-white shadow-xs'
                                 : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
@@ -348,10 +278,10 @@ export default function TricycleMap({
                     type="button"
                     onClick={toggleFullscreen}
                     title={isFullscreen ? 'Exit Full View' : 'Full View'}
-                    className="inline-flex items-center gap-1.5 rounded-xl bg-white px-3.5 py-1.5 text-xs font-bold text-[#1D2542] shadow-sm border border-slate-200 hover:bg-slate-50 transition-colors"
+                    className="pointer-events-auto inline-flex items-center gap-1.5 rounded-xl bg-white px-2 sm:px-3.5 py-1.5 text-xs font-bold text-[#1D2542] shadow-sm border border-slate-200 hover:bg-slate-50 transition-colors"
                 >
                     {isFullscreen ? <Minimize2 size={13} className="text-[#1D2542]" /> : <Maximize2 size={13} className="text-[#1D2542]" />}
-                    <span>{isFullscreen ? 'Exit Full View' : 'Full View'}</span>
+                    <span className="hidden sm:inline">{isFullscreen ? 'Exit Full View' : 'Full View'}</span>
                 </button>
             </div>
 
@@ -376,67 +306,16 @@ export default function TricycleMap({
                     maxZoom={20}
                 />
 
-                {/* Static TODA Terminal Markers */}
-                {todaZones.map((zone) => {
-                    if (!zone.latitude || !zone.longitude) return null;
-
-                    return (
-                        <Marker
-                            key={`toda-terminal-${zone.id}`}
-                            ref={(el) => { if (el) todaMarkerRefs.current[zone.id] = el; }}
-                            position={[Number(zone.latitude), Number(zone.longitude)]}
-                            icon={createTodaIcon(zone)}
-                            zIndexOffset={100}
-                            eventHandlers={{
-                                click: () => {
-                                    if (onSelectToda) onSelectToda(zone.id);
-                                }
-                            }}
-                        >
-                            <Popup className="trivora-popup" closeButton={true}>
-                                <div style={{ padding: '10px 12px', minWidth: '200px', fontFamily: "'Inter', sans-serif", color: '#1D2542', fontSize: '12px', backgroundColor: '#FFFFFF', borderRadius: '10px' }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', marginBottom: '6px', borderBottom: '1px solid #F1F5F9', paddingBottom: '6px' }}>
-                                        <span style={{ fontSize: '13px', fontWeight: '800', color: '#1D2542' }}>{zone.name}</span>
-                                        <span style={{ fontSize: '10px', fontWeight: '700', padding: '1px 6px', borderRadius: '4px', backgroundColor: '#F1F5F9', color: '#475569' }}>
-                                            {zone.code}
-                                        </span>
-                                    </div>
-
-                                    {zone.terminal_name && (
-                                        <div style={{ fontSize: '11px', fontWeight: '700', color: '#334155', marginBottom: '3px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                            <MapPin size={11} color="#64748B" style={{ flexShrink: 0 }} />
-                                            <span>{zone.terminal_name}</span>
-                                        </div>
-                                    )}
-
-                                    {zone.address && (
-                                        <div style={{ fontSize: '10.5px', color: '#64748B', marginBottom: '6px', lineHeight: '1.3' }}>
-                                            {zone.address}
-                                        </div>
-                                    )}
-
-                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '10.5px', color: '#64748B', paddingTop: '5px', borderTop: '1px dashed #F1F5F9' }}>
-                                        <span>Authorized Units:</span>
-                                        <span style={{ fontWeight: '800', color: '#1D2542' }}>
-                                            {zone.tricycles_count ?? 0}
-                                        </span>
-                                    </div>
-                                </div>
-                            </Popup>
-                        </Marker>
-                    );
-                })}
-
                 {tricycles.map((trike) => {
                     if (!trike.lat || !trike.lng) return null;
 
                     return (
                         <Marker
-                            key={trike.id}
+                            key={trike.db_id}
                             position={[trike.lat, trike.lng]}
-                            icon={createCustomIcon(trike.status, trike.source, trike.is_online)}
+                            icon={createCustomIcon(trike.status, trike.is_online)}
                             zIndexOffset={trike.status === 'violator' ? 1000 : trike.status === 'coding_no_operation' ? 500 : 0}
-                            ref={(ref) => { if (ref) markerRefs.current[trike.id] = ref; }}
+                            ref={(ref) => { if (ref) markerRefs.current[trike.db_id] = ref; }}
                             eventHandlers={{
                                 click: (e) => {
                                     L.DomEvent.stopPropagation(e);
@@ -456,18 +335,6 @@ export default function TricycleMap({
                                     </button>
 
                                     <div style={{ marginBottom: '8px', paddingBottom: '6px', borderBottom: '1px solid #F1F5F9', paddingRight: '16px' }}>
-                                        {trike.source === 'simulated' && (
-                                            <span style={{
-                                                display: 'inline-block', fontSize: '9px', fontWeight: 800,
-                                                letterSpacing: '0.06em', textTransform: 'uppercase',
-                                                padding: '2px 6px', borderRadius: '4px', marginBottom: '5px',
-                                                color: '#475569',
-                                                backgroundColor: '#F1F5F9',
-                                                border: '1px dashed #94A3B8',
-                                            }}>
-                                                Simulated
-                                            </span>
-                                        )}
                                         <span style={{ fontSize: '16px', fontWeight: '800', color: '#1D2542', letterSpacing: '0.04em', display: 'block', marginBottom: '2px' }}>
                                             {trike.plate}
                                         </span>
@@ -511,19 +378,10 @@ export default function TricycleMap({
                                             </span>
                                         </div>
 
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#64748B' }}>
-                                            <Navigation size={11} strokeWidth={2.2} />
-                                            <span style={{ fontSize: '10px', fontWeight: '600' }}>
-                                                {trike.toda || 'TODA Route'} {trike.speed_kmh ? `• ${trike.speed_kmh} km/h` : ''}
-                                            </span>
-                                        </div>
-
                                         <div style={{ fontSize: '9.5px', fontWeight: 600, color: '#94A3B8', paddingTop: '4px', borderTop: '1px dashed #F1F5F9' }}>
-                                            {trike.source === 'simulated'
-                                                ? 'Simulation — not real GPS'
-                                                : trike.last_seen === 'Never'
-                                                    ? 'No GPS signal received yet'
-                                                    : `Last update: ${trike.last_seen || 'just now'}`}
+                                            {trike.last_seen === 'Never'
+                                                ? 'No GPS signal received yet'
+                                                : `Last update: ${trike.last_seen || 'just now'}`}
                                         </div>
                                     </div>
                                 </div>
@@ -535,77 +393,30 @@ export default function TricycleMap({
                 <ZoomControl position="bottomright" />
             </MapContainer>
 
-            {/* FLOATING LEGEND */}
-            <div style={{
-                position: 'absolute',
-                bottom: '16px',
-                left: '16px',
-                backgroundColor: 'rgba(255, 255, 255, 0.96)',
-                backdropFilter: 'blur(6px)',
-                padding: '12px 14px',
-                borderRadius: '12px',
-                border: '1px solid #E2E8F0',
-                boxShadow: '0 4px 12px rgba(15, 23, 42, 0.08)',
-                pointerEvents: 'auto',
-                zIndex: 9999,
-                minWidth: '200px'
-            }}>
-                <p style={{
-                    fontSize: '10px',
-                    fontWeight: 800,
-                    color: '#1D2542',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.06em',
-                    marginBottom: '8px',
-                    paddingBottom: '4px',
-                    borderBottom: '1px solid #E2E8F0'
-                }}>Status Legend</p>
-                
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <div style={{ width: '9px', height: '9px', borderRadius: '50%', backgroundColor: '#10B981' }}></div>
-                        <span style={{ fontSize: '10.5px', fontWeight: '600', color: '#334155' }}>Active (Operating)</span>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <div style={{ width: '9px', height: '9px', borderRadius: '50%', backgroundColor: '#F59E0B' }}></div>
-                        <span style={{ fontSize: '10.5px', fontWeight: '600', color: '#334155' }}>Restricted Today (Coding Day)</span>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <div style={{ width: '9px', height: '9px', borderRadius: '50%', backgroundColor: '#DC2626' }}></div>
-                        <span style={{ fontSize: '10.5px', fontWeight: '600', color: '#334155' }}>Coding Restriction Breach</span>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <div style={{ width: '9px', height: '9px', borderRadius: '50%', backgroundColor: '#94A3B8' }}></div>
-                        <span style={{ fontSize: '10.5px', fontWeight: '600', color: '#334155' }}>Offline (No recent signal)</span>
-                    </div>
-                    {hasSimulated && (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <div style={{ width: '9px', height: '9px', borderRadius: '50%', backgroundColor: '#94A3B8', border: '1.5px dashed #FFFFFF', boxSizing: 'border-box' }}></div>
-                            <span style={{ fontSize: '10.5px', fontWeight: '600', color: '#334155' }}>Dashed ring = Simulated</span>
-                        </div>
-                    )}
-                </div>
+            {/* FLOATING LEGEND — compacted (smaller padding/font/dot size) on mobile so it
+                doesn't dominate a shorter mobile map viewport; unchanged from the original at
+                sm+ breakpoints. */}
+            <div className="pointer-events-auto absolute bottom-2 left-2 sm:bottom-4 sm:left-4 z-[9999] min-w-[150px] sm:min-w-[200px] rounded-xl border border-slate-200 bg-white/95 p-2.5 sm:p-3.5 shadow-[0_4px_12px_rgba(15,23,42,0.08)] backdrop-blur-[6px]">
+                <p className="mb-1.5 sm:mb-2 border-b border-slate-200 pb-1 sm:pb-1 text-[9px] sm:text-[10px] font-extrabold uppercase tracking-[0.06em] text-[#1D2542]">
+                    Status Legend
+                </p>
 
-                <div style={{ marginTop: '8px', paddingTop: '6px', borderTop: '1px solid #E2E8F0' }}>
-                    <p style={{
-                        fontSize: '9.5px',
-                        fontWeight: 800,
-                        color: '#64748B',
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.04em',
-                        marginBottom: '6px'
-                    }}>TODA Terminals</p>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <div style={{
-                            width: '10px', height: '10px',
-                            backgroundColor: '#1D2542', border: '1.5px solid #FFFFFF',
-                            borderRadius: '50% 50% 50% 0',
-                            transform: 'rotate(-45deg)',
-                            boxShadow: '0 1px 3px rgba(0,0,0,0.2)'
-                        }}></div>
-                        <span style={{ fontSize: '10.5px', fontWeight: '600', color: '#334155' }}>
-                            Configured Terminal
-                        </span>
+                <div className="flex flex-col gap-1 sm:gap-1.5">
+                    <div className="flex items-center gap-1.5 sm:gap-2">
+                        <div className="h-2 w-2 sm:h-[9px] sm:w-[9px] shrink-0 rounded-full bg-emerald-500" />
+                        <span className="text-[9px] sm:text-[10.5px] font-semibold text-slate-700">Active (Operating)</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 sm:gap-2">
+                        <div className="h-2 w-2 sm:h-[9px] sm:w-[9px] shrink-0 rounded-full bg-amber-500" />
+                        <span className="text-[9px] sm:text-[10.5px] font-semibold text-slate-700">Restricted Today (Coding Day)</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 sm:gap-2">
+                        <div className="h-2 w-2 sm:h-[9px] sm:w-[9px] shrink-0 rounded-full bg-red-600" />
+                        <span className="text-[9px] sm:text-[10.5px] font-semibold text-slate-700">Coding Restriction Breach</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 sm:gap-2">
+                        <div className="h-2 w-2 sm:h-[9px] sm:w-[9px] shrink-0 rounded-full bg-slate-400" />
+                        <span className="text-[9px] sm:text-[10.5px] font-semibold text-slate-700">Offline (No recent signal)</span>
                     </div>
                 </div>
             </div>

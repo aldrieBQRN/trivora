@@ -1,5 +1,6 @@
 import React from 'react';
 import { Head, useForm, Link, router } from '@inertiajs/react';
+import useBackgroundRefresh from '@/hooks/useBackgroundRefresh';
 import TrivoraLayout from '@/Layouts/TrivoraLayout';
 import Swal from 'sweetalert2';
 import {
@@ -44,12 +45,16 @@ export default function FinalConfirmationDetail({ application }) {
         bplo_approval_confirmed: isAlreadyCompleted,
         sticker_possession_confirmed: isAlreadyCompleted,
         tracking_method: application.tracking_method || 'mobile_gps',
-        iot_device_id: application.iot_device_id || (application.suggested_iot_id || ''),
-        imei: application.device_imei || '',
-        sim_number: application.device_sim_number || '',
+        iot_device_id: application.iot_device_id || '',
         reassign_confirmed: false,
         officer_notes: '',
     });
+
+    // Background refresh of the record being confirmed (payment verification / GPS setup status
+    // is confirmed on this page): a change made elsewhere updates it without a manual reload.
+    // Paused while submitting. useForm is initialised once from the first `application` prop, so
+    // a refreshed record never re-seeds or clears the officer's checkbox/notes state.
+    useBackgroundRefresh(['application'], { paused: processing });
 
     const allChecked =
         data.signed_ticket_verified &&
@@ -90,10 +95,9 @@ export default function FinalConfirmationDetail({ application }) {
             title: 'Confirm Franchise Activation',
             html: `Are you sure you want to mark this franchise permit as <b>COMPLETED / ACTIVE</b>?<br/><br/>
                    <div style="text-align: left; background: #F8FAFC; padding: 14px 16px; border-radius: 8px; font-size: 13px; line-height: 1.6; border: 1px solid #E2E8F0;">
-                     Operator: <b>${application.operator_name}</b><br/>
-                     TODA Zone: <b>${application.toda_zone}</b><br/>
+                     Tricycle Owner: <b>${application.operator_name}</b><br/>
                      Tricycle Unit: <b>${application.make_model} (${application.plate_number})</b><br/>
-                     Coding Scheme: <b>#${application.coding_number || application.body_number} (${application.color_scheme} Scheme)</b><br/>
+                     Sticker Number: <b>#${application.coding_number} (${application.color_scheme} Scheme)</b><br/>
                      Tracking Method: ${methodText}
                    </div>`,
             icon: 'question',
@@ -192,7 +196,7 @@ export default function FinalConfirmationDetail({ application }) {
 
                 {/* ══════════════ LEFT COLUMN: Application Profile & Clearances ══════════════ */}
                 <div className="flex flex-col gap-5">
-                    {/* Driver & Vehicle */}
+                    {/* Tricycle Owner/Driver & Vehicle */}
                     <div className={`rounded-2xl border border-slate-200/70 bg-white p-6 ${CARD_SHADOW}`}>
                         <div className="mb-4 flex items-center justify-between border-b border-slate-100 pb-3.5">
                             <h3 className="flex items-center gap-2 text-sm font-extrabold text-slate-900">
@@ -204,9 +208,29 @@ export default function FinalConfirmationDetail({ application }) {
                             <span className="text-[11px] font-bold text-slate-400">{application.application_type} Franchise</span>
                         </div>
 
-                        <DetailRow label="Operator / Driver" value={application.operator_name} />
-                        <DetailRow label="Contact Number" value={application.contact_number} />
-                        <DetailRow label="TODA Zone Assignment" value={application.toda_zone} />
+                        {/* Tricycle Owner — always the primary person; driver only below when different */}
+                        <DetailRow
+                            label="Tricycle Owner"
+                            value={application.owner?.full_name || application.operator_name}
+                        />
+                        <DetailRow label="Owner's Birthday" value={application.owner?.birthday || '—'} />
+                        <DetailRow label="Owner's Mobile" value={application.owner?.contact_number || application.contact_number} />
+                        <DetailRow label="Owner's Barangay" value={application.owner?.barangay || application.barangay} />
+                        <DetailRow
+                            label="Tricycle Driver"
+                            value={
+                                application.ownerIsDriver
+                                    ? 'Same as Tricycle Owner'
+                                    : (application.tricycleDriver?.full_name || 'Not provided')
+                            }
+                        />
+                        {!application.ownerIsDriver && application.tricycleDriver && (
+                            <>
+                                <DetailRow label="Driver's Birthday" value={application.tricycleDriver.birthday || '—'} />
+                                <DetailRow label="Driver's Mobile" value={application.tricycleDriver.contact_number || '—'} />
+                                <DetailRow label="Driver's Barangay" value={application.tricycleDriver.barangay || '—'} />
+                            </>
+                        )}
                         <DetailRow label="Plate / Temp Number" value={application.plate_number} mono />
                         <DetailRow label="Make &amp; Model" value={application.make_model} />
                         <DetailRow
@@ -217,7 +241,7 @@ export default function FinalConfirmationDetail({ application }) {
                         />
                     </div>
 
-                    {/* Clearances: Coding Scheme & Payment Ticket */}
+                    {/* Clearances: Sticker Number & Payment Ticket */}
                     <div className={`rounded-2xl border border-slate-200/70 bg-white p-6 ${CARD_SHADOW}`}>
                         <div className="mb-4 flex items-center justify-between border-b border-slate-100 pb-3.5">
                             <h3 className="flex items-center gap-2 text-sm font-extrabold text-slate-900">
@@ -231,8 +255,8 @@ export default function FinalConfirmationDetail({ application }) {
 
                         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                             <div className="rounded-xl border border-emerald-200 bg-emerald-50/80 p-3.5">
-                                <div className="mb-1 text-[9.5px] font-bold uppercase tracking-wide text-slate-400">Coding Scheme</div>
-                                <div className="font-mono text-[14px] font-extrabold text-emerald-700">#{application.coding_number || application.body_number}</div>
+                                <div className="mb-1 text-[9.5px] font-bold uppercase tracking-wide text-slate-400">Sticker Number</div>
+                                <div className="font-mono text-[14px] font-extrabold text-emerald-700">#{application.coding_number}</div>
                                 <div className="mt-0.5 flex items-center gap-1.5 text-[10.5px] font-bold text-emerald-700">
                                     <span className="h-2 w-2 rounded-full" style={{ backgroundColor: application.color_hex }} />
                                     {application.color_scheme} Scheme
@@ -269,7 +293,7 @@ export default function FinalConfirmationDetail({ application }) {
                             )}
                         </div>
                         <p className="mb-6 text-[12.5px] leading-relaxed text-slate-500">
-                            Check the driver's payment ticket and coding number, then select GPS tracking to activate this tricycle franchise.
+                            Check the driver's payment ticket and Sticker Number, then select GPS tracking to activate this tricycle franchise.
                         </p>
 
                         {/* Checklist */}
@@ -286,14 +310,14 @@ export default function FinalConfirmationDetail({ application }) {
                                 disabled={isAlreadyCompleted}
                                 onClick={() => setData('bplo_approval_confirmed', !data.bplo_approval_confirmed)}
                             >
-                                Confirmed <strong>BPLO signed off and released</strong> the Franchise Sticker/Body Number for this unit.
+                                Confirmed <strong>BPLO signed off and released</strong> the Franchise Number for this unit.
                             </CheckItem>
                             <CheckItem
                                 checked={data.sticker_possession_confirmed}
                                 disabled={isAlreadyCompleted}
                                 onClick={() => setData('sticker_possession_confirmed', !data.sticker_possession_confirmed)}
                             >
-                                Confirmed physical possession of <strong>Coding Plate #{application.coding_number || application.body_number}</strong> ({application.color_scheme} Scheme).
+                                Confirmed physical possession of <strong>Coding Plate #{application.coding_number}</strong> ({application.color_scheme} Scheme).
                             </CheckItem>
                         </div>
 
@@ -337,63 +361,19 @@ export default function FinalConfirmationDetail({ application }) {
                                 <input
                                     type="text"
                                     className="mt-1.5 w-full rounded-lg border-[1.5px] border-slate-300 bg-white px-3.5 py-2.5 font-mono text-sm font-bold text-slate-900 outline-none transition-colors focus:border-[#1D2542] focus:ring-2 focus:ring-[#1D2542]/10"
-                                    placeholder="e.g. TRV-GPS-1011"
+                                    placeholder="e.g. 1011 or SinoTrack Tracker ID"
                                     value={data.iot_device_id}
                                     onChange={(e) => setData('iot_device_id', e.target.value)}
                                     disabled={isAlreadyCompleted}
                                     required
                                 />
-                                <div className="mt-2 flex items-center justify-between text-[11.5px]">
-                                    <span className="text-slate-500">
-                                        Suggested ID: <code className="font-mono font-bold text-slate-800">{application.suggested_iot_id}</code>
-                                    </span>
-                                    {!isAlreadyCompleted && (
-                                        <button
-                                            type="button"
-                                            onClick={() => setData('iot_device_id', application.suggested_iot_id)}
-                                            className="font-bold text-[#1D2542] hover:underline"
-                                        >
-                                            Use Suggested ID
-                                        </button>
-                                    )}
-                                </div>
-
-                                <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
-                                    <div>
-                                        <Label>IMEI (Optional):</Label>
-                                        <input
-                                            type="text"
-                                            className="mt-1.5 w-full rounded-lg border-[1.5px] border-slate-300 bg-white px-3.5 py-2 font-mono text-xs font-semibold text-slate-900 outline-none transition-colors focus:border-[#1D2542] focus:ring-2 focus:ring-[#1D2542]/10"
-                                            placeholder="15-digit device IMEI, if known"
-                                            value={data.imei}
-                                            onChange={(e) => setData('imei', e.target.value)}
-                                            disabled={isAlreadyCompleted}
-                                        />
-                                    </div>
-                                    <div>
-                                        <Label>SIM Number (Optional):</Label>
-                                        <input
-                                            type="text"
-                                            className="mt-1.5 w-full rounded-lg border-[1.5px] border-slate-300 bg-white px-3.5 py-2 font-mono text-xs font-semibold text-slate-900 outline-none transition-colors focus:border-[#1D2542] focus:ring-2 focus:ring-[#1D2542]/10"
-                                            placeholder="SIM used for 4G connectivity"
-                                            value={data.sim_number}
-                                            onChange={(e) => setData('sim_number', e.target.value)}
-                                            disabled={isAlreadyCompleted}
-                                        />
-                                    </div>
-                                </div>
-
-                                <div className="mt-3 flex items-center gap-2 rounded-lg border border-slate-200 bg-white p-2.5 text-[11px] text-slate-700">
-                                    <span className="font-semibold">Device Status:</span>
-                                    <GpsStatusBadge status={application.gps_status || 'awaiting'} lastSeenAt={application.gps_last_seen_at} />
-                                </div>
-                                {!isAlreadyCompleted && (
-                                    <p className="mt-1.5 text-[10.5px] leading-relaxed text-amber-900">
-                                        Pairing only registers this tracker to the tricycle — it will show <strong>Awaiting First Signal</strong> until the physical device is installed and sends its first real GPS transmission.
+                                {!data.iot_device_id && !isAlreadyCompleted && (
+                                    <p className="mt-2 text-[11px] text-slate-500">
+                                        No tracker ID configured yet. Enter the actual device ID configured for this tricycle.
                                     </p>
                                 )}
 
-                                <div className="mt-2 rounded-md bg-amber-100/60 px-3 py-2 text-[10.5px] leading-relaxed text-amber-900">
+                                <div className="mt-3 rounded-md bg-amber-100/60 px-3 py-2 text-[10.5px] leading-relaxed text-amber-900">
                                     <strong>Wiring:</strong> Connect Red wire to battery (+), Black to ground (-), and Yellow to ignition key.
                                 </div>
                             </div>
@@ -469,15 +449,8 @@ export default function FinalConfirmationDetail({ application }) {
                                 <div>
                                     <p className="text-[13px] font-bold text-emerald-800">Franchise Permit is Active</p>
                                     <p className="text-[11px] text-emerald-700">
-                                        Tracking Mode: {application.tracking_method === 'iot_device' ? `GPS Tracker (${application.iot_device_id})` : 'Driver Smartphone App'}
+                                        Tracking Mode: {application.tracking_method === 'iot_device' ? `GPS Tracker (${application.iot_device_id || 'Configured'})` : 'Driver Smartphone App'}
                                     </p>
-                                    {application.tracking_method === 'iot_device' && (application.device_imei || application.device_sim_number) && (
-                                        <p className="text-[11px] text-emerald-700">
-                                            {application.device_imei ? `IMEI: ${application.device_imei}` : ''}
-                                            {application.device_imei && application.device_sim_number ? ' · ' : ''}
-                                            {application.device_sim_number ? `SIM: ${application.device_sim_number}` : ''}
-                                        </p>
-                                    )}
                                     <div className="mt-1.5">
                                         <GpsStatusBadge status={application.gps_status} lastSeenAt={application.gps_last_seen_at} />
                                     </div>

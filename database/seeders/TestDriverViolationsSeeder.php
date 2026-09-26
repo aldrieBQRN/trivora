@@ -6,6 +6,7 @@ use App\Models\ColorCodingScheme;
 use App\Models\Driver;
 use App\Models\FranchiseScheme;
 use App\Models\TricycleLocation;
+use App\Models\Tricycle;
 use App\Models\User;
 use App\Models\Violation;
 use App\Models\ViolationAppeal;
@@ -62,6 +63,17 @@ class TestDriverViolationsSeeder extends Seeder
             ]
         );
 
+        // Franchise Number (STK-YYYY-NNNN): no application backs this fixture scheme (it
+        // exists only because violations.franchise_scheme_id is required), so the serial is
+        // built from the unit's Sticker Number the way BPLOController::showReleaseForm()
+        // builds one — and never regenerated once issued.
+        if (! $franchise->sticker_number) {
+            $testCoding = (string) (Tricycle::whereKey($tricycleId)->value('coding_scheme_number') ?: '9999');
+            $franchise->update([
+                'sticker_number' => 'STK-' . now()->format('Y') . '-' . str_pad($testCoding, 4, '0', STR_PAD_LEFT),
+            ]);
+        }
+
         $tmoJuan = User::where('email', 'tmo.jdelacruz@trivora.gov.ph')->first();
         $tmoMaria = User::where('email', 'tmo.msantos@trivora.gov.ph')->first();
 
@@ -71,7 +83,7 @@ class TestDriverViolationsSeeder extends Seeder
         $this->seedResolved($tricycleId, $franchise->id, $redScheme?->id);
 
         // ------------------------------------------------------------------
-        // 2. APPEAL UNDER REVIEW — a manually-filed route violation, appeal filed, awaiting decision.
+        // 2. APPEAL UNDER REVIEW — a color-coding citation filed by an officer, appeal filed, awaiting decision.
         // ------------------------------------------------------------------
         $this->seedUnderReview($tricycleId, $franchise->id, $redScheme?->id, $driver->id);
 
@@ -92,7 +104,11 @@ class TestDriverViolationsSeeder extends Seeder
     {
         $detectedAt = Carbon::parse('2026-08-20 09:15:00');
 
-        if (Violation::where('tricycle_id', $tricycleId)->where('detected_at', $detectedAt)->exists()) {
+        $existing = Violation::where('tricycle_id', $tricycleId)->where('detected_at', $detectedAt)->first();
+        if ($existing) {
+            // Re-running must also heal a record that lost its GPS ping, so the resolved/fine-paid
+            // scenario always keeps a real Detection Method source.
+            $this->ensureGpsSnapshot($existing, $detectedAt, 14.0705, 120.6341);
             return;
         }
 
@@ -103,7 +119,7 @@ class TestDriverViolationsSeeder extends Seeder
             'speed_kmh' => 24.0,
             'heading_deg' => 45,
             'accuracy_m' => 5.0,
-            'source' => 'mobile_app',
+            'source' => self::pingSource($tricycleId),
             'recorded_at' => $detectedAt,
         ]);
 
@@ -135,22 +151,25 @@ class TestDriverViolationsSeeder extends Seeder
                 'color_coding_scheme_id' => $colorSchemeId,
                 'location_snapshot_id' => null,
                 'detected_by' => User::where('email', 'tmo.jdelacruz@trivora.gov.ph')->value('id'),
-                'violation_type' => 'route_violation',
+                'violation_type' => 'color_coding',
                 'detected_at' => $detectedAt,
                 'day_of_week' => $detectedAt->format('l'),
                 'detection_method' => 'manual',
                 'status' => 'contested',
                 'fine_amount' => 350.00,
                 'fine_paid_at' => null,
-                'notes' => 'Tricycle observed operating past Wawa Port & Baywalk, Barangay 4 — outside the assigned TODA Bucana route boundary. Manually filed by TMO Officer.',
+                'notes' => 'Red-coded tricycle (TEST-0001) observed operating near Wawa Port & Baywalk, Barangay 4 on a restricted day. Filed by TMO Officer.',
             ]
         );
+
+        // Same landmark coordinates the project already uses for Wawa Port & Baywalk.
+        $this->ensureGpsSnapshot($violation, $detectedAt, 14.0642, 120.6350);
 
         ViolationAppeal::firstOrCreate(
             ['violation_id' => $violation->id],
             [
                 'driver_id' => $driverId,
-                'reason' => 'I was rerouted through Barangay 4 by barangay tanod due to a temporary road closure on National Highway for a fiesta procession that afternoon. I did not deviate from my route voluntarily.',
+                'reason' => 'I was responding to a genuine emergency that afternoon and had no alternative route available, so I did not knowingly operate during the restricted window.',
                 'evidence_path' => null,
                 'status' => 'under_review',
                 'submitted_at' => Carbon::parse('2026-09-04 10:00:00'),
@@ -165,7 +184,11 @@ class TestDriverViolationsSeeder extends Seeder
     {
         $detectedAt = Carbon::parse('2026-09-07 07:45:00');
 
-        if (Violation::where('tricycle_id', $tricycleId)->where('detected_at', $detectedAt)->exists()) {
+        $existing = Violation::where('tricycle_id', $tricycleId)->where('detected_at', $detectedAt)->first();
+        if ($existing) {
+            // Re-running must also heal a record that lost its GPS ping, so the pending/open
+            // scenario always keeps a real Detection Method source.
+            $this->ensureGpsSnapshot($existing, $detectedAt, 14.0718, 120.6325);
             return;
         }
 
@@ -176,7 +199,7 @@ class TestDriverViolationsSeeder extends Seeder
             'speed_kmh' => 19.5,
             'heading_deg' => 120,
             'accuracy_m' => 4.0,
-            'source' => 'mobile_app',
+            'source' => self::pingSource($tricycleId),
             'recorded_at' => $detectedAt,
         ]);
 
@@ -208,7 +231,7 @@ class TestDriverViolationsSeeder extends Seeder
                 'color_coding_scheme_id' => $colorSchemeId,
                 'location_snapshot_id' => null,
                 'detected_by' => $reviewerId,
-                'violation_type' => 'route_violation',
+                'violation_type' => 'color_coding',
                 'detected_at' => $detectedAt,
                 'day_of_week' => $detectedAt->format('l'),
                 'detection_method' => 'manual',
@@ -218,22 +241,66 @@ class TestDriverViolationsSeeder extends Seeder
                 'status' => 'open',
                 'fine_amount' => 750.00,
                 'fine_paid_at' => null,
-                'notes' => 'Tricycle cited operating outside authorized boundary near SM Savemore Nasugbu, National Highway, Barangay 10 — repeat offense.',
+                'notes' => 'Red-coded tricycle cited operating near SM Savemore Nasugbu, National Highway, Barangay 10 on a restricted day — repeat offense.',
             ]
         );
+
+        // Same landmark coordinates the project already uses for Brgy. 10 / National Highway.
+        $this->ensureGpsSnapshot($violation, $detectedAt, 14.0728, 120.6319);
 
         ViolationAppeal::firstOrCreate(
             ['violation_id' => $violation->id],
             [
                 'driver_id' => $driverId,
-                'reason' => 'The GPS/route boundary reading was inaccurate at the time — I was still within the TODA Bucana coverage area based on my own tracking.',
+                'reason' => 'The color-coding reading was inaccurate at the time — the unit was not in service during the restricted window according to my own logs.',
                 'evidence_path' => null,
                 'status' => 'rejected',
                 'submitted_at' => Carbon::parse('2026-08-26 09:00:00'),
                 'reviewed_at' => Carbon::parse('2026-08-30 16:00:00'),
                 'reviewed_by' => $reviewerId,
-                'review_notes' => 'GPS log and manual officer report both confirm the tricycle was operating well outside the TODA Bucana boundary. Appeal denied — fine stands.',
+                'review_notes' => 'GPS log and the officer report both confirm the tricycle operated during the restricted color-coding window. Appeal denied — fine stands.',
             ]
         );
+    }
+
+    /**
+     * Guarantee a seeded violation carries a real tricycle_locations ping.
+     *
+     * The active violation UI resolves Detection Method from tricycle_locations.source, never
+     * from detection_method — a record with no ping would otherwise have no GPS source at all.
+     * Creates the ping at the violation's own detected_at (so it is that record's true position,
+     * not a stray ping from another time) and records how the unit actually reports.
+     */
+    private function ensureGpsSnapshot(Violation $violation, Carbon $detectedAt, float $lat, float $lng): void
+    {
+        if ($violation->location_snapshot_id) {
+            return;
+        }
+
+        $location = TricycleLocation::create([
+            'tricycle_id' => $violation->tricycle_id,
+            'latitude' => $lat,
+            'longitude' => $lng,
+            'speed_kmh' => 21.0,
+            'heading_deg' => 90,
+            'accuracy_m' => 5.0,
+            'source' => self::pingSource($violation->tricycle_id),
+            'recorded_at' => $detectedAt,
+        ]);
+
+        $violation->forceFill(['location_snapshot_id' => $location->id])->save();
+    }
+
+    /**
+     * The project's canonical ping source — the same rule MobileAppDataSeeder already applies:
+     * a unit fitted with an IoT tracker reports from its gps_device, any other unit reports from
+     * the driver's phone. Both are real GPS sources, so no record has to fall back on
+     * detection_method to produce a Detection Method label.
+     */
+    private static function pingSource(int $tricycleId): string
+    {
+        $mode = Tricycle::whereKey($tricycleId)->value('active_tracking_mode');
+
+        return $mode === 'iot_device' ? 'gps_device' : 'mobile_app';
     }
 }

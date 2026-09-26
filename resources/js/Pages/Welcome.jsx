@@ -3,8 +3,8 @@ import { Head, Link } from '@inertiajs/react';
 import Swal from 'sweetalert2';
 import {
     FileText, LogIn, ShieldCheck,
-    Search, Cpu, Zap, Megaphone,
-    Phone, Users, Wallet,
+    Search, Cpu, Satellite,
+    Phone, Wallet,
     ClipboardCheck, Award, ArrowRight, Calendar
 } from 'lucide-react';
 
@@ -317,7 +317,7 @@ html { scroll-behavior: smooth; }
   gap: 28px;
 }
 .wl-steps-line {
-  position: absolute; top: 64px; left: 12%; right: 12%; height: 2px;
+  position: absolute; top: 31px; left: 12%; right: 12%; height: 2px;
   background-image: linear-gradient(to right, rgba(79,91,203,.28) 0 10px, transparent 10px 18px);
   background-size: 18px 2px;
   z-index: 0;
@@ -329,7 +329,10 @@ html { scroll-behavior: smooth; }
 @media (max-width: 560px) { .wl-steps { grid-template-columns: 1fr; } }
 
 .wl-step { position: relative; z-index: 1; text-align: center; }
-.wl-step-icon-wrap { position: relative; width: 64px; height: 64px; margin: 0 auto 18px; }
+.wl-step-icon-wrap {
+  position: relative; width: 64px; height: 64px; margin: 0 auto 18px;
+  background: #FFFFFF; border-radius: 18px;
+}
 .wl-step-icon {
   width: 64px; height: 64px; border-radius: 18px;
   background: linear-gradient(135deg, rgba(79,91,203,.15), rgba(79,91,203,.02));
@@ -383,75 +386,12 @@ html { scroll-behavior: smooth; }
 .wl-feature-title { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 15.5px; font-weight: 800; letter-spacing: -.015em; color: #1C2340; margin-bottom: 8px; }
 .wl-feature-desc { font-family: 'Inter', sans-serif; font-size: 13.5px; font-weight: 400; color: #4A5578; line-height: 1.58; }
 
-/* ── Overview metrics strip ──────────────────────────────────────────── */
-.wl-stat-strip {
-  display: flex;
-  background: linear-gradient(135deg, #1C2340 0%, #232C50 100%);
-  border-radius: 18px;
-  padding: 30px 16px;
-  margin-bottom: 16px;
-  box-shadow: 0 4px 20px rgba(28,35,64,.2);
-}
-.wl-stat-item { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 0 16px; text-align: center; }
-.wl-stat-item:not(:last-child) { border-right: 1px solid rgba(255,255,255,.08); }
-.wl-stat-icon {
-  width: 34px; height: 34px; border-radius: 10px;
-  background: rgba(255,255,255,.08);
-  border: 1px solid rgba(255,255,255,.12);
-  display: flex; align-items: center; justify-content: center;
-  color: #FFFFFF; margin-bottom: 4px;
-}
-.wl-stat-value { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 32px; font-weight: 800; letter-spacing: -.025em; color: #FFFFFF; line-height: 1; }
-.wl-stat-label { font-family: 'DM Sans', sans-serif; font-size: 9.5px; font-weight: 700; letter-spacing: .13em; text-transform: uppercase; color: #8A96BC; }
-@media (max-width: 640px) {
-  .wl-stat-strip { flex-direction: column; padding: 6px 28px; }
-  .wl-stat-item { flex-direction: row-reverse; justify-content: space-between; align-items: center; width: 100%; padding: 16px 0; text-align: left; }
-  .wl-stat-item:not(:last-child) { border-right: none; border-bottom: 1px solid rgba(255,255,255,.08); }
-  .wl-stat-value { font-size: 24px; }
-  .wl-stat-icon { display: none; }
-}
-
-/* Advisories card */
-.wl-advisories {
-  background: #FFFFFF;
-  border: 1px solid rgba(28,35,64,.08);
-  border-radius: 18px; padding: 32px 28px;
-  box-shadow: 0 1px 6px rgba(28,35,64,.05);
-  display: flex; flex-direction: column;
-}
-.wl-adv-header { display: flex; align-items: center; gap: 14px; padding-bottom: 20px; margin-bottom: 20px; border-bottom: 1px solid rgba(28,35,64,.06); }
-.wl-adv-header-icon {
-  width: 40px; height: 40px; border-radius: 10px; flex-shrink: 0;
-  background: linear-gradient(135deg, rgba(239,68,68,.14), rgba(239,68,68,.02));
-  border: 1px solid rgba(239,68,68,.15);
-  display: flex; align-items: center; justify-content: center;
-  color: #EF4444;
-}
-.wl-adv-title { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 16px; font-weight: 800; letter-spacing: -.02em; color: #1C2340; margin-bottom: 3px; }
-.wl-adv-sub { font-family: 'Inter', sans-serif; font-size: 12.5px; font-weight: 400; color: #4A5578; }
-.wl-adv-list { display: flex; flex-direction: column; gap: 12px; }
-.wl-adv-item { display: flex; gap: 16px; }
-.wl-adv-chip {
-  flex-shrink: 0; width: 50px; height: 50px; border-radius: 12px;
-  background: rgba(28,35,64,.05);
-  border: 1px solid rgba(28,35,64,.08);
-  display: flex; flex-direction: column; align-items: center; justify-content: center;
-  transition: background .18s, border-color .18s;
-}
-.wl-adv-item:hover .wl-adv-chip { background: rgba(79,91,203,.08); border-color: rgba(79,91,203,.2); }
-.wl-adv-chip-month { font-family: 'DM Sans', sans-serif; font-size: 8.5px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: #4F5BCB; }
-.wl-adv-chip-day { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 18px; font-weight: 800; color: #1C2340; line-height: 1.2; }
-.wl-adv-body { background: #FAFAFA; border: 1px solid rgba(28,35,64,.06); border-radius: 10px; padding: 14px 16px; flex: 1; transition: background .18s, border-color .18s; }
-.wl-adv-item:hover .wl-adv-body { background: #FFFFFF; border-color: rgba(79,91,203,.15); }
-.wl-adv-item-title { font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 600; color: #1C2340; letter-spacing: -.01em; margin-bottom: 5px; line-height: 1.3; }
-.wl-adv-item-desc { font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 400; color: #4A5578; line-height: 1.55; }
-.wl-adv-footnote { font-family: 'Inter', sans-serif; font-size: 12px; font-weight: 400; color: #8A96BC; line-height: 1.5; margin-top: 20px; padding-top: 16px; border-top: 1px solid rgba(28,35,64,.06); }
 
 /* ── Closing CTA band — full-bleed, distinct from every other section,
    the "ready to act" close every modern landing page ends on. ── */
 .wl-cta-band {
   position: relative; overflow: hidden;
-  background: linear-gradient(135deg, #1C2340 0%, #2E3A9E 100%);
+  background: #1C2340;
   padding: 76px 0;
   text-align: center;
 }
@@ -505,13 +445,9 @@ const STEPS = [
     { icon: Award,          title: 'Get Your Permit',    desc: 'Receive your official MTOP sticker and secure digital permit, ready to use.' },
 ];
 
-export default function Welcome({ overview = {} }) {
+export default function Welcome() {
     const [plateQuery, setPlateQuery] = useState('');
     const [scrolled, setScrolled] = useState(false);
-
-    const activePermits = overview.activePermits ?? 0;
-    const todaCount = overview.todaCount ?? 0;
-    const paymentsToday = overview.paymentsToday ?? 0;
 
     // Navbar goes from transparent (over the hero photo) to a solid blurred
     // panel once the page has scrolled past the top of the hero.
@@ -557,35 +493,56 @@ export default function Welcome({ overview = {} }) {
                 return;
             }
 
-            const statusColor = data.status === 'Active' ? '#059669'
-                              : data.status === 'Expired' ? '#D97706'
-                              : data.status === 'Unregistered' ? '#6B7280'
+            // The franchise state drives the headline; the application status line below
+            // always shows plain public language (never an internal status code).
+            const appStatus = data.application_status || '';
+            const isActive = data.status === 'Active';
+            const isExpired = data.status === 'Expired';
+            const isUnregistered = data.status === 'Unregistered';
+            const hasIssue = /Rejected|Reinspection|Cancelled/i.test(appStatus);
+            const inProcess = /In Process/i.test(appStatus);
+
+            const statusColor = isActive ? '#059669'
+                              : isExpired ? '#D97706'
+                              : hasIssue ? '#DC2626'
+                              : (isUnregistered && !appStatus) ? '#6B7280'
+                              : inProcess ? '#4F5BCB'
                               : '#DC2626';
 
-            const statusIcon = data.status === 'Active' ? 'success'
-                             : data.status === 'Expired' ? 'warning'
-                             : 'error';
+            const statusIcon = isActive ? 'success'
+                             : (isExpired || hasIssue) ? 'warning'
+                             : (isUnregistered && !appStatus) ? 'info'
+                             : 'info';
 
-            const statusLabel = data.status === 'Active' ? '✓ ACTIVE — Valid MTOP Franchise'
-                              : data.status === 'Expired' ? '⚠ EXPIRED — Renewal Required'
-                              : data.status === 'Unregistered' ? '○ UNREGISTERED — No Permit Issued'
-                              : '⊗ ' + data.status.toUpperCase();
+            const statusLabel = isActive ? '✓ ACTIVE — Valid MTOP Franchise'
+                              : isExpired ? '⚠ EXPIRED — Renewal Required'
+                              : appStatus ? ((hasIssue ? '⊗ ' : '○ ') + appStatus)
+                              : isUnregistered ? '○ UNREGISTERED — No Permit Issued'
+                              : '○ Pending';
+
+            const statusTitle = isActive ? 'Valid Franchise Found'
+                              : (isExpired || hasIssue) ? 'Franchise Issue Detected'
+                              : 'Franchise Record Found';
+
+            const panelBg = isActive ? '#F0FDF4'
+                          : (isExpired || hasIssue) ? '#FEF2F2'
+                          : '#EEF2FF';
 
             Swal.fire({
-                title: data.status === 'Active' ? 'Valid Franchise Found' : 'Franchise Issue Detected',
+                title: statusTitle,
                 html: `
-                    <div style="text-align:left;padding:12px 10px;background:${data.status === 'Active' ? '#F0FDF4' : '#FEF2F2'};border-radius:10px;margin-top:8px;font-size:13px;line-height:1.8">
+                    <div style="text-align:left;padding:12px 10px;background:${panelBg};border-radius:10px;margin-top:8px;font-size:13px;line-height:1.8">
                         <b>Plate No:</b> ${data.plate}<br/>
-                        ${data.body_number ? `<b>Body No:</b> ${data.body_number}<br/>` : ''}
+                        ${data.coding_scheme_number ? `<b>Sticker Number:</b> ${data.coding_scheme_number}<br/>` : ''}
                         <b>Operator:</b> ${data.operator}<br/>
                         <b>Unit:</b> ${data.make_model}<br/>
-                        <b>TODA Zone:</b> ${data.toda}<br/>
                         ${data.expiry ? `<b>Franchise Expiry:</b> ${data.expiry}<br/>` : ''}
+                        ${appStatus ? `<b>Application Status:</b> ${appStatus}<br/>` : ''}
                         <br/><span style="color:${statusColor};font-weight:800;font-size:13px">${statusLabel}</span>
                     </div>
                 `,
                 icon: statusIcon,
-                confirmButtonColor: data.status === 'Active' ? '#059669' : '#1C2340',
+                confirmButtonColor: isActive ? '#059669' : '#1C2340',
                 customClass: { title: 'font-jakarta', popup: 'font-inter' }
             });
         } catch {
@@ -614,12 +571,11 @@ export default function Welcome({ overview = {} }) {
                         </Link>
 
                         {/* Ordered to match the actual page sequence below (Verify →
-                            How It Works → Technology → Status), not an arbitrary order. */}
+                            How It Works → Technology), not an arbitrary order. */}
                         <nav className="wl-nav" aria-label="Primary">
                             <a href="#verify" className="wl-nav-link">Verify Permit</a>
                             <a href="#how-it-works" className="wl-nav-link">How It Works</a>
                             <a href="#technology" className="wl-nav-link">Technology</a>
-                            <a href="#announcements" className="wl-nav-link">Status</a>
                         </nav>
 
                         <div className="wl-header-actions">
@@ -747,67 +703,23 @@ export default function Welcome({ overview = {} }) {
                                     large
                                     icon={Cpu}
                                     title="Automatic Violation Check"
-                                    desc="Smart GPS tracking flags coding-day and out-of-route violations automatically, keeping the fleet disciplined without manual monitoring — every active unit is checked in real time, all day."
+                                    desc="Smart GPS tracking flags coding-day violations automatically, keeping the fleet disciplined without manual monitoring — every active unit is checked in real time, all day."
+                                />
+                                <FeatureCard
+                                    icon={Satellite}
+                                    title="GPS Fleet Tracking"
+                                    desc="Every active unit reports its location every minute via Mobile GPS or IoT hardware, giving TMO and drivers reliable visibility into fleet operations."
                                 />
                                 <FeatureCard
                                     icon={ShieldCheck}
-                                    title="Secure Digital Permit"
-                                    desc="Your approved permit is delivered straight to your phone — fast, paperless, and easy to present when asked."
-                                />
-                                <FeatureCard
-                                    icon={Zap}
-                                    title="Automated Payment Ticket"
-                                    desc="Receive an itemized municipal order of payment with clear fee breakdowns for quick, transparent cashier settlement."
+                                    title="Real-Time Permit Tracking"
+                                    desc="Monitor your application's status, from document review to franchise activation, anytime through the Driver Portal — no office visit needed to check."
                                 />
                                 <FeatureCard
                                     icon={Calendar}
                                     title="Renewal Reminders"
                                     desc="The system tracks every franchise's expiry date and flags upcoming renewals before they lapse."
                                 />
-                            </div>
-                        </section>
-                    </div>
-                </div>
-
-                {/* ── Band 4: Status (white — metrics strip + advisories) ── */}
-                <div className="wl-band wl-band-white">
-                    <div className="wl-wrap">
-                        <section className="wl-section" id="announcements" aria-labelledby="announcements-heading">
-                            <p className="wl-sec-eyebrow">Status</p>
-                            <h2 className="wl-sec-title" id="announcements-heading">Fleet Overview &amp; Advisories</h2>
-                            <p className="wl-sec-sub">Current registration totals and notices from the Traffic and Permit Offices.</p>
-
-                            <div className="wl-stat-strip">
-                                <StatItem icon={ShieldCheck} label="Active Permits"  value={activePermits.toLocaleString()} />
-                                <StatItem icon={Users}       label="TODA Registered" value={todaCount.toLocaleString()} />
-                                <StatItem icon={Wallet}      label="Payments Today"  value={paymentsToday.toLocaleString()} />
-                            </div>
-
-                            <div className="wl-advisories">
-                                <div className="wl-adv-header">
-                                    <div className="wl-adv-header-icon" aria-hidden="true">
-                                        <Megaphone size={18} strokeWidth={2} />
-                                    </div>
-                                    <div>
-                                        <h3 className="wl-adv-title">Announcements</h3>
-                                        <p className="wl-adv-sub">General notices from the Traffic and Permit Offices.</p>
-                                    </div>
-                                </div>
-                                <div className="wl-adv-list">
-                                    <AdvisoryItem
-                                        month="Mar" day="30"
-                                        title="Strict Implementation of Coding Scheme"
-                                        desc="Please follow the updated plate-ending coding schedule. The system automatically flags and records violators."
-                                    />
-                                    <AdvisoryItem
-                                        month="Mar" day="25"
-                                        title="Online Permit Renewal Now Open"
-                                        desc="Skip the lines at the Municipal Hall — tricycle permits can now be renewed completely online through this portal."
-                                    />
-                                </div>
-                                <p className="wl-adv-footnote">
-                                    For the latest advisories, contact or visit the Traffic Management Office directly.
-                                </p>
                             </div>
                         </section>
                     </div>
@@ -876,35 +788,6 @@ function FeatureCard({ icon: Icon, title, desc, large }) {
             <div>
                 <h3 className="wl-feature-title">{title}</h3>
                 <p className="wl-feature-desc">{desc}</p>
-            </div>
-        </div>
-    );
-}
-
-function StatItem({ icon: Icon, label, value }) {
-    return (
-        <div className="wl-stat-item">
-            {Icon && (
-                <span className="wl-stat-icon" aria-hidden="true">
-                    <Icon size={16} strokeWidth={2.2} />
-                </span>
-            )}
-            <span className="wl-stat-value">{value}</span>
-            <span className="wl-stat-label">{label}</span>
-        </div>
-    );
-}
-
-function AdvisoryItem({ month, day, title, desc }) {
-    return (
-        <div className="wl-adv-item">
-            <div className="wl-adv-chip" aria-hidden="true">
-                <span className="wl-adv-chip-month">{month}</span>
-                <span className="wl-adv-chip-day">{day}</span>
-            </div>
-            <div className="wl-adv-body">
-                <p className="wl-adv-item-title">{title}</p>
-                <p className="wl-adv-item-desc">{desc}</p>
             </div>
         </div>
     );

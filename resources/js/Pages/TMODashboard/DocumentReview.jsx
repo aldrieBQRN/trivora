@@ -1,13 +1,15 @@
 import React, { useState } from 'react';
 import { Head, Link, router } from '@inertiajs/react';
+import useBackgroundRefresh from '@/hooks/useBackgroundRefresh';
 import TrivoraLayout from '@/Layouts/TrivoraLayout';
 import Swal from 'sweetalert2';
 import {
     User, MapPin, Bike, Send, Smartphone, CheckCircle2, ClipboardList,
     RefreshCw, Check, X, MessageSquare, Clock, AlertTriangle, Eye, Gauge,
-    ChevronLeft, FileText, Loader2, ShieldCheck, Copy, Pencil,
+    ChevronLeft, FileText, Loader2, ShieldCheck, Copy, Pencil, CalendarDays,
 } from 'lucide-react';
 import { Modal, Button, Textarea } from '@/Components/TMO';
+import { REGISTRATION_DOCUMENTS } from '@/data/registrationRequirements';
 
 // Shared soft, layered shadow token — same elevation language used across the TMO panel (Dashboard.jsx,
 // Index.jsx, DocumentQueue.jsx), so this page reads as one consistent product.
@@ -21,7 +23,6 @@ export default function DocumentReview({ application }) {
         engine_number: 'ENG-KAW-12345',
         chassis_number: 'CHAS-KAW-98765',
         plate: 'NSB-2024-ABC',
-        toda: 'TODA A (Poblacion)',
         contact: '09171234567',
         barangay: 'Poblacion 1',
         docStatuses: {},
@@ -46,13 +47,18 @@ export default function DocumentReview({ application }) {
     const [pendingRejectId, setPendingRejectId] = useState(null);
     const [draftReason, setDraftReason] = useState('');
 
+    // Background refresh of the record under review: a decision, payment or status change made by
+    // another officer elsewhere updates this page without a manual reload. Paused while this
+    // officer is working through a decision; the hook also catches an open SweetAlert / in-flight
+    // request on its own, and never disturbs the rejection-reason draft above.
+    useBackgroundRefresh(['application'], { paused: isProcessing });
+
     // Ensure all 10 registration vehicle properties have values
     const vehicleData = {
         make: appData?.make || 'Kawasaki Barako 175',
         engine_number: appData?.engine_number || '—',
         chassis_number: appData?.chassis_number || '—',
         plate: appData?.plate || '—',
-        toda: appData?.toda || 'Unassigned',
         year_model: appData?.year_model || '—',
         body_color: appData?.body_color || '—',
         body_type: appData?.body_type || '—',
@@ -60,17 +66,11 @@ export default function DocumentReview({ application }) {
         cr_number: appData?.cr_number || '—',
     };
 
-    const requirements = [
-        { id: 'prangkisa', label: 'Xerox Prangkisa (Kung Renew)',                         mandatory: false },
-        { id: 'orcr',      label: 'Xerox OR/CR',                                          mandatory: true  },
-        { id: 'receipt',   label: 'Delivery Receipt (Kung walang OR/CR / New)',            mandatory: false },
-        { id: 'license',   label: "Driver's License Back-to-back (Prof/Restriction 1/A1)", mandatory: true  },
-        { id: 'brgy',      label: 'Barangay Clearance (Original)',                         mandatory: true  },
-        { id: 'toda',      label: 'TODA/NAFTODA/ACTODAN Clearance (Original)',             mandatory: true  },
-        { id: 'driver_id', label: "Driver's ID Issued by NAFTODA/ACTODAN",                mandatory: true  },
-        { id: 'tariff',    label: 'List of Existing Tariff Fee (For sidecar)',             mandatory: true  },
-        { id: 'auth',      label: "Authorization Letter & ID (Kung hindi may-ari)",       mandatory: false },
-    ];
+    // Same canonical list Public Registration and the Driver Portal wizard use — including
+    // Prangkisa, so a renewal application's Prangkisa upload is visible here too (as a
+    // conditional/"Additional" document; TMO document review isn't application_type-aware, and
+    // Prangkisa is never uploaded for a 'new' unit registration in the first place).
+    const requirements = REGISTRATION_DOCUMENTS.map(d => ({ id: d.id, label: d.label, mandatory: d.required }));
 
     const handleApprove = (id) => {
         setDocStatuses(prev => {
@@ -115,19 +115,33 @@ export default function DocumentReview({ application }) {
         setDraftReason('');
     };
 
+    const mandatoryRequirements = requirements.filter(r => r.mandatory);
+    const optionalRequirements = requirements.filter(r => !r.mandatory);
+    // "Additional Documents" only ever shows conditional requirements the driver actually
+    // uploaded a file for — never a placeholder row for one that was legitimately skipped.
+    const uploadedOptionalRequirements = optionalRequirements.filter(
+        r => (appData.documents || []).some(d => d.category === r.id)
+    );
+
     const anyRejected        = Object.values(docStatuses).some(s => s === 'rejected');
-    const allMandatoryApproved = requirements
-        .filter(r => r.mandatory)
-        .every(r => docStatuses[r.id] === 'approved');
-    const canSchedule        = allMandatoryApproved && !anyRejected;
+    // Approval is gated on the ACTUAL document records the backend sent: every required
+    // document must exist (properly uploaded) and be approved, and so must every
+    // additional/resubmitted file the driver actually uploaded. Merely having an
+    // "Additional Documents" record never enables the button on its own.
+    const allMandatoryApproved = mandatoryRequirements.every(
+        r => docStatuses[r.id] === 'approved'
+            && (appData.documents || []).some(d => d.category === r.id)
+    );
+    const allAdditionalApproved = uploadedOptionalRequirements.every(
+        r => docStatuses[r.id] === 'approved'
+    );
+    const canSchedule        = allMandatoryApproved && allAdditionalApproved && !anyRejected;
 
     const totalRequirements = requirements.length;
     const approvedCount = requirements.filter(r => docStatuses[r.id] === 'approved').length;
     const rejectedCount = requirements.filter(r => docStatuses[r.id] === 'rejected').length;
     const pendingCount = totalRequirements - approvedCount - rejectedCount;
 
-    const mandatoryRequirements = requirements.filter(r => r.mandatory);
-    const optionalRequirements = requirements.filter(r => !r.mandatory);
     const mandatoryApprovedCount = mandatoryRequirements.filter(r => docStatuses[r.id] === 'approved').length;
     const mandatoryPct = mandatoryRequirements.length > 0 ? Math.round((mandatoryApprovedCount / mandatoryRequirements.length) * 100) : 0;
 
@@ -285,7 +299,7 @@ export default function DocumentReview({ application }) {
                     {appData.reference || appData.id}
                 </h1>
                 <p className="mt-1 text-xs sm:text-sm text-slate-500 leading-relaxed">
-                    Submitted by <strong className="font-semibold text-slate-700">{appData.operator}</strong> · {appData.barangay}, {appData.toda}
+                    Submitted by <strong className="font-semibold text-slate-700">{appData.operator}</strong>{appData.barangay ? ` · ${appData.barangay}` : ''}
                 </p>
             </div>
 
@@ -331,8 +345,9 @@ export default function DocumentReview({ application }) {
                         </div>
                     </div>
 
-                    {/* Section 2: Additional Documents */}
-                    {optionalRequirements.length > 0 && (
+                    {/* Section 2: Additional Documents — only rendered when the driver actually
+                        uploaded at least one conditional file; never an empty placeholder. */}
+                    {uploadedOptionalRequirements.length > 0 && (
                         <div className={`overflow-hidden rounded-2xl border border-slate-200/70 bg-white ${CARD_SHADOW}`}>
                             <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50/60 px-5 py-3.5">
                                 <div className="flex items-center gap-2">
@@ -341,16 +356,16 @@ export default function DocumentReview({ application }) {
                                     </div>
                                     <div>
                                         <h2 className="text-sm font-bold text-slate-900">Additional Documents</h2>
-                                        <p className="text-[11px] text-slate-500">Conditional files (Renewals, Authorizations, Delivery receipts)</p>
+                                        <p className="text-[11px] text-slate-500">Conditional files (Delivery Receipts, Authorization Letters)</p>
                                     </div>
                                 </div>
                                 <span className="text-xs font-medium text-slate-400">
-                                    {optionalRequirements.length} Optional
+                                    {uploadedOptionalRequirements.length} Uploaded
                                 </span>
                             </div>
 
                             <div className="p-4 sm:p-5 space-y-3">
-                                {optionalRequirements.map((doc) => (
+                                {uploadedOptionalRequirements.map((doc) => (
                                     <DocumentRowItem
                                         key={doc.id}
                                         doc={doc}
@@ -486,19 +501,26 @@ export default function DocumentReview({ application }) {
                             </div>
                         </div>
 
-                        {/* Applicant Summary */}
+                        {/* Tricycle Owner Summary — always the primary applicant/person */}
                         <div className="flex items-center gap-3 pb-3 border-b border-slate-100">
                             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#1D2542] to-[#2A3560] text-xs font-bold text-white shadow-2xs">
                                 {operatorInitials}
                             </div>
                             <div className="min-w-0 flex-1">
                                 <p className="truncate text-xs sm:text-sm font-bold text-slate-900">{appData.operator}</p>
-                                <p className="truncate text-xs text-slate-500 font-medium">Registered Operator</p>
+                                <p className="truncate text-xs text-slate-500 font-medium">Tricycle Owner</p>
                             </div>
                         </div>
 
-                        {/* Contact & Location */}
+                        {/* Owner Birthday, Contact & Location */}
                         <div className="mt-3 grid grid-cols-1 gap-2 text-xs">
+                            <div className="flex items-center justify-between text-slate-600">
+                                <span className="flex items-center gap-1.5 text-slate-400 font-medium">
+                                    <CalendarDays size={13} className="shrink-0" />
+                                    Birthday
+                                </span>
+                                <span className="font-semibold text-slate-800">{appData.owner?.birthday || '—'}</span>
+                            </div>
                             <div className="flex items-center justify-between text-slate-600">
                                 <span className="flex items-center gap-1.5 text-slate-400 font-medium">
                                     <Smartphone size={13} className="shrink-0" />
@@ -513,6 +535,42 @@ export default function DocumentReview({ application }) {
                                 </span>
                                 <span className="font-semibold text-slate-800 truncate max-w-[180px] text-right">{appData.barangay}</span>
                             </div>
+                        </div>
+
+                        {/* Tricycle Driver — visually distinct; only a separate person when ownerIsDriver is false */}
+                        <div className="mt-3.5 rounded-xl border border-dashed border-indigo-300/70 bg-indigo-50/50 p-3.5">
+                            <div className="flex items-center justify-between gap-2">
+                                <span className="text-[10.5px] font-bold uppercase tracking-wider text-indigo-600">Tricycle Driver</span>
+                                <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${appData.ownerIsDriver ? 'bg-slate-100 text-slate-600' : 'bg-indigo-100 text-indigo-700'}`}>
+                                    {appData.ownerIsDriver ? 'Same as Owner' : 'Different Person'}
+                                </span>
+                            </div>
+                            {appData.ownerIsDriver ? (
+                                <p className="mt-2 text-xs text-slate-600">
+                                    The Tricycle Owner drives their own unit — no separate driver on file.
+                                </p>
+                            ) : appData.tricycleDriver ? (
+                                <div className="mt-2 grid grid-cols-1 gap-1.5 text-xs">
+                                    <div className="flex items-center justify-between text-slate-600">
+                                        <span className="font-medium text-slate-400">Name</span>
+                                        <span className="font-semibold text-slate-800">{appData.tricycleDriver.full_name || '—'}</span>
+                                    </div>
+                                    <div className="flex items-center justify-between text-slate-600">
+                                        <span className="font-medium text-slate-400">Birthday</span>
+                                        <span className="font-semibold text-slate-800">{appData.tricycleDriver.birthday || '—'}</span>
+                                    </div>
+                                    <div className="flex items-center justify-between text-slate-600">
+                                        <span className="font-medium text-slate-400">Mobile</span>
+                                        <span className="font-semibold text-slate-800">{appData.tricycleDriver.contact_number || '—'}</span>
+                                    </div>
+                                    <div className="flex items-center justify-between text-slate-600">
+                                        <span className="font-medium text-slate-400">Barangay</span>
+                                        <span className="font-semibold text-slate-800">{appData.tricycleDriver.barangay || '—'}</span>
+                                    </div>
+                                </div>
+                            ) : (
+                                <p className="mt-2 text-xs text-slate-500">No separate driver provided.</p>
+                            )}
                         </div>
                     </div>
 
@@ -534,13 +592,6 @@ export default function DocumentReview({ application }) {
                         <div className="space-y-2.5 text-xs">
                             <div className="text-[10.5px] font-bold uppercase tracking-wider text-slate-400 mb-1">
                                 Vehicle Specifications
-                            </div>
-
-                            <div className="flex items-center justify-between">
-                                <span className="text-slate-500 font-medium">TODA Assignment</span>
-                                <span className="font-semibold text-slate-800">
-                                    {vehicleData.toda}
-                                </span>
                             </div>
 
                             <div className="flex items-center justify-between">

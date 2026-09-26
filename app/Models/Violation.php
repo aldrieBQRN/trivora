@@ -21,9 +21,6 @@ class Violation extends Model
         'status',
         'fine_amount',
         'fine_paid_at',
-        'official_receipt_number',
-        'amount_paid',
-        'confirmed_by',
         'notes',
     ];
 
@@ -33,7 +30,6 @@ class Violation extends Model
             'detected_at'  => 'datetime',
             'fine_amount'  => 'decimal:2',
             'fine_paid_at' => 'datetime',
-            'amount_paid'  => 'decimal:2',
         ];
     }
 
@@ -71,6 +67,48 @@ class Violation extends Model
     public function getIsFinePaidAttribute(): bool
     {
         return ! is_null($this->fine_paid_at);
+    }
+
+    // -------------------------------------------------------------------------
+    // Detection source (single source of truth for the user-facing detection labels)
+    // -------------------------------------------------------------------------
+
+    /**
+     * Stable key describing HOW this violation was detected. The active violation system is
+     * GPS-based, so there are exactly two possible answers and both come from real GPS data:
+     *
+     *  - the GPS ping stored on the record (tricycle_locations.source) already distinguishes the
+     *    physical IoT tracker ('gps_device') from the driver's phone ('mobile_app');
+     *  - when a record has no stored ping, fall back to the unit's own GPS tracker configuration
+     *    (tricycles.active_tracking_mode), which is a real GPS source rather than a guess.
+     *
+     * The legacy `detection_method` column (automated/manual) is deliberately never consulted —
+     * it is kept only for schema/historical compatibility and must not surface as a Detection
+     * Method anywhere in the active violation UI.
+     */
+    public function detectionKey(): string
+    {
+        $source = $this->locationSnapshot?->source;
+
+        if ($source === 'gps_device') {
+            return 'iot_gps';
+        }
+
+        if ($source === 'mobile_app') {
+            return 'mobile_gps';
+        }
+
+        return ($this->tricycle?->active_tracking_mode === 'iot_device') ? 'iot_gps' : 'mobile_gps';
+    }
+
+    /**
+     * The user-facing wording for detectionKey(). Kept here (not in the controllers) so the TMO
+     * Violation Records page, the Driver Active Violations page and the record detail pages can
+     * never drift apart. Only ever "Mobile GPS" or "IoT GPS".
+     */
+    public function detectionLabel(): string
+    {
+        return $this->detectionKey() === 'iot_gps' ? 'IoT GPS' : 'Mobile GPS';
     }
 
     // -------------------------------------------------------------------------
@@ -115,14 +153,6 @@ class Violation extends Model
     public function detectedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'detected_by');
-    }
-
-    /**
-     * The TMO personnel who confirmed the offline treasury payment for this violation.
-     */
-    public function confirmedBy(): BelongsTo
-    {
-        return $this->belongsTo(User::class, 'confirmed_by');
     }
 
     /**

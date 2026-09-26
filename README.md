@@ -26,7 +26,7 @@ The primary objective of **Trivora** is to modernize and streamline the Motorize
   * **Public & Operator MTOP Registration**: Online multi-step application wizard for franchise registration, tricycle information, and document submission (OR/CR, LTO Driver's License, Barangay Clearance).
   * **LGU Department Workflow Pipeline**: Multi-stage application state machine: TMO Document Review $\rightarrow$ TMO Physical Safety Inspection $\rightarrow$ Municipal Treasurer Payment & Receipting $\rightarrow$ BPLO Franchise License & Plate Issuance.
   * **TMO Real-Time Map Command Center**: Interactive GIS map rendering live tricycle locations, active TODA zone route polygons, vehicle status indicators, and violation alerts.
-  * **Automated Color-Coding Enforcement Engine**: Daily automated rule engine enforcing municipal color-coding schemes based on plate/body number ending digits.
+  * **Automated Color-Coding Enforcement Engine**: Daily automated rule engine enforcing municipal color-coding schemes based on plate/Sticker Number ending digits.
   * **Violation & Citation Management**: Automated violation logging, citation creation, penalty calculation, and payment settlement tracking.
   * **Driver / Operator Portal**: Dedicated dashboard for tricycle owners to monitor application progress, view assigned TODA routes, track unit GPS telematics, and pay violation citations online.
 
@@ -74,7 +74,7 @@ Trivora is engineered as a decoupled, multi-tier system connecting hardware tele
 1. **Hardware & Telematics Layer**: 
    Vehicle telematics modules (or simulated background telemetry nodes) capture location coordinates (`latitude`, `longitude`), vehicle speed (`speed_kmh`), heading direction (`heading_deg`), and module battery level. This telemetry payload is transmitted via HTTP REST requests or WebSockets into the backend location ingest endpoint (`tricycle_locations`).
 2. **Backend Application Layer (Laravel 12)**:
-   Serves as the core business logic engine. It manages multi-role authentication via Laravel Sanctum, executes the 4-stage MTOP application pipeline, calculates daily color-coding restrictions based on body number digits, processes violation penalties, and calculates spatial route overlaps for TODA zones.
+   Serves as the core business logic engine. It manages multi-role authentication via Laravel Sanctum, executes the 4-stage MTOP application pipeline, calculates daily color-coding restrictions based on Sticker Number digits, processes violation penalties, and calculates spatial route overlaps for TODA zones.
 3. **Database Layer (MySQL 8.0)**:
    Houses normalized relational data across 15 core tables (including `users`, `operators`, `tricycles`, `toda_zones`, `applications`, `inspections`, `payments`, `violations`, `bookings`, and `tricycle_locations`).
 4. **Frontend & Mobile Layer (React 18, Inertia.js, React Native / Expo)**:
@@ -96,15 +96,15 @@ Trivora is engineered as a decoupled, multi-tier system connecting hardware tele
 * **TMO Phase 1 — Document Review Queue**:
   * Administrative queue for TMO personnel to inspect submitted documents, issue requests for document corrections, or approve applications for physical inspection.
 * **TMO Phase 2 — Physical Safety Inspection Queue & Form Checklist**:
-  * Digital physical safety inspection checklist verifying vehicle roadworthiness (brakes, lights, sidecar structure, emissions, body number verification) with document previews and pass/fail forwarding.
+  * Digital physical safety inspection checklist verifying vehicle roadworthiness (brakes, lights, sidecar structure, emissions, Sticker Number verification) with document previews and pass/fail forwarding.
 * **Municipal Treasurer Payment Processing & Receipts**:
   * Cashier portal managing pending payments, automated fee calculation (MTOP franchise fee, inspection fee, violation fines), payment verification, and official receipt (OR) generation.
 * **BPLO Franchise & Plate Issuance Queue**:
-  * BPLO release queue for body number assignment, MTOP validity period confirmation, digital franchise certificate issuance, and master registry tracking.
+  * BPLO release queue for Sticker Number assignment, MTOP validity period confirmation, digital franchise certificate issuance, and master registry tracking.
 * **TMO Real-Time Fleet Map Command Center**:
   * Interactive GIS map (Leaflet / Mapbox GL) displaying active tricycle locations, live driver stats, TODA zone overlays, and compliance status indicators.
 * **Automated Color-Coding Enforcement Engine**:
-  * Automated daily restriction calculation based on body number ending digits (e.g., Monday: 1-2, Tuesday: 3-4, Wednesday: 5-6, Thursday: 7-8, Friday: 9-0). Units active on restricted days are automatically flagged as non-compliant on the TMO map command center.
+  * Automated daily restriction calculation based on Sticker Number ending digits (e.g., Monday: 1-2, Tuesday: 3-4, Wednesday: 5-6, Thursday: 7-8, Friday: 9-0). Units active on restricted days are automatically flagged as non-compliant on the TMO map command center.
 * **Violation Management & Citation System**:
   * Violation ticket issuance, penalty fee computation, tracking of unresolved citations, and direct integration with the Treasurer payment workflow.
 * **Driver / Operator Portal & Fleet Dashboard**:

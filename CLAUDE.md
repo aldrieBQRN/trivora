@@ -26,7 +26,7 @@ Public Registration (RegistrationController, guest)
   → Municipal Treasurer/Cashier payment — offline, in person, no system step
   → TMO Payment Verification (TMO\PaymentVerificationController — TMO records the Payment
     row from the driver's Official Receipt and verifies it in one action; BPLO never touches payment)
-  → BPLO Releasing (BPLO\BPLOController — sticker/body number, creates the FranchiseScheme inactive)
+  → BPLO Releasing (BPLO\BPLOController — Sticker Number + Franchise Number, creates the FranchiseScheme inactive)
   → TMO Final Confirmation & GPS Setup (TMO\FinalConfirmationController — activates the
     FranchiseScheme and the Tricycle)
   → Franchise Active

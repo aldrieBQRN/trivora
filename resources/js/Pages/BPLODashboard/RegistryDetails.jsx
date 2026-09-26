@@ -1,17 +1,19 @@
 import React from 'react';
-import { Head, Link } from '@inertiajs/react';
+import { Head } from '@inertiajs/react';
+import useBackgroundRefresh from '@/hooks/useBackgroundRefresh';
 import BPLOLayout from '@/Layouts/BPLOLayout';
+import { PageHeader, BackLink } from '@/Components/TMO';
 import {
-    ChevronLeft, Calendar, Bike, MapPin,
-    User, Phone, Printer, ShieldCheck,
+    Calendar, Bike, MapPin,
+    User, Phone, ShieldCheck,
     Clock, FileBadge, Check, Mail,
     CreditCard, Home, Navigation
 } from 'lucide-react';
 
 /**
- * Determine coding day and scheme details from body number or registry coding_day.
+ * Determine coding day and scheme details from the Sticker Number or registry coding_day.
  */
-function getCodingSchemeInfo(bodyNumber, serverCodingDay) {
+function getCodingSchemeInfo(codingNumber, serverCodingDay) {
     if (serverCodingDay && serverCodingDay !== 'None' && serverCodingDay !== 'Unassigned') {
         const dayMap = {
             'Monday': { digits: '1 & 2', scheme: 'Blue Scheme', badgeClass: 'bg-blue-50 text-blue-700 border-blue-200/80', dotClass: 'bg-blue-500' },
@@ -27,11 +29,11 @@ function getCodingSchemeInfo(bodyNumber, serverCodingDay) {
         };
     }
 
-    if (!bodyNumber) {
+    if (!codingNumber) {
         return { day: 'Monday', digits: '1 & 2', scheme: 'Blue Scheme', badgeClass: 'bg-blue-50 text-blue-700 border-blue-200/80', dotClass: 'bg-blue-500' };
     }
 
-    const clean = String(bodyNumber).trim();
+    const clean = String(codingNumber).trim();
     const lastChar = clean.charAt(clean.length - 1);
     const lastDigit = parseInt(lastChar, 10);
 
@@ -65,149 +67,105 @@ function getCodingSchemeInfo(bodyNumber, serverCodingDay) {
 const CARD_SHADOW = 'shadow-[0_1px_2px_0_rgba(15,23,42,0.04),0_8px_24px_-8px_rgba(15,23,42,0.10)]';
 
 export default function RegistryDetails({ registry }) {
-    const codingInfo = getCodingSchemeInfo(registry?.body_no, registry?.coding_day);
+    const codingInfo = getCodingSchemeInfo(registry?.coding_scheme_number, registry?.coding_day);
     const isActive = registry?.status === 'active';
 
-    const handlePrint = () => {
-        window.print();
-    };
+    // Background refresh of this registry entry: a status change made in another session updates
+    // it without a manual reload. Display-only page — no form or modal state to disturb.
+    useBackgroundRefresh(['registry']);
 
     return (
         <BPLOLayout title="Registry Details" role="BPLO Officer">
-            <Head title={`Registry: ${registry?.body_no || registry?.plate_no || 'Unit'} | TRIVORA`} />
+            <Head title={`Registry: ${registry?.coding_scheme_number || registry?.plate_no || 'Unit'} | TRIVORA`} />
 
             <div className="mx-auto max-w-7xl space-y-6 pb-12">
 
                 {/* ══════════════════════════════════════════════════════════════
-                    1. TOP ACTION & NAVIGATION BAR
+                    1. CLEAN PAGE HEADER (standard PageHeader + BackLink pattern, same as
+                       Reports & other detail pages) — replaces the previous oversized
+                       hero profile card while keeping the record's identity badges,
+                       metadata row, and actions.
                    ══════════════════════════════════════════════════════════════ */}
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                    <Link
-                        href="/bplo/registry"
-                        className="group inline-flex items-center gap-1.5 text-xs sm:text-sm font-semibold text-slate-500 hover:text-slate-900 transition-colors"
-                    >
-                        <ChevronLeft size={16} strokeWidth={2.5} className="text-slate-400 group-hover:text-slate-700 transition-colors" />
-                        <span>Back to Active Registry</span>
-                    </Link>
-
-                    <div className="flex items-center gap-2">
-                        <button
-                            type="button"
-                            onClick={handlePrint}
-                            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 shadow-2xs active:scale-[0.98] transition-all"
-                        >
-                            <Printer size={13} strokeWidth={2.2} className="text-slate-500" />
-                            <span>Print Record</span>
-                        </button>
-
-                        <span className="inline-flex items-center px-2.5 py-1 rounded-lg bg-slate-100 border border-slate-200 text-xs font-mono font-bold text-[#1D2542]">
-                            {registry?.plate_no || 'NO-PLATE'}
+                <PageHeader
+                    backLink={<BackLink href="/bplo/registry">Back to Active Registry</BackLink>}
+                    eyebrow={
+                        <span className="inline-flex items-center gap-1.5">
+                            <ShieldCheck size={13} className="text-emerald-600 shrink-0" />
+                            Municipality of Nasugbu &bull; BPLO Tricycle Record
                         </span>
-                    </div>
-                </div>
+                    }
+                    title={
+                        <span className="font-mono text-2xl font-black tracking-tight">
+                            No. {registry?.coding_scheme_number || '—'}
+                        </span>
+                    }
+                    badge={
+                        <span className="flex flex-wrap items-center gap-2 sm:gap-2.5">
+                            {/* LTO Plate Badge */}
+                            <span className="inline-flex items-center px-2.5 py-1 rounded-md bg-slate-900 text-white font-mono text-xs font-black tracking-wider shadow-xs">
+                                {registry?.plate_no || '—'}
+                            </span>
+
+                            {/* Franchise Number Badge */}
+                            <span className="inline-flex items-center gap-1 rounded-md bg-slate-100 px-2.5 py-1 font-mono text-xs font-bold text-slate-700 border border-slate-200">
+                                <FileBadge size={12} className="text-slate-400" />
+                                <span>{registry?.sticker_no || 'N/A'}</span>
+                            </span>
+
+                            {/* Status Badge */}
+                            {isActive ? (
+                                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                    <span>Active Franchise</span>
+                                </span>
+                            ) : (
+                                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-rose-50 text-rose-700 border border-rose-200">
+                                    <span>Suspended / Revoked</span>
+                                </span>
+                            )}
+                        </span>
+                    }
+                    subtitle={
+                        <span className="flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-slate-500">
+                            <span className="flex items-center gap-1.5">
+                                <User size={14} className="text-slate-400 shrink-0" />
+                                <span className="font-semibold text-slate-900">{registry?.operator || 'Registered Tricycle Owner'}</span>
+                            </span>
+
+                            <span className="text-slate-300 hidden sm:inline">&bull;</span>
+
+                            <span className="flex items-center gap-1.5">
+                                <Bike size={14} className="text-slate-400 shrink-0" />
+                                <span>{registry?.make || 'Standard Tricycle Unit'}</span>
+                            </span>
+
+                            <span className="text-slate-300 hidden sm:inline">&bull;</span>
+
+                            <span className="flex items-center gap-1.5">
+                                <span className={`inline-block h-2.5 w-2.5 rounded-full ring-2 ring-slate-200 shrink-0 ${codingInfo.dotClass}`} />
+                                <span className="font-semibold text-slate-900">
+                                    {codingInfo.day} Coding ({codingInfo.scheme})
+                                </span>
+                            </span>
+                        </span>
+                    }
+                    actions={
+                        <>
+                            <span className="inline-flex items-center px-2.5 py-1 rounded-lg bg-slate-100 border border-slate-200 text-xs font-mono font-bold text-[#1D2542]">
+                                {registry?.plate_no || 'NO-PLATE'}
+                            </span>
+                        </>
+                    }
+                />
 
                 {/* ══════════════════════════════════════════════════════════════
-                    2. HERO PROFILE HEADER CARD
-                   ══════════════════════════════════════════════════════════════ */}
-                <div className={`relative overflow-hidden rounded-2xl border border-slate-200/70 bg-white p-6 sm:p-8 ${CARD_SHADOW}`}>
-                    {/* Barely-there ambient color — brand tint without ever reading as a solid block */}
-                    <div className="pointer-events-none absolute -right-24 -top-28 h-80 w-80 rounded-full bg-gradient-to-br from-[#1D2542]/[0.07] to-transparent blur-3xl" aria-hidden="true" />
-                    <Bike size={128} className="pointer-events-none absolute -right-8 top-1/2 -translate-y-1/2 text-[#1D2542]/[0.04]" />
-
-                    <div className="relative z-10 flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-                        <div>
-                            {/* Eyebrow */}
-                            <div className="mb-2 flex items-center gap-2 text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                                <ShieldCheck size={14} className="text-emerald-600 shrink-0" />
-                                <span>Municipality of Nasugbu &bull; BPLO Tricycle Record</span>
-                            </div>
-
-                            {/* Title & Badges */}
-                            <div className="mb-3.5 flex flex-wrap items-center gap-2 sm:gap-3">
-                                <span className="font-mono text-2xl sm:text-4xl font-black tracking-tight text-slate-900">
-                                    No. {registry?.body_no || '—'}
-                                </span>
-
-                                {/* LTO Plate Badge */}
-                                <span className="inline-flex items-center px-2.5 py-1 rounded-md bg-slate-900 text-white font-mono text-xs sm:text-sm font-black tracking-wider shadow-xs">
-                                    {registry?.plate_no || '—'}
-                                </span>
-
-                                {/* Franchise Sticker Badge */}
-                                <span className="inline-flex items-center gap-1 rounded-md bg-slate-100 px-2.5 py-1 font-mono text-xs font-bold text-slate-700 border border-slate-200">
-                                    <FileBadge size={12} className="text-slate-400" />
-                                    <span>{registry?.sticker_no || `STK-${registry?.body_no || '0000'}`}</span>
-                                </span>
-
-                                {/* Status Badge */}
-                                {isActive ? (
-                                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                                        <span>Active Franchise</span>
-                                    </span>
-                                ) : (
-                                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-rose-50 text-rose-700 border border-rose-200">
-                                        <span>Suspended / Revoked</span>
-                                    </span>
-                                )}
-                            </div>
-
-                            {/* Bottom Metadata Row */}
-                            <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-slate-500">
-                                <div className="flex items-center gap-1.5">
-                                    <User size={14} className="text-slate-400 shrink-0" />
-                                    <span className="font-semibold text-slate-900">{registry?.operator || 'Registered Driver'}</span>
-                                </div>
-
-                                <span className="text-slate-300 hidden sm:inline">&bull;</span>
-
-                                <div className="flex items-center gap-1.5">
-                                    <Bike size={14} className="text-slate-400 shrink-0" />
-                                    <span>{registry?.make || 'Standard Tricycle Unit'}</span>
-                                </div>
-
-                                <span className="text-slate-300 hidden sm:inline">&bull;</span>
-
-                                <div className="flex items-center gap-1.5">
-                                    <MapPin size={14} className="text-slate-400 shrink-0" />
-                                    <span>{registry?.toda || 'Unassigned TODA'}</span>
-                                </div>
-
-                                <span className="text-slate-300 hidden sm:inline">&bull;</span>
-
-                                <div className="flex items-center gap-1.5">
-                                    <span className={`inline-block h-2.5 w-2.5 rounded-full ring-2 ring-slate-200 shrink-0 ${codingInfo.dotClass}`} />
-                                    <span className="font-semibold text-slate-900">
-                                        {codingInfo.day} Coding ({codingInfo.scheme})
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Right Seal & Municipal Badge */}
-                        <div className="self-start lg:self-center flex items-center gap-3 rounded-2xl bg-slate-50 p-3.5 border border-slate-200/70">
-                            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white p-1.5 shadow-sm border border-slate-200/70">
-                                <img src="/images/logo.png" alt="TRIVORA Logo" className="h-full w-full object-contain" />
-                            </div>
-                            <div className="text-left">
-                                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">LGU Nasugbu</span>
-                                <span className="text-xs font-black text-slate-900 block">Official BPLO Record</span>
-                                <span className="text-[10px] text-emerald-700 flex items-center gap-1 font-semibold mt-0.5">
-                                    <Check size={11} strokeWidth={2.5} /> Verified Active
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                {/* ══════════════════════════════════════════════════════════════
-                    3. BALANCED 2-COLUMN EXECUTIVE WORKSTATION (50/50 Split)
+                    2. BALANCED 2-COLUMN EXECUTIVE WORKSTATION (50/50 Split)
                    ══════════════════════════════════════════════════════════════ */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
 
                     {/* ── COLUMN 1: DRIVER PROFILE & FRANCHISE CLEARANCE ── */}
                     <div className="space-y-6">
 
-                        {/* Card 1: Driver & Operator Information */}
+                        {/* Card 1: Tricycle Owner Information */}
                         <div className={`overflow-hidden rounded-2xl border border-slate-200/70 bg-white ${CARD_SHADOW}`}>
                             <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50/75 px-5 py-3.5">
                                 <div className="flex items-center gap-2">
@@ -216,10 +174,10 @@ export default function RegistryDetails({ registry }) {
                                     </div>
                                     <div>
                                         <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800">
-                                            Driver &amp; Operator Information
+                                            Tricycle Owner Information
                                         </h3>
                                         <p className="text-[11px] text-slate-400 font-normal">
-                                            Personal and driver's license details
+                                            Registered owner's personal and license details
                                         </p>
                                     </div>
                                 </div>
@@ -320,6 +278,68 @@ export default function RegistryDetails({ registry }) {
                             </div>
                         </div>
 
+                        {/* Card 1b: Tricycle Driver — visually distinct from the owner card above;
+                            only a separate person when the application says the owner isn't the driver */}
+                        <div className={`overflow-hidden rounded-2xl border border-indigo-200/70 bg-indigo-50/30 ${CARD_SHADOW}`}>
+                            <div className="flex items-center justify-between border-b border-indigo-100 bg-indigo-50/60 px-5 py-3.5">
+                                <div className="flex items-center gap-2">
+                                    <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-indigo-500/[0.12] text-indigo-600">
+                                        <User size={15} strokeWidth={2.2} />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-xs font-bold uppercase tracking-wider text-indigo-800">
+                                            Tricycle Driver
+                                        </h3>
+                                        <p className="text-[11px] text-indigo-400 font-normal">
+                                            Person who drives this registered unit
+                                        </p>
+                                    </div>
+                                </div>
+                                <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold border ${registry?.ownerIsDriver ? 'bg-white text-slate-600 border-slate-200' : 'bg-indigo-100 text-indigo-700 border-indigo-200/70'}`}>
+                                    {registry?.ownerIsDriver ? 'Same as Owner' : 'Different Person'}
+                                </span>
+                            </div>
+
+                            <div className="p-5 text-xs">
+                                {registry?.ownerIsDriver ? (
+                                    <p className="text-slate-600">
+                                        The <strong className="text-slate-800">Tricycle Owner</strong>{' '}
+                                        ({registry?.operator || '—'}) is also the tricycle driver of this unit.
+                                    </p>
+                                ) : registry?.tricycleDriver ? (
+                                    <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                                        <div className="flex items-center justify-between gap-2">
+                                            <span className="text-slate-500 font-medium">Name</span>
+                                            <span className="font-semibold text-slate-800">{registry.tricycleDriver.full_name || '—'}</span>
+                                        </div>
+                                        <div className="flex items-center justify-between gap-2">
+                                            <span className="text-slate-500 font-medium flex items-center gap-1.5">
+                                                <Calendar size={13} className="text-slate-400" />
+                                                Birthday
+                                            </span>
+                                            <span className="font-semibold text-slate-800">{registry.tricycleDriver.birthday || '—'}</span>
+                                        </div>
+                                        <div className="flex items-center justify-between gap-2">
+                                            <span className="text-slate-500 font-medium flex items-center gap-1.5">
+                                                <Phone size={13} className="text-slate-400" />
+                                                Mobile
+                                            </span>
+                                            <span className="font-mono font-semibold text-slate-800">{registry.tricycleDriver.contact_number || '—'}</span>
+                                        </div>
+                                        <div className="flex items-center justify-between gap-2">
+                                            <span className="text-slate-500 font-medium flex items-center gap-1.5">
+                                                <MapPin size={13} className="text-slate-400" />
+                                                Barangay
+                                            </span>
+                                            <span className="font-semibold text-slate-800">{registry.tricycleDriver.barangay || '—'}</span>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <p className="text-slate-500">No separate driver provided for this unit.</p>
+                                )}
+                            </div>
+                        </div>
+
                         {/* Card 2: Franchise & Route Information */}
                         <div className={`overflow-hidden rounded-2xl border border-slate-200/70 bg-white ${CARD_SHADOW}`}>
                             <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50/75 px-5 py-3.5">
@@ -344,23 +364,9 @@ export default function RegistryDetails({ registry }) {
 
                             <div className="p-5 divide-y divide-slate-100 text-xs">
                                 <div className="pb-3 flex items-center justify-between gap-2">
-                                    <span className="text-slate-500 font-medium">Franchise Sticker No.</span>
+                                    <span className="text-slate-500 font-medium">Franchise Number</span>
                                     <span className="font-mono font-bold text-slate-900 bg-slate-100 px-2.5 py-0.5 rounded border border-slate-200">
-                                        {registry?.sticker_no || `STK-${registry?.body_no || '0141'}`}
-                                    </span>
-                                </div>
-
-                                <div className="py-3 flex items-center justify-between gap-2">
-                                    <span className="text-slate-500 font-medium">MTOP Permit No.</span>
-                                    <span className="font-mono font-semibold text-slate-800 bg-slate-50 px-2 py-0.5 rounded border border-slate-100">
-                                        MTOP-2026-{registry?.body_no || '0141'}
-                                    </span>
-                                </div>
-
-                                <div className="py-3 flex items-center justify-between gap-2">
-                                    <span className="text-slate-500 font-medium">Assigned TODA</span>
-                                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-bold bg-indigo-50 text-[#1D2542] border border-indigo-100">
-                                        {registry?.toda || 'Unassigned Zone'}
+                                        {registry?.sticker_no || 'N/A'}
                                     </span>
                                 </div>
 
@@ -381,7 +387,7 @@ export default function RegistryDetails({ registry }) {
 
                                 <div className="pt-3">
                                     <p className="text-[11px] text-slate-400 leading-relaxed">
-                                        Authorized to pick up and drop off passengers within the route of {registry?.toda || 'Nasugbu'} under local traffic rules.
+                                        Authorized to pick up and drop off passengers within the municipality of Nasugbu under local traffic rules.
                                     </p>
                                 </div>
                             </div>
@@ -439,9 +445,9 @@ export default function RegistryDetails({ registry }) {
                                 </div>
 
                                 <div className="py-3 flex items-center justify-between gap-2">
-                                    <span className="text-slate-500 font-medium">Tricycle Number Coding Scheme</span>
+                                    <span className="text-slate-500 font-medium">Sticker Number</span>
                                     <span className="font-mono font-bold text-[#1D2542] text-sm">
-                                        No. {registry?.body_no || '—'}
+                                        No. {registry?.coding_scheme_number || '—'}
                                     </span>
                                 </div>
 
@@ -500,16 +506,12 @@ export default function RegistryDetails({ registry }) {
                                     <span className="font-bold text-slate-900">{codingInfo.day}</span>
                                 </div>
                                 <div className="flex items-center justify-between">
-                                    <span className="text-slate-500 font-medium">Restricted Hours:</span>
-                                    <span className="font-semibold text-slate-800">7:00 AM – 7:00 PM</span>
-                                </div>
-                                <div className="flex items-center justify-between">
                                     <span className="text-slate-500 font-medium">Color Scheme:</span>
                                     <span className="font-semibold text-slate-800">{codingInfo.scheme} (Ending in {codingInfo.digits})</span>
                                 </div>
                                 <div className="flex items-center justify-between">
-                                    <span className="text-slate-500 font-medium">Authorized Route:</span>
-                                    <span className="font-semibold text-[#1D2542]">{registry?.toda || 'Assigned Zone'}</span>
+                                    <span className="text-slate-500 font-medium">Authorized Area:</span>
+                                    <span className="font-semibold text-[#1D2542]">Nasugbu Municipal Zone</span>
                                 </div>
                             </div>
 

@@ -4,7 +4,7 @@ import {
     Bell, Menu, Settings, LogOut,
     ChevronDown, ChevronRight,
     LayoutDashboard, ShieldCheck,
-    FileSearch, ClipboardCheck, Receipt,
+    FileSearch, ClipboardCheck,
     Bike, ShieldAlert, Users, X, Radio, BarChart3, MapPin
 } from 'lucide-react';
 
@@ -36,14 +36,12 @@ export default function TrivoraLayout({ children, title, role = "TMO Personnel",
             links: [
                 { name: 'Document Review',       icon: FileSearch,     route: '/tmo/docs'               },
                 { name: 'Physical Inspection',   icon: ClipboardCheck, route: '/tmo/physical'           },
-                { name: 'Payment Verification',  icon: Receipt,        route: '/tmo/payments'           },
                 { name: 'Final Confirmation',    icon: ShieldCheck,    route: '/tmo/final-confirmation' },
             ]
         },
         {
             group: "Management",
             links: [
-                { name: 'TODA Management',  icon: MapPin, route: '/tmo/toda' },
                 { name: 'Staff Management', icon: Users,  route: '/tmo/users' },
             ]
         },
@@ -60,7 +58,6 @@ export default function TrivoraLayout({ children, title, role = "TMO Personnel",
         if (path === link.route || path.startsWith(link.route + '/')) return true;
         if (link.route === '/tmo/docs' && path.startsWith('/tmo/review/docs')) return true;
         if (link.route === '/tmo/physical' && (path.startsWith('/tmo/review/physical') || path.startsWith('/tmo/ticket'))) return true;
-        if (link.route === '/tmo/payments' && path.startsWith('/tmo/verify-payment')) return true;
         if (link.route === '/tmo/registry' && path.startsWith('/tmo/tricycle')) return true;
         if (link.route === '/violations' && (path.startsWith('/violations/') || path.startsWith('/tmo/violations'))) return true;
         return false;
@@ -107,13 +104,6 @@ export default function TrivoraLayout({ children, title, role = "TMO Personnel",
                 defaultLeaf: 'Ticket',
             },
             {
-                prefix: '/tmo/verify-payment',
-                group: 'TMO Pipeline',
-                parentName: 'Payment Verification',
-                parentRoute: '/tmo/payments',
-                defaultLeaf: 'Verify Payment',
-            },
-            {
                 prefix: '/tmo/final-confirmation/',
                 group: 'TMO Pipeline',
                 parentName: 'Final Confirmation',
@@ -125,13 +115,6 @@ export default function TrivoraLayout({ children, title, role = "TMO Personnel",
                 group: 'Operations',
                 parentName: 'Tricycle Registry',
                 parentRoute: '/tmo/registry',
-                defaultLeaf: 'Details',
-            },
-            {
-                prefix: '/tmo/toda/',
-                group: 'Management',
-                parentName: 'TODA Management',
-                parentRoute: '/tmo/toda',
                 defaultLeaf: 'Details',
             },
             {
@@ -201,7 +184,14 @@ export default function TrivoraLayout({ children, title, role = "TMO Personnel",
     const handleLogout = () => {
         setIsExiting(true);
         setTimeout(() => {
-            router.post('/logout');
+            router.post('/logout', {}, {
+                onFinish: () => {
+                    window.location.href = '/login';
+                },
+                onError: () => {
+                    window.location.href = '/login';
+                },
+            });
         }, 400);
     };
 

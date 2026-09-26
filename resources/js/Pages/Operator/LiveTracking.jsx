@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Head, Link } from '@inertiajs/react';
+import useBackgroundRefresh from '@/hooks/useBackgroundRefresh';
 import OperatorLayout from '@/Layouts/OperatorLayout';
 import { MapContainer, TileLayer, Marker, useMap, ZoomControl } from 'react-leaflet';
 import L from 'leaflet';
@@ -9,10 +10,8 @@ import {
     Clock,
     Crosshair,
     ArrowLeft,
-    Activity,
     Satellite,
     Smartphone,
-    Layers,
 } from 'lucide-react';
 
 // Shared soft, layered shadow token — same elevation language used across TMODashboard, so this
@@ -79,19 +78,20 @@ function MiniStat({ icon: Icon, label, value, tone = 'default' }) {
     );
 }
 
-export default function LiveTracking({ tricycle, pathCoordinates: dbCoordinates = [], auth }) {
+export default function LiveTracking({ tricycle, pathCoordinates = [], auth }) {
     const operatorName = auth?.user?.name || 'Driver';
 
-    const pathCoordinates = dbCoordinates.length > 0 ? dbCoordinates : [
-        [14.0733, 120.6320], [14.0738, 120.6322], [14.0744, 120.6325],
-        [14.0748, 120.6330], [14.0745, 120.6336], [14.0740, 120.6338],
-        [14.0735, 120.6335], [14.0730, 120.6330], [14.0728, 120.6325]
-    ];
-
+    // Real recorded GPS path only — never a fabricated demo route. When the unit has no
+    // recorded pings yet, the map area below renders an explicit "no ping recorded" state
+    // instead of animating a made-up position.
     const [pathIndex, setPathIndex] = useState(0);
-    const [position, setPosition] = useState(pathCoordinates[0]);
-    const [speed, setSpeed] = useState(tricycle?.speed || 24);
+    const [position, setPosition] = useState(pathCoordinates.length > 0 ? pathCoordinates[0] : null);
     const [isFollowing, setIsFollowing] = useState(true);
+
+    // Background refresh of the recorded path + unit status: a new ping from the driver's own
+    // session lands here without a manual reload. The playback below is keyed to the path LENGTH
+    // (not the array) so an identical refresh never restarts the animation or rewinds the marker.
+    useBackgroundRefresh(['tricycle', 'pathCoordinates']);
 
     useEffect(() => {
         if (pathCoordinates.length <= 1) return;
@@ -101,31 +101,67 @@ export default function LiveTracking({ tricycle, pathCoordinates: dbCoordinates 
                 setPosition(pathCoordinates[nextIdx]);
                 return nextIdx;
             });
-
-            setSpeed(prev => {
-                const variance = Math.floor(Math.random() * 5) - 2;
-                const newSpeed = prev + variance;
-                return newSpeed < 10 ? 10 : (newSpeed > 45 ? 45 : newSpeed);
-            });
         }, 3000);
 
         return () => clearInterval(interval);
-    }, [pathCoordinates]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- length-only dep keeps the 3s
+        // playback cadence stable across prop refreshes; a new array identity with the same
+        // number of pings must not tear down and re-create this interval.
+    }, [pathCoordinates.length]);
 
     const handleRecenter = () => {
         setIsFollowing(true);
     };
 
-    const details = tricycle || {
-        body_no: 'Pending',
-        make_model: 'Honda TMX 125 Alpha',
-        plate_no: 'Pending',
-        zone: 'Poblacion (TODA A)',
-        active_tracking_mode: 'mobile_app',
-        last_ping: 'Just now',
-        is_recent_ping: false,
-        other_units_count: 0,
-    };
+    // A tricycle whose franchise isn't finalized yet has no real GPS history to show — render a
+    // placeholder instead of the map rather than fabricating a position from partial data.
+    if (tricycle && tricycle.isFinalized === false) {
+        return (
+            <OperatorLayout title="Live Tracking" operatorName={operatorName}>
+                <Head title="Live GPS Tracking | TRIVORA" />
+                <div className="mx-auto max-w-2xl pb-10">
+                    <Link href={route('operator.fleet')} className="mb-5 inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-wide text-slate-500 transition-colors hover:text-slate-900">
+                        <ArrowLeft size={14} strokeWidth={2.5} /> Back to My Tricycles
+                    </Link>
+                    <div className={`rounded-2xl border border-dashed border-slate-300 bg-white p-10 text-center ${CARD_SHADOW}`}>
+                        <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-slate-100 text-slate-400">
+                            <MapPin size={26} strokeWidth={1.8} />
+                        </div>
+                        <h2 className="text-lg font-bold text-slate-900">Live tracking not available yet</h2>
+                        <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-slate-500">
+                            {tricycle.plate_no || tricycle.coding_scheme_number} will show live location once TMO completes Final Confirmation and activates this unit's franchise.
+                        </p>
+                    </div>
+                </div>
+            </OperatorLayout>
+        );
+    }
+
+    // No unit linked to the driver's account — same honest placeholder treatment as a
+    // not-yet-finalized unit, rather than a fabricated demo record.
+    if (!tricycle) {
+        return (
+            <OperatorLayout title="Live Tracking" operatorName={operatorName}>
+                <Head title="Live GPS Tracking | TRIVORA" />
+                <div className="mx-auto max-w-2xl pb-10">
+                    <Link href={route('operator.fleet')} className="mb-5 inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-wide text-slate-500 transition-colors hover:text-slate-900">
+                        <ArrowLeft size={14} strokeWidth={2.5} /> Back to My Tricycles
+                    </Link>
+                    <div className={`rounded-2xl border border-dashed border-slate-300 bg-white p-10 text-center ${CARD_SHADOW}`}>
+                        <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-slate-100 text-slate-400">
+                            <MapPin size={26} strokeWidth={1.8} />
+                        </div>
+                        <h2 className="text-lg font-bold text-slate-900">No tricycle unit linked</h2>
+                        <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-slate-500">
+                            There is no tricycle unit linked to your account yet, so there is no live location to show.
+                        </p>
+                    </div>
+                </div>
+            </OperatorLayout>
+        );
+    }
+
+    const details = tricycle;
 
     const trackingMeta = TRACKING_META[details.active_tracking_mode] || TRACKING_META.mobile_app;
     const TrackingIcon = trackingMeta.icon;
@@ -139,18 +175,10 @@ export default function LiveTracking({ tricycle, pathCoordinates: dbCoordinates 
 
                 {/* ── TOPBAR ── */}
                 <div className="mb-5 flex shrink-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                    <Link href={route('operator.fleet', tricycle?.db_id ? { unit: tricycle.db_id } : {})} className="inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-wide text-slate-500 transition-colors hover:text-slate-900">
+                    <Link href={route('operator.fleet')} className="inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-wide text-slate-500 transition-colors hover:text-slate-900">
                         <ArrowLeft size={14} strokeWidth={2.5} /> Back to My Tricycles
                     </Link>
                     <div className="flex flex-wrap items-center gap-2">
-                        {details.other_units_count > 0 && (
-                            <Link
-                                href={route('operator.fleet')}
-                                className="flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-[10px] font-bold uppercase tracking-wide text-slate-500 hover:text-slate-900"
-                            >
-                                <Layers size={12} /> Switch Unit
-                            </Link>
-                        )}
                         <div className={`flex items-center gap-2 rounded-full border px-3.5 py-1.5 text-[10px] font-extrabold uppercase tracking-wide ${trackingStatus.badgeClass}`}>
                             {trackingMeta.label}: {trackingStatus.label}
                         </div>
@@ -161,18 +189,20 @@ export default function LiveTracking({ tricycle, pathCoordinates: dbCoordinates 
                     sidebar stretched to match the map's height ── */}
                 <div className={`mb-5 flex shrink-0 flex-col gap-4 rounded-2xl border border-slate-200/70 bg-white p-5 ${CARD_SHADOW} sm:flex-row sm:items-center sm:justify-between sm:gap-6`}>
                     <div className="shrink-0">
-                        <h2 className="text-lg font-extrabold leading-none text-slate-900">{details.body_no}</h2>
+                        <h2 className="text-lg font-extrabold leading-none text-slate-900">{details.coding_scheme_number}</h2>
                         <p className="mt-1.5 text-[13px] text-slate-500">{details.make_model} &bull; Plate: {details.plate_no}</p>
                     </div>
                     <div className="flex flex-wrap items-center gap-x-6 gap-y-3 sm:justify-end">
-                        <MiniStat icon={Activity} label="Current Speed" value={`${speed} km/h`} />
                         <MiniStat icon={TrackingIcon} label="Tracking Method" value={trackingMeta.label} />
                         <MiniStat icon={MapPin} label="Current Zone" value={details.zone} />
                         <MiniStat icon={Clock} label="Last Updated" value={details.last_ping} tone={details.is_recent_ping ? 'success' : 'warning'} />
                     </div>
                 </div>
 
-                {/* ── MAP — full width, fills the remaining page height ── */}
+                {/* ── MAP — full width, fills the remaining page height. With no recorded
+                    GPS ping yet, an explicit honest state replaces the map (never a
+                    fabricated position). ── */}
+                {position ? (
                 <div className={`relative flex min-h-0 flex-1 overflow-hidden rounded-2xl border border-slate-200/70 bg-gray-200 ${CARD_SHADOW}`}>
 
                         {/* UI Overlay: Coordinates */}
@@ -221,6 +251,18 @@ export default function LiveTracking({ tricycle, pathCoordinates: dbCoordinates 
                         </MapContainer>
 
                     </div>
+                ) : (
+                    <div className={`flex min-h-0 flex-1 flex-col items-center justify-center rounded-2xl border border-dashed border-slate-300 bg-white p-10 text-center ${CARD_SHADOW}`}>
+                        <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-slate-100 text-slate-400">
+                            <MapPin size={26} strokeWidth={1.8} />
+                        </div>
+                        <h2 className="text-lg font-bold text-slate-900">No GPS ping recorded yet</h2>
+                        <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-slate-500">
+                            {details.coding_scheme_number} has not reported a location yet. The live map appears as soon as the
+                            unit sends its first {trackingMeta.label} ping.
+                        </p>
+                    </div>
+                )}
 
                 </div>
         </OperatorLayout>

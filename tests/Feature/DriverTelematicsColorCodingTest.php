@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\ColorCodingScheme;
+use App\Models\Driver;
 use App\Models\FranchiseScheme;
 use App\Models\Operator;
 use App\Models\TodaZone;
@@ -20,6 +21,12 @@ use Tests\TestCase;
  * Covers the fixed DriverTelematicsController::runColorCodingCheck() — previously broken
  * (invalid 'coding_no_operation' enum value, missing required FKs, an overspeeding check that
  * is out of this project's scope) as part of the real GPS/IoT tracking implementation.
+ *
+ * Since the coding/restricted-day 100-meter movement rule (see CodingViolationMovementRuleTest),
+ * actually creating a violation now requires an online session (Driver::online_since) plus two
+ * consecutive GPS readings at/beyond the movement threshold from that session's anchor — a single
+ * ping is never enough on its own. Tests here that need a violation to fire drive a short,
+ * realistic 3-ping sequence (anchor, candidate, confirming) rather than one ping.
  */
 class DriverTelematicsColorCodingTest extends TestCase
 {
@@ -27,8 +34,9 @@ class DriverTelematicsColorCodingTest extends TestCase
 
     protected User $driverUser;
     protected Tricycle $tricycle;
+    protected Driver $driver;
 
-    /** Tricycle body number ends in 2, which ColorCodingRuleService restricts on Mondays. */
+    /** Tricycle Sticker Number ends in 2, which ColorCodingRuleService restricts on Mondays. */
     protected function setUp(): void
     {
         parent::setUp();
@@ -83,18 +91,44 @@ class DriverTelematicsColorCodingTest extends TestCase
             'issue_date' => '2024-01-01', 'expiry_date' => '2029-01-01',
             'is_active' => true,
         ]);
+
+        $this->driver = Driver::create([
+            'user_id' => $this->driverUser->id,
+            'operator_id' => $operator->id,
+            'tricycle_id' => $this->tricycle->id,
+            'license_number' => 'LIC-TELEM-001',
+            'is_online' => false, 'is_available' => false,
+        ]);
+    }
+
+    /** A pure north offset using the same spherical-Earth radius GeoService::haversineKm() uses,
+     * so the resulting distance is exact relative to what the production code computes. */
+    private function metersNorth(float $lat, float $meters): float
+    {
+        return $lat + rad2deg($meters / 6371000.0);
     }
 
     #[Test]
     public function a_restricted_day_ping_creates_exactly_one_valid_color_coding_violation(): void
     {
         Sanctum::actingAs($this->driverUser, ['*']);
+        $this->postJson('/api/v1/driver/status', ['is_online' => true])->assertOk();
         $monday = Carbon::parse('next Monday')->setTime(9, 0);
 
+        // Anchor, then a candidate reading, then a confirming reading (both >=100m from the
+        // anchor) — the movement rule requires this sequence before a violation can fire.
+        $this->postJson('/api/v1/driver/telematics', [
+            'latitude' => 14.07, 'longitude' => 120.63, 'recorded_at' => $monday->toISOString(),
+        ])->assertJsonPath('violation.flagged', false);
+        $this->postJson('/api/v1/driver/telematics', [
+            'latitude' => $this->metersNorth(14.07, 102), 'longitude' => 120.63,
+            'recorded_at' => $monday->copy()->addSeconds(15)->toISOString(),
+        ])->assertJsonPath('violation.flagged', false);
+
         $response = $this->postJson('/api/v1/driver/telematics', [
-            'latitude' => 14.07, 'longitude' => 120.63,
+            'latitude' => $this->metersNorth(14.07, 107), 'longitude' => 120.63,
             'speed_kmh' => 15, 'heading_deg' => 90, 'accuracy_m' => 5,
-            'recorded_at' => $monday->toISOString(),
+            'recorded_at' => $monday->copy()->addSeconds(30)->toISOString(),
         ]);
 
         $response->assertStatus(201);
@@ -116,14 +150,26 @@ class DriverTelematicsColorCodingTest extends TestCase
     public function a_second_ping_the_same_restricted_day_does_not_duplicate(): void
     {
         Sanctum::actingAs($this->driverUser, ['*']);
+        $this->postJson('/api/v1/driver/status', ['is_online' => true])->assertOk();
         $monday = Carbon::parse('next Monday')->setTime(9, 0);
 
+        // Confirm a violation first (anchor + candidate + confirming reading).
         $this->postJson('/api/v1/driver/telematics', [
             'latitude' => 14.07, 'longitude' => 120.63, 'recorded_at' => $monday->toISOString(),
         ])->assertStatus(201);
+        $this->postJson('/api/v1/driver/telematics', [
+            'latitude' => $this->metersNorth(14.07, 102), 'longitude' => 120.63,
+            'recorded_at' => $monday->copy()->addSeconds(15)->toISOString(),
+        ])->assertStatus(201);
+        $this->postJson('/api/v1/driver/telematics', [
+            'latitude' => $this->metersNorth(14.07, 107), 'longitude' => 120.63,
+            'recorded_at' => $monday->copy()->addSeconds(30)->toISOString(),
+        ])->assertJsonPath('violation.flagged', true);
 
+        // A further ping the same restricted day, still well beyond the threshold, must never
+        // create a second row for the same date.
         $second = $this->postJson('/api/v1/driver/telematics', [
-            'latitude' => 14.0701, 'longitude' => 120.6301,
+            'latitude' => $this->metersNorth(14.07, 150), 'longitude' => 120.63,
             'recorded_at' => $monday->copy()->addMinutes(5)->toISOString(),
         ]);
 
@@ -166,14 +212,6 @@ class DriverTelematicsColorCodingTest extends TestCase
     #[Test]
     public function a_ping_updates_the_drivers_live_position_in_the_same_request(): void
     {
-        $driver = \App\Models\Driver::create([
-            'user_id' => $this->driverUser->id,
-            'operator_id' => $this->tricycle->operator_id,
-            'tricycle_id' => $this->tricycle->id,
-            'license_number' => 'LIC-TELEM-001',
-            'is_online' => true, 'is_available' => true,
-        ]);
-
         Sanctum::actingAs($this->driverUser, ['*']);
         $tuesday = Carbon::parse('next Tuesday')->setTime(9, 0);
 
@@ -181,7 +219,7 @@ class DriverTelematicsColorCodingTest extends TestCase
             'latitude' => 14.09, 'longitude' => 120.65, 'recorded_at' => $tuesday->toISOString(),
         ])->assertStatus(201);
 
-        $driver->refresh();
+        $driver = $this->driver->refresh();
         $this->assertEquals(14.09, $driver->current_lat);
         $this->assertEquals(120.65, $driver->current_lng);
     }

@@ -1,9 +1,10 @@
 import { Calendar } from 'lucide-react';
 
 /**
- * Shared date-range control for Reports & Analytics — quick presets + native date
- * inputs for a custom range. No date-picker library: native `<input type="date">`
- * plus server-side Carbon math (see TMO\ReportController) is enough at this scale.
+ * Shared date-range control for Reports & Analytics: a Quick Range preset dropdown plus
+ * custom from/to inputs, in one compact row. No date-picker library: native
+ * `<input type="date">` plus server-side Carbon math (see TMO\ReportController) is enough
+ * at this scale.
  */
 const PRESETS = [
     { value: 'today', label: 'Today' },
@@ -54,11 +55,12 @@ export default function DateRangeFilter({ from, to, onChange }) {
     };
 
     return (
-        <div className="flex flex-col gap-2.5 rounded-xl border border-tmo-border bg-tmo-surface p-3 sm:flex-row sm:items-center sm:justify-between sm:p-3.5">
+        <div className="flex flex-wrap items-center gap-2 sm:flex-nowrap">
             <select
                 value={activePreset}
                 onChange={handlePreset}
-                className="h-9 w-full shrink-0 rounded-lg border border-tmo-borderStrong bg-white px-2.5 text-xs font-semibold text-tmo-ink focus:border-tmo-primary focus:outline-none focus:ring-2 focus:ring-tmo-primary/15 sm:w-40"
+                aria-label="Quick range"
+                className="h-9 shrink-0 rounded-lg border border-tmo-borderStrong bg-white px-2.5 text-xs font-semibold text-tmo-ink focus:border-tmo-primary focus:outline-none focus:ring-2 focus:ring-tmo-primary/15 sm:w-36"
             >
                 <option value="">Quick Range…</option>
                 {PRESETS.map((p) => (
@@ -71,16 +73,18 @@ export default function DateRangeFilter({ from, to, onChange }) {
                 <input
                     type="date"
                     value={from}
-                    max={to}
+                    max={to || undefined}
                     onChange={(e) => onChange({ from: e.target.value, to })}
+                    aria-label="From date"
                     className="h-9 min-w-0 flex-1 shrink-0 rounded-lg border border-tmo-borderStrong bg-white px-2.5 text-xs text-tmo-ink focus:border-tmo-primary focus:outline-none focus:ring-2 focus:ring-tmo-primary/15 sm:flex-none"
                 />
                 <span className="shrink-0 text-xs text-tmo-subtle">to</span>
                 <input
                     type="date"
                     value={to}
-                    min={from}
+                    min={from || undefined}
                     onChange={(e) => onChange({ from, to: e.target.value })}
+                    aria-label="To date"
                     className="h-9 min-w-0 flex-1 shrink-0 rounded-lg border border-tmo-borderStrong bg-white px-2.5 text-xs text-tmo-ink focus:border-tmo-primary focus:outline-none focus:ring-2 focus:ring-tmo-primary/15 sm:flex-none"
                 />
             </div>

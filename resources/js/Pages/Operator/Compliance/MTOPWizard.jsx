@@ -17,15 +17,22 @@ import {
     Upload,
     Eye,
     X,
-    Camera
+    Camera,
+    User,
+    Users,
+    Phone,
+    CalendarDays,
+    MapPin
 } from 'lucide-react';
+import { VEHICLE_DETAIL_FIELDS, getApplicableDocuments } from '@/data/registrationRequirements';
+import { NASUGBU_BARANGAYS } from '@/data/nasugbuBarangays';
 
 // Shared soft, layered shadow token — same elevation language used across the redesigned TMO
 // and Operator panels, so this page reads as one consistent product rather than a different template.
 const CARD_SHADOW = 'shadow-[0_1px_2px_0_rgba(15,23,42,0.04),0_8px_24px_-8px_rgba(15,23,42,0.10)]';
 const BRAND_ICON_CHIP = 'bg-gradient-to-br from-[#1D2542]/[0.10] to-[#1D2542]/[0.02] text-[#1D2542]';
 
-export default function MTOPWizard({ applicationType = 'new', tricycleUnit = null }) {
+export default function MTOPWizard({ applicationType = 'new', tricycleUnit = null, owner = null }) {
     const { auth } = usePage().props;
     const operatorName = auth?.user?.name || 'Driver';
 
@@ -35,26 +42,39 @@ export default function MTOPWizard({ applicationType = 'new', tricycleUnit = nul
 
     const isRenewal = applicationType === 'renewal';
 
+    // Same field set/order as Public Registration (resources/js/data/registrationRequirements.js)
+    // — pre-filled from the tricycle's municipal record for a renewal. The owner/driver split
+    // uses the exact same backend data model as Public Registration: `owner_is_driver` on the
+    // application plus an ApplicationDriver row when the owner is NOT the driver.
     const { data, setData } = useForm({
+        plate_number: tricycleUnit?.plate_number || '',
         make_model: tricycleUnit?.make_model || '',
+        year_model: tricycleUnit?.year_model || '',
+        body_color: tricycleUnit?.body_color || '',
+        body_type: tricycleUnit?.body_type || '',
         engine_number: tricycleUnit?.engine_number || '',
         chassis_number: tricycleUnit?.chassis_number || '',
-        plate: tricycleUnit?.plate_number || '',
-        toda: tricycleUnit?.toda || '',
+        or_number: tricycleUnit?.or_number || '',
+        cr_number: tricycleUnit?.cr_number || '',
+        owner_is_driver: true,
+        driver_first_name: '',
+        driver_last_name: '',
+        driver_birthday: '',
+        driver_contact: '',
+        driver_barangay: '',
         documents: {},
     });
 
-    const documentList = [
-        { id: 'prangkisa', label: 'Xerox Prangkisa (Kung Renew)',                         conditional: isRenewal, required: isRenewal },
-        { id: 'orcr',      label: 'Xerox OR/CR',                                          required: true },
-        { id: 'receipt',   label: 'Delivery Receipt (Kung walang OR/CR / New)',            conditional: !isRenewal, required: !isRenewal },
-        { id: 'license',   label: "Driver's License Back-to-back (Prof/Restriction 1/A1)", required: true },
-        { id: 'brgy',      label: 'Barangay Clearance (Original)',                         required: true },
-        { id: 'toda',      label: 'TODA/NAFTODA/ACTODAN Clearance (Original)',             required: true },
-        { id: 'driver_id', label: "Driver's ID Issued by NAFTODA/ACTODAN",                required: true },
-        { id: 'tariff',    label: 'List of Existing Tariff Fee (For sidecar)',             conditional: true },
-        { id: 'auth',      label: "Authorization Letter & ID (Kung hindi may-ari)",       conditional: true },
-    ];
+    // Same canonical requirement list as Public Registration — Prangkisa only applies (and is
+    // only required) for a renewal application. Split into required vs conditional exactly like
+    // Public Registration's Requirements step.
+    const documentList = getApplicableDocuments(isRenewal ? 'renewal' : 'new');
+    const requiredDocs = documentList.filter(d => d.required);
+    const conditionalDocs = documentList.filter(d => !d.required);
+    const uploadedRequiredCount = requiredDocs.filter(d => {
+        const files = data.documents[d.id];
+        return Array.isArray(files) && files.length > 0;
+    }).length;
 
     const handleFileUpload = (docId, fileOrFiles) => {
         const currentFiles = data.documents[docId] || [];
@@ -89,11 +109,17 @@ export default function MTOPWizard({ applicationType = 'new', tricycleUnit = nul
         if (tricycleUnit?.id) {
             formData.append('unit_id', tricycleUnit.id);
         }
-        formData.append('make_model', data.make_model);
-        formData.append('engine_number', data.engine_number);
-        formData.append('chassis_number', data.chassis_number);
-        formData.append('plate', data.plate);
-        formData.append('toda', data.toda);
+        VEHICLE_DETAIL_FIELDS.forEach(f => formData.append(f.id, data[f.id] || ''));
+
+        // Owner/driver split — same payload keys as Public Registration's RegistrationController
+        formData.append('owner_is_driver', data.owner_is_driver ? '1' : '0');
+        if (!data.owner_is_driver) {
+            formData.append('driver_first_name', data.driver_first_name || '');
+            formData.append('driver_last_name', data.driver_last_name || '');
+            formData.append('driver_birthday', data.driver_birthday || '');
+            formData.append('driver_contact', data.driver_contact || '');
+            formData.append('driver_barangay', data.driver_barangay || '');
+        }
 
         if (data.documents) {
             Object.entries(data.documents).forEach(([key, fileList]) => {
@@ -113,8 +139,19 @@ export default function MTOPWizard({ applicationType = 'new', tricycleUnit = nul
         });
     };
 
-    const isStep1Valid = data.make_model && data.engine_number && data.chassis_number;
-    const requiredDocsIds = documentList.filter(d => d.required).map(d => d.id);
+    // Separate Tricycle Driver — only required when the owner is NOT the driver (same rule as
+    // Public Registration's validateApplicantInfo()).
+    const isDriverInfoValid = data.owner_is_driver || (
+        String(data.driver_first_name).trim() !== '' &&
+        String(data.driver_last_name).trim() !== '' &&
+        String(data.driver_birthday).trim() !== '' &&
+        data.driver_birthday <= new Date().toISOString().slice(0, 10) &&
+        String(data.driver_contact).trim() !== '' &&
+        String(data.driver_barangay).trim() !== ''
+    );
+
+    const isStep1Valid = VEHICLE_DETAIL_FIELDS.every(f => String(data[f.id] || '').trim() !== '') && isDriverInfoValid;
+    const requiredDocsIds = requiredDocs.map(d => d.id);
     const isStep2Valid = requiredDocsIds.every(id => {
         const files = data.documents[id];
         return Array.isArray(files) && files.length > 0;
@@ -132,7 +169,7 @@ export default function MTOPWizard({ applicationType = 'new', tricycleUnit = nul
                             eyebrow="Franchise &amp; Compliance"
                             title={isRenewal ? 'Franchise Renewal Application' : 'New Unit Registration'}
                             subtitle={isRenewal
-                                ? `Submit your application to renew the municipal MTOP franchise certificate for unit ${data.plate ? `(${data.plate})` : ''}.`
+                                ? `Submit your application to renew the municipal MTOP franchise certificate for unit ${data.plate_number ? `(${data.plate_number})` : ''}.`
                                 : 'Complete the steps below to submit your application for a new tricycle unit.'}
                             backLink={<BackLink href={route('operator.mtop')}>{`Cancel ${isRenewal ? 'Renewal' : 'Registration'}`}</BackLink>}
                         />
@@ -172,34 +209,146 @@ export default function MTOPWizard({ applicationType = 'new', tricycleUnit = nul
                             </div>
                         )}
 
+                        {/* Same 9 fields, labels, and order as Public Registration
+                            (resources/js/data/registrationRequirements.js). */}
                         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-                            <div className="sm:col-span-2">
-                                <Label>TODA Assignment</Label>
-                                <Select value={data.toda} onChange={e => setData('toda', e.target.value)}>
-                                    <option value="">Select TODA Assignment</option>
-                                    <option value="TODA Bucana">TODA Bucana</option>
-                                    <option value="TODA Brgy. 10">TODA Brgy. 10</option>
-                                    <option value="TODA Brgy. 8">TODA Brgy. 8</option>
-                                    <option value="TODA Brgy. 4">TODA Brgy. 4</option>
-                                </Select>
-                            </div>
-                            <div className="sm:col-span-2">
-                                <Label>Motorcycle Make &amp; Model</Label>
-                                <Input placeholder="e.g. Kawasaki Barako 175" value={data.make_model} onChange={e => setData('make_model', e.target.value)} />
-                            </div>
-                            <div>
-                                <Label>LTO Plate / Body Number</Label>
-                                <Input placeholder="e.g. 123-ABC or 0412" value={data.plate} onChange={e => setData('plate', e.target.value)} />
-                            </div>
-                            <div>
-                                <Label>Engine Number</Label>
-                                <Input placeholder="ENG-XXXXXX" value={data.engine_number} onChange={e => setData('engine_number', e.target.value)} />
-                            </div>
-                            <div>
-                                <Label>Chassis Number</Label>
-                                <Input placeholder="CHAS-XXXXXX" value={data.chassis_number} onChange={e => setData('chassis_number', e.target.value)} />
-                            </div>
+                            {VEHICLE_DETAIL_FIELDS.map(f => (
+                                <div key={f.id} className={f.id === 'make_model' ? 'sm:col-span-2' : undefined}>
+                                    <Label>{f.label}</Label>
+                                    <Input
+                                        placeholder={f.placeholder}
+                                        value={data[f.id]}
+                                        onChange={e => setData(f.id, e.target.value)}
+                                    />
+                                </div>
+                            ))}
                         </div>
+
+                        {/* ── Owner / Driver — same structure, wording, and backend data model
+                            (owner_is_driver + ApplicationDriver) as Public Registration ── */}
+                        <div className="mt-8 border-t border-slate-200 pt-6">
+                            <div className="mb-4">
+                                <h3 className="text-sm font-bold text-slate-900">Tricycle Owner &amp; Driver</h3>
+                                <p className="mt-0.5 text-[11px] text-slate-400">
+                                    Same owner/driver split as Public Registration — persisted with this application.
+                                </p>
+                            </div>
+
+                            {/* Tricycle Owner — this portal account (the applicant) */}
+                            <div className="flex items-center gap-3.5 rounded-xl border border-slate-200/70 bg-slate-50 p-4">
+                                <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-lg ${BRAND_ICON_CHIP}`}>
+                                    <User size={19} strokeWidth={2} />
+                                </div>
+                                <div className="min-w-0">
+                                    <p className="text-[10px] font-bold uppercase tracking-wide text-slate-500">Tricycle Owner</p>
+                                    <p className="mt-1 truncate text-[13.5px] font-semibold text-slate-900">
+                                        {owner?.full_name || operatorName}
+                                    </p>
+                                    {owner?.contact_number && (
+                                        <p className="mt-0.5 flex items-center gap-1.5 text-xs text-slate-500">
+                                            <Phone size={11} className="shrink-0" /> {owner.contact_number}
+                                        </p>
+                                    )}
+                                    {owner?.barangay && (
+                                        <p className="mt-0.5 flex items-center gap-1.5 text-xs text-slate-500">
+                                            <MapPin size={11} className="shrink-0" /> Brgy. {owner.barangay}, Nasugbu
+                                        </p>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Owner vs driver — persisted with the application (owner_is_driver),
+                                never frontend-only state. Defaults to Yes (owner drives). */}
+                            <div className="mt-4 flex items-center justify-between gap-4 rounded-xl border border-slate-200/70 bg-white p-4">
+                                <div className="min-w-0">
+                                    <p className="text-[13px] font-bold text-slate-900">Is the owner also the tricycle driver?</p>
+                                    <p className="mt-0.5 text-[11.5px] leading-relaxed text-slate-500">
+                                        Choose <strong>No</strong> if someone else will drive this tricycle unit —
+                                        you will provide that driver's details below.
+                                    </p>
+                                </div>
+                                <button
+                                    type="button"
+                                    role="switch"
+                                    aria-checked={data.owner_is_driver ? 'true' : 'false'}
+                                    aria-label="Is the owner also the tricycle driver?"
+                                    onClick={() => setData('owner_is_driver', !data.owner_is_driver)}
+                                    className="flex shrink-0 items-center gap-2.5"
+                                >
+                                    <span className={`relative inline-block h-6 w-11 rounded-full transition-colors ${data.owner_is_driver ? 'bg-[#1D2542]' : 'bg-slate-300'}`}>
+                                        <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-all ${data.owner_is_driver ? 'left-[22px]' : 'left-0.5'}`} />
+                                    </span>
+                                    <span className={`w-8 text-right text-[13px] font-bold ${data.owner_is_driver ? 'text-[#1D2542]' : 'text-slate-500'}`}>
+                                        {data.owner_is_driver ? 'Yes' : 'No'}
+                                    </span>
+                                </button>
+                            </div>
+
+                            {/* Separate Tricycle Driver — hidden entirely while the owner is the driver */}
+                            {!data.owner_is_driver && (
+                                <div className="mt-4 rounded-xl border border-[#1D2542]/20 bg-[#1D2542]/[0.04] p-4 sm:p-5">
+                                    <div className="mb-4 flex items-center gap-2.5">
+                                        <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${BRAND_ICON_CHIP}`}>
+                                            <Users size={17} />
+                                        </div>
+                                        <div>
+                                            <h4 className="text-[13px] font-bold text-slate-900">Tricycle Driver</h4>
+                                            <p className="text-[11px] text-slate-500">
+                                                The person who will actually drive this unit, when different from the Tricycle Owner above.
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                        <div>
+                                            <Label>Driver First Name</Label>
+                                            <Input
+                                                placeholder="First Name"
+                                                value={data.driver_first_name}
+                                                onChange={e => setData('driver_first_name', e.target.value)}
+                                            />
+                                        </div>
+                                        <div>
+                                            <Label>Driver Last Name</Label>
+                                            <Input
+                                                placeholder="Last Name"
+                                                value={data.driver_last_name}
+                                                onChange={e => setData('driver_last_name', e.target.value)}
+                                            />
+                                        </div>
+                                        <div>
+                                            <Label>Driver Birthday</Label>
+                                            <Input
+                                                type="date"
+                                                max={new Date().toISOString().slice(0, 10)}
+                                                value={data.driver_birthday}
+                                                onChange={e => setData('driver_birthday', e.target.value)}
+                                            />
+                                        </div>
+                                        <div>
+                                            <Label>Driver Mobile Number</Label>
+                                            <Input
+                                                placeholder="0917 123 4567"
+                                                value={data.driver_contact}
+                                                onChange={e => setData('driver_contact', e.target.value)}
+                                            />
+                                        </div>
+                                        <div className="sm:col-span-2">
+                                            <Label>Driver Barangay (Nasugbu)</Label>
+                                            <Select
+                                                value={data.driver_barangay}
+                                                onChange={e => setData('driver_barangay', e.target.value)}
+                                            >
+                                                <option value="">Select Barangay</option>
+                                                {NASUGBU_BARANGAYS.map(b => (
+                                                    <option key={b.value} value={b.value}>{b.label}</option>
+                                                ))}
+                                            </Select>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
                         <div className="mt-8 flex items-center justify-end border-t border-slate-200 pt-6">
                             <Button variant="primary" size="lg" disabled={!isStep1Valid} onClick={next} icon={ChevronRight} iconPosition="right">
                                 Continue to Documents
@@ -219,20 +368,58 @@ export default function MTOPWizard({ applicationType = 'new', tricycleUnit = nul
                         </div>
                         <p className="mb-6 text-sm text-slate-500">Please upload a clear scan or photo of the following municipal requirements.</p>
 
-                        <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2">
-                            {documentList.map(doc => (
+                        {/* Live progress instead of only finding out what's missing on Submit —
+                            mirrors Public Registration's Requirements step. */}
+                        <div className="mb-6 flex items-center gap-3">
+                            <div className="h-2 flex-1 overflow-hidden rounded-full bg-slate-100">
+                                <div
+                                    className="h-full rounded-full bg-emerald-500 transition-all"
+                                    style={{ width: `${requiredDocs.length > 0 ? (uploadedRequiredCount / requiredDocs.length) * 100 : 100}%` }}
+                                />
+                            </div>
+                            <span className="shrink-0 text-[11px] font-bold text-slate-500">
+                                {uploadedRequiredCount} of {requiredDocs.length} required uploaded
+                            </span>
+                        </div>
+
+                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                            {requiredDocs.map(doc => (
                                 <FileUploadTile
                                     key={doc.id}
                                     id={doc.id}
                                     label={doc.label}
+                                    hint={doc.hint}
                                     required={doc.required}
-                                    conditional={doc.conditional}
+                                    conditional={!doc.required}
                                     files={data.documents[doc.id] || []}
                                     onUpload={files => handleFileUpload(doc.id, files)}
                                     onRemove={index => handleRemoveFile(doc.id, index)}
                                 />
                             ))}
                         </div>
+
+                        {conditionalDocs.length > 0 && (
+                            <>
+                                <p className="mb-3 mt-7 text-[11px] font-bold uppercase tracking-wide text-slate-400">
+                                    You may also need to attach
+                                </p>
+                                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                    {conditionalDocs.map(doc => (
+                                        <FileUploadTile
+                                            key={doc.id}
+                                            id={doc.id}
+                                            label={doc.label}
+                                            hint={doc.hint}
+                                            required={doc.required}
+                                            conditional={!doc.required}
+                                            files={data.documents[doc.id] || []}
+                                            onUpload={files => handleFileUpload(doc.id, files)}
+                                            onRemove={index => handleRemoveFile(doc.id, index)}
+                                        />
+                                    ))}
+                                </div>
+                            </>
+                        )}
                         <div className="flex items-center justify-between border-t border-slate-200 pt-6">
                             <Button variant="secondary" size="lg" onClick={back} disabled={isSubmitting} icon={ArrowLeft}>
                                 Back
@@ -259,8 +446,8 @@ export default function MTOPWizard({ applicationType = 'new', tricycleUnit = nul
                         </div>
                         <h1 className="mb-4 text-3xl font-bold tracking-tight text-slate-900">Application Submitted</h1>
                         <p className="mx-auto mb-10 max-w-lg text-[15px] leading-relaxed text-slate-500">
-                            Your registration for the new unit has been successfully submitted.
-                            The Nasugbu TMO team will begin document verification shortly.
+                            Your application has been submitted and is now pending TMO Requirements Review.
+                            You can monitor the progress of your application through the Driver Portal.
                         </p>
 
                         <div className={`mx-auto mb-10 max-w-sm rounded-2xl border border-[#1D2542]/15 bg-gradient-to-br from-[#1D2542]/[0.06] to-[#1D2542]/[0.01] p-7 text-left ${CARD_SHADOW}`}>
@@ -279,11 +466,7 @@ export default function MTOPWizard({ applicationType = 'new', tricycleUnit = nul
                                 </li>
                                 <li className="flex gap-3 text-sm leading-relaxed text-slate-500">
                                     <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[#1D2542]" />
-                                    <span><strong className="text-slate-900">Physical Inspection:</strong> You will be notified via SMS to schedule the vehicle's roadworthiness check.</span>
-                                </li>
-                                <li className="flex gap-3 text-sm leading-relaxed text-slate-500">
-                                    <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-amber-500" />
-                                    <span><strong className="text-slate-900">Payment &amp; Fees:</strong> Franchise and IoT installation fees will only be collected <em>after</em> your unit passes physical inspection.</span>
+                                    <span><strong className="text-slate-900">Physical Inspection:</strong> Once approved, you'll be instructed to bring your tricycle in for a roadworthiness check — track your status anytime in the Application Tracker below.</span>
                                 </li>
                             </ul>
                         </div>
@@ -316,7 +499,7 @@ function StepNode({ num, label, active, done }) {
     );
 }
 
-function FileUploadTile({ id, label, required, conditional, files, onUpload, onRemove }) {
+function FileUploadTile({ id, label, hint, required, conditional, files, onUpload, onRemove }) {
     const [previewUrls, setPreviewUrls] = useState([]);
     const [showGallery, setShowGallery] = useState(false);
     const [activePreviewUrl, setActivePreviewUrl] = useState(null);
@@ -416,7 +599,12 @@ function FileUploadTile({ id, label, required, conditional, files, onUpload, onR
     return (
         <div className={`flex min-h-[96px] flex-col items-start gap-2 rounded-xl border-[1.5px] border-dashed p-4 transition-colors ${isUploaded ? 'border-emerald-300 bg-emerald-50/40' : 'border-slate-300 bg-slate-50 hover:border-[#1D2542]/40 hover:bg-white'}`}>
             <div className="flex w-full items-center justify-between gap-2">
-                <p className="truncate text-[13px] font-bold leading-snug text-slate-900" title={label}>{label}</p>
+                <div className="min-w-0">
+                    <p className="truncate text-[13px] font-bold leading-snug text-slate-900" title={label}>{label}</p>
+                    {hint && conditional && (
+                        <p className="mt-0.5 text-[11px] leading-snug text-slate-400">{hint}</p>
+                    )}
+                </div>
                 <div className="flex shrink-0 gap-1.5">
                     {isUploaded
                         ? <span className="rounded-md bg-emerald-100 px-2.5 py-1 text-[9px] font-extrabold uppercase text-emerald-700">✓ {files.length} File(s)</span>

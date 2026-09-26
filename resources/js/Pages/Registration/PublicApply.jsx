@@ -4,12 +4,14 @@ import { Head, useForm, Link, usePage } from '@inertiajs/react';
 import Swal from 'sweetalert2';
 import {
     Upload, Info, CheckCircle2, MapPin, Check, Camera, Eye, X,
-    FileText, User, Bike, Mail, Lock, Phone, Loader2
+    FileText, User, Bike, Mail, Lock, Phone, Loader2, CalendarDays
 } from 'lucide-react';
+import { VEHICLE_DETAIL_FIELDS, getApplicableDocuments } from '@/data/registrationRequirements';
+import { NASUGBU_BARANGAYS } from '@/data/nasugbuBarangays';
 
 /* ─────────────────────────────────────────────────────────────────────────
    TRIVORA — Public Apply / MTOP Registration Wizard
-   4-Step Flow: Agreement → Tricycle Driver → Vehicle → Documents → Success
+   4-Step Flow: Agreement → Applicant → Vehicle → Documents → Success
    Matches Welcome.jsx design system: Plus Jakarta Sans · Inter · DM Sans
    Palette: Navy #1C2340 · Indigo accent #4F5BCB · Slate bg #EDEEF4
 ───────────────────────────────────────────────────────────────────────── */
@@ -276,6 +278,53 @@ const CSS = `
 .pa-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 32px; }
 @media (max-width: 640px) { .pa-fields { grid-template-columns: 1fr; } }
 .pa-field-full { grid-column: 1 / -1; }
+
+/* ── Owner vs separate Tricycle Driver toggle ────────────────────────── */
+.pa-toggle-row {
+  display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  background: #F7F8FC; border: 1px solid rgba(28,35,64,.09);
+  border-radius: 12px; padding: 14px 16px; margin-bottom: 24px;
+}
+.pa-toggle-label {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 12.5px; font-weight: 700; color: #1C2340;
+}
+.pa-toggle-hint { font-size: 11.5px; color: #6B7280; margin-top: 3px; line-height: 1.5; }
+.pa-toggle {
+  display: inline-flex; align-items: center; gap: 10px;
+  background: none; border: none; padding: 0; cursor: pointer; flex-shrink: 0;
+}
+.pa-toggle-track {
+  width: 44px; height: 24px; border-radius: 999px;
+  background: #C7CBD9; position: relative; transition: background .18s;
+}
+.pa-toggle.on .pa-toggle-track { background: #4F5BCB; }
+.pa-toggle-knob {
+  position: absolute; top: 3px; left: 3px;
+  width: 18px; height: 18px; border-radius: 50%;
+  background: #FFFFFF; box-shadow: 0 1px 3px rgba(0,0,0,.25);
+  transition: transform .18s;
+}
+.pa-toggle.on .pa-toggle-knob { transform: translateX(20px); }
+.pa-toggle-answer {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 12.5px; font-weight: 700; color: #1C2340; min-width: 26px; text-align: left;
+}
+
+/* ── Conditional Tricycle Driver subsection (owner ≠ driver) ─────────── */
+.pa-subsection {
+  border: 1.5px dashed rgba(79,91,203,.38);
+  background: rgba(79,91,203,.035);
+  border-radius: 14px; padding: 18px 18px 4px; margin-bottom: 32px;
+}
+.pa-subsection-head { margin-bottom: 18px; }
+.pa-subsection-title {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+  color: #4F5BCB;
+}
+.pa-subsection-sub { font-size: 12px; color: #5A6488; margin-top: 4px; line-height: 1.55; }
+.pa-subsection .pa-fields { margin-bottom: 28px; }
 
 /* ── Field ───────────────────────────────────────────────────────────── */
 .pa-label {
@@ -638,23 +687,42 @@ const CSS = `
 // looser set of client-only requirements. The backend remains the authoritative/final check.
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-function validateDriverInfo(data) {
+// <input type="date"> value for "today" in local time (toISOString is UTC and can
+// silently shift the boundary by a day).
+const todayIso = () => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+};
+
+function validateApplicantInfo(data) {
     const errors = {};
+    // Tricycle Owner (primary applicant)
     if (!data.first_name.trim()) errors.first_name = 'First name is required.';
     if (!data.last_name.trim()) errors.last_name = 'Last name is required.';
+    if (!data.birthday) errors.birthday = 'Birthday is required.';
+    else if (data.birthday > todayIso()) errors.birthday = 'Birthday cannot be in the future.';
     if (!data.contact.trim()) errors.contact = 'Mobile number is required.';
     if (!data.barangay) errors.barangay = 'Please select your barangay.';
     if (!data.email.trim()) errors.email = 'Email address is required.';
     else if (!EMAIL_PATTERN.test(data.email.trim())) errors.email = 'Please enter a valid email address.';
     if (!data.password) errors.password = 'Password is required.';
     else if (data.password.length < 8) errors.password = 'Password must be at least 8 characters.';
+
+    // Separate Tricycle Driver — only required when the owner is NOT the driver.
+    if (!data.owner_is_driver) {
+        if (!data.driver_first_name.trim()) errors.driver_first_name = 'Driver first name is required.';
+        if (!data.driver_last_name.trim()) errors.driver_last_name = 'Driver last name is required.';
+        if (!data.driver_birthday) errors.driver_birthday = 'Driver birthday is required.';
+        else if (data.driver_birthday > todayIso()) errors.driver_birthday = 'Birthday cannot be in the future.';
+        if (!data.driver_contact.trim()) errors.driver_contact = 'Driver mobile number is required.';
+        if (!data.driver_barangay) errors.driver_barangay = 'Please select the driver barangay.';
+    }
     return errors;
 }
 
 function validateVehicleInfo(data) {
     const errors = {};
     const currentYear = new Date().getFullYear();
-    if (!data.toda) errors.toda = 'Please select a TODA assignment.';
     if (!data.plate_number.trim()) errors.plate_number = 'LTO plate number is required.';
     if (!data.make_model.trim()) errors.make_model = 'Motorcycle make & model is required.';
     if (!String(data.year_model).trim()) {
@@ -674,7 +742,7 @@ function validateVehicleInfo(data) {
     return errors;
 }
 
-export default function PublicApply({ todaZones = [] }) {
+export default function PublicApply() {
     const { url } = usePage();
     const [step, setStep] = useState(1);
     const [agreed, setAgreed] = useState(false);
@@ -685,36 +753,28 @@ export default function PublicApply({ todaZones = [] }) {
     const [touched, setTouched] = useState({});
     const markTouched = (field) => setTouched(t => (t[field] ? t : { ...t, [field]: true }));
 
-    // All 42 official barangays of Nasugbu, Batangas (PSA/PSGC) — the 12 Poblacion barangays use
-    // a bare number as the submitted value (so store()'s 'Brgy. ' . $barangay concatenation reads
-    // as "Brgy. 1, Nasugbu, Batangas"), paired with a clear "Barangay N" label.
-    const nasugbuBarangays = [
-        ...Array.from({ length: 12 }, (_, i) => ({ value: String(i + 1), label: `Barangay ${i + 1}` })),
-        'Aga', 'Balaytigui', 'Banilad', 'Bilaran', 'Bucana', 'Bulihan', 'Bunducan', 'Butucan',
-        'Calayo', 'Catandaan', 'Cogunan', 'Dayap', 'Kaylaway', 'Kayrilaw', 'Latag', 'Looc',
-        'Lumbangan', 'Malapad na Bato', 'Mataas na Pulo', 'Maugat', 'Munting Indan', 'Natipuan',
-        'Pantalan', 'Papaya', 'Putat', 'Reparo', 'Talangan', 'Tumalim', 'Utod', 'Wawa',
-    ].map(b => (typeof b === 'string' ? { value: b, label: b } : b));
+    // All 42 official barangays of Nasugbu, Batangas — canonical shared list
+    // (resources/js/data/nasugbuBarangays.js), also used by the Driver Portal wizard.
+    const nasugbuBarangays = NASUGBU_BARANGAYS;
 
-    const documentList = [
-        { id: 'orcr',      label: 'Xerox OR/CR',                                          required: true },
-        { id: 'license',   label: "Driver's License Back-to-back (Prof/Restriction 1/A1)", required: true },
-        { id: 'brgy',      label: 'Barangay Clearance (Original)',                         required: true },
-        { id: 'toda',      label: 'TODA/NAFTODA/ACTODAN Clearance (Original)',             required: true },
-        { id: 'driver_id', label: "Driver's ID Issued by NAFTODA/ACTODAN",                required: true },
-        { id: 'prangkisa', label: 'Xerox Prangkisa',              conditional: true, hint: 'Renewals only' },
-        { id: 'receipt',   label: 'Delivery Receipt',             conditional: true, hint: 'New units without OR/CR yet' },
-        { id: 'tariff',    label: 'List of Existing Tariff Fee',  conditional: true, hint: 'Sidecar units only' },
-        { id: 'auth',      label: 'Authorization Letter & ID',    conditional: true, hint: 'If applying on behalf of the owner' },
-    ];
+    // Public Registration always submits application_type 'new' — Prangkisa (renewal-only) is
+    // therefore never applicable here.
+    const documentList = getApplicableDocuments('new');
     const requiredDocs = documentList.filter(d => d.required);
-    const applicableConditionalDocs = documentList.filter(d => d.conditional);
+    const applicableConditionalDocs = documentList.filter(d => !d.required);
 
     const { data, setData, post, processing, errors } = useForm({
-        first_name: '', last_name: '', contact: '', barangay: '',
+        // Applicant (tricycle OWNER) info — first/last/birthday/mobile/barangay, plus the
+        // owner's login credentials. owner_is_driver defaults to Yes: the owner drives
+        // their own unit unless they explicitly say otherwise (the separate Tricycle
+        // Driver block below is then filled and persisted with the application).
+        first_name: '', last_name: '', birthday: '', contact: '', barangay: '',
+        owner_is_driver: true,
+        driver_first_name: '', driver_last_name: '', driver_birthday: '',
+        driver_contact: '', driver_barangay: '',
         email: '', password: '',
         plate_number: '', make_model: '', year_model: '', body_color: '', body_type: '',
-        engine_number: '', chassis_number: '', or_number: '', cr_number: '', toda: '',
+        engine_number: '', chassis_number: '', or_number: '', cr_number: '',
         terms_accepted: false, privacy_policy_accepted: false,
         documents: {},
     });
@@ -731,9 +791,9 @@ export default function PublicApply({ todaZones = [] }) {
         return params.get('reference') || 'NSB-26-8812';
     };
 
-    const driverInfoErrors = validateDriverInfo(data);
+    const applicantInfoErrors = validateApplicantInfo(data);
     const vehicleInfoErrors = validateVehicleInfo(data);
-    const isStep2Valid = Object.keys(driverInfoErrors).length === 0;
+    const isStep2Valid = Object.keys(applicantInfoErrors).length === 0;
     const isStep3Valid = Object.keys(vehicleInfoErrors).length === 0;
     const fieldError = (field, errors) => (touched[field] ? errors[field] : undefined);
 
@@ -836,10 +896,10 @@ export default function PublicApply({ todaZones = [] }) {
         });
     };
 
-    const steps = ['Agreement', 'Tricycle Driver', 'Vehicle', 'Documents'];
+    const steps = ['Agreement', 'Applicant', 'Vehicle', 'Documents'];
     const stepDescriptions = [
         'Review terms, data privacy consent, and ordinance compliance.',
-        'Your personal details and account credentials.',
+        'Tricycle Owner details, driver setup & account credentials.',
         'LTO registration and unit specifications.',
         'Upload required clearances and IDs.',
     ];
@@ -1007,50 +1067,59 @@ export default function PublicApply({ todaZones = [] }) {
                         </div>
                     )}
 
-                    {/* ── STEP 2: DRIVER INFO ── */}
+                    {/* ── STEP 2: APPLICANT (TRICYCLE OWNER) INFO ── */}
                     {step === 2 && (
                         <div className="pa-card">
                             <div className="pa-card-top">
                                 <div className="pa-card-top-text">
                                     <div className="pa-card-icon"><User size={20} strokeWidth={1.8} /></div>
                                     <div>
-                                        <h2 className="pa-card-title">Tricycle Driver Info</h2>
-                                        <p className="pa-card-sub">Registered Driver of the Tricycle Unit</p>
+                                        <h2 className="pa-card-title">Applicant Information</h2>
+                                        <p className="pa-card-sub">Tricycle Owner details — the applicant of this franchise</p>
                                     </div>
                                 </div>
                             </div>
 
                             <div className="pa-fields">
-                                <Field label="First Name" error={fieldError('first_name', driverInfoErrors)}>
+                                <Field label="First Name" error={fieldError('first_name', applicantInfoErrors)}>
                                     <div className="pa-input-wrap">
                                         <span className="pa-input-wrap-icon"><User size={15} strokeWidth={2} /></span>
-                                        <input className={`pa-input${fieldError('first_name', driverInfoErrors) ? ' pa-input-error' : ''}`}
+                                        <input className={`pa-input${fieldError('first_name', applicantInfoErrors) ? ' pa-input-error' : ''}`}
                                             placeholder="First Name" autoComplete="off"
                                             value={data.first_name || ''} onChange={e => setData('first_name', e.target.value)}
                                             onBlur={() => markTouched('first_name')} />
                                     </div>
                                 </Field>
-                                <Field label="Last Name" error={fieldError('last_name', driverInfoErrors)}>
+                                <Field label="Last Name" error={fieldError('last_name', applicantInfoErrors)}>
                                     <div className="pa-input-wrap">
                                         <span className="pa-input-wrap-icon"><User size={15} strokeWidth={2} /></span>
-                                        <input className={`pa-input${fieldError('last_name', driverInfoErrors) ? ' pa-input-error' : ''}`}
+                                        <input className={`pa-input${fieldError('last_name', applicantInfoErrors) ? ' pa-input-error' : ''}`}
                                             placeholder="Last Name" autoComplete="off"
                                             value={data.last_name || ''} onChange={e => setData('last_name', e.target.value)}
                                             onBlur={() => markTouched('last_name')} />
                                     </div>
                                 </Field>
-                                <Field label="Mobile Number" error={fieldError('contact', driverInfoErrors)}>
+                                <Field label="Birthday" error={fieldError('birthday', applicantInfoErrors)}>
+                                    <div className="pa-input-wrap">
+                                        <span className="pa-input-wrap-icon"><CalendarDays size={15} strokeWidth={2} /></span>
+                                        <input className={`pa-input${fieldError('birthday', applicantInfoErrors) ? ' pa-input-error' : ''}`}
+                                            type="date" max={todayIso()} autoComplete="off"
+                                            value={data.birthday || ''} onChange={e => setData('birthday', e.target.value)}
+                                            onBlur={() => markTouched('birthday')} />
+                                    </div>
+                                </Field>
+                                <Field label="Mobile Number" error={fieldError('contact', applicantInfoErrors)}>
                                     <div className="pa-input-wrap">
                                         <span className="pa-input-wrap-icon"><Phone size={15} strokeWidth={2} /></span>
-                                        <input className={`pa-input${fieldError('contact', driverInfoErrors) ? ' pa-input-error' : ''}`}
+                                        <input className={`pa-input${fieldError('contact', applicantInfoErrors) ? ' pa-input-error' : ''}`}
                                             placeholder="0917 123 4567" autoComplete="off"
                                             value={data.contact || ''} onChange={e => setData('contact', e.target.value)}
                                             onBlur={() => markTouched('contact')} />
                                     </div>
                                 </Field>
-                                <Field label="Barangay (Nasugbu)" error={fieldError('barangay', driverInfoErrors)}>
+                                <Field label="Barangay (Nasugbu)" error={fieldError('barangay', applicantInfoErrors)}>
                                     <div className="pa-select-wrap">
-                                        <select className={`pa-select${fieldError('barangay', driverInfoErrors) ? ' pa-input-error' : ''}`}
+                                        <select className={`pa-select${fieldError('barangay', applicantInfoErrors) ? ' pa-input-error' : ''}`}
                                             value={data.barangay || ''}
                                             onChange={e => setData('barangay', e.target.value)}
                                             onBlur={() => markTouched('barangay')}>
@@ -1060,25 +1129,111 @@ export default function PublicApply({ todaZones = [] }) {
                                         <MapPin size={15} strokeWidth={2} />
                                     </div>
                                 </Field>
-                                <Field label="Email Address" error={fieldError('email', driverInfoErrors)}>
+                                <Field label="Email Address" error={fieldError('email', applicantInfoErrors)}>
                                     <div className="pa-input-wrap">
                                         <span className="pa-input-wrap-icon"><Mail size={15} strokeWidth={2} /></span>
-                                        <input className={`pa-input${fieldError('email', driverInfoErrors) ? ' pa-input-error' : ''}`}
+                                        <input className={`pa-input${fieldError('email', applicantInfoErrors) ? ' pa-input-error' : ''}`}
                                             type="email" placeholder="name@example.com" autoComplete="off"
                                             value={data.email || ''} onChange={e => setData('email', e.target.value)}
                                             onBlur={() => markTouched('email')} />
                                     </div>
                                 </Field>
-                                <Field label="Account Password" error={fieldError('password', driverInfoErrors)}>
+                                <Field label="Account Password" error={fieldError('password', applicantInfoErrors)}>
                                     <div className="pa-input-wrap">
                                         <span className="pa-input-wrap-icon"><Lock size={15} strokeWidth={2} /></span>
-                                        <input className={`pa-input${fieldError('password', driverInfoErrors) ? ' pa-input-error' : ''}`}
+                                        <input className={`pa-input${fieldError('password', applicantInfoErrors) ? ' pa-input-error' : ''}`}
                                             type="password" placeholder="Min. 8 characters" autoComplete="new-password"
                                             value={data.password || ''} onChange={e => setData('password', e.target.value)}
                                             onBlur={() => markTouched('password')} />
                                     </div>
                                 </Field>
                             </div>
+
+                            {/* Owner vs driver — persisted with the application (owner_is_driver),
+                                never frontend-only state. Defaults to Yes (owner drives). */}
+                            <div className="pa-toggle-row">
+                                <div>
+                                    <p className="pa-toggle-label">Is the owner also the tricycle driver?</p>
+                                    <p className="pa-toggle-hint">
+                                        Choose <strong>No</strong> if someone else will drive this tricycle unit —
+                                        you will provide that driver's details below.
+                                    </p>
+                                </div>
+                                <button
+                                    type="button"
+                                    role="switch"
+                                    aria-checked={data.owner_is_driver ? 'true' : 'false'}
+                                    aria-label="Is the owner also the tricycle driver?"
+                                    className={`pa-toggle${data.owner_is_driver ? ' on' : ''}`}
+                                    onClick={() => setData('owner_is_driver', !data.owner_is_driver)}
+                                >
+                                    <span className="pa-toggle-track"><span className="pa-toggle-knob" /></span>
+                                    <span className="pa-toggle-answer">{data.owner_is_driver ? 'Yes' : 'No'}</span>
+                                </button>
+                            </div>
+
+                            {/* Separate Tricycle Driver — hidden entirely while the owner is the driver */}
+                            {!data.owner_is_driver && (
+                                <div className="pa-subsection">
+                                    <div className="pa-subsection-head">
+                                        <h3 className="pa-subsection-title">Tricycle Driver</h3>
+                                        <p className="pa-subsection-sub">
+                                            The person who will actually drive this unit, when different from the
+                                            Tricycle Owner above.
+                                        </p>
+                                    </div>
+                                    <div className="pa-fields">
+                                        <Field label="First Name" error={fieldError('driver_first_name', applicantInfoErrors)}>
+                                            <div className="pa-input-wrap">
+                                                <span className="pa-input-wrap-icon"><User size={15} strokeWidth={2} /></span>
+                                                <input className={`pa-input${fieldError('driver_first_name', applicantInfoErrors) ? ' pa-input-error' : ''}`}
+                                                    placeholder="First Name" autoComplete="off"
+                                                    value={data.driver_first_name || ''} onChange={e => setData('driver_first_name', e.target.value)}
+                                                    onBlur={() => markTouched('driver_first_name')} />
+                                            </div>
+                                        </Field>
+                                        <Field label="Last Name" error={fieldError('driver_last_name', applicantInfoErrors)}>
+                                            <div className="pa-input-wrap">
+                                                <span className="pa-input-wrap-icon"><User size={15} strokeWidth={2} /></span>
+                                                <input className={`pa-input${fieldError('driver_last_name', applicantInfoErrors) ? ' pa-input-error' : ''}`}
+                                                    placeholder="Last Name" autoComplete="off"
+                                                    value={data.driver_last_name || ''} onChange={e => setData('driver_last_name', e.target.value)}
+                                                    onBlur={() => markTouched('driver_last_name')} />
+                                            </div>
+                                        </Field>
+                                        <Field label="Birthday" error={fieldError('driver_birthday', applicantInfoErrors)}>
+                                            <div className="pa-input-wrap">
+                                                <span className="pa-input-wrap-icon"><CalendarDays size={15} strokeWidth={2} /></span>
+                                                <input className={`pa-input${fieldError('driver_birthday', applicantInfoErrors) ? ' pa-input-error' : ''}`}
+                                                    type="date" max={todayIso()} autoComplete="off"
+                                                    value={data.driver_birthday || ''} onChange={e => setData('driver_birthday', e.target.value)}
+                                                    onBlur={() => markTouched('driver_birthday')} />
+                                            </div>
+                                        </Field>
+                                        <Field label="Mobile Number" error={fieldError('driver_contact', applicantInfoErrors)}>
+                                            <div className="pa-input-wrap">
+                                                <span className="pa-input-wrap-icon"><Phone size={15} strokeWidth={2} /></span>
+                                                <input className={`pa-input${fieldError('driver_contact', applicantInfoErrors) ? ' pa-input-error' : ''}`}
+                                                    placeholder="0917 123 4567" autoComplete="off"
+                                                    value={data.driver_contact || ''} onChange={e => setData('driver_contact', e.target.value)}
+                                                    onBlur={() => markTouched('driver_contact')} />
+                                            </div>
+                                        </Field>
+                                        <Field label="Barangay (Nasugbu)" error={fieldError('driver_barangay', applicantInfoErrors)}>
+                                            <div className="pa-select-wrap">
+                                                <select className={`pa-select${fieldError('driver_barangay', applicantInfoErrors) ? ' pa-input-error' : ''}`}
+                                                    value={data.driver_barangay || ''}
+                                                    onChange={e => setData('driver_barangay', e.target.value)}
+                                                    onBlur={() => markTouched('driver_barangay')}>
+                                                    <option value="">Select Barangay</option>
+                                                    {nasugbuBarangays.map(b => <option key={b.value} value={b.value}>{b.label}</option>)}
+                                                </select>
+                                                <MapPin size={15} strokeWidth={2} />
+                                            </div>
+                                        </Field>
+                                    </div>
+                                </div>
+                            )}
 
                             <div className="pa-actions">
                                 <button className="pa-btn-ghost" onClick={back}>
@@ -1088,7 +1243,12 @@ export default function PublicApply({ todaZones = [] }) {
                                     className="pa-btn-primary"
                                     onClick={() => {
                                         if (!isStep2Valid) {
-                                            setTouched(t => ({ ...t, first_name: true, last_name: true, contact: true, barangay: true, email: true, password: true }));
+                                            // Mark exactly the fields that are currently in error as touched,
+                                            // so every blocking problem (owner and driver alike) becomes visible.
+                                            setTouched(t => ({
+                                                ...t,
+                                                ...Object.fromEntries(Object.keys(applicantInfoErrors).map(k => [k, true])),
+                                            }));
                                             return;
                                         }
                                         handleNext();
@@ -1115,73 +1275,14 @@ export default function PublicApply({ todaZones = [] }) {
                             </div>
 
                             <div className="pa-fields">
-                                <Field label="TODA Assignment" error={fieldError('toda', vehicleInfoErrors)}>
-                                    <div className="pa-select-wrap">
-                                        <select className={`pa-select${fieldError('toda', vehicleInfoErrors) ? ' pa-input-error' : ''}`}
-                                            value={data.toda || ''}
-                                            onChange={e => setData('toda', e.target.value)}
-                                            onBlur={() => markTouched('toda')}>
-                                            <option value="">Select TODA Assignment</option>
-                                            {todaZones.map(zone => (
-                                                <option key={zone.id} value={zone.name}>{zone.name}</option>
-                                            ))}
-                                        </select>
-                                    </div>
-                                </Field>
-                                <Field label="LTO Plate Number" error={fieldError('plate_number', vehicleInfoErrors)}>
-                                    <input className={`pa-input${fieldError('plate_number', vehicleInfoErrors) ? ' pa-input-error' : ''}`}
-                                        placeholder="LTO Plate Number" autoComplete="off"
-                                        value={data.plate_number || ''} onChange={e => setData('plate_number', e.target.value)}
-                                        onBlur={() => markTouched('plate_number')} />
-                                </Field>
-                                <Field label="Motorcycle Make & Model" error={fieldError('make_model', vehicleInfoErrors)}>
-                                    <input className={`pa-input${fieldError('make_model', vehicleInfoErrors) ? ' pa-input-error' : ''}`}
-                                        placeholder="Make & Model" autoComplete="off"
-                                        value={data.make_model || ''} onChange={e => setData('make_model', e.target.value)}
-                                        onBlur={() => markTouched('make_model')} />
-                                </Field>
-                                <Field label="Year Model" error={fieldError('year_model', vehicleInfoErrors)}>
-                                    <input className={`pa-input${fieldError('year_model', vehicleInfoErrors) ? ' pa-input-error' : ''}`}
-                                        placeholder="Year Model" autoComplete="off"
-                                        value={data.year_model || ''} onChange={e => setData('year_model', e.target.value)}
-                                        onBlur={() => markTouched('year_model')} />
-                                </Field>
-                                <Field label="Body Color" error={fieldError('body_color', vehicleInfoErrors)}>
-                                    <input className={`pa-input${fieldError('body_color', vehicleInfoErrors) ? ' pa-input-error' : ''}`}
-                                        placeholder="Body Color" autoComplete="off"
-                                        value={data.body_color || ''} onChange={e => setData('body_color', e.target.value)}
-                                        onBlur={() => markTouched('body_color')} />
-                                </Field>
-                                <Field label="Body Type" error={fieldError('body_type', vehicleInfoErrors)}>
-                                    <input className={`pa-input${fieldError('body_type', vehicleInfoErrors) ? ' pa-input-error' : ''}`}
-                                        placeholder="Body Type" autoComplete="off"
-                                        value={data.body_type || ''} onChange={e => setData('body_type', e.target.value)}
-                                        onBlur={() => markTouched('body_type')} />
-                                </Field>
-                                <Field label="Engine Number" error={fieldError('engine_number', vehicleInfoErrors)}>
-                                    <input className={`pa-input${fieldError('engine_number', vehicleInfoErrors) ? ' pa-input-error' : ''}`}
-                                        placeholder="Engine Number" autoComplete="off"
-                                        value={data.engine_number || ''} onChange={e => setData('engine_number', e.target.value)}
-                                        onBlur={() => markTouched('engine_number')} />
-                                </Field>
-                                <Field label="Chassis Number" error={fieldError('chassis_number', vehicleInfoErrors)}>
-                                    <input className={`pa-input${fieldError('chassis_number', vehicleInfoErrors) ? ' pa-input-error' : ''}`}
-                                        placeholder="Chassis Number" autoComplete="off"
-                                        value={data.chassis_number || ''} onChange={e => setData('chassis_number', e.target.value)}
-                                        onBlur={() => markTouched('chassis_number')} />
-                                </Field>
-                                <Field label="LTO OR Number" error={fieldError('or_number', vehicleInfoErrors)}>
-                                    <input className={`pa-input${fieldError('or_number', vehicleInfoErrors) ? ' pa-input-error' : ''}`}
-                                        placeholder="LTO OR Number" autoComplete="off"
-                                        value={data.or_number || ''} onChange={e => setData('or_number', e.target.value)}
-                                        onBlur={() => markTouched('or_number')} />
-                                </Field>
-                                <Field label="LTO CR Number" error={fieldError('cr_number', vehicleInfoErrors)}>
-                                    <input className={`pa-input${fieldError('cr_number', vehicleInfoErrors) ? ' pa-input-error' : ''}`}
-                                        placeholder="LTO CR Number" autoComplete="off"
-                                        value={data.cr_number || ''} onChange={e => setData('cr_number', e.target.value)}
-                                        onBlur={() => markTouched('cr_number')} />
-                                </Field>
+                                {VEHICLE_DETAIL_FIELDS.map(f => (
+                                    <Field key={f.id} label={f.label} error={fieldError(f.id, vehicleInfoErrors)}>
+                                        <input className={`pa-input${fieldError(f.id, vehicleInfoErrors) ? ' pa-input-error' : ''}`}
+                                            placeholder={f.placeholder} autoComplete="off"
+                                            value={data[f.id] || ''} onChange={e => setData(f.id, e.target.value)}
+                                            onBlur={() => markTouched(f.id)} />
+                                    </Field>
+                                ))}
                             </div>
 
                             <div className="pa-actions">
@@ -1193,7 +1294,7 @@ export default function PublicApply({ todaZones = [] }) {
                                     onClick={() => {
                                         if (!isStep3Valid) {
                                             setTouched(t => ({
-                                                ...t, toda: true, plate_number: true, make_model: true, year_model: true,
+                                                ...t, plate_number: true, make_model: true, year_model: true,
                                                 body_color: true, body_type: true, engine_number: true, chassis_number: true,
                                                 or_number: true, cr_number: true,
                                             }));
@@ -1240,7 +1341,7 @@ export default function PublicApply({ todaZones = [] }) {
                                         id={doc.id}
                                         label={doc.label}
                                         required={doc.required}
-                                        conditional={doc.conditional}
+                                        conditional={!doc.required}
                                         files={data.documents[doc.id] || []}
                                         onUpload={files => handleFileUpload(doc.id, files)}
                                         onRemove={idx => handleRemoveFile(doc.id, idx)}
@@ -1259,7 +1360,7 @@ export default function PublicApply({ todaZones = [] }) {
                                                 label={doc.label}
                                                 hint={doc.hint}
                                                 required={doc.required}
-                                                conditional={doc.conditional}
+                                                conditional={!doc.required}
                                                 files={data.documents[doc.id] || []}
                                                 onUpload={files => handleFileUpload(doc.id, files)}
                                                 onRemove={idx => handleRemoveFile(doc.id, idx)}
@@ -1305,9 +1406,8 @@ export default function PublicApply({ todaZones = [] }) {
                             </div>
 
                             <p className="pa-success-desc">
-                                Your application is now <span>pending TMO Validation.</span> Please wait
-                                for an SMS confirmation before bringing your tricycle for physical inspection
-                                and <span>GPS device installation.</span> Payment will be collected after passing inspection.
+                                Your application has been submitted and is now <span>pending TMO Requirements Review.</span> You
+                                can monitor the progress of your application through the <span>Driver Portal.</span>
                             </p>
 
                                                         <Link href="/operator/dashboard"
@@ -1320,7 +1420,7 @@ export default function PublicApply({ todaZones = [] }) {
                                     boxShadow: '0 4px 14px rgba(28,35,64,.25)',
                                 }}
                             >
-                                Go to Dashboard
+                                Go to Driver Portal
                             </Link>
                         </div>
                     )}

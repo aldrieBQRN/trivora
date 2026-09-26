@@ -8,7 +8,8 @@ use App\Models\BookingDriverDecline;
 use App\Models\Driver;
 use App\Models\Passenger;
 use App\Models\RideRating;
-use App\Services\TodaRouteMatcher;
+use App\Services\BookingDispatchService;
+use App\Services\FareService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -29,15 +30,14 @@ class BookingController extends Controller
             'dropoff_lat' => 'required|numeric',
             'dropoff_lng' => 'required|numeric',
             'passenger_count' => 'required|integer|min:1',
-            'fare_per_passenger' => 'required|numeric|min:0.01',
-            'distance_km' => 'nullable|numeric',
+            // The authoritative route distance for this trip — already computed by the Passenger
+            // app from its real route (not a straight-line estimate) before confirmation. Required,
+            // not defaulted: silently falling back to a fake distance would make the fare wrong
+            // rather than honest about a missing value.
+            'distance_km' => 'required|numeric|min:0',
             'estimated_duration_mins' => 'nullable|integer',
             'passenger_notes' => 'nullable|string',
             'payment_method' => 'nullable|string|in:cash,gcash,wallet',
-            // Accepted for consistency with whatever TODA the passenger app displays, but never
-            // trusted for zone assignment below — the app's zone ids are its own local reference
-            // data and don't necessarily match this table's ids, so `exists:toda_zones,id` here
-            // would 422 on a perfectly valid request. Pickup coordinates are authoritative.
             'toda_zone_id' => 'nullable|integer',
         ]);
 
@@ -58,28 +58,20 @@ class BookingController extends Controller
                 'cancellation_reason' => 'Replaced by new booking request',
             ]);
 
-        $pickupLat = (float) $validated['pickup_lat'];
-        $pickupLng = (float) $validated['pickup_lng'];
-
-        // Pickup coordinates are the authoritative source for TODA zone assignment — always
-        // recomputed here as the nearest active TODA pin (haversine distance from pickup to
-        // each TODA's own latitude/longitude), regardless of whatever toda_zone_id the client
-        // sent. The client value is never used. TodaRouteMatcher itself falls back to any one
-        // active zone if literally none have coordinates, so this is never left null while at
-        // least one active TODA exists.
-        $matchedZone = TodaRouteMatcher::matchRoute($pickupLat, $pickupLng);
-        $todaZoneId = $matchedZone->id ?? null;
-
         $bookingCode = 'BK-' . date('Ymd') . '-' . strtoupper(Str::random(4));
 
-        // Total fare is always server-computed from passenger_count * fare_per_passenger —
-        // never trust a client-supplied total.
-        $totalFare = round($validated['passenger_count'] * $validated['fare_per_passenger'], 2);
+        // Fare is always server-computed from the route distance and passenger count via
+        // FareService — never trust a client-supplied amount. The base fare depends on passenger
+        // count (₱50 flat for 1, ₱25/passenger for 2+); the total is that per-passenger figure
+        // charged once per rider (never a client-typed "fare per passenger" — the system derives
+        // it automatically from distance and passenger count).
+        $farePerPassenger = FareService::perPassengerFare((float) $validated['distance_km'], (int) $validated['passenger_count']);
+        $totalFare = FareService::calculate((float) $validated['distance_km'], (int) $validated['passenger_count']);
 
         $booking = Booking::create([
             'booking_code' => $bookingCode,
             'passenger_id' => $passenger->id,
-            'toda_zone_id' => $todaZoneId,
+            'toda_zone_id' => null,
             'pickup_name' => $validated['pickup_name'],
             'pickup_lat' => $validated['pickup_lat'],
             'pickup_lng' => $validated['pickup_lng'],
@@ -87,9 +79,9 @@ class BookingController extends Controller
             'dropoff_lat' => $validated['dropoff_lat'],
             'dropoff_lng' => $validated['dropoff_lng'],
             'passenger_count' => $validated['passenger_count'],
-            'fare_per_passenger' => $validated['fare_per_passenger'],
+            'fare_per_passenger' => $farePerPassenger,
             'fare_amount' => $totalFare,
-            'distance_km' => $validated['distance_km'] ?? 2.5,
+            'distance_km' => $validated['distance_km'],
             'estimated_duration_mins' => $validated['estimated_duration_mins'] ?? 8,
             'passenger_notes' => $validated['passenger_notes'] ?? null,
             'payment_method' => $validated['payment_method'] ?? 'cash',
@@ -98,9 +90,12 @@ class BookingController extends Controller
             'requested_at' => now(),
         ]);
 
+        // Immediately evaluate and target the nearest eligible driver sequentially
+        BookingDispatchService::evaluateDispatch($booking);
+
         return response()->json([
             'message' => 'Booking request created successfully.',
-            'booking' => $booking->load(['passenger.user', 'todaZone']),
+            'booking' => $booking->fresh()->load(['passenger.user']),
         ], 201);
     }
 
@@ -111,6 +106,12 @@ class BookingController extends Controller
      * from the authenticated account, never a client-supplied driver_id/user_id query param
      * (previously trusted, which let any caller enumerate another driver's pending requests).
      */
+    /**
+     * Driver lists pending booking requests targeted to them sequentially by nearest distance.
+     *
+     * This endpoint requires auth:sanctum (see routes/api.php) — the driver is always resolved
+     * from the authenticated account.
+     */
     public function getPendingRequests(Request $request): JsonResponse
     {
         $driver = Driver::where('user_id', $request->user()->id)->first();
@@ -118,47 +119,32 @@ class BookingController extends Controller
         // Only online and available drivers receive booking requests
         if (!$driver || !$driver->is_online || !$driver->is_available) {
             return response()->json([
-                'driver_toda_zone_id' => $driver ? $driver->getTodaZoneId() : null,
                 'requests' => [],
                 'notice' => $driver ? 'Driver is offline or unavailable.' : 'Driver not found.',
             ]);
         }
 
-        $driverTodaZoneId = $driver->getTodaZoneId();
-
-        if (!$driverTodaZoneId) {
-            return response()->json([
-                'driver_toda_zone_id' => null,
-                'requests' => [],
-                'notice' => 'Driver has no assigned TODA route.',
-            ]);
-        }
-
-        // Query pending requests for driver's assigned TODA route only — excluding any this
-        // specific driver has already declined (see declineBooking()), so a decline is permanent
-        // for that driver for the life of this booking search without affecting whether other
-        // eligible drivers in the same zone still receive it.
+        // Query active pending bookings created within the last 15 minutes that this driver has not declined
         $declinedBookingIds = BookingDriverDecline::where('driver_id', $driver->id)->pluck('booking_id');
 
-        $requests = Booking::with(['passenger.user', 'todaZone'])
+        $pendingBookings = Booking::with(['passenger.user', 'tricycle'])
             ->where('status', 'pending')
-            ->where('toda_zone_id', $driverTodaZoneId)
             ->where('requested_at', '>=', now()->subMinutes(15))
             ->whereNotIn('id', $declinedBookingIds)
-            ->orderBy('requested_at', 'desc')
-            ->take(10)
+            ->orderBy('requested_at', 'asc')
             ->get();
 
-        // Filter out bookings outside driver's service area coverage (max 3.0 km)
-        if ($driver->current_lat !== null && $driver->current_lng !== null) {
-            $requests = $requests->filter(function ($booking) use ($driver) {
-                return $driver->isWithinCoverage((float) $booking->pickup_lat, (float) $booking->pickup_lng, 3.0);
-            })->values();
+        $myRequests = [];
+        foreach ($pendingBookings as $booking) {
+            // Evaluate sequential nearest-driver queue for this booking
+            $targetedDriver = BookingDispatchService::evaluateDispatch($booking);
+            if ($targetedDriver && $targetedDriver->id === $driver->id && $booking->status === 'pending') {
+                $myRequests[] = $booking;
+            }
         }
 
         return response()->json([
-            'driver_toda_zone_id' => $driverTodaZoneId,
-            'requests' => $requests,
+            'requests' => $myRequests,
         ]);
     }
 
@@ -168,12 +154,6 @@ class BookingController extends Controller
      * This endpoint requires auth:sanctum (see routes/api.php) — acceptance is always tied to
      * the authenticated driver's own account, never a client-supplied id or an arbitrary
      * fallback record.
-     *
-     * Atomicity: two drivers can call this for the same booking at nearly the same instant.
-     * The row is locked (`lockForUpdate`) inside a transaction and the status is re-checked
-     * after acquiring the lock, so only the first request to reach the lock can transition the
-     * booking out of 'pending' — a second request sees the already-updated status and is
-     * rejected with 409 instead of silently overwriting the first driver's assignment.
      */
     public function acceptBooking(Request $request, int $id): JsonResponse
     {
@@ -185,8 +165,9 @@ class BookingController extends Controller
 
         $booking = null;
         $conflict = false;
+        $stale = false;
 
-        DB::transaction(function () use ($id, $driver, &$booking, &$conflict) {
+        DB::transaction(function () use ($id, $driver, &$booking, &$conflict, &$stale) {
             $locked = Booking::where('id', $id)->lockForUpdate()->first();
 
             if (!$locked) {
@@ -198,18 +179,31 @@ class BookingController extends Controller
                 return;
             }
 
+            // The sequential dispatch queue is only meaningful if acceptance is restricted to
+            // whoever it currently targets — otherwise a driver holding a stale copy of a request
+            // that has already moved on to the next nearest driver (or expired outright) could
+            // still grab it out of turn. Both conditions are re-checked against the just-locked
+            // row, never a cached value.
+            $offerExpired = $locked->dispatched_at
+                && $locked->dispatched_at->diffInSeconds(now()) >= BookingDispatchService::OFFER_TIMEOUT_SECONDS;
+
+            if ($locked->dispatched_driver_id !== $driver->id || $offerExpired) {
+                $stale = true;
+                return;
+            }
+
             $locked->update([
                 'driver_id' => $driver->id,
                 'tricycle_id' => $driver->tricycle_id,
+                'dispatched_driver_id' => null,
                 'status' => 'accepted',
                 'accepted_at' => now(),
             ]);
 
-            $todaZone = $locked->todaZone;
             $driver->update([
                 'is_available' => false,
-                'current_lat' => $driver->current_lat ?? ($todaZone ? $todaZone->center_lat : 14.0685),
-                'current_lng' => $driver->current_lng ?? ($todaZone ? $todaZone->center_lng : 120.6285),
+                'current_lat' => $driver->current_lat ?? 14.0685,
+                'current_lng' => $driver->current_lng ?? 120.6285,
             ]);
 
             $booking = $locked;
@@ -217,6 +211,10 @@ class BookingController extends Controller
 
         if ($conflict) {
             return response()->json(['message' => 'This ride is no longer available.'], 409);
+        }
+
+        if ($stale) {
+            return response()->json(['message' => 'This ride offer is no longer assigned to you or has expired.'], 409);
         }
 
         if (!$booking) {
@@ -232,11 +230,8 @@ class BookingController extends Controller
     /**
      * Driver declines a pending ride request.
      *
-     * This does NOT touch the booking itself (it stays 'pending' for every other eligible driver
-     * in the zone) — it only records that THIS driver passed on THIS booking, so
-     * getPendingRequests() can exclude it for them going forward. `firstOrCreate` makes a retried/
-     * duplicate decline a no-op instead of an error (also enforced at the DB level by the
-     * booking_driver_declines unique(booking_id, driver_id) constraint).
+     * Records that THIS driver passed on THIS booking and immediately advances the sequential
+     * dispatch queue to the next nearest eligible driver.
      */
     public function declineBooking(Request $request, int $id): JsonResponse
     {
@@ -246,14 +241,12 @@ class BookingController extends Controller
             return response()->json(['message' => 'No driver profile found for this account.'], 403);
         }
 
-        if (! Booking::where('id', $id)->exists()) {
+        $booking = Booking::where('id', $id)->first();
+        if (! $booking) {
             return response()->json(['message' => 'Booking not found.'], 404);
         }
 
-        BookingDriverDecline::firstOrCreate([
-            'booking_id' => $id,
-            'driver_id' => $driver->id,
-        ]);
+        BookingDispatchService::handleDriverDecline($booking, $driver->id);
 
         return response()->json(['message' => 'Booking declined.']);
     }
@@ -425,7 +418,7 @@ class BookingController extends Controller
         $driver = $isPassengerRoute ? null : Driver::where('user_id', $user->id)->first();
 
         if ($bookingId) {
-            $booking = Booking::with(['passenger.user', 'driver.user', 'tricycle', 'todaZone'])
+            $booking = Booking::with(['passenger.user', 'driver.user', 'tricycle'])
                 ->find($bookingId);
 
             $owns = $booking && (
@@ -433,10 +426,14 @@ class BookingController extends Controller
                 ($driver && $booking->driver_id === $driver->id)
             );
 
+            if ($owns && $booking->driver) {
+                $booking->driver->append('heading_deg');
+            }
+
             return response()->json(['booking' => $owns ? $booking : null]);
         }
 
-        $query = Booking::with(['passenger.user', 'driver.user', 'tricycle', 'todaZone']);
+        $query = Booking::with(['passenger.user', 'driver.user', 'tricycle']);
 
         if ($isPassengerRoute) {
             $query->whereIn('status', ['pending', 'accepted', 'arrived', 'in_transit']);
@@ -446,6 +443,10 @@ class BookingController extends Controller
                 $query->where('passenger_id', -1);
             }
             $booking = $query->latest('requested_at')->first();
+            if ($booking && $booking->status === 'pending') {
+                BookingDispatchService::evaluateDispatch($booking);
+                $booking->refresh();
+            }
         } else {
             // 1. Check if driver has an assigned active booking
             $assignedBooking = null;
@@ -460,23 +461,27 @@ class BookingController extends Controller
             if ($assignedBooking) {
                 $booking = $assignedBooking;
             } else {
-                // 2. If no assigned active ride, return the latest pending request for this driver's TODA zone IF online & available
+                // 2. If no assigned active ride, return the pending request targeted to this driver IF online & available
                 $booking = null;
                 if ($driver && $driver->is_online && $driver->is_available) {
-                    $driverTodaZoneId = $driver->getTodaZoneId();
-                    if ($driverTodaZoneId) {
-                        $pendingBooking = (clone $query)
-                            ->where('status', 'pending')
-                            ->where('toda_zone_id', $driverTodaZoneId)
-                            ->latest('requested_at')
-                            ->first();
+                    $pendingBooking = (clone $query)
+                        ->where('status', 'pending')
+                        ->where('dispatched_driver_id', $driver->id)
+                        ->latest('requested_at')
+                        ->first();
 
-                        if ($pendingBooking && $driver->isWithinCoverage((float)$pendingBooking->pickup_lat, (float)$pendingBooking->pickup_lng, 3.0)) {
+                    if ($pendingBooking) {
+                        $target = BookingDispatchService::evaluateDispatch($pendingBooking);
+                        if ($target && $target->id === $driver->id && $pendingBooking->status === 'pending') {
                             $booking = $pendingBooking;
                         }
                     }
                 }
             }
+        }
+
+        if ($booking && $booking->driver) {
+            $booking->driver->append('heading_deg');
         }
 
         return response()->json([
@@ -554,7 +559,7 @@ class BookingController extends Controller
         $user = $request->user();
         $isPassengerRoute = $request->is('*passenger*');
 
-        $query = Booking::with(['passenger.user', 'driver.user', 'tricycle', 'todaZone', 'rating']);
+        $query = Booking::with(['passenger.user', 'driver.user', 'tricycle', 'rating']);
 
         if ($isPassengerRoute) {
             $passenger = Passenger::where('user_id', $user->id)->first();

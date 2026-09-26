@@ -1,9 +1,11 @@
-import React, { useState, useMemo, useEffect } from 'react';
-import { Head, Link, router } from '@inertiajs/react';
+import React, { useState, useMemo } from 'react';
+import { Head, Link } from '@inertiajs/react';
+import useBackgroundRefresh from '@/hooks/useBackgroundRefresh';
 import TrivoraLayout from '@/Layouts/TrivoraLayout';
 import {
     Bike, Phone, Search, X, ChevronRight, ChevronLeft,
-    MapPin, Calendar, RotateCcw, ShieldAlert, SlidersHorizontal
+    MapPin, Calendar, RotateCcw, ShieldAlert, SlidersHorizontal,
+    FileSpreadsheet
 } from 'lucide-react';
 
 const CODING_SCHEDULE = {
@@ -26,16 +28,12 @@ export default function TricycleRegistry({ initialUnits = [] }) {
     // Silent background refresh — a newly activated/suspended tricycle from another session
     // should appear here without a manual reload. Search/filter/pagination state below is local
     // React state, untouched by this prop refresh.
-    useEffect(() => {
-        const { stop } = router.poll(15000, { only: ['initialUnits'] });
-        return () => stop();
-    }, []);
+    useBackgroundRefresh(['initialUnits']);
 
 
     // Filters state
     const [query, setQuery] = useState('');
     const [statusFilter, setStatusFilter] = useState('all');
-    const [todaFilter, setTodaFilter] = useState('all');
     const [codingFilter, setCodingFilter] = useState('all');
     const [onlyCodedToday, setOnlyCodedToday] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
@@ -49,16 +47,6 @@ export default function TricycleRegistry({ initialUnits = [] }) {
 
     const isWeekend = todayName === 'Saturday' || todayName === 'Sunday';
     const todayCodingRule = !isWeekend ? CODING_SCHEDULE[todayName] : null;
-
-    // Dynamic TODA list & counts
-    const todaOptions = useMemo(() => {
-        const map = {};
-        units.forEach(u => {
-            const t = u.toda || 'Unassigned';
-            map[t] = (map[t] || 0) + 1;
-        });
-        return Object.entries(map).sort((a, b) => a[0].localeCompare(b[0]));
-    }, [units]);
 
     // Dynamic Coding Scheme options
     const codingOptions = useMemo(() => {
@@ -80,19 +68,16 @@ export default function TricycleRegistry({ initialUnits = [] }) {
         return units.filter(u => {
             const matchesQuery = !q || (
                 (u.coding_scheme_number && String(u.coding_scheme_number).toLowerCase().includes(q)) ||
-                (u.body_no && String(u.body_no).toLowerCase().includes(q)) ||
                 (u.plate_no && String(u.plate_no).toLowerCase().includes(q)) ||
                 (u.operator && String(u.operator).toLowerCase().includes(q)) ||
                 (u.id && String(u.id).toLowerCase().includes(q)) ||
                 (u.unit_code && String(u.unit_code).toLowerCase().includes(q)) ||
                 (u.contact && String(u.contact).toLowerCase().includes(q)) ||
-                (u.toda && String(u.toda).toLowerCase().includes(q)) ||
                 (u.coding_day && String(u.coding_day).toLowerCase().includes(q)) ||
                 (u.coding_color && String(u.coding_color).toLowerCase().includes(q))
             );
 
             const matchesStatus = statusFilter === 'all' || u.status === statusFilter;
-            const matchesToda = todaFilter === 'all' || u.toda === todaFilter;
             const matchesCoding = codingFilter === 'all' || (
                 (u.coding_color && u.coding_color.toLowerCase() === codingFilter.toLowerCase()) ||
                 (u.coding_day && u.coding_day.toLowerCase().includes(codingFilter.toLowerCase()))
@@ -101,16 +86,21 @@ export default function TricycleRegistry({ initialUnits = [] }) {
                 !isWeekend && u.coding_day && u.coding_day.toLowerCase().includes(todayName.toLowerCase())
             );
 
-            return matchesQuery && matchesStatus && matchesToda && matchesCoding && matchesCodedToday;
+            return matchesQuery && matchesStatus && matchesCoding && matchesCodedToday;
         });
-    }, [units, query, statusFilter, todaFilter, codingFilter, onlyCodedToday, isWeekend, todayName]);
+    }, [units, query, statusFilter, codingFilter, onlyCodedToday, isWeekend, todayName]);
 
     // KPI Metrics
     const totalCount = units.length;
     const activeCount = units.filter(u => u.status === 'active').length;
     const suspendedCount = units.filter(u => u.status === 'suspended').length;
+    // A unit's franchise being revoked (App\Models\FranchiseScheme::STATUS_REVOKED) is overlaid
+    // onto this row's status server-side (DashboardController::registryListData) — takes
+    // precedence over the tricycle's own base status when the franchise itself is suspended/
+    // revoked.
+    const revokedCount = units.filter(u => u.status === 'revoked').length;
     const activePct = totalCount > 0 ? Math.round((activeCount / totalCount) * 100) : 0;
-    const suspendedPct = totalCount > 0 ? 100 - activePct : 0;
+    const suspendedPct = totalCount > 0 ? Math.round((suspendedCount / totalCount) * 100) : 0;
 
     // Units restricted under today's ordinance
     const codedTodayCount = useMemo(() => {
@@ -125,12 +115,11 @@ export default function TricycleRegistry({ initialUnits = [] }) {
     const endIndex = Math.min(startIndex + itemsPerPage, filtered.length);
     const paginated = filtered.slice(startIndex, endIndex);
 
-    const isFiltering = query.trim() !== '' || statusFilter !== 'all' || todaFilter !== 'all' || codingFilter !== 'all' || onlyCodedToday;
+    const isFiltering = query.trim() !== '' || statusFilter !== 'all' || codingFilter !== 'all' || onlyCodedToday;
 
     const handleClearAll = () => {
         setQuery('');
         setStatusFilter('all');
-        setTodaFilter('all');
         setCodingFilter('all');
         setOnlyCodedToday(false);
         setCurrentPage(1);
@@ -151,6 +140,16 @@ export default function TricycleRegistry({ initialUnits = [] }) {
                     <p className="mt-1 text-xs sm:text-sm text-slate-500 max-w-2xl leading-relaxed">
                         Master record of all registered and operating tricycles in Nasugbu
                     </p>
+                </div>
+                {/* Real server-side .xlsx export (DashboardController::exportRegistryExcel),
+                    same shared municipal styling as the Reports exports. */}
+                <div className="flex items-center gap-2">
+                    <a
+                        href={route('tmo.registry.export-excel')}
+                        className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 shadow-2xs hover:bg-slate-50 hover:text-slate-900 transition-colors"
+                    >
+                        <FileSpreadsheet size={13} /> Export to Excel
+                    </a>
                 </div>
             </div>
 
@@ -263,27 +262,27 @@ export default function TricycleRegistry({ initialUnits = [] }) {
                     </div>
                 </div>
 
-                {/* ─ Tertiary Metric: Route & TODA Coverage ─ */}
+                {/* ─ Tertiary Metric: Operational Status ─ */}
                 <div className={`flex flex-col justify-between rounded-2xl border border-slate-200/70 bg-white p-4 sm:p-5 ${CARD_SHADOW} md:col-span-6 xl:col-span-3`}>
                     <div>
                         <div className="flex items-center justify-between">
                             <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                                Franchise Zones
+                                Operational Status
                             </span>
                             <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-[#1D2542]/[0.10] to-[#1D2542]/[0.02] text-[#1D2542]">
-                                <MapPin size={14} />
+                                <Bike size={14} />
                             </span>
                         </div>
                         <div className="mt-2 flex items-baseline gap-2">
                             <span className="text-2xl sm:text-3xl font-extrabold tracking-tight tabular-nums text-slate-900">
-                                {todaOptions.length}
+                                {activePct}%
                             </span>
-                            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                                Active TODAs
+                            <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-600">
+                                Active Rate
                             </span>
                         </div>
                         <p className="mt-1 text-[11px] text-slate-500">
-                            Franchise zones registered
+                            {activeCount} of {totalCount} units active
                         </p>
                     </div>
 
@@ -296,7 +295,6 @@ export default function TricycleRegistry({ initialUnits = [] }) {
 
             {/* ══════════════════════════════════════════════════════════════
                 3. SAAS MULTI-DIMENSIONAL COMMAND & FILTER DECK
-                   (Not basic: Search + Status + TODA + Color + Coded Today)
                ══════════════════════════════════════════════════════════════ */}
             <div className={`mb-4 rounded-2xl border border-slate-200/70 bg-white p-3 sm:p-3.5 ${CARD_SHADOW}`}>
                 <div className="flex flex-col lg:flex-row lg:items-center gap-2.5">
@@ -314,7 +312,7 @@ export default function TricycleRegistry({ initialUnits = [] }) {
                                 setQuery(e.target.value);
                                 setCurrentPage(1);
                             }}
-                            placeholder="Search by plate number, body #, operator, or TODA…"
+                            placeholder="Search by plate number, sticker number, or operator…"
                             className="h-10 w-full rounded-lg border border-slate-200 bg-slate-50/50 pl-10 pr-9 text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 shadow-2xs transition-all focus:border-tmo-primary focus:bg-white focus:outline-none focus:ring-2 focus:ring-tmo-primary/10"
                         />
                         {query && (
@@ -346,23 +344,7 @@ export default function TricycleRegistry({ initialUnits = [] }) {
                                 <option value="all">All Fleet — {totalCount}</option>
                                 <option value="active">Active — {activeCount}</option>
                                 <option value="suspended">Suspended — {suspendedCount}</option>
-                            </select>
-                        </div>
-
-                        {/* TODA Zone Filter */}
-                        <div className="col-span-1">
-                            <select
-                                value={todaFilter}
-                                onChange={e => {
-                                    setTodaFilter(e.target.value);
-                                    setCurrentPage(1);
-                                }}
-                                className="h-10 w-full sm:w-44 rounded-lg border border-slate-200 bg-white px-3 pr-8 text-xs font-semibold text-slate-700 shadow-2xs transition-colors focus:border-tmo-primary focus:outline-none focus:ring-2 focus:ring-tmo-primary/10 cursor-pointer truncate"
-                            >
-                                <option value="all">All TODAs ({units.length})</option>
-                                {todaOptions.map(([toda, cnt]) => (
-                                    <option key={toda} value={toda}>{toda} ({cnt})</option>
-                                ))}
+                                <option value="revoked">Revoked — {revokedCount}</option>
                             </select>
                         </div>
 
@@ -450,9 +432,6 @@ export default function TricycleRegistry({ initialUnits = [] }) {
                                         </th>
                                         <th scope="col" className="py-3 px-4 text-[11px] font-bold uppercase tracking-wider text-slate-500">
                                             Operator &amp; Contact
-                                        </th>
-                                        <th scope="col" className="py-3 px-4 text-[11px] font-bold uppercase tracking-wider text-slate-500">
-                                            TODA Route
                                         </th>
                                         <th scope="col" className="py-3 px-4 text-[11px] font-bold uppercase tracking-wider text-slate-500">
                                             Color Coding Scheme
@@ -600,24 +579,28 @@ function getInitials(name) {
     return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 }
 
+// Semantic status treatment — same restrained success/warning/danger palette used on the
+// TricycleDetails page's driver status badge, so "Revoked" reads consistently across the panel.
+const STATUS_PILL_META = {
+    active:    { label: 'Active',    className: 'border border-emerald-200/90 bg-emerald-50 text-emerald-700' },
+    suspended: { label: 'Suspended', className: 'border border-amber-200/90 bg-amber-50 text-amber-800' },
+    revoked:   { label: 'Revoked',   className: 'border border-red-200/90 bg-red-50 text-red-700' },
+};
+
 function StatusPill({ status }) {
-    const isActive = status === 'active';
+    const meta = STATUS_PILL_META[status] || STATUS_PILL_META.suspended;
     return (
         <span
-            className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold shadow-2xs transition-colors ${
-                isActive
-                    ? 'border border-emerald-200/90 bg-emerald-50 text-emerald-700'
-                    : 'border border-amber-200/90 bg-amber-50 text-amber-800'
-            }`}
+            className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold shadow-2xs transition-colors ${meta.className}`}
         >
-            {isActive ? 'Active' : 'Suspended'}
+            {meta.label}
         </span>
     );
 }
 
 function DesktopTableRow({ unit, todayName, isWeekend }) {
     const unitCode = unit.unit_code || `TRV-${String(unit.id).padStart(3, '0')}`;
-    const bodyNumber = unit.coding_scheme_number || unit.body_no || unit.sticker_no;
+    const stickerNumber = unit.coding_scheme_number;
     const isCodedToday = !isWeekend && unit.coding_day && unit.coding_day.toLowerCase().includes(todayName.toLowerCase());
     const initials = getInitials(unit.operator);
 
@@ -660,22 +643,13 @@ function DesktopTableRow({ unit, todayName, isWeekend }) {
                 </div>
             </td>
 
-            {/* Column 3: TODA Franchise Route (Clean typography, no box) */}
-            <td className="py-3.5 px-4 align-middle">
-                <div className="flex items-center gap-1.5 text-xs">
-                    <MapPin size={12} className={unit.toda === 'Unassigned' ? 'text-amber-500 shrink-0' : 'text-slate-400 shrink-0'} />
-                    <span className={unit.toda === 'Unassigned' ? 'text-amber-700 font-medium' : 'text-slate-700 font-medium'}>
-                        {unit.toda}
-                    </span>
-                </div>
-            </td>
 
             {/* Column 4: Color Coding Scheme & Number */}
             <td className="py-3.5 px-4 align-middle">
                 <div className="flex flex-col">
                     <div className="flex items-center gap-2">
                         <span className="font-mono text-xs sm:text-[13px] font-bold text-slate-900">
-                            #{bodyNumber}
+                            #{stickerNumber}
                         </span>
                         <span className="text-slate-300 text-xs">·</span>
                         <div className="inline-flex items-center gap-1.5 text-xs text-slate-800">
@@ -721,7 +695,7 @@ function DesktopTableRow({ unit, todayName, isWeekend }) {
 
 function MobileUnitCard({ unit, todayName, isWeekend }) {
     const unitCode = unit.unit_code || `TRV-${String(unit.id).padStart(3, '0')}`;
-    const bodyNumber = unit.coding_scheme_number || unit.body_no || unit.sticker_no;
+    const stickerNumber = unit.coding_scheme_number;
     const isCodedToday = !isWeekend && unit.coding_day && unit.coding_day.toLowerCase().includes(todayName.toLowerCase());
     const initials = getInitials(unit.operator);
 
@@ -759,18 +733,13 @@ function MobileUnitCard({ unit, todayName, isWeekend }) {
                 )}
             </div>
 
-            {/* Route & Color Coding Metadata */}
+            {/* Color Coding Metadata */}
             <div className="mt-2.5 flex items-center justify-between gap-2 border-t border-slate-100 pt-2 text-xs">
-                <div className="flex items-center gap-1 text-[11px] truncate">
-                    <MapPin size={11} className={unit.toda === 'Unassigned' ? 'text-amber-500 shrink-0' : 'text-slate-400 shrink-0'} />
-                    <span className={`truncate ${unit.toda === 'Unassigned' ? 'text-amber-700 font-medium' : 'text-slate-600 font-medium'}`}>
-                        {unit.toda}
-                    </span>
-                </div>
+                <span className="text-[11px] font-medium text-slate-500">Color Scheme</span>
 
                 <div className="flex flex-col items-end shrink-0">
                     <div className="flex items-center gap-1.5 text-[11px]">
-                        <span className="font-mono font-bold text-slate-900">#{bodyNumber}</span>
+                        <span className="font-mono font-bold text-slate-900">#{stickerNumber}</span>
                         <span className="text-slate-300">·</span>
                         <span
                             className="h-2 w-2 rounded-full shrink-0 ring-1 ring-black/10"

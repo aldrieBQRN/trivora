@@ -6,7 +6,6 @@ use App\Http\Controllers\Api\DriverTelematicsController;
 use App\Http\Controllers\Api\DriverViolationController;
 use App\Http\Controllers\Api\PassengerAuthController;
 use App\Http\Controllers\Api\ProfilePhotoController;
-use App\Http\Controllers\Api\ReportController;
 use App\Http\Controllers\Api\SavedPlaceController;
 use Illuminate\Support\Facades\Route;
 
@@ -16,34 +15,10 @@ use Illuminate\Support\Facades\Route;
 |--------------------------------------------------------------------------
 */
 
-// Public TODA Zones configuration for mobile apps
-Route::get('/v1/toda-zones', function () {
-    return response()->json([
-        'success' => true,
-        // Only zones with a real configured pin — matches TodaRouteMatcher's own filter, so the
-        // mobile apps never display/match against a TODA that would show as (0, 0).
-        'data' => \App\Models\TodaZone::where('is_active', true)
-            ->whereNotNull('latitude')
-            ->whereNotNull('longitude')
-            ->get()->map(function ($z) {
-            return [
-                'id' => $z->id,
-                'code' => $z->code,
-                'name' => $z->name,
-                'barangay' => $z->barangay,
-                'terminal_name' => $z->terminal_name,
-                'terminal' => $z->terminal_name,
-                'address' => $z->address,
-                'centerLat' => (float) $z->latitude,
-                'centerLng' => (float) $z->longitude,
-                'coverageKm' => 3.0,
-                'baseFare' => 20.0,
-                'perKmRate' => 5.0,
-                'description' => $z->description,
-            ];
-        }),
-    ]);
-});
+
+
+// Public Health Check
+Route::get('v1/health', fn() => response()->json(['status' => 'ok']));
 
 // Driver Mobile API Routes
 Route::prefix('v1/driver')->group(function () {
@@ -57,31 +32,47 @@ Route::prefix('v1/driver')->group(function () {
     Route::middleware('auth:sanctum')->group(function () {
         Route::get('/me', [DriverAuthController::class, 'me']);
         Route::post('/logout', [DriverAuthController::class, 'logout']);
-        Route::post('/status', [DriverAuthController::class, 'updateStatus']);
+
+        // Going Online/Offline is itself an "operate" action — a driver whose assigned franchise
+        // is suspended/revoked must never be able to flip is_online=true, so this is gated by
+        // franchise.operational too (see EnsureFranchiseIsOperational). Going Offline
+        // (is_online=false) still passes the gate trivially since the middleware only blocks
+        // based on the driver's FRANCHISE status, not the payload — a driver whose franchise is
+        // suspended can always still turn themself off.
+        Route::post('/status', [DriverAuthController::class, 'updateStatus'])->middleware('franchise.operational');
 
         // Driver Booking Dispatch Operations — every one of these resolves the driver strictly
         // from $request->user() (see BookingController), never a client-supplied driver_id/
         // user_id. Used to be registered outside auth:sanctum and trust query params instead,
         // which let any caller read/spoof another driver's requests, history, or location.
-        Route::get('/bookings/pending', [BookingController::class, 'getPendingRequests']);
-        Route::post('/bookings/{id}/status', [BookingController::class, 'updateStatus']);
+        // getPendingRequests/updateStatus/acceptBooking/updateDriverLocation are all "operate"
+        // actions and gated by franchise.operational; getActiveBooking/history stay read-only and
+        // available even when the driver's franchise is suspended/revoked (so they can still
+        // see/settle history).
+        Route::get('/bookings/pending', [BookingController::class, 'getPendingRequests'])->middleware('franchise.operational');
+        Route::post('/bookings/{id}/status', [BookingController::class, 'updateStatus'])->middleware('franchise.operational');
         Route::get('/bookings/active', [BookingController::class, 'getActiveBooking']);
         Route::get('/bookings/history', [BookingController::class, 'history']);
-        Route::post('/location', [BookingController::class, 'updateDriverLocation']);
+        Route::post('/location', [BookingController::class, 'updateDriverLocation'])->middleware('franchise.operational');
 
-        // Real-Time & Offline GPS Telematics
-        Route::post('/telematics', [DriverTelematicsController::class, 'store']);
-        Route::post('/telematics/batch', [DriverTelematicsController::class, 'batchStore']);
+        // Real-Time & Offline GPS Telematics — transmitting a real position is an "operate"
+        // action; checking/changing the tracking MODE configuration is not, so only store/
+        // batchStore are gated.
+        Route::post('/telematics', [DriverTelematicsController::class, 'store'])->middleware('franchise.operational');
+        Route::post('/telematics/batch', [DriverTelematicsController::class, 'batchStore'])->middleware('franchise.operational');
         Route::get('/telemetry-status', [DriverTelematicsController::class, 'getTrackingStatus']);
         Route::post('/telemetry-mode', [DriverTelematicsController::class, 'setTrackingMode']);
 
         // Accepting a ride must be tied to the authenticated driver's own account, not a
         // client-supplied id — this is also the endpoint whose acceptance race condition is
         // now resolved with row locking (see BookingController::acceptBooking).
-        Route::post('/bookings/{id}/accept', [BookingController::class, 'acceptBooking']);
+        Route::post('/bookings/{id}/accept', [BookingController::class, 'acceptBooking'])->middleware('franchise.operational');
 
         // Declining does not change the booking itself — see BookingController::declineBooking —
         // it only records this driver's decline so getPendingRequests() stops re-offering it.
+        // Left ungated: a driver whose franchise is suspended/revoked was never going to be
+        // re-dispatched anyway (see BookingDispatchService::getEligibleDrivers()'s franchise
+        // filter), so this is harmless.
         Route::post('/bookings/{id}/decline', [BookingController::class, 'declineBooking']);
 
         // Violations & Appeals — scoped to the authenticated driver's own tricycle only (see
@@ -103,11 +94,6 @@ Route::prefix('v1/passenger')->group(function () {
     // Public Auth Routes
     Route::post('/register', [PassengerAuthController::class, 'register']);
     Route::post('/login', [PassengerAuthController::class, 'login']);
-
-    // Reports / Concerns (Public / Guest accessible for mobile apps)
-    Route::post('/reports', [ReportController::class, 'store']);
-    Route::get('/reports', [ReportController::class, 'index']);
-    Route::get('/reports/{id}', [ReportController::class, 'show']);
 
     // Authenticated Passenger Routes (Sanctum)
     Route::middleware('auth:sanctum')->group(function () {

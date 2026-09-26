@@ -3,7 +3,9 @@
 namespace Tests\Feature;
 
 use App\Models\Booking;
+use App\Models\ColorCodingScheme;
 use App\Models\Driver;
+use App\Models\FranchiseScheme;
 use App\Models\Operator;
 use App\Models\Passenger;
 use App\Models\RideRating;
@@ -24,6 +26,8 @@ class BookingRouteAssignmentTest extends TestCase
     protected Driver $driverBrgy8Online;
     protected Driver $driverBucanaOnline;
     protected Driver $driverBrgy8Offline;
+    protected ColorCodingScheme $colorScheme;
+    protected User $franchiseIssuer;
 
     protected function setUp(): void
     {
@@ -40,6 +44,19 @@ class BookingRouteAssignmentTest extends TestCase
         $this->zoneBucana = TodaZone::firstOrCreate(
             ['code' => 'TODA-BUCANA'],
             ['name' => 'TODA Bucana', 'barangay' => 'Bucana', 'is_active' => true, 'latitude' => 14.0677115, 'longitude' => 120.6275606]
+        );
+
+        // Dispatch eligibility requires an ACTIVE franchise (see
+        // BookingDispatchService::getEligibleDrivers()) — a real active tricycle always has one
+        // (created/activated together at TMO Final Confirmation), so every tricycle below gets
+        // one via activateFranchise().
+        $this->colorScheme = ColorCodingScheme::firstOrCreate(
+            ['name' => 'Route Assignment Test Scheme'],
+            ['color_hex' => '#EF4444', 'restricted_days' => ['Monday'], 'is_active' => true]
+        );
+        $this->franchiseIssuer = User::firstOrCreate(
+            ['email' => 'route.franchise.issuer@trivora.test'],
+            ['name' => 'Route Franchise Issuer', 'password' => bcrypt('password'), 'role' => 'bplo_staff']
         );
 
         // 2. Setup Drivers
@@ -75,6 +92,7 @@ class BookingRouteAssignmentTest extends TestCase
             'cr_number' => 'CR-TEST-001',
             'status' => 'active',
         ]);
+        $this->activateFranchise($tri1, 'FR-TEST-001');
         $this->driverBrgy8Online = Driver::create([
             'user_id' => $user1->id,
             'operator_id' => $op1->id,
@@ -118,6 +136,7 @@ class BookingRouteAssignmentTest extends TestCase
             'cr_number' => 'CR-TEST-002',
             'status' => 'active',
         ]);
+        $this->activateFranchise($tri2, 'FR-TEST-002');
         $this->driverBucanaOnline = Driver::create([
             'user_id' => $user2->id,
             'operator_id' => $op2->id,
@@ -161,6 +180,7 @@ class BookingRouteAssignmentTest extends TestCase
             'cr_number' => 'CR-TEST-003',
             'status' => 'active',
         ]);
+        $this->activateFranchise($tri3, 'FR-TEST-003');
         $this->driverBrgy8Offline = Driver::create([
             'user_id' => $user3->id,
             'operator_id' => $op3->id,
@@ -173,8 +193,20 @@ class BookingRouteAssignmentTest extends TestCase
         ]);
     }
 
+    private function activateFranchise(Tricycle $tricycle, string $franchiseNumber): FranchiseScheme
+    {
+        return FranchiseScheme::create([
+            'tricycle_id' => $tricycle->id,
+            'color_coding_scheme_id' => $this->colorScheme->id,
+            'issued_by' => $this->franchiseIssuer->id,
+            'franchise_number' => $franchiseNumber,
+            'issue_date' => '2024-01-01', 'expiry_date' => '2029-01-01',
+            'is_active' => true,
+        ]);
+    }
+
     #[Test]
-    public function booking_creation_assigns_the_nearest_toda_pin_to_pickup()
+    public function booking_creation_dispatches_to_nearest_driver_to_pickup()
     {
         // requestBooking is authenticated (auth:sanctum) — the booking belongs to whichever
         // passenger record the token resolves to, not a client-supplied id.
@@ -186,7 +218,7 @@ class BookingRouteAssignmentTest extends TestCase
         ]);
         Sanctum::actingAs($passengerUser, ['*']);
 
-        // Pickup near TODA Brgy. 8's own pin (see setUp), well away from TODA Bucana's.
+        // Pickup near driverBrgy8Online's location (14.0715, 120.6330), closer than driverBucanaOnline.
         $response = $this->postJson('/api/v1/passenger/bookings/request', [
             'pickup_name' => 'Nasugbu Municipal Hall',
             'pickup_lat' => 14.071514,
@@ -195,21 +227,21 @@ class BookingRouteAssignmentTest extends TestCase
             'dropoff_lat' => 14.0703,
             'dropoff_lng' => 120.6332,
             'passenger_count' => 3,
-            'fare_per_passenger' => 15.00,
+            'distance_km' => 1.0,
         ]);
 
         $response->assertStatus(201);
         $booking = Booking::find($response->json('booking.id'));
 
         $this->assertNotNull($booking);
-        $this->assertEquals($this->zoneBrgy8->id, $booking->toda_zone_id);
+        $this->assertEquals($this->driverBrgy8Online->id, $booking->dispatched_driver_id);
     }
 
     #[Test]
-    public function destination_coordinates_do_not_affect_toda_matching()
+    public function destination_coordinates_do_not_affect_nearest_driver_dispatch()
     {
-        // Same pickup as the test above (nearest to TODA Brgy. 8), but the dropoff is now placed
-        // right on top of TODA Bucana's own pin. Only pickup may influence the matched zone.
+        // Same pickup as the test above (nearest to driverBrgy8Online), but dropoff is placed further away.
+        // Only pickup coordinates influence the nearest driver calculation.
         $passengerUser = User::create([
             'name' => 'Destination Independence Passenger',
             'email' => 'destination.independence.passenger.test@trivora.ph',
@@ -222,27 +254,23 @@ class BookingRouteAssignmentTest extends TestCase
             'pickup_name' => 'Nasugbu Municipal Hall',
             'pickup_lat' => 14.071514,
             'pickup_lng' => 120.633083,
-            'dropoff_name' => 'Right at TODA Bucana',
-            'dropoff_lat' => $this->zoneBucana->latitude,
-            'dropoff_lng' => $this->zoneBucana->longitude,
+            'dropoff_name' => 'Far Bucana',
+            'dropoff_lat' => 14.0677,
+            'dropoff_lng' => 120.6275,
             'passenger_count' => 1,
-            'fare_per_passenger' => 20.00,
+            'distance_km' => 1.0,
         ]);
 
         $response->assertStatus(201);
         $booking = Booking::find($response->json('booking.id'));
 
-        $this->assertEquals($this->zoneBrgy8->id, $booking->toda_zone_id);
-        $this->assertNotEquals($this->zoneBucana->id, $booking->toda_zone_id);
+        $this->assertEquals($this->driverBrgy8Online->id, $booking->dispatched_driver_id);
+        $this->assertNotEquals($this->driverBucanaOnline->id, $booking->dispatched_driver_id);
     }
 
     #[Test]
     public function a_toda_zone_id_that_does_not_exist_in_this_table_does_not_422_and_is_ignored()
     {
-        // The passenger app displays a TODA zone matched from its own local reference data,
-        // whose ids don't correspond to this table's actual auto-increment ids. Sending that id
-        // must never 422 (previously caused by `exists:toda_zones,id`) — pickup coordinates
-        // alone determine the real zone, server-side.
         $passengerUser = User::create([
             'name' => 'Mismatched Zone Passenger',
             'email' => 'mismatched.zone.passenger.test@trivora.ph',
@@ -259,7 +287,7 @@ class BookingRouteAssignmentTest extends TestCase
             'dropoff_lat' => 14.0703,
             'dropoff_lng' => 120.6332,
             'passenger_count' => 2,
-            'fare_per_passenger' => 20.00,
+            'distance_km' => 1.0,
             'toda_zone_id' => 999999, // does not exist in toda_zones
         ]);
 
@@ -267,14 +295,12 @@ class BookingRouteAssignmentTest extends TestCase
         $booking = Booking::find($response->json('booking.id'));
 
         $this->assertNotNull($booking);
-        $this->assertEquals($this->zoneBrgy8->id, $booking->toda_zone_id);
+        $this->assertEquals($this->driverBrgy8Online->id, $booking->dispatched_driver_id);
     }
 
     #[Test]
     public function a_toda_zone_id_that_does_not_match_the_pickup_is_not_trusted()
     {
-        // Even a *valid* toda_zone_id (exists in the table) must be overridden by the zone
-        // actually matched from pickup coordinates — the backend is the authority, not the app.
         $passengerUser = User::create([
             'name' => 'Wrong Zone Passenger',
             'email' => 'wrong.zone.passenger.test@trivora.ph',
@@ -283,8 +309,6 @@ class BookingRouteAssignmentTest extends TestCase
         ]);
         Sanctum::actingAs($passengerUser, ['*']);
 
-        // Pickup coordinates are in Brgy. 8's territory (same as the geojson-route test above),
-        // but the client claims the pickup TODA is Bucana.
         $response = $this->postJson('/api/v1/passenger/bookings/request', [
             'pickup_name' => 'Nasugbu Municipal Hall',
             'pickup_lat' => 14.071514,
@@ -293,16 +317,15 @@ class BookingRouteAssignmentTest extends TestCase
             'dropoff_lat' => 14.0703,
             'dropoff_lng' => 120.6332,
             'passenger_count' => 2,
-            'fare_per_passenger' => 20.00,
-            'toda_zone_id' => $this->zoneBucana->id,
+            'distance_km' => 1.0,
+            'toda_zone_id' => 4,
         ]);
 
         $response->assertStatus(201);
         $booking = Booking::find($response->json('booking.id'));
 
         $this->assertNotNull($booking);
-        $this->assertEquals($this->zoneBrgy8->id, $booking->toda_zone_id);
-        $this->assertNotEquals($this->zoneBucana->id, $booking->toda_zone_id);
+        $this->assertEquals($this->driverBrgy8Online->id, $booking->dispatched_driver_id);
     }
 
     #[Test]
@@ -375,6 +398,9 @@ class BookingRouteAssignmentTest extends TestCase
             'fare_amount' => 45.00, 'status' => 'pending', 'requested_at' => now(),
         ]);
 
+        // Ensure second driver is online and eligible to receive dispatch
+        $this->driverBrgy8Offline->update(['is_online' => true]);
+
         // driverBrgy8Online declines it.
         Sanctum::actingAs($this->driverBrgy8Online->user, ['*']);
         $decline = $this->postJson("/api/v1/driver/bookings/{$booking->id}/decline");
@@ -398,9 +424,7 @@ class BookingRouteAssignmentTest extends TestCase
             'A driver must never be re-offered a request they already declined.'
         );
 
-        // ...but a DIFFERENT eligible driver in the same zone still sees it (reusing the offline
-        // Brgy 8 fixture driver here, flipped online, as that second eligible driver).
-        $this->driverBrgy8Offline->update(['is_online' => true]);
+        // ...but a DIFFERENT eligible driver still sees it (reusing the fixture driver here, as that second eligible driver).
         Sanctum::actingAs($this->driverBrgy8Offline->user, ['*']);
         $forOtherDriver = $this->getJson('/api/v1/driver/bookings/pending');
         $this->assertTrue(
@@ -462,6 +486,11 @@ class BookingRouteAssignmentTest extends TestCase
             'fare_amount' => 45.00,
             'status' => 'pending',
             'requested_at' => now(),
+            // Simulates dispatch already having targeted driver A, same as the real
+            // requestBooking flow would — acceptance is now restricted to the currently
+            // dispatched driver, so this can no longer be left unset.
+            'dispatched_driver_id' => $this->driverBrgy8Online->id,
+            'dispatched_at' => now(),
         ]);
 
         // Driver A accepts first — must succeed and assign the booking to them.

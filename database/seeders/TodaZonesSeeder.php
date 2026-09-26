@@ -3,13 +3,16 @@
 namespace Database\Seeders;
 
 use App\Models\TodaZone;
-use App\Models\TodaZoneRoute;
 use Illuminate\Database\Seeder;
 
 class TodaZonesSeeder extends Seeder
 {
     /**
-     * Seed TODA zones with their barangay coverage and sample route waypoints.
+     * Seed TODA zones with their barangay coverage — descriptive/historical registry metadata
+     * only. TODA zones are no longer used for booking dispatch or route matching (see
+     * BookingDispatchService, which dispatches purely by nearest-driver distance), so this
+     * seeder no longer creates route waypoints: the toda_zone_routes table itself was dropped by
+     * migration 2026_09_22_000000_remove_toda_system_dependencies.
      */
     public function run(): void
     {
@@ -65,11 +68,6 @@ class TodaZonesSeeder extends Seeder
                 'contact_number' => '0922-567-8904',
                 'description'    => 'Covers Barangay 4 residential areas and northern highway junction.',
                 'is_active'      => true,
-                'routes'         => [
-                    ['lat' => 14.0673, 'lng' => 120.6331],
-                    ['lat' => 14.0673, 'lng' => 120.6325],
-                    ['lat' => 14.0689, 'lng' => 120.6322],
-                ],
             ],
             [
                 'name'           => 'TODA Brgy. 5',
@@ -122,11 +120,6 @@ class TodaZonesSeeder extends Seeder
                 'contact_number' => '0917-901-2308',
                 'description'    => 'Covers Barangay 8 Poblacion TODA route, hospital access, and clinic district.',
                 'is_active'      => true,
-                'routes'         => [
-                    ['lat' => 14.0715, 'lng' => 120.6330],
-                    ['lat' => 14.0703, 'lng' => 120.6332],
-                    ['lat' => 14.0691, 'lng' => 120.6335],
-                ],
             ],
             [
                 'name'           => 'TODA Brgy. 9',
@@ -153,11 +146,6 @@ class TodaZonesSeeder extends Seeder
                 'contact_number' => '0920-123-4510',
                 'description'    => 'Covers Barangay 10 TODA route, municipal hall complex, and government center.',
                 'is_active'      => true,
-                'routes'         => [
-                    ['lat' => 14.0725, 'lng' => 120.6322],
-                    ['lat' => 14.0726, 'lng' => 120.6327],
-                    ['lat' => 14.0714, 'lng' => 120.6330],
-                ],
             ],
             [
                 'name'           => 'TODA Bucana',
@@ -171,34 +159,14 @@ class TodaZonesSeeder extends Seeder
                 'contact_number' => '0917-234-5611',
                 'description'    => 'Covers Bucana coastal, beach resort, fisherman port, and residential TODA route.',
                 'is_active'      => true,
-                'routes'         => [
-                    ['lat' => 14.0640, 'lng' => 120.6298],
-                    ['lat' => 14.0660, 'lng' => 120.6295],
-                    ['lat' => 14.0660, 'lng' => 120.6303],
-                ],
             ],
         ];
 
         foreach ($zones as $zoneData) {
-            $routes = $zoneData['routes'] ?? [];
-            unset($zoneData['routes']);
-
-            $zone = TodaZone::updateOrCreate(
+            TodaZone::updateOrCreate(
                 ['code' => $zoneData['code']],
                 $zoneData
             );
-
-            // Only seed routes if this zone doesn't already have them
-            if (!empty($routes) && $zone->routes()->count() === 0) {
-                foreach ($routes as $order => $point) {
-                    TodaZoneRoute::create([
-                        'toda_zone_id'   => $zone->id,
-                        'sequence_order' => $order + 1,
-                        'latitude'       => $point['lat'],
-                        'longitude'      => $point['lng'],
-                    ]);
-                }
-            }
         }
 
         $this->command->info('✔ TODA zones seeded (' . count($zones) . ' zones with terminal locations).');

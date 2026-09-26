@@ -2,15 +2,11 @@
 
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\TMO\DashboardController as TMODashboardController;
-use App\Http\Controllers\TMO\TodaController;
 use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\OperatorAuthController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RegistrationController;
 use App\Http\Controllers\TMO\UserManagementController;
-use App\Models\FranchiseScheme;
-use App\Models\Payment;
-use App\Models\TodaZone;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use Illuminate\Http\Request;
@@ -21,19 +17,9 @@ use Illuminate\Http\Request;
 |--------------------------------------------------------------------------
 */
 
-// Landing Page — overview numbers are real counts (not placeholders), using the same
-// "active franchise" definition already used by the Operator dashboard (is_active + not
-// yet expired) so this stays consistent with how "active" is defined elsewhere in the app.
+// Landing Page — no server-computed stats needed (the "Status" band that used them was removed).
 Route::get('/', function () {
-    return Inertia::render('Welcome', [
-        'overview' => [
-            'activePermits' => FranchiseScheme::where('is_active', true)
-                ->where('expiry_date', '>', now())
-                ->count(),
-            'todaCount' => TodaZone::where('is_active', true)->count(),
-            'paymentsToday' => Payment::whereDate('payment_date', now()->toDateString())->count(),
-        ],
-    ]);
+    return Inertia::render('Welcome');
 })->name('home');
 
 // Public MTOP Registration Wizard (Account Creation + First Application)
@@ -67,7 +53,7 @@ Route::get('/api/public/verify-plate', function (Request $request) {
     }
 
     // Try exact match first, then suffix match (e.g. "8812" matches "AAA-8812")
-    $tricycle = \App\Models\Tricycle::with(['operator', 'todaZone', 'franchiseScheme'])
+    $tricycle = \App\Models\Tricycle::with(['operator', 'franchiseScheme'])
         ->where('plate_number', $plate)
         ->orWhere('plate_number', 'LIKE', "%-{$plate}")
         ->orWhere('plate_number', 'LIKE', "{$plate}%")
@@ -87,35 +73,65 @@ Route::get('/api/public/verify-plate', function (Request $request) {
         default                              => 'Pending',
     };
 
+    // Current application status for this unit, in plain public language — never the
+    // internal status codes (pending_review, failed_inspection, …). A resubmission is
+    // distinguished from a first pass by the unit's own status history: rejected at least
+    // once, then back under review, really means "resubmission in process".
+    $app = $tricycle->applications()->with('statusHistories')->latest()->first();
+    $applicationStatus = null;
+    if ($app) {
+        $wasRejectedBefore = $app->statusHistories->contains('to_status', 'rejected');
+
+        $applicationStatus = match (true) {
+            $app->status === 'rejected'       => 'Rejected — Resubmission Required',
+            $app->status === 'failed_inspection' => 'Reinspection Required',
+            in_array($app->status, ['pending_review', 'under_review'], true)
+                => $wasRejectedBefore ? 'Resubmission — In Process' : 'In Process',
+            in_array($app->status, ['pending_inspection', 'under_inspection'], true)
+                => 'In Process — Pending Inspection',
+            in_array($app->status, ['pending_payment', 'payment_issue'], true)
+                => 'In Process — Pending Payment',
+            in_array($app->status, ['payment_verified', 'paid', 'pending_bplo_release'], true)
+                => 'In Process — Pending Release',
+            $app->status === 'awaiting_tmo_confirmation' => 'In Process — Awaiting TMO Confirmation',
+            in_array($app->status, ['completed', 'scheme_issued'], true) => 'Approved',
+            $app->status === 'cancelled'      => 'Cancelled',
+            default                           => 'In Process',
+        };
+    }
+
     return response()->json([
         'found'          => true,
         'plate'          => $tricycle->plate_number,
         'operator'       => $tricycle->operator ? $tricycle->operator->full_name : 'N/A',
         'make_model'     => trim("{$tricycle->make} {$tricycle->model}"),
-        'toda'           => $tricycle->todaZone ? $tricycle->todaZone->name : 'N/A',
         'status'         => $franchiseStatus,
+        'application_status' => $applicationStatus,
         'expiry'         => $fs && $fs->expiry_date ? $fs->expiry_date->format('M d, Y') : null,
-        'body_number'    => $tricycle->body_number ?: null,
+        'coding_scheme_number' => $tricycle->coding_scheme_number ?: null,
     ]);
 })->name('public.verify-plate');
 
 // Unified Login
-Route::middleware('guest')->group(function () {
-    Route::get('/login', [OperatorAuthController::class, 'showLoginForm'])->name('login');
-    Route::post('/login', [OperatorAuthController::class, 'login'])->name('login.submit');
-});
-
-
+Route::get('/login', [OperatorAuthController::class, 'showLoginForm'])->name('login');
+Route::post('/login', [OperatorAuthController::class, 'login'])->name('login.submit');
 
 /*
 |--------------------------------------------------------------------------
-| 2. ADMIN — General Dashboard
+| 2. ADMIN & ROLE-DISPATCHER — Dashboard
 |--------------------------------------------------------------------------
 */
 
-Route::middleware(['auth', 'role:admin'])->group(function () {
+Route::middleware(['auth'])->group(function () {
     Route::get('/dashboard', function () {
-        return Inertia::render('Dashboard');
+        $user = Auth::user();
+        return match ($user?->role) {
+            'tmo_personnel'      => redirect()->route('tmo.dashboard'),
+            'bplo_staff'         => redirect()->route('bplo.dashboard'),
+            'tricycle_driver'    => redirect()->route('operator.dashboard'),
+            'admin'              => Inertia::render('Dashboard'),
+            default              => redirect()->route('login'),
+        };
     })->name('dashboard');
 });
 
@@ -135,19 +151,28 @@ Route::middleware(['auth', 'role:tmo_personnel,admin'])->group(function () {
 
     // Unit Registry
     Route::get('/tmo/registry', [DashboardController::class, 'registry'])->name('tmo.registry');
+    // Excel export of the Active Tricycle Registry — same shared municipal styling as
+    // the Reports exports (ExportsMunicipalExcelReports trait).
+    Route::get('/tmo/registry/export/excel', [DashboardController::class, 'exportRegistryExcel'])->name('tmo.registry.export-excel');
 
     // Tricycle Details
     Route::get('/tmo/tricycle/{id}', [DashboardController::class, 'tricycleDetails'])->name('tricycle.details');
 
-    // TODA Management
-    Route::get('/tmo/toda', [TodaController::class, 'index'])->name('tmo.toda');
-    Route::post('/tmo/toda', [TodaController::class, 'store'])->name('tmo.toda.store');
-    Route::get('/tmo/toda/{id}', [TodaController::class, 'show'])->name('tmo.toda.show');
-    Route::put('/tmo/toda/{id}', [TodaController::class, 'update'])->name('tmo.toda.update');
-    Route::patch('/tmo/toda/{id}/toggle-status', [TodaController::class, 'toggleStatus'])->name('tmo.toda.toggle-status');
+    // Franchise Status Management (Active/Suspended/Revoked) — operational authorization for
+    // this tricycle's franchise permit, shown on the Tricycle Details page. Bound on the
+    // Tricycle (not the FranchiseScheme directly) since that's what this page already keys on;
+    // the controller resolves the tricycle's current scheme itself. See
+    // App\Models\FranchiseScheme::transitionStatus() for the state machine.
+    Route::post('/tmo/tricycles/{tricycle}/franchise/suspend', [\App\Http\Controllers\TMO\FranchiseStatusController::class, 'suspend'])->name('tmo.franchise.suspend');
+    Route::post('/tmo/tricycles/{tricycle}/franchise/revoke', [\App\Http\Controllers\TMO\FranchiseStatusController::class, 'revoke'])->name('tmo.franchise.revoke');
+    Route::post('/tmo/tricycles/{tricycle}/franchise/reinstate', [\App\Http\Controllers\TMO\FranchiseStatusController::class, 'reinstate'])->name('tmo.franchise.reinstate');
 
     // Violation Records
     Route::get('/violations', [DashboardController::class, 'violations'])->name('tmo.violations');
+    // Excel export of the Violation Records list — same shared municipal styling as the
+    // Reports exports (ExportsMunicipalExcelReports trait). Placed before /violations/{id}
+    // so the static "export/excel" segments can't be swallowed by the {id} placeholder.
+    Route::get('/violations/export/excel', [DashboardController::class, 'exportViolationRecordsExcel'])->name('tmo.violations.export-excel');
     Route::get('/violations/{id}', [DashboardController::class, 'violationDetails'])->name('tmo.violations.details');
     Route::get('/tmo/violations/create', [DashboardController::class, 'createViolation'])->name('tmo.violations.create');
     Route::post('/tmo/violations/store', [DashboardController::class, 'storeViolation'])->name('tmo.violations.store');
@@ -171,14 +196,10 @@ Route::middleware(['auth', 'role:tmo_personnel,admin'])->group(function () {
     Route::get('/tmo/physical', [App\Http\Controllers\TMO\InspectionController::class, 'index'])->name('tmo.physical');
     Route::get('/tmo/review/physical/{application}', [App\Http\Controllers\TMO\InspectionController::class, 'show'])->name('tmo.review.physical');
     Route::post('/tmo/review/physical/{application}', [App\Http\Controllers\TMO\InspectionController::class, 'store'])->name('tmo.review.physical.submit');
-    Route::get('/tmo/ticket/{application}', [App\Http\Controllers\Operator\MTOPController::class, 'paymentTicket'])->name('tmo.ticket');
 
-    // --- PHASE 2.5: MUNICIPAL TREASURER PAYMENT VERIFICATION ---
-    // Driver pays offline at the Municipal Treasurer's Office, then returns to TMO with the
-    // Official Receipt for verification. There is no in-system cashier/payment gateway.
-    Route::get('/tmo/payments', [App\Http\Controllers\TMO\PaymentVerificationController::class, 'index'])->name('tmo.payments');
-    Route::get('/tmo/verify-payment/{application}', [App\Http\Controllers\TMO\PaymentVerificationController::class, 'show'])->name('tmo.verify-payment');
-    Route::post('/tmo/verify-payment/{application}', [App\Http\Controllers\TMO\PaymentVerificationController::class, 'verify'])->name('tmo.verify-payment.submit');
+    // Payment (Municipal Treasurer's Office) happens entirely offline — the system never
+    // verifies or records it. See BPLO\BPLOController::release() for the instructional-only
+    // notice shown before BPLO releases the sticker/plate.
 
     // --- PHASE 3: FINAL CONFIRMATION & GPS SETUP ---
     Route::get('/tmo/final-confirmation', [App\Http\Controllers\TMO\FinalConfirmationController::class, 'index'])->name('tmo.final-confirmation');
@@ -190,7 +211,6 @@ Route::middleware(['auth', 'role:tmo_personnel,admin'])->group(function () {
     Route::get('/tmo/reports/export/violations-excel', [App\Http\Controllers\TMO\ReportController::class, 'exportViolationsExcel'])->name('tmo.reports.export-violations-excel');
     Route::get('/tmo/reports/export/applications-excel', [App\Http\Controllers\TMO\ReportController::class, 'exportApplicationsExcel'])->name('tmo.reports.export-applications-excel');
     Route::get('/tmo/reports/export/fleet-excel', [App\Http\Controllers\TMO\ReportController::class, 'exportFleetExcel'])->name('tmo.reports.export-fleet-excel');
-    Route::get('/tmo/reports/export/collections-excel', [App\Http\Controllers\TMO\ReportController::class, 'exportCollectionsExcel'])->name('tmo.reports.export-collections-excel');
 
     // --- STAFF MANAGEMENT (TMO PERSONNEL) ---
     Route::get('/tmo/users', [App\Http\Controllers\TMO\TMOUserController::class, 'index'])->name('tmo.users');
@@ -216,22 +236,23 @@ Route::middleware(['auth', 'role:bplo_staff,admin'])->group(function () {
     Route::get('/bplo-dashboard', [App\Http\Controllers\BPLO\BPLOController::class, 'dashboard'])->name('bplo.dashboard');
 
     // Note: Payment Verification is a TMO responsibility (see /tmo/payments above) — BPLO
-    // only reviews and releases the franchise sticker once payment has already been verified.
+    // only reviews and releases the Franchise Number once payment has already been verified.
 
-    // Franchise Sticker Releasing Queue & Issuance
+    // Franchise Releasing Queue & Issuance
     Route::get('/bplo/releasing', [App\Http\Controllers\BPLO\BPLOController::class, 'releasingQueue'])->name('bplo.releasing');
     Route::get('/bplo/issue/{application}', [App\Http\Controllers\BPLO\BPLOController::class, 'showReleaseForm'])->name('bplo.issue');
     Route::post('/bplo/issue/{application}', [App\Http\Controllers\BPLO\BPLOController::class, 'release'])->name('bplo.release.submit');
     Route::get('/bplo/registry', [App\Http\Controllers\BPLO\BPLOController::class, 'registry'])->name('bplo.registry');
+    // Real server-side .xlsx export — replaces the old client-side CSV button (fake
+    // "Exporting..." delay + non-Excel CSV). Uses the shared ExportsMunicipalExcelReports
+    // trait. Declared before /bplo/registry/{plateNo} so "export" isn't read as a plateNo.
+    Route::get('/bplo/registry/export/excel', [App\Http\Controllers\BPLO\BPLOController::class, 'exportActiveRegistryExcel'])->name('bplo.registry.export-excel');
     Route::get('/bplo/registry/{plateNo}', [App\Http\Controllers\BPLO\BPLOController::class, 'registryDetails'])->name('bplo.registry.details');
-    Route::get('/bplo/ticket/{application}', [App\Http\Controllers\Operator\MTOPController::class, 'paymentTicket'])->name('bplo.ticket');
 
-    // Reports & Analytics
+    // Reports & Analytics — a single-page BPLO Releasing report (see BPLOReportController), not
+    // the old 4-tab overview/trends/releasing/records layout.
     Route::get('/bplo/reports', [App\Http\Controllers\BPLO\BPLOReportController::class, 'index'])->name('bplo.reports');
-    Route::get('/bplo/reports/export/overview-excel', [App\Http\Controllers\BPLO\BPLOReportController::class, 'exportOverviewExcel'])->name('bplo.reports.export-overview-excel');
-    Route::get('/bplo/reports/export/trends-excel', [App\Http\Controllers\BPLO\BPLOReportController::class, 'exportTrendsExcel'])->name('bplo.reports.export-trends-excel');
-    Route::get('/bplo/reports/export/releasing-excel', [App\Http\Controllers\BPLO\BPLOReportController::class, 'exportReleasingExcel'])->name('bplo.reports.export-releasing-excel');
-    Route::get('/bplo/reports/export/records-excel', [App\Http\Controllers\BPLO\BPLOReportController::class, 'exportRecordsExcel'])->name('bplo.reports.export-records-excel');
+    Route::get('/bplo/reports/export/excel', [App\Http\Controllers\BPLO\BPLOReportController::class, 'exportExcel'])->name('bplo.reports.export-excel');
 
     // --- STAFF MANAGEMENT (BPLO STAFF) ---
     Route::get('/bplo/users', [App\Http\Controllers\BPLO\BPLOUserController::class, 'index'])->name('bplo.users');
@@ -260,37 +281,93 @@ Route::middleware(['auth', 'role:tricycle_driver,admin'])->group(function () {
         $tricycles = [];
         if ($operator) {
             $units = \App\Models\Tricycle::where('operator_id', $operator->id)
-                ->with(['franchiseScheme.colorCodingScheme', 'todaZone'])
+                ->with(['franchiseScheme.colorCodingScheme', 'applications.tricycleDriver', 'applications.operator'])
                 ->orderBy('id')
                 ->get();
 
+            // One source of truth: Driver → Application → Approved/Active Franchise →
+            // Registered Tricycle. A unit only counts as a registered tricycle once THIS
+            // driver's own application for it reached an approved state (completed /
+            // scheme_issued). Applications still pending — document review, physical
+            // inspection, BPLO release, final confirmation, resubmission, or reinspection —
+            // are returned with isRegistered=false so the page can present them in a
+            // clearly separate "pending application" section instead of misrepresenting
+            // them as active registered units. A unit with no application relationship at
+            // all isn't part of this driver's application/franchise chain, so it is not
+            // this driver's registered or in-application unit and is not shown at all.
             $tricycles = $units->map(function ($tri) use ($operator) {
-                $latestLocation = $tri->locations()->latest('recorded_at')->first();
+                $driverApps = $tri->applications
+                    ->where('operator_id', $operator->id)
+                    ->values();
 
-                // Real signal freshness — which method (device/app) last actually reported a
-                // location, and how recently. Only fields the DB actually stores; no
-                // fabricated battery/signal-strength/accuracy telemetry.
-                $lastSignal = $latestLocation ? [
-                    'source'    => $latestLocation->source,
-                    'latitude'  => (float) $latestLocation->latitude,
-                    'longitude' => (float) $latestLocation->longitude,
-                    'at'        => $latestLocation->recorded_at->diffForHumans(),
-                    'isRecent'  => $latestLocation->recorded_at->gt(now()->subMinutes(15)),
-                ] : null;
+                if ($driverApps->isEmpty()) {
+                    return null;
+                }
 
-                // Franchise application status/history has its own dedicated pages (My
-                // Tricycles just needs the currently assigned color-coding scheme).
-                $colorScheme = $tri->franchiseScheme?->colorCodingScheme;
+                $approvedApp = $driverApps
+                    ->whereIn('status', ['completed', 'scheme_issued'])
+                    ->sortByDesc('id')
+                    ->first();
+
+                $isRegistered = $approvedApp !== null;
+                $sourceApp = $approvedApp
+                    ?? $driverApps->whereNotIn('status', ['completed', 'scheme_issued'])->sortByDesc('id')->first();
+
+                // The unit's current active franchise period drives the expired state —
+                // the same permit record the TMO/BPLO registries show for this unit.
+                $scheme = $tri->franchiseScheme;
+                $isExpired = $scheme && $scheme->expiry_date ? $scheme->expiry_date->isPast() : false;
+
+                $vehicleStatus = match (true) {
+                    ! $isRegistered                              => 'pending',
+                    in_array($tri->status, ['suspended', 'revoked'], true) => $tri->status,
+                    $isExpired                                   => 'expired',
+                    default                                      => 'active',
+                };
+
+                // A tricycle only has real tracking/franchise data worth showing once it is
+                // registered through an approved application. Before that, the unit is still
+                // mid-application: no real GPS history normally exists yet, and showing
+                // tracking/franchise UI for a pending unit is misleading. Redact those fields
+                // at the source here, not just in the frontend, so a pending unit never
+                // receives them at all.
+                $isFinalized = $isRegistered;
+
+                $lastSignal = null;
+                $colorScheme = null;
+                if ($isFinalized) {
+                    $latestLocation = $tri->locations()->latest('recorded_at')->first();
+
+                    // Real signal freshness — which method (device/app) last actually reported a
+                    // location, and how recently. Only fields the DB actually stores; no
+                    // fabricated battery/signal-strength/accuracy telemetry.
+                    $lastSignal = $latestLocation ? [
+                        'source'    => $latestLocation->source,
+                        'latitude'  => (float) $latestLocation->latitude,
+                        'longitude' => (float) $latestLocation->longitude,
+                        'at'        => $latestLocation->recorded_at->diffForHumans(),
+                        'isRecent'  => $latestLocation->recorded_at->gt(now()->subMinutes(15)),
+                    ] : null;
+
+                    $colorScheme = $tri->franchiseScheme?->colorCodingScheme;
+                }
 
                 return [
-                    'id'                   => $tri->body_number ?: 'Pending Body No',
+                    // Pending units have not been issued a Sticker Number by BPLO —
+                    // never present a pre-application Sticker Number as if it were one.
+                    'id'                   => $isRegistered ? ($tri->coding_scheme_number ?: 'Pending Sticker No') : 'Pending Sticker No',
                     'db_id'                => $tri->id,
                     'makeModel'            => "{$tri->make} {$tri->model}",
                     'plateNo'              => $tri->plate_number,
                     'driver'               => $operator->full_name,
-                    'zone'                 => $tri->todaZone ? $tri->todaZone->name : 'N/A',
+                    // Tricycle Owner (this operator — always the primary person for the unit)
+                    // + the optional separate Tricycle Driver from this unit's application.
+                    'owner'                => $sourceApp->ownerDetails(),
+                    'ownerIsDriver'        => (bool) $sourceApp->owner_is_driver,
+                    'tricycleDriver'       => $sourceApp->driverDetails(),
                     // Registered vehicle specs from the Tricycle Registration record — read-only
                     // here; the driver enters these once during MTOP registration, never again.
+                    // Always shown, regardless of application status.
                     'yearModel'            => $tri->year_model ?: null,
                     'bodyColor'            => $tri->body_color ?: null,
                     'bodyType'             => $tri->body_type ?: null,
@@ -298,30 +375,41 @@ Route::middleware(['auth', 'role:tricycle_driver,admin'])->group(function () {
                     'chassisNumber'        => $tri->chassis_number ?: null,
                     'orNumber'             => $tri->or_number ?: null,
                     'crNumber'             => $tri->cr_number ?: null,
-                    'colorCode'            => $colorScheme ? $colorScheme->name : 'N/A',
-                    'colorHex'             => $colorScheme ? $colorScheme->color_hex : '#94A3B8',
-                    // The tricycle's registration/operational status (unregistered / active /
-                    // suspended / revoked) — distinct from tracking connectivity, which is
-                    // derived purely from lastSignal below.
-                    'vehicleStatus'        => $tri->status,
-                    'trackingCapability'   => $tri->tracking_capability,
-                    'activeTrackingMode'   => $tri->active_tracking_mode,
-                    'iotDeviceId'          => $tri->iot_device_id,
+                    // The unit's registration/operational display status — derived from the
+                    // application/franchise relationship above (active / expired / suspended /
+                    // revoked, or 'pending' while still mid-application) — distinct from
+                    // tracking connectivity, which is derived purely from lastSignal below.
+                    'vehicleStatus'        => $vehicleStatus,
+                    'isRegistered'         => $isRegistered,
+                    'applicationReference' => $sourceApp->reference_number,
+                    'applicationStatus'    => $sourceApp->status,
+                    // Compact workflow-stage key for a not-yet-registered unit's badge —
+                    // mirrors Operator\MTOPController::index()'s status categories.
+                    'pendingStage'         => $isRegistered ? null : match ($sourceApp->status) {
+                        'draft'                                     => 'draft',
+                        'rejected'                                  => 'rejected',
+                        'pending_inspection', 'under_inspection'    => 'inspection',
+                        'failed_inspection'                         => 'reinspection',
+                        'pending_bplo_release'                      => 'bplo',
+                        'awaiting_tmo_confirmation'                 => 'final',
+                        default                                      => 'review',
+                    },
+                    'franchiseExpiry'      => $isRegistered && $scheme?->expiry_date ? $scheme->expiry_date->toDateString() : null,
+                    'franchiseExpired'     => $isRegistered && $isExpired,
+                    'isFinalized'          => $isFinalized,
+                    // Everything below is registered-only — null/N/A until then.
+                    'colorCode'            => $colorScheme ? $colorScheme->name : ($isFinalized ? 'N/A' : null),
+                    'colorHex'             => $colorScheme ? $colorScheme->color_hex : null,
+                    'trackingCapability'   => $isFinalized ? $tri->tracking_capability : null,
+                    'activeTrackingMode'   => $isFinalized ? $tri->active_tracking_mode : null,
+                    'iotDeviceId'          => $isFinalized ? $tri->iot_device_id : null,
                     'lastSignal'           => $lastSignal,
                 ];
-            })->values()->toArray();
-        }
-
-        $requestedUnit = $request->query('unit');
-        $selectedId = null;
-        if (!empty($tricycles)) {
-            $match = collect($tricycles)->firstWhere('db_id', (int) $requestedUnit);
-            $selectedId = $match ? $match['db_id'] : $tricycles[0]['db_id'];
+            })->filter()->values()->toArray();
         }
 
         return Inertia::render('Operator/Fleet', [
-            'tricycles'  => $tricycles,
-            'selectedId' => $selectedId,
+            'tricycles' => $tricycles,
         ]);
     })->name('operator.fleet');
 
@@ -338,35 +426,47 @@ Route::middleware(['auth', 'role:tricycle_driver,admin'])->group(function () {
                 : null;
             $tri = $tri ?: $unitQuery->orderBy('id')->first();
             if ($tri) {
-                // Get all tracking locations for this tricycle
-                $locs = $tri->locations()->orderBy('recorded_at', 'asc')->get();
-                foreach ($locs as $l) {
-                    $positions[] = [(float)$l->latitude, (float)$l->longitude];
+                // Same "franchise finalized" definition as operator.fleet above — live tracking
+                // only makes sense once TMO Final Confirmation has activated the unit. A
+                // still-pending application gets no coordinates/telemetry at all, not even the
+                // demo fallback path, since there's nothing real to show yet.
+                $isFinalized = $tri->status === 'active';
+
+                if ($isFinalized) {
+                    // Get all tracking locations for this tricycle
+                    $locs = $tri->locations()->orderBy('recorded_at', 'asc')->get();
+                    foreach ($locs as $l) {
+                        $positions[] = [(float)$l->latitude, (float)$l->longitude];
+                    }
+
+                    // No fabricated fallback coordinates: with zero recorded pings the frontend
+                    // renders an explicit "no GPS ping recorded yet" state instead of a demo point.
+
+                    $latestLocation = $tri->locations()->latest('recorded_at')->first();
+                    $isRecentPing = $latestLocation && $latestLocation->recorded_at->gt(now()->subMinutes(15));
+
+                    $tricycleData = [
+                        'db_id'                => $tri->id,
+                        'coding_scheme_number' => $tri->coding_scheme_number ?: 'Pending',
+                        'make_model'           => "{$tri->make} {$tri->model}",
+                        'plate_no'             => $tri->plate_number,
+                        'isFinalized'          => true,
+                        'active_tracking_mode' => $tri->active_tracking_mode,
+                        'iot_device_id'        => $tri->iot_device_id,
+                        'heading'              => $latestLocation ? (int)$latestLocation->heading_deg : 0,
+                        'accuracy'             => $latestLocation ? (float)$latestLocation->accuracy_m : null,
+                        'last_ping'            => $latestLocation ? $latestLocation->recorded_at->diffForHumans() : 'Never',
+                        'is_recent_ping'       => $isRecentPing,
+                    ];
+                } else {
+                    $tricycleData = [
+                        'db_id'        => $tri->id,
+                        'coding_scheme_number' => $tri->coding_scheme_number ?: 'Pending',
+                        'make_model'   => "{$tri->make} {$tri->model}",
+                        'plate_no'     => $tri->plate_number,
+                        'isFinalized'  => false,
+                    ];
                 }
-
-                // Default fallback if no locations recorded yet
-                if (empty($positions)) {
-                    $positions[] = [14.0725, 120.6355];
-                }
-
-                $latestLocation = $tri->locations()->latest('recorded_at')->first();
-                $isRecentPing = $latestLocation && $latestLocation->recorded_at->gt(now()->subMinutes(15));
-
-                $tricycleData = [
-                    'db_id'                => $tri->id,
-                    'body_no'              => $tri->body_number ?: 'Pending',
-                    'make_model'           => "{$tri->make} {$tri->model}",
-                    'plate_no'             => $tri->plate_number,
-                    'zone'                 => $tri->todaZone ? $tri->todaZone->name : 'N/A',
-                    'active_tracking_mode' => $tri->active_tracking_mode,
-                    'iot_device_id'        => $tri->iot_device_id,
-                    'speed'                => $latestLocation ? (float)$latestLocation->speed_kmh : 0,
-                    'heading'              => $latestLocation ? (int)$latestLocation->heading_deg : 0,
-                    'accuracy'             => $latestLocation ? (float)$latestLocation->accuracy_m : null,
-                    'last_ping'            => $latestLocation ? $latestLocation->recorded_at->diffForHumans() : 'Never',
-                    'is_recent_ping'       => $isRecentPing,
-                    'other_units_count'    => \App\Models\Tricycle::where('operator_id', $operator->id)->count() - 1,
-                ];
             }
         }
 
@@ -387,16 +487,11 @@ Route::middleware(['auth', 'role:tricycle_driver,admin'])->group(function () {
     Route::get('/operator/mtop/{id}/fix', [App\Http\Controllers\Operator\MTOPController::class, 'fix'])->name('operator.mtop.fix');
     Route::post('/operator/mtop/{id}/fix', [App\Http\Controllers\Operator\MTOPController::class, 'submitFix'])->name('operator.mtop.submit-fix');
 
-    Route::get('/operator/mtop/{id}/ticket', [App\Http\Controllers\Operator\MTOPController::class, 'paymentTicket'])
-        ->name('operator.mtop.ticket');
-
-    // Violations & Payments
+    // Violations (traffic-fine payment confirmation is a separate, preserved subsystem — see
+    // TMO\ViolationPaymentController — not the franchise/MTOP payment flow removed from this app)
     Route::get('/operator/violations', [App\Http\Controllers\Operator\ViolationController::class, 'index'])->name('operator.violations');
     Route::get('/operator/violations/{id}/ticket', [App\Http\Controllers\Operator\ViolationController::class, 'ticket'])->name('operator.violations.ticket');
     Route::post('/operator/violations/{id}/appeal', [App\Http\Controllers\Operator\ViolationController::class, 'storeAppeal'])->name('operator.violations.appeal');
-
-    Route::get('/operator/payments', [App\Http\Controllers\Operator\PaymentController::class, 'index'])->name('operator.payments');
-    Route::get('/operator/payments/{id}/receipt', [App\Http\Controllers\Operator\PaymentController::class, 'receipt'])->name('operator.payments.receipt');
 });
 
 

@@ -1,10 +1,11 @@
-import React, { useState, useMemo, useEffect } from 'react';
-import { Head, Link, router } from '@inertiajs/react';
+import React, { useState, useMemo } from 'react';
+import { Head, Link } from '@inertiajs/react';
+import useBackgroundRefresh from '@/hooks/useBackgroundRefresh';
 import BPLOLayout from '@/Layouts/BPLOLayout';
 import {
     Search, Award, Bike, Hash, Filter,
     CheckCircle2, Inbox, X, Calendar,
-    ShieldAlert, Download, RotateCcw, ChevronLeft, ChevronRight,
+    ShieldAlert, FileSpreadsheet, RotateCcw, ChevronLeft, ChevronRight,
     MapPin, Phone
 } from 'lucide-react';
 
@@ -20,26 +21,12 @@ export default function ActiveRegistry({
     revokedCount = 0
 }) {
     const [query, setQuery] = useState('');
-    const [todaFilter, setTodaFilter] = useState('all');
     const [statusFilter, setStatusFilter] = useState('all');
     const [currentPage, setCurrentPage] = useState(1);
-    const [isExporting, setIsExporting] = useState(false);
 
     // Silent background refresh — a Final Confirmation activation elsewhere adds new units to this
     // registry without a manual reload.
-    useEffect(() => {
-        const { stop } = router.poll(15000, { only: ['registryList', 'activeCount', 'revokedCount'] });
-        return () => stop();
-    }, []);
-
-    // Extract unique TODAs for the filter dropdown
-    const availableTodas = useMemo(() => {
-        const set = new Set();
-        registryList.forEach(item => {
-            if (item.toda) set.add(item.toda);
-        });
-        return Array.from(set).sort();
-    }, [registryList]);
+    useBackgroundRefresh(['registryList', 'activeCount', 'revokedCount']);
 
     // Filtered list
     const filtered = useMemo(() => {
@@ -47,16 +34,14 @@ export default function ActiveRegistry({
         return registryList.filter((unit) => {
             const opStr = unit.operator ? String(unit.operator).toLowerCase() : '';
             const plateStr = unit.plate_no ? String(unit.plate_no).toLowerCase() : '';
-            const bodyStr = unit.body_no ? String(unit.body_no).toLowerCase() : '';
-            const todaStr = unit.toda ? String(unit.toda).toLowerCase() : '';
+            const codingStr = unit.coding_scheme_number ? String(unit.coding_scheme_number).toLowerCase() : '';
 
-            const matchesQuery = !q || opStr.includes(q) || plateStr.includes(q) || bodyStr.includes(q) || todaStr.includes(q);
-            const matchesToda = todaFilter === 'all' || unit.toda === todaFilter;
+            const matchesQuery = !q || opStr.includes(q) || plateStr.includes(q) || codingStr.includes(q);
             const matchesStatus = statusFilter === 'all' || (unit.status && unit.status.toLowerCase() === statusFilter.toLowerCase());
 
-            return matchesQuery && matchesToda && matchesStatus;
+            return matchesQuery && matchesStatus;
         });
-    }, [registryList, query, todaFilter, statusFilter]);
+    }, [registryList, query, statusFilter]);
 
     // Pagination calculations
     const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE) || 1;
@@ -65,44 +50,19 @@ export default function ActiveRegistry({
     const endIndex = Math.min(startIndex + ITEMS_PER_PAGE, filtered.length);
     const paginated = filtered.slice(startIndex, endIndex);
 
-    const isFiltering = query.trim() !== '' || todaFilter !== 'all' || statusFilter !== 'all';
+    const isFiltering = query.trim() !== '' || statusFilter !== 'all';
 
     const handleClearAll = () => {
         setQuery('');
-        setTodaFilter('all');
         setStatusFilter('all');
         setCurrentPage(1);
     };
 
-    const handleExport = () => {
-        setIsExporting(true);
-        setTimeout(() => {
-            setIsExporting(false);
-            // Create a simple CSV client-side download
-            try {
-                const headers = ['Coding Scheme No', 'Plate No', 'Operator', 'Make', 'TODA', 'Issue Date', 'Status'];
-                const rows = filtered.map(u => [
-                    `"${u.body_no || ''}"`,
-                    `"${u.plate_no || ''}"`,
-                    `"${u.operator || ''}"`,
-                    `"${u.make || ''}"`,
-                    `"${u.toda || ''}"`,
-                    `"${u.issue_date || ''}"`,
-                    `"${u.status || ''}"`
-                ]);
-                const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
-                const encodedUri = encodeURI(csvContent);
-                const link = document.createElement('a');
-                link.setAttribute('href', encodedUri);
-                link.setAttribute('download', `bplo_active_registry_${new Date().toISOString().slice(0,10)}.csv`);
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-            } catch (err) {
-                console.error('Export error:', err);
-            }
-        }, 600);
-    };
+    // Real server-side .xlsx export (BPLOController::exportActiveRegistryExcel) — the old
+    // client-side CSV builder with its fake 600ms "Exporting..." delay is gone; this is a
+    // plain link to the shared ExportsMunicipalExcelReports endpoint, so the download is a
+    // genuine Excel file built from the same rows this list renders.
+    const exportUrl = route('bplo.registry.export-excel');
 
     const totalCount = registryList.length;
     const pct = (n) => totalCount > 0 ? Math.round((n / totalCount) * 100) : 0;
@@ -117,22 +77,20 @@ export default function ActiveRegistry({
             <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-slate-200/80 pb-5">
                 <div>
                     <h1 className="text-2xl sm:text-[28px] font-extrabold tracking-tight text-slate-900 leading-tight">
-                        BPLO Active Registry
+                        Active Registry
                     </h1>
                     <p className="mt-1 text-xs sm:text-sm text-slate-500 max-w-2xl leading-relaxed">
                         Masterlist and official vehicle records of approved Municipal Tricycle Operator's Permits (MTOP)
                     </p>
                 </div>
                 <div className="flex items-center gap-2.5">
-                    <button
-                        type="button"
-                        onClick={handleExport}
-                        disabled={isExporting || filtered.length === 0}
-                        className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-xs font-bold text-slate-700 shadow-2xs hover:bg-slate-50 hover:text-slate-900 disabled:opacity-50 transition-colors cursor-pointer"
+                    <a
+                        href={exportUrl}
+                        className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-xs font-bold text-slate-700 shadow-2xs hover:bg-slate-50 hover:text-slate-900 transition-colors"
                     >
-                        <Download size={14} strokeWidth={2.2} className="text-slate-500" />
-                        {isExporting ? 'Exporting...' : 'Export CSV'}
-                    </button>
+                        <FileSpreadsheet size={14} strokeWidth={2.2} className="text-slate-500" />
+                        Export to Excel
+                    </a>
                 </div>
             </div>
 
@@ -232,33 +190,33 @@ export default function ActiveRegistry({
                     </div>
                 </div>
 
-                {/* Card 4: TODA Coverage */}
+                {/* Card 4: Jurisdiction Coverage */}
                 <div className={`flex flex-col justify-between rounded-2xl border border-slate-200/70 bg-white p-4 sm:p-5 ${CARD_SHADOW}`}>
                     <div>
                         <div className="flex items-center justify-between">
                             <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                                TODA Coverage
+                                Jurisdiction
                             </span>
                             <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-[#1D2542]/[0.10] to-[#1D2542]/[0.02] text-[#1D2542]">
                                 <MapPin size={14} />
                             </span>
                         </div>
                         <div className="mt-2 flex items-baseline gap-2">
-                            <span className="text-2xl sm:text-3xl font-extrabold tracking-tight tabular-nums text-slate-900">
-                                {availableTodas.length}
+                            <span className="text-xl sm:text-2xl font-extrabold tracking-tight text-slate-900">
+                                Nasugbu
                             </span>
                             <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                                Associations
+                                Municipal
                             </span>
                         </div>
                         <p className="mt-1 text-[11px] text-slate-500">
-                            Distinct TODA groups represented
+                            Unified franchise service area
                         </p>
                     </div>
 
                     <div className="mt-3 rounded-xl bg-slate-50 p-2.5 flex items-center justify-between text-xs">
-                        <span className="text-[11px] font-medium text-slate-500">District:</span>
-                        <span className="text-xs font-bold text-slate-700">Nasugbu</span>
+                        <span className="text-[11px] font-medium text-slate-500">Coverage:</span>
+                        <span className="text-xs font-bold text-slate-700">All Barangays</span>
                     </div>
                 </div>
             </div>
@@ -277,7 +235,7 @@ export default function ActiveRegistry({
                         />
                         <input
                             type="text"
-                            placeholder="Search by Coding Scheme No, Plate No, Operator, or TODA..."
+                            placeholder="Search by Sticker Number, Plate No, or Operator..."
                             value={query}
                             onChange={(e) => setQuery(e.target.value)}
                             className="h-10 w-full rounded-lg border border-slate-200 bg-slate-50/50 pl-10 pr-9 text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 shadow-2xs transition-all focus:border-[#1D2542] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#1D2542]/10"
@@ -295,18 +253,6 @@ export default function ActiveRegistry({
 
                     {/* Filter Dropdowns */}
                     <div className="flex flex-wrap items-center gap-2">
-                        {/* TODA Dropdown */}
-                        <select
-                            value={todaFilter}
-                            onChange={(e) => setTodaFilter(e.target.value)}
-                            className="h-10 w-full sm:w-48 rounded-lg border border-slate-200 bg-white px-3 pr-8 text-xs font-semibold text-slate-700 shadow-2xs transition-colors focus:border-[#1D2542] focus:outline-none focus:ring-2 focus:ring-[#1D2542]/10 cursor-pointer truncate"
-                        >
-                            <option value="all">All Associations</option>
-                            {availableTodas.map((toda) => (
-                                <option key={toda} value={toda}>{toda}</option>
-                            ))}
-                        </select>
-
                         {/* Status Dropdown */}
                         <select
                             value={statusFilter}
@@ -373,16 +319,13 @@ export default function ActiveRegistry({
                                 <thead>
                                     <tr className="border-b border-slate-200 bg-slate-50/75">
                                         <th scope="col" className="py-3 pl-5 pr-3 text-[11px] font-bold uppercase tracking-wider text-slate-500">
-                                            Coding Scheme &amp; Plate
+                                            Sticker Number &amp; Plate
                                         </th>
                                         <th scope="col" className="py-3 px-4 text-[11px] font-bold uppercase tracking-wider text-slate-500">
                                             Operator &amp; Contact
                                         </th>
                                         <th scope="col" className="py-3 px-4 text-[11px] font-bold uppercase tracking-wider text-slate-500">
                                             Tricycle Unit
-                                        </th>
-                                        <th scope="col" className="py-3 px-4 text-[11px] font-bold uppercase tracking-wider text-slate-500">
-                                            TODA Association
                                         </th>
                                         <th scope="col" className="py-3 px-4 text-[11px] font-bold uppercase tracking-wider text-slate-500">
                                             Issue Date
@@ -540,11 +483,11 @@ function DesktopRegistryRow({ unit }) {
 
     return (
         <tr className="group transition-colors hover:bg-slate-50/80">
-            {/* Column 1: Body & Plate */}
+            {/* Column 1: Sticker Number & Plate */}
             <td className="py-3.5 pl-5 pr-3 align-middle">
                 <div className="flex flex-col">
                     <span className="font-mono text-xs sm:text-[13px] font-bold tracking-wide text-slate-900">
-                        No. {unit.body_no || 'N/A'}
+                        No. {unit.coding_scheme_number || 'N/A'}
                     </span>
                     <div className="mt-0.5">
                         <span className="font-mono text-[11px] font-bold text-slate-700 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200/70">
@@ -589,15 +532,7 @@ function DesktopRegistryRow({ unit }) {
                 </div>
             </td>
 
-            {/* Column 4: TODA Association */}
-            <td className="py-3.5 px-4 align-middle">
-                <div className="flex items-center gap-1.5 text-xs text-slate-700 font-medium">
-                    <MapPin size={12} className="text-slate-400 shrink-0" />
-                    <span>{unit.toda || 'Unassigned TODA'}</span>
-                </div>
-            </td>
-
-            {/* Column 5: Issue Date */}
+            {/* Column 4: Issue Date */}
             <td className="py-3.5 px-4 align-middle">
                 <div className="flex items-center gap-1.5 text-xs text-slate-600 font-medium">
                     <Calendar size={12} className="text-slate-400" />
@@ -605,12 +540,12 @@ function DesktopRegistryRow({ unit }) {
                 </div>
             </td>
 
-            {/* Column 6: Status */}
+            {/* Column 5: Status */}
             <td className="py-3.5 px-4 align-middle">
                 <StatusPill status={unit.status} />
             </td>
 
-            {/* Column 7: Action */}
+            {/* Column 6: Action */}
             <td className="py-3.5 pl-3 pr-5 text-right align-middle">
                 <Link
                     href={`/bplo/registry/${unit.plate_no}`}
@@ -629,11 +564,11 @@ function MobileRegistryCard({ unit }) {
 
     return (
         <div className={`rounded-2xl border border-slate-200/70 bg-white p-3.5 ${CARD_SHADOW} transition-all hover:border-slate-300`}>
-            {/* Top Row: Body No, Plate & Status */}
+            {/* Top Row: Sticker Number, Plate & Status */}
             <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-2">
                 <div className="flex items-center gap-2">
                     <span className="font-mono text-sm font-bold tracking-wide text-slate-900">
-                        No. {unit.body_no || 'N/A'}
+                        No. {unit.coding_scheme_number || 'N/A'}
                     </span>
                     <span className="font-mono text-[10.5px] font-bold text-slate-700 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200/70">
                         PLT-{unit.plate_no}
@@ -642,7 +577,7 @@ function MobileRegistryCard({ unit }) {
                 <StatusPill status={unit.status} />
             </div>
 
-            {/* Operator & TODA */}
+            {/* Operator */}
             <div className="mt-2.5 flex items-center justify-between gap-2">
                 <div className="flex items-center gap-2 min-w-0">
                     <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-100 text-[10px] font-bold text-slate-700">
@@ -650,7 +585,7 @@ function MobileRegistryCard({ unit }) {
                     </div>
                     <div className="min-w-0">
                         <p className="truncate text-xs font-semibold text-slate-900">{unit.operator || 'Unknown Operator'}</p>
-                        <p className="truncate text-[11px] text-slate-400">{unit.toda || 'Unassigned'}</p>
+                        <p className="truncate text-[11px] text-slate-400">Nasugbu Franchise</p>
                     </div>
                 </div>
 

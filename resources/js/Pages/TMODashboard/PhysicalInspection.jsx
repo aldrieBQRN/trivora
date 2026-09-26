@@ -1,75 +1,26 @@
 import React, { useState, useMemo } from 'react';
 import { Head, Link, router } from '@inertiajs/react';
+import useBackgroundRefresh from '@/hooks/useBackgroundRefresh';
 import TrivoraLayout from '@/Layouts/TrivoraLayout';
 import Swal from 'sweetalert2';
 import {
     Check, X, CheckCircle2, Bike, AlertTriangle,
     RotateCcw, ChevronLeft, ShieldCheck, Clock,
-    Smartphone, MapPin, Copy, Gauge,
-    Wrench, AlertCircle, Edit3, Trash2,
-    Lightbulb, Volume2, ShieldAlert,
+    Smartphone, MapPin, Copy,
+    Wrench, AlertCircle, XCircle, Info, FileText, CalendarDays
 } from 'lucide-react';
-import { Modal, Button, Textarea } from '@/Components/TMO';
+import { Button, Textarea } from '@/Components/TMO';
+import { PHYSICAL_INSPECTION_ITEMS } from '@/data/physicalInspectionItems';
 
 const CARD_SHADOW = 'shadow-[0_1px_2px_0_rgba(15,23,42,0.04),0_8px_24px_-8px_rgba(15,23,42,0.10)]';
 
-const CHECKLIST_ITEMS = [
-    {
-        id: 'headlights',
-        label: 'Headlights (High / Low Beam)',
-        criteria: 'Bulbs intact, toggle switch operational, high and low beams functional without glare.',
-        icon: Lightbulb,
-        presets: ['Busted headlight bulb', 'High beam toggle not working', 'Loose headlight wiring', 'Cracked light casing'],
-    },
-    {
-        id: 'taillights',
-        label: 'Tail Lights & Brake Lights',
-        criteria: 'Rear red light illuminates with ignition; brake lights brighten immediately upon brake actuation.',
-        icon: Lightbulb,
-        presets: ['Brake light not responding', 'Tail light bulb busted', 'Damaged red reflector lens', 'Loose rear wire connection'],
-    },
-    {
-        id: 'signals',
-        label: 'Signal Lights & Hazard Flashers',
-        criteria: 'Amber directional blinkers functional on both front and rear for left and right turns.',
-        icon: AlertCircle,
-        presets: ['Left flasher not blinking', 'Right flasher not blinking', 'Flasher relay failure', 'Missing front indicator lens'],
-    },
-    {
-        id: 'horn',
-        label: 'Horn & Audible Warning',
-        criteria: 'Horn emits audible, loud, and steady warning sound when pressed.',
-        icon: Volume2,
-        presets: ['Horn completely non-functional', 'Weak or muffled sound', 'Stuck horn button', 'Disconnected horn wire'],
-    },
-    {
-        id: 'mirrors',
-        label: 'Dual Rearview Side Mirrors',
-        criteria: 'Both left and right rearview mirrors present, crack-free, and adjustable for blind-spot viewing.',
-        icon: ShieldCheck,
-        presets: ['Missing right side mirror', 'Missing left side mirror', 'Cracked/shattered mirror glass', 'Loose mirror ball joint'],
-    },
-    {
-        id: 'brakes',
-        label: 'Brakes & Drive Chain Guard',
-        criteria: 'Firm brake lever/pedal feel, prompt stopping distance, chain tension within tolerance with guard installed.',
-        icon: Gauge,
-        presets: ['Spongy or weak brake pedal', 'Missing chain guard cover', 'Excessively loose drive chain', 'Front brake lever stuck'],
-    },
-    {
-        id: 'plate',
-        label: 'Body Plate & Markings',
-        criteria: 'LTO plate securely fastened, unobstructed, clearly visible, and matches declared credentials.',
-        icon: Bike,
-        presets: ['Plate number loose or hanging', 'Plate obstructed or unreadable', 'Missing mounting screws', 'Plate details do not match'],
-    },
-    {
-        id: 'sidecar',
-        label: 'Sidecar Structural Integrity',
-        criteria: 'Welded chassis joints solid, passenger canopy secure, clean floorboard, and handrails intact.',
-        icon: Wrench,
-        presets: ['Cracked frame weld joint', 'Loose passenger canopy/roof', 'Rusted floorboard with holes', 'Missing passenger handrail'],
-    },
+const QUICK_REJECTION_REASONS = [
+    'Braking system defect or insufficient stopping distance',
+    'Busted headlights, tail lights, or non-functional turn signals',
+    'Missing or broken dual side rearview mirrors',
+    'Sidecar chassis structural frame damage or loose welds',
+    'Defective horn or audible warning device',
+    'Excessive smoke emissions / roadworthiness failure',
 ];
 
 function getInitials(name) {
@@ -83,19 +34,18 @@ export default function PhysicalInspection({ application }) {
     const appData = application || {};
 
     const [isProcessing, setIsProcessing] = useState(false);
-    const [inspectionStatuses, setInspectionStatuses] = useState(appData.inspectionStatuses || {});
-    const [defectNotes, setDefectNotes] = useState(appData.defectNotes || {});
+    const [decisionMode, setDecisionMode] = useState(null); // null | 'reject'
+    const [rejectionReason, setRejectionReason] = useState('');
+    const [rejectionError, setRejectionError] = useState(null);
     const [copiedField, setCopiedField] = useState(null);
 
-    // Defect Modal State
-    const [activeDefectItemId, setActiveDefectItemId] = useState(null);
-    const [draftNote, setDraftNote] = useState('');
-
-    const activeItem = CHECKLIST_ITEMS.find(item => item.id === activeDefectItemId);
+    // Background refresh of the record under inspection — a status change made by another officer
+    // elsewhere updates this page without a manual reload. Paused while this officer is deciding;
+    // local decision mode, typed rejection reason and copy feedback are never touched.
+    useBackgroundRefresh(['application'], { paused: isProcessing });
 
     // Vehicle specifications with clean fallbacks
     const vehicleData = useMemo(() => ({
-        toda: appData.toda || 'Unassigned TODA',
         plate: appData.plate && appData.plate !== '—' ? appData.plate : 'UNREGISTERED',
         make: appData.make && appData.make !== 'N/A' ? appData.make : 'Declared Unit',
         year_model: appData.year_model && appData.year_model !== '—' ? appData.year_model : 'Standard',
@@ -107,75 +57,7 @@ export default function PhysicalInspection({ application }) {
         cr_number: appData.cr_number && appData.cr_number !== '—' ? appData.cr_number : '—',
     }), [appData]);
 
-    // Metrics
-    const totalItems = CHECKLIST_ITEMS.length;
-    const passedCount = useMemo(() => {
-        return CHECKLIST_ITEMS.filter(item => inspectionStatuses[item.id] === 'passed').length;
-    }, [inspectionStatuses]);
-
-    const defectCount = useMemo(() => {
-        return CHECKLIST_ITEMS.filter(item => inspectionStatuses[item.id] === 'failed').length;
-    }, [inspectionStatuses]);
-
-    const checkedCount = passedCount + defectCount;
-    const isAllPassed = passedCount === totalItems;
-    const hasDefects = defectCount > 0;
-    const progressPct = Math.round((checkedCount / totalItems) * 100);
-
-    // Toggle or set Pass
-    const handlePassItem = (id) => {
-        setInspectionStatuses(prev => {
-            if (prev[id] === 'passed') {
-                const next = { ...prev };
-                delete next[id];
-                return next;
-            }
-            return { ...prev, [id]: 'passed' };
-        });
-        setDefectNotes(prev => {
-            const next = { ...prev };
-            delete next[id];
-            return next;
-        });
-    };
-
-    // Open Defect Modal
-    const openDefectModal = (id) => {
-        setActiveDefectItemId(id);
-        setDraftNote(defectNotes[id] || '');
-    };
-
-    // Save Defect from Modal
-    const handleSaveDefect = () => {
-        if (!activeDefectItemId) return;
-        const note = draftNote.trim() || 'Defect noted during on-site physical inspection.';
-        setInspectionStatuses(prev => ({ ...prev, [activeDefectItemId]: 'failed' }));
-        setDefectNotes(prev => ({ ...prev, [activeDefectItemId]: note }));
-        setActiveDefectItemId(null);
-        setDraftNote('');
-    };
-
-    // Cancel Defect Modal
-    const cancelDefectModal = () => {
-        setActiveDefectItemId(null);
-        setDraftNote('');
-    };
-
-    // Clear an item's status
-    const handleClearStatus = (id) => {
-        setInspectionStatuses(prev => {
-            const next = { ...prev };
-            delete next[id];
-            return next;
-        });
-        setDefectNotes(prev => {
-            const next = { ...prev };
-            delete next[id];
-            return next;
-        });
-    };
-
-    // Copy to clipboard
+    // Copy to clipboard helper
     const handleCopy = (field, text) => {
         if (!text || text === '—') return;
         navigator.clipboard.writeText(text);
@@ -183,30 +65,86 @@ export default function PhysicalInspection({ application }) {
         setTimeout(() => setCopiedField(null), 2000);
     };
 
-    // Submit Final Action
-    const handleFinalAction = (type) => {
-        const isPass = type === 'pass';
-
+    // Approve Inspection Flow
+    const handleApprove = () => {
         Swal.fire({
-            title: isPass ? 'Confirm Passed Inspection' : 'Confirm Failed Inspection',
-            html: isPass
-                ? `Are you sure you want to mark <b>${appData.reference}</b> as passed? An official Municipal Payment Ticket will be issued for Cashier settlement.`
-                : `Are you sure you want to record <b>${defectCount} defect(s)</b> for <b>${appData.reference}</b>? The unit will be logged for repair and re-inspection.`,
-            icon: isPass ? 'question' : 'warning',
+            title: 'Approve Physical Inspection?',
+            html: `Are you sure you want to mark <b>${appData.reference || appData.id}</b> as passed?<br/><span class="text-xs text-slate-500 mt-1 block">The inspection will be marked as passed and the application will advance to BPLO Releasing.</span>`,
+            icon: 'question',
             showCancelButton: true,
-            confirmButtonColor: isPass ? '#059669' : '#DC2626',
+            confirmButtonColor: '#059669',
             cancelButtonColor: '#94A3B8',
-            confirmButtonText: isPass ? 'Yes, Pass & Issue Payment Ticket' : 'Yes, Send for Re-inspection',
+            confirmButtonText: 'Yes, Approve Inspection',
+            cancelButtonText: 'Cancel',
         }).then((result) => {
             if (result.isConfirmed) {
                 setIsProcessing(true);
-
                 router.post(`/tmo/review/physical/${appData.id}`, {
-                    action: isPass ? 'pass' : 'fail',
-                    inspectionStatuses,
-                    defectNotes,
+                    action: 'approve',
                 }, {
                     onFinish: () => setIsProcessing(false),
+                    // Same success-alert pattern DocumentReview uses after its post: the
+                    // backend already redirects back to the Physical Inspection queue (so
+                    // the approved application is gone from the pending list), and this
+                    // fires once that redirect's page has landed.
+                    onSuccess: () => {
+                        Swal.fire({
+                            title: 'Inspection Approved!',
+                            text: 'Physical inspection passed. Application moved to BPLO Releasing. Applicant notified.',
+                            icon: 'success',
+                            confirmButtonColor: '#1D2542',
+                            timer: 2000,
+                            showConfirmButton: false,
+                        });
+                    },
+                });
+            }
+        });
+    };
+
+    // Trigger Reject Mode
+    const handleStartReject = () => {
+        setDecisionMode('reject');
+        setRejectionError(null);
+    };
+
+    // Cancel Reject Mode
+    const handleCancelReject = () => {
+        setDecisionMode(null);
+        setRejectionReason('');
+        setRejectionError(null);
+    };
+
+    // Confirm Reject Inspection Flow
+    const handleConfirmReject = () => {
+        const trimmedReason = rejectionReason.trim();
+        if (!trimmedReason) {
+            setRejectionError('Rejection comments are required. Please describe the defects or failure reason.');
+            return;
+        }
+
+        Swal.fire({
+            title: 'Confirm Inspection Rejection',
+            html: `Reject physical inspection for <b>${appData.reference || appData.id}</b>?<br/><span class="text-xs text-slate-500 mt-1 block">The vehicle will be flagged for repair and the operator will be notified with your comments.</span>`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#DC2626',
+            cancelButtonColor: '#94A3B8',
+            confirmButtonText: 'Yes, Reject Inspection',
+            cancelButtonText: 'Back',
+        }).then((result) => {
+            if (result.isConfirmed) {
+                setIsProcessing(true);
+                router.post(`/tmo/review/physical/${appData.id}`, {
+                    action: 'reject',
+                    rejection_reason: trimmedReason,
+                }, {
+                    onFinish: () => setIsProcessing(false),
+                    onError: (errors) => {
+                        if (errors.rejection_reason) {
+                            setRejectionError(errors.rejection_reason);
+                        }
+                    }
                 });
             }
         });
@@ -216,10 +154,10 @@ export default function PhysicalInspection({ application }) {
 
     return (
         <TrivoraLayout title="Physical Inspection" role="TMO Officer">
-            <Head title={`Physical Test: ${appData.reference} | TRIVORA`} />
+            <Head title={`Physical Inspection: ${appData.reference || appData.id} | TRIVORA`} />
 
             {/* ══════════════════════════════════════════════════════════════
-                1. TOP NAVIGATION (Identical to Document Review)
+                1. TOP NAVIGATION
                ══════════════════════════════════════════════════════════════ */}
             <div className="mb-4 flex items-center">
                 <Link
@@ -227,352 +165,261 @@ export default function PhysicalInspection({ application }) {
                     className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-semibold text-slate-500 hover:text-slate-900 transition-colors group"
                 >
                     <ChevronLeft size={16} strokeWidth={2.5} className="text-slate-400 group-hover:text-slate-700 transition-colors" />
-                    <span>Back to Physical Inspection</span>
+                    <span>Back to Physical Inspection Queue</span>
                 </Link>
             </div>
 
             {/* ══════════════════════════════════════════════════════════════
-                2. CLEAN INTEGRATED HEADER (Identical to Document Review)
+                2. INTEGRATED HEADER
                ══════════════════════════════════════════════════════════════ */}
             <div className="mb-6 border-b border-slate-200/80 pb-5">
-                <div className="text-xs font-bold uppercase tracking-wider text-slate-400">
+                <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-400">
                     <span>Physical Inspection</span>
+                    {appData.is_reinspection && (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-800">
+                            <RotateCcw size={10} /> Re-inspection
+                        </span>
+                    )}
                 </div>
                 <h1 className="mt-1 text-2xl sm:text-[28px] font-extrabold tracking-tight text-slate-900 leading-tight">
                     {appData.reference || appData.id}
                 </h1>
                 <p className="mt-1 text-xs sm:text-sm text-slate-500 leading-relaxed">
-                    Submitted by <strong className="font-semibold text-slate-700">{appData.operator}</strong> · {appData.barangay ? `${appData.barangay}, ` : ''}{vehicleData.toda}
+                    Applicant: <strong className="font-semibold text-slate-700">{appData.operator}</strong>
+                    {appData.barangay && appData.barangay !== '—' ? ` · Barangay ${appData.barangay}` : ''}
                 </p>
             </div>
 
             {/* ══════════════════════════════════════════════════════════════
-                3. BALANCED WORKSTATION (Left: Checklist | Right: Sticky Action)
+                3. MAIN WORKSTATION GRID (Left: Decision | Right: Specs)
                ══════════════════════════════════════════════════════════════ */}
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-12 items-start">
 
-                {/* ── LEFT WORKING CANVAS: CHECKLIST (7 cols) ── */}
-                <div className="space-y-4 lg:col-span-7">
+                {/* ── LEFT CANVAS: SINGLE DECISION WORKFLOW (7 cols) ── */}
+                <div className="space-y-5 lg:col-span-7">
 
-                    <div className={`overflow-hidden rounded-2xl border border-slate-200/70 bg-white ${CARD_SHADOW}`}>
-                        {/* Checklist Header */}
-                        <div className="flex items-start justify-between border-b border-slate-100 bg-slate-50/60 px-4 sm:px-5 py-3 sm:py-3.5 gap-3">
-                            <div className="flex items-start gap-2.5 min-w-0 flex-1">
-                                <div className="mt-0.5 flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-lg bg-gradient-to-br from-[#1D2542]/[0.10] to-[#1D2542]/[0.02] text-[#1D2542] shrink-0">
-                                    <ShieldCheck size={16} strokeWidth={2.2} />
+                    {/* Re-inspection Notification Banner (if applicable) */}
+                    {appData.is_reinspection && (
+                        <div className="rounded-2xl border border-amber-200 bg-amber-50/80 p-4 sm:p-5">
+                            <div className="flex items-start gap-3.5">
+                                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-500/15 text-amber-700">
+                                    <RotateCcw size={18} strokeWidth={2.2} />
                                 </div>
-                                <div className="min-w-0 flex-1">
-                                    <h2 className="text-sm sm:text-base font-bold text-slate-900 leading-snug">
-                                        Roadworthiness &amp; Safety Checklist
+                                <div className="flex-1 min-w-0">
+                                    <div className="flex items-center justify-between gap-2">
+                                        <h3 className="text-sm font-bold text-amber-900">
+                                            Re-inspection Attempt #{appData.attempt_count + 1}
+                                        </h3>
+                                        <span className="text-[11px] font-semibold text-amber-700">Repairs Submitted</span>
+                                    </div>
+                                    <p className="mt-1 text-xs leading-relaxed text-amber-800">
+                                        The operator fixed the flagged items and requested re-inspection.
+                                    </p>
+                                    {appData.previous_rejection_reason && (
+                                        <div className="mt-2.5 rounded-xl border border-amber-200/80 bg-white/70 p-3 text-xs text-amber-950 font-medium">
+                                            <span className="font-bold text-amber-900 block mb-0.5">Previous Rejection Reason:</span>
+                                            {appData.previous_rejection_reason}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Main Decision Card */}
+                    <div className={`overflow-hidden rounded-2xl border border-slate-200/70 bg-white ${CARD_SHADOW}`}>
+                        <div className="border-b border-slate-100 bg-slate-50/60 px-5 py-4">
+                            <div className="flex items-center gap-2.5">
+                                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-[#1D2542]/[0.10] to-[#1D2542]/[0.02] text-[#1D2542]">
+                                    <ShieldCheck size={18} strokeWidth={2.2} />
+                                </div>
+                                <div>
+                                    <h2 className="text-base font-bold text-slate-900 leading-snug">
+                                        Physical Inspection
                                     </h2>
-                                    <p className="mt-0.5 text-[11px] sm:text-xs text-slate-500 leading-relaxed">
-                                        8 vehicle testing points. Mark each component as Passed or Defect.
+                                    <p className="text-xs text-slate-500">
+                                        Roadworthiness, vehicle safety, and physical compliance assessment
                                     </p>
                                 </div>
                             </div>
-
-                            <span className="shrink-0 text-xs font-semibold text-slate-400 pt-0.5 whitespace-nowrap tabular-nums">
-                                {totalItems} Items
-                            </span>
                         </div>
 
-                        {/* Checklist Items List */}
-                        <div className="p-3.5 sm:p-5 space-y-3">
-                            {CHECKLIST_ITEMS.map((item) => {
-                                const status = inspectionStatuses[item.id];
-                                const isPassed = status === 'passed';
-                                const isFailed = status === 'failed';
-                                const note = defectNotes[item.id];
-                                const ItemIcon = item.icon;
-
-                                return (
-                                    <div
-                                        key={item.id}
-                                        className={`rounded-xl border transition-all p-4 ${
-                                            isPassed
-                                                ? 'border-emerald-200/90 bg-emerald-50/25 hover:bg-emerald-50/40 shadow-2xs'
-                                                : isFailed
-                                                ? 'border-rose-200 bg-rose-50/25 hover:bg-rose-50/40 shadow-2xs'
-                                                : 'border-slate-200/90 bg-white hover:border-slate-300 shadow-2xs'
-                                        }`}
-                                    >
-                                        {/* Top Row: Icon + Title/Criteria + Action Buttons */}
-                                        <div className="flex items-start justify-between gap-3">
-                                            {/* Left: Icon & Text */}
-                                            <div className="flex items-start gap-3 min-w-0 flex-1">
-                                                <div className={`mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${
-                                                    isPassed
-                                                        ? 'bg-emerald-100 text-emerald-700'
-                                                        : isFailed
-                                                        ? 'bg-rose-100 text-rose-700'
-                                                        : 'bg-slate-100 text-slate-500'
-                                                }`}>
-                                                    {isPassed ? (
-                                                        <CheckCircle2 size={18} strokeWidth={2.2} />
-                                                    ) : isFailed ? (
-                                                        <AlertTriangle size={18} strokeWidth={2.2} />
-                                                    ) : (
-                                                        <ItemIcon size={18} strokeWidth={2} />
-                                                    )}
-                                                </div>
-
-                                                <div className="min-w-0 flex-1">
-                                                    <p className="text-xs sm:text-sm font-bold text-slate-900 leading-snug">
-                                                        {item.label}
-                                                    </p>
-                                                    <p className="mt-1 text-[11.5px] sm:text-xs text-slate-500 leading-relaxed">
-                                                        {item.criteria}
-                                                    </p>
-                                                </div>
-                                            </div>
-
-                                            {/* Right Action buttons - Desktop (sm:flex) */}
-                                            <div className="hidden sm:flex shrink-0 items-center gap-1.5 pt-0.5">
-                                                <button
-                                                    type="button"
-                                                    onClick={() => openDefectModal(item.id)}
-                                                    title={isFailed ? 'Defect recorded (Click to edit)' : 'Flag as defect'}
-                                                    className={`inline-flex h-8 sm:h-9 items-center gap-1 rounded-lg px-2.5 sm:px-3 text-xs font-bold transition-all cursor-pointer ${
-                                                        isFailed
-                                                            ? 'bg-rose-600 text-white shadow-2xs hover:bg-rose-700'
-                                                            : 'border border-slate-200 bg-white text-slate-600 hover:border-rose-300 hover:bg-rose-50 hover:text-rose-700'
-                                                    }`}
-                                                >
-                                                    <X size={14} strokeWidth={2.5} />
-                                                    <span>Defect</span>
-                                                </button>
-
-                                                <button
-                                                    type="button"
-                                                    onClick={() => handlePassItem(item.id)}
-                                                    title={isPassed ? 'Passed (Click to clear)' : 'Mark as passed'}
-                                                    className={`inline-flex h-8 sm:h-9 items-center gap-1 rounded-lg px-2.5 sm:px-3 text-xs font-bold transition-all cursor-pointer ${
-                                                        isPassed
-                                                            ? 'bg-emerald-600 text-white shadow-2xs hover:bg-emerald-700'
-                                                            : 'border border-slate-200 bg-white text-slate-600 hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-700'
-                                                    }`}
-                                                >
-                                                    <Check size={14} strokeWidth={2.5} />
-                                                    <span>Pass</span>
-                                                </button>
-                                            </div>
-                                        </div>
-
-                                        {/* Mobile Action Buttons: Full-width 2 buttons in one row (sm:hidden) */}
-                                        <div className="grid grid-cols-2 gap-2 mt-3 pt-2.5 border-t border-slate-100 sm:hidden">
-                                            <button
-                                                type="button"
-                                                onClick={() => openDefectModal(item.id)}
-                                                className={`flex w-full items-center justify-center gap-1.5 rounded-lg py-2.5 text-xs font-bold transition-all cursor-pointer active:scale-[0.98] ${
-                                                    isFailed
-                                                        ? 'bg-rose-600 text-white shadow-2xs'
-                                                        : 'border border-slate-200 bg-white text-slate-700 active:bg-slate-50'
-                                                }`}
-                                            >
-                                                <X size={15} strokeWidth={2.5} />
-                                                <span>Defect</span>
-                                            </button>
-
-                                            <button
-                                                type="button"
-                                                onClick={() => handlePassItem(item.id)}
-                                                className={`flex w-full items-center justify-center gap-1.5 rounded-lg py-2.5 text-xs font-bold transition-all cursor-pointer active:scale-[0.98] ${
-                                                    isPassed
-                                                        ? 'bg-emerald-600 text-white shadow-2xs'
-                                                        : 'border border-slate-200 bg-white text-slate-700 active:bg-slate-50'
-                                                }`}
-                                            >
-                                                <Check size={15} strokeWidth={2.5} />
-                                                <span>Pass</span>
-                                            </button>
-                                        </div>
-
-                                        {/* Dedicated Full-Width Defect Note Block */}
-                                        {isFailed && (
-                                            <div className="mt-3 pt-3 border-t border-rose-100">
-                                                <div className="rounded-lg border border-rose-200/80 bg-rose-50/70 p-3 text-xs text-rose-900">
-                                                    <div className="flex items-center justify-between gap-2 pb-1.5 mb-1.5 border-b border-rose-200/60">
-                                                        <div className="flex items-center gap-1.5 font-bold text-rose-900 text-xs">
-                                                            <AlertTriangle size={13} className="text-rose-600 shrink-0" />
-                                                            <span>Defect Note</span>
-                                                        </div>
-                                                        <div className="flex items-center gap-1">
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => openDefectModal(item.id)}
-                                                                className="inline-flex items-center gap-1 rounded px-2 py-0.5 text-[11px] font-semibold text-rose-800 hover:bg-rose-100 transition-colors cursor-pointer"
-                                                            >
-                                                                <Edit3 size={11} />
-                                                                <span>Edit Note</span>
-                                                            </button>
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => handleClearStatus(item.id)}
-                                                                className="inline-flex items-center gap-1 rounded px-2 py-0.5 text-[11px] font-semibold text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition-colors cursor-pointer"
-                                                                title="Clear defect"
-                                                            >
-                                                                <Trash2 size={11} />
-                                                                <span>Clear</span>
-                                                            </button>
-                                                        </div>
-                                                    </div>
-                                                    <p className="text-xs text-rose-950 font-medium leading-relaxed">
-                                                        {note || 'Defect noted during physical inspection.'}
-                                                    </p>
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
-                                );
-                            })}
-                        </div>
-                    </div>
-
-                    {/* TMO Field Note Box */}
-                    <div className={`rounded-2xl border border-slate-200/70 bg-white p-4 sm:p-5 ${CARD_SHADOW}`}>
-                        <div className="flex items-start gap-3">
-                            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-700">
-                                <Gauge size={17} strokeWidth={2} />
-                            </div>
+                        <div className="p-5 sm:p-6 space-y-6">
+                            {/* 1. Informational Inspection List / Table */}
                             <div>
-                                <h3 className="text-xs font-bold uppercase tracking-wide text-slate-800">
-                                    Roadworthiness Standards &amp; Ordinances
-                                </h3>
-                                <p className="mt-1 text-xs leading-relaxed text-slate-600">
-                                    Units failing any safety-critical components (such as brakes, headlights, or frame integrity) cannot be issued a payment ticket.
-                                    The tricycle driver will be directed to repair the noted defects before re-inspection.
-                                </p>
+                                <div className="mb-3 flex items-center justify-between">
+                                    <div>
+                                        <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">
+                                            Inspection Checklist
+                                        </h3>
+                                        <p className="mt-0.5 text-xs text-slate-500">
+                                            Review the vehicle condition and safety compliance requirements:
+                                        </p>
+                                    </div>
+                                    <span className="hidden sm:inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-600">
+                                        {PHYSICAL_INSPECTION_ITEMS.length} Items for Review
+                                    </span>
+                                </div>
+
+                                <div className="overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-2xs">
+                                    <table className="w-full text-left text-xs border-collapse">
+                                        <thead className="border-b border-slate-200/80 bg-slate-50/80 text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                                            <tr>
+                                                <th scope="col" className="py-3 px-4 w-5/12">Inspection Item</th>
+                                                <th scope="col" className="py-3 px-4 w-7/12">Details / Requirement</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-slate-100">
+                                            {PHYSICAL_INSPECTION_ITEMS.map((item, idx) => (
+                                                <tr key={item.id} className="hover:bg-slate-50/60 transition-colors">
+                                                    <td className="py-3 px-4 align-top">
+                                                        <div className="flex items-start gap-2.5">
+                                                            <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded bg-slate-100 text-[10.5px] font-bold text-slate-600 mt-0.5">
+                                                                {idx + 1}
+                                                            </span>
+                                                            <span className="font-bold text-slate-900 leading-snug">
+                                                                {item.label}
+                                                            </span>
+                                                        </div>
+                                                    </td>
+                                                    <td className="py-3 px-4 text-slate-600 leading-relaxed align-top">
+                                                        {item.requirement}
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
                             </div>
+
+                            {/* 2. Overall Inspection Decision */}
+                            <div className="border-t border-slate-200/80 pt-5 space-y-4">
+                                <div>
+                                    <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">
+                                        Overall Inspection Decision
+                                    </h3>
+                                    <p className="mt-1 text-xs text-slate-600 leading-relaxed">
+                                        Make one overall decision for the entire physical inspection. Approving passes the unit to BPLO release. Rejecting flags defects and returns the application for operator repairs.
+                                    </p>
+                                </div>
+
+                                {/* Decision Controls */}
+                                {decisionMode !== 'reject' ? (
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-1">
+                                        <button
+                                            type="button"
+                                            disabled={isProcessing}
+                                            onClick={handleApprove}
+                                            className="flex items-center justify-center gap-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white py-3.5 px-5 text-sm font-bold shadow-sm transition-all cursor-pointer disabled:opacity-50"
+                                        >
+                                            <CheckCircle2 size={18} strokeWidth={2.2} />
+                                            <span>Approve Inspection</span>
+                                        </button>
+
+                                        <button
+                                            type="button"
+                                            disabled={isProcessing}
+                                            onClick={handleStartReject}
+                                            className="flex items-center justify-center gap-2.5 rounded-xl border-2 border-rose-300 hover:border-rose-400 bg-white hover:bg-rose-50/70 active:bg-rose-100 text-rose-700 py-3.5 px-5 text-sm font-bold transition-all cursor-pointer disabled:opacity-50"
+                                        >
+                                            <XCircle size={18} strokeWidth={2.2} />
+                                            <span>Reject Inspection</span>
+                                        </button>
+                                    </div>
+                                ) : (
+                                    /* Rejection Form */
+                                    <div className="rounded-xl border border-rose-200 bg-rose-50/30 p-4 sm:p-5 space-y-4">
+                                        <div className="flex items-start justify-between gap-2 border-b border-rose-100 pb-3">
+                                            <div className="flex items-center gap-2">
+                                                <AlertTriangle size={17} className="text-rose-600 shrink-0" />
+                                                <h4 className="text-sm font-bold text-rose-950">
+                                                    Overall Inspection Rejection
+                                                </h4>
+                                            </div>
+                                            <span className="text-[11px] font-semibold text-rose-700 bg-rose-100 px-2 py-0.5 rounded-md">
+                                                Reason Required
+                                            </span>
+                                        </div>
+
+                                        {/* Quick helper preset chips */}
+                                        <div>
+                                            <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">
+                                                Common Defects (Click to add)
+                                            </label>
+                                            <div className="flex flex-wrap gap-1.5">
+                                                {QUICK_REJECTION_REASONS.map((preset, idx) => (
+                                                    <button
+                                                        key={idx}
+                                                        type="button"
+                                                        onClick={() => {
+                                                            setRejectionReason(prev => prev ? `${prev}; ${preset}` : preset);
+                                                            setRejectionError(null);
+                                                        }}
+                                                        className="rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs text-slate-700 hover:border-rose-300 hover:bg-rose-50/60 hover:text-rose-900 transition-colors cursor-pointer text-left"
+                                                    >
+                                                        + {preset}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+
+                                        {/* Rejection Comments Textarea */}
+                                        <div>
+                                            <label className="block text-xs font-bold text-slate-900 mb-1.5">
+                                                Reinspection / Rejection Details <span className="text-rose-600">*</span>
+                                            </label>
+                                            <Textarea
+                                                rows={4}
+                                                placeholder="Enter the reason why the vehicle did not pass the physical inspection..."
+                                                value={rejectionReason}
+                                                onChange={(e) => {
+                                                    setRejectionReason(e.target.value);
+                                                    if (rejectionError) setRejectionError(null);
+                                                }}
+                                                className={`w-full text-xs sm:text-sm ${rejectionError ? 'border-rose-500 ring-rose-200' : ''}`}
+                                                autoFocus
+                                            />
+                                            {rejectionError && (
+                                                <p className="mt-1.5 flex items-center gap-1 text-xs font-semibold text-rose-600">
+                                                    <AlertCircle size={13} className="shrink-0" />
+                                                    <span>{rejectionError}</span>
+                                                </p>
+                                            )}
+                                        </div>
+
+                                        {/* Action buttons */}
+                                        <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-rose-100">
+                                            <button
+                                                type="button"
+                                                disabled={isProcessing}
+                                                onClick={handleCancelReject}
+                                                className="rounded-xl border border-slate-300 bg-white hover:bg-slate-50 px-4 py-2.5 text-xs sm:text-sm font-semibold text-slate-700 transition-colors cursor-pointer disabled:opacity-50"
+                                            >
+                                                Cancel
+                                            </button>
+                                            <button
+                                                type="button"
+                                                disabled={isProcessing}
+                                                onClick={handleConfirmReject}
+                                                className="flex items-center gap-1.5 rounded-xl bg-rose-600 hover:bg-rose-700 active:bg-rose-800 text-white px-5 py-2.5 text-xs sm:text-sm font-bold shadow-sm transition-all cursor-pointer disabled:opacity-50"
+                                            >
+                                                <XCircle size={16} />
+                                                <span>Confirm Rejection</span>
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
                         </div>
                     </div>
 
                 </div>
 
-                {/* ── RIGHT STICKY CONTROL SIDEBAR: (5 cols) ── */}
+                {/* ── RIGHT SIDEBAR: APPLICANT & VEHICLE SPECS (5 cols) ── */}
                 <div className="space-y-5 lg:col-span-5 lg:sticky lg:top-6 self-start">
 
-                    {/* Box 1: Sticky Inspection Decision Card */}
-                    <div className={`overflow-hidden rounded-2xl border border-slate-200/70 bg-white p-5 ${CARD_SHADOW}`}>
-                        <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                            <div className="flex items-center gap-2">
-                                <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-[#1D2542]/[0.10] to-[#1D2542]/[0.02] text-[#1D2542]">
-                                    <ShieldAlert size={15} strokeWidth={2.2} />
-                                </div>
-                                <h3 className="text-sm font-bold text-slate-900">Inspection Decision</h3>
-                            </div>
-                            <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] font-bold border ${
-                                isAllPassed
-                                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                                    : hasDefects
-                                    ? 'bg-rose-50 text-rose-700 border-rose-200'
-                                    : 'bg-amber-50 text-amber-800 border-amber-200'
-                            }`}>
-                                {isAllPassed ? 'Passed (Ready)' : hasDefects ? 'Needs Repair' : 'In Progress'}
-                            </span>
-                        </div>
-
-                        {/* Progress Meter */}
-                        <div className="mt-4">
-                            <div className="flex items-center justify-between text-xs font-semibold mb-1.5">
-                                <span className="text-slate-600">Checklist Progress</span>
-                                <span className="tabular-nums text-slate-900 font-bold">
-                                    {checkedCount} of {totalItems} Tested
-                                </span>
-                            </div>
-                            <div className="h-2 w-full overflow-hidden rounded-full bg-slate-100">
-                                <div
-                                    className={`h-full transition-all duration-300 rounded-full ${
-                                        isAllPassed ? 'bg-emerald-500' : hasDefects ? 'bg-rose-500' : 'bg-slate-700'
-                                    }`}
-                                    style={{ width: `${progressPct}%` }}
-                                />
-                            </div>
-                        </div>
-
-                        {/* Status Counter Deck */}
-                        <div className="mt-4 grid grid-cols-3 gap-2 text-center">
-                            <div className="rounded-lg border border-emerald-100 bg-emerald-50/50 p-2">
-                                <span className="block text-base font-extrabold text-emerald-700 tabular-nums">{passedCount}</span>
-                                <span className="block text-[10px] font-semibold text-emerald-800">Passed</span>
-                            </div>
-                            <div className="rounded-lg border border-rose-100 bg-rose-50/50 p-2">
-                                <span className="block text-base font-extrabold text-rose-700 tabular-nums">{defectCount}</span>
-                                <span className="block text-[10px] font-semibold text-rose-800">Defects</span>
-                            </div>
-                            <div className="rounded-lg border border-slate-100 bg-slate-50 p-2">
-                                <span className="block text-base font-extrabold text-slate-700 tabular-nums">{totalItems - checkedCount}</span>
-                                <span className="block text-[10px] font-semibold text-slate-500">Remaining</span>
-                            </div>
-                        </div>
-
-                        {/* Decision Prompt & Action Buttons */}
-                        <div className="mt-4 pt-4 border-t border-slate-100">
-                            {isAllPassed ? (
-                                <div className="space-y-3">
-                                    <div className="rounded-lg border border-emerald-200/80 bg-emerald-50/70 p-3 text-xs text-emerald-800">
-                                        <div className="flex items-center gap-1.5 font-bold mb-1">
-                                            <CheckCircle2 size={14} className="text-emerald-600 shrink-0" />
-                                            <span>All 8 Checks Passed</span>
-                                        </div>
-                                        <p className="text-[11.5px] leading-relaxed text-emerald-700">
-                                            The vehicle complies with all roadworthiness requirements. Submit to generate the official Municipal Payment Ticket.
-                                        </p>
-                                    </div>
-                                    <button
-                                        type="button"
-                                        disabled={isProcessing}
-                                        onClick={() => handleFinalAction('pass')}
-                                        className="flex w-full items-center justify-center gap-2 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white py-2.5 text-xs sm:text-sm font-bold shadow-2xs transition-all active:scale-[0.98] disabled:opacity-50 cursor-pointer"
-                                    >
-                                        <CheckCircle2 size={15} strokeWidth={2.2} />
-                                        <span>Pass Inspection &amp; Issue Payment Ticket</span>
-                                    </button>
-                                </div>
-                            ) : hasDefects ? (
-                                <div className="space-y-3">
-                                    <div className="rounded-lg border border-rose-200/80 bg-rose-50/70 p-3 text-xs text-rose-800">
-                                        <div className="flex items-center gap-1.5 font-bold mb-1">
-                                            <AlertTriangle size={14} className="text-rose-600 shrink-0" />
-                                            <span>{defectCount} Defect(s) Identified</span>
-                                        </div>
-                                        <p className="text-[11.5px] leading-relaxed text-rose-700">
-                                            The vehicle has recorded defects. Log the failure so the operator can complete repairs and schedule re-inspection.
-                                        </p>
-                                    </div>
-                                    <button
-                                        type="button"
-                                        disabled={isProcessing}
-                                        onClick={() => handleFinalAction('fail')}
-                                        className="flex w-full items-center justify-center gap-2 rounded-full bg-rose-600 hover:bg-rose-700 text-white py-2.5 text-xs sm:text-sm font-bold shadow-2xs transition-all active:scale-[0.98] disabled:opacity-50 cursor-pointer"
-                                    >
-                                        <RotateCcw size={15} strokeWidth={2.2} />
-                                        <span>Record Defects &amp; Send for Re-inspection</span>
-                                    </button>
-                                </div>
-                            ) : (
-                                <div className="space-y-3">
-                                    <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-xs text-slate-600">
-                                        <div className="flex items-center gap-1.5 font-bold mb-1 text-slate-800">
-                                            <Clock size={14} className="text-amber-500 shrink-0" />
-                                            <span>Testing In Progress</span>
-                                        </div>
-                                        <p className="text-[11.5px] leading-relaxed text-slate-500">
-                                            Test each of the 8 roadworthiness items on the left. The decision button will activate when all items are reviewed.
-                                        </p>
-                                    </div>
-                                    <button
-                                        type="button"
-                                        disabled
-                                        className="flex w-full items-center justify-center gap-2 rounded-full border border-slate-200 bg-slate-100 py-2.5 text-xs font-bold text-slate-400 cursor-not-allowed"
-                                    >
-                                        <span>Check All 8 Items to Continue</span>
-                                    </button>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-
-                    {/* Box 2: Applicant Details */}
+                    {/* Applicant Details */}
                     <div className={`rounded-2xl border border-slate-200/70 bg-white p-5 ${CARD_SHADOW}`}>
                         <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-3.5">
                             <div className="flex items-center gap-2">
@@ -589,11 +436,18 @@ export default function PhysicalInspection({ application }) {
                             </div>
                             <div className="min-w-0 flex-1">
                                 <p className="truncate text-xs sm:text-sm font-bold text-slate-900">{appData.operator || 'N/A'}</p>
-                                <p className="truncate text-xs text-slate-500 font-medium">Registered Operator</p>
+                                <p className="truncate text-xs text-slate-500 font-medium">Tricycle Owner</p>
                             </div>
                         </div>
 
                         <div className="mt-3 grid grid-cols-1 gap-2 text-xs">
+                            <div className="flex items-center justify-between text-slate-600">
+                                <span className="flex items-center gap-1.5 text-slate-400 font-medium">
+                                    <CalendarDays size={13} className="shrink-0" />
+                                    Birthday
+                                </span>
+                                <span className="font-semibold text-slate-800">{appData.owner?.birthday || '—'}</span>
+                            </div>
                             <div className="flex items-center justify-between text-slate-600">
                                 <span className="flex items-center gap-1.5 text-slate-400 font-medium">
                                     <Smartphone size={13} className="shrink-0" />
@@ -609,9 +463,45 @@ export default function PhysicalInspection({ application }) {
                                 <span className="font-semibold text-slate-800 truncate max-w-[180px] text-right">{appData.barangay || '—'}</span>
                             </div>
                         </div>
+
+                        {/* Tricycle Driver — visually distinct; only a separate person when ownerIsDriver is false */}
+                        <div className="mt-3.5 rounded-xl border border-dashed border-indigo-300/70 bg-indigo-50/50 p-3.5">
+                            <div className="flex items-center justify-between gap-2">
+                                <span className="text-[10.5px] font-bold uppercase tracking-wider text-indigo-600">Tricycle Driver</span>
+                                <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${appData.ownerIsDriver ? 'bg-slate-100 text-slate-600' : 'bg-indigo-100 text-indigo-700'}`}>
+                                    {appData.ownerIsDriver ? 'Same as Owner' : 'Different Person'}
+                                </span>
+                            </div>
+                            {appData.ownerIsDriver ? (
+                                <p className="mt-2 text-xs text-slate-600">
+                                    The Tricycle Owner drives their own unit — no separate driver on file.
+                                </p>
+                            ) : appData.tricycleDriver ? (
+                                <div className="mt-2 grid grid-cols-1 gap-1.5 text-xs">
+                                    <div className="flex items-center justify-between text-slate-600">
+                                        <span className="font-medium text-slate-400">Name</span>
+                                        <span className="font-semibold text-slate-800">{appData.tricycleDriver.full_name || '—'}</span>
+                                    </div>
+                                    <div className="flex items-center justify-between text-slate-600">
+                                        <span className="font-medium text-slate-400">Birthday</span>
+                                        <span className="font-semibold text-slate-800">{appData.tricycleDriver.birthday || '—'}</span>
+                                    </div>
+                                    <div className="flex items-center justify-between text-slate-600">
+                                        <span className="font-medium text-slate-400">Mobile</span>
+                                        <span className="font-semibold text-slate-800">{appData.tricycleDriver.contact_number || '—'}</span>
+                                    </div>
+                                    <div className="flex items-center justify-between text-slate-600">
+                                        <span className="font-medium text-slate-400">Barangay</span>
+                                        <span className="font-semibold text-slate-800">{appData.tricycleDriver.barangay || '—'}</span>
+                                    </div>
+                                </div>
+                            ) : (
+                                <p className="mt-2 text-xs text-slate-500">No separate driver provided.</p>
+                            )}
+                        </div>
                     </div>
 
-                    {/* Box 3: Tricycle Registration & Unit Details (All 10 Declared Specifications) */}
+                    {/* Tricycle Registration Details */}
                     <div className={`rounded-2xl border border-slate-200/70 bg-white p-5 ${CARD_SHADOW}`}>
                         <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
                             <div className="flex items-center gap-2">
@@ -625,17 +515,10 @@ export default function PhysicalInspection({ application }) {
                             </div>
                         </div>
 
-                        {/* Subgroup A: Vehicle Specifications */}
+                        {/* Vehicle Specifications */}
                         <div className="space-y-2.5 text-xs">
                             <div className="text-[10.5px] font-bold uppercase tracking-wider text-slate-400 mb-1">
                                 Vehicle Specifications
-                            </div>
-
-                            <div className="flex items-center justify-between">
-                                <span className="text-slate-500 font-medium">TODA Assignment</span>
-                                <span className="font-semibold text-slate-800 truncate max-w-[180px] text-right">
-                                    {vehicleData.toda}
-                                </span>
                             </div>
 
                             <div className="flex items-center justify-between">
@@ -674,7 +557,7 @@ export default function PhysicalInspection({ application }) {
                             </div>
                         </div>
 
-                        {/* Subgroup B: LTO Official Registration Numbers */}
+                        {/* LTO Official Registration Numbers */}
                         <div className="mt-4 pt-3.5 border-t border-slate-100 space-y-2.5 text-xs">
                             <div className="text-[10.5px] font-bold uppercase tracking-wider text-slate-400 mb-1">
                                 LTO Official Numbers
@@ -733,56 +616,6 @@ export default function PhysicalInspection({ application }) {
                 </div>
 
             </div>
-
-            {/* ── Defect Note Modal (Using Standard TMO Modal Component) ── */}
-            <Modal
-                show={activeDefectItemId !== null}
-                onClose={cancelDefectModal}
-                title={`Defect Report: ${activeItem?.label || 'Component'}`}
-                description="Describe what failed during physical inspection"
-                footer={
-                    <>
-                        <Button variant="secondary" onClick={cancelDefectModal}>Cancel</Button>
-                        <Button variant="dangerSolid" onClick={handleSaveDefect}>Confirm Defect</Button>
-                    </>
-                }
-            >
-                <p className="mb-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-[11.5px] font-semibold text-red-700">
-                    {activeItem?.label}
-                </p>
-
-                {/* Quick preset chips */}
-                {activeItem?.presets && activeItem.presets.length > 0 && (
-                    <div className="mb-3">
-                        <p className="mb-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-400">Quick Reasons</p>
-                        <div className="flex flex-wrap gap-1.5">
-                            {activeItem.presets.map((preset, idx) => (
-                                <button
-                                    key={idx}
-                                    type="button"
-                                    onClick={() => setDraftNote(preset)}
-                                    className={`rounded-md border px-2.5 py-1 text-xs transition-colors cursor-pointer ${
-                                        draftNote === preset
-                                            ? 'border-rose-300 bg-rose-50 text-rose-800 font-semibold'
-                                            : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50'
-                                    }`}
-                                >
-                                    {preset}
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-                )}
-
-                <p className="mb-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-400">Inspector Observations</p>
-                <Textarea
-                    rows={3}
-                    placeholder="e.g., Busted bulb, loose brakes, cracked mirror…"
-                    value={draftNote}
-                    onChange={e => setDraftNote(e.target.value)}
-                    autoFocus
-                />
-            </Modal>
         </TrivoraLayout>
     );
 }

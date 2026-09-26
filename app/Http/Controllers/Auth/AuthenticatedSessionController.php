@@ -33,7 +33,15 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerate();
 
-        return redirect()->intended(route('dashboard', absolute: false));
+        $user = Auth::user();
+        $fallback = match ($user?->role) {
+            'tmo_personnel'      => route('tmo.dashboard'),
+            'bplo_staff'         => route('bplo.dashboard'),
+            'tricycle_driver'    => route('operator.dashboard'),
+            default              => route('dashboard'),
+        };
+
+        return redirect()->intended($fallback);
     }
 
     /**
@@ -41,7 +49,9 @@ class AuthenticatedSessionController extends Controller
      */
     public function destroy(Request $request): RedirectResponse
     {
-        Auth::guard('web')->logout();
+        if (Auth::guard('web')->check()) {
+            Auth::guard('web')->logout();
+        }
 
         $request->session()->invalidate();
 

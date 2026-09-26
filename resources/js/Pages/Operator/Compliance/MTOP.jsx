@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { Head, Link } from '@inertiajs/react';
+import useBackgroundRefresh from '@/hooks/useBackgroundRefresh';
 import OperatorLayout from '@/Layouts/OperatorLayout';
 import { PageHeader, Button, SearchInput, StatusBadge, EmptyState } from '@/Components/TMO';
 import {
@@ -11,10 +12,9 @@ import {
     FileSearch,
     ClipboardCheck,
     Stamp,
-    Wallet,
-    Receipt,
     ShieldCheck,
     Plus,
+    RotateCcw,
 } from 'lucide-react';
 
 // Shared soft, layered shadow token — same elevation language used across the redesigned TMO
@@ -22,15 +22,14 @@ import {
 const CARD_SHADOW = 'shadow-[0_1px_2px_0_rgba(15,23,42,0.04),0_8px_24px_-8px_rgba(15,23,42,0.10)]';
 
 // Mirrors the exact phase keys emitted by MTOPController::index() — must stay in sync.
-// Finalized workflow: Requirements -> Physical Inspection -> Municipal Treasurer Payment
-// (offline/in-person) -> TMO Payment Verification -> BPLO Releasing -> TMO Final
-// Confirmation & GPS Setup -> Franchise Active ('completed', not part of this in-progress strip).
+// Finalized workflow: Requirements -> Physical Inspection -> BPLO Release: Sticker & Plate
+// for Coding (payment happens offline at the Municipal Treasurer's Office; the system
+// never verifies it) -> TMO Final Confirmation & GPS Setup -> Franchise Active ('completed',
+// not part of this in-progress strip).
 const PIPELINE_STEPS = [
     { id: 'tmo-docs', label: 'Requirements', icon: FileSearch },
     { id: 'tmo-phys-inspect', label: 'Physical Inspection', icon: ClipboardCheck },
-    { id: 'cashier-pay', label: 'Treasurer Payment', icon: Wallet },
-    { id: 'tmo-payment', label: 'TMO Verification', icon: Receipt },
-    { id: 'bplo-release', label: 'BPLO Releasing', icon: Stamp },
+    { id: 'bplo-release', label: 'BPLO Release', icon: Stamp },
     { id: 'tmo-final-confirm', label: 'Final Confirmation', icon: ShieldCheck },
 ];
 
@@ -39,9 +38,8 @@ const PIPELINE_STEPS = [
 // this is a direct mapping rather than a guessed binary fallback.
 const ACTION_REQUIRED_LABELS = {
     'tmo-docs': 'Re-submission',
-    'tmo-phys-inspect': 'Re-inspection',
-    'cashier-pay': 'Payment Due',
-    'tmo-payment': 'Payment Issue',
+    'tmo-phys-inspect': 'Reinspection Required',
+    'bplo-release': 'Pay & Proceed to BPLO',
     'tmo-final-confirm': 'Return to TMO',
 };
 
@@ -84,6 +82,11 @@ function Pipeline({ phase, status }) {
 export default function MTOPTracker({ applications = [], auth }) {
     const [query, setQuery] = useState('');
     const [statusFilter, setStatusFilter] = useState('all');
+
+    // Background refresh of the application tracker: a TMO/BPLO decision made elsewhere updates
+    // this list without a manual reload. Search and status filter above are local state and are
+    // untouched by the refreshed props.
+    useBackgroundRefresh(['applications']);
     const operatorName = auth?.user?.name || 'Driver';
 
     const enriched = useMemo(() => applications.map((app) => {
@@ -167,8 +170,10 @@ export default function MTOPTracker({ applications = [], auth }) {
                                     ? 'Expired (Renewed)'
                                     : app.status === 'action-req'
                                         ? (ACTION_REQUIRED_LABELS[app.phase] || 'Action Required')
-                                        : 'In Progress';
-                        const BadgeIcon = app.status === 'completed' ? CheckCircle2 : (isRedCard || isYellowCard || app.status === 'action-req') ? AlertCircle : Clock;
+                                        : app.is_ready_for_reinspection
+                                            ? 'Ready for Reinspection'
+                                            : 'In Progress';
+                        const BadgeIcon = app.status === 'completed' ? CheckCircle2 : (isRedCard || isYellowCard || app.status === 'action-req') ? AlertCircle : app.is_ready_for_reinspection ? RotateCcw : Clock;
 
                         return (
                             <Link
@@ -186,6 +191,9 @@ export default function MTOPTracker({ applications = [], auth }) {
                                         <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-[11px] font-semibold uppercase tracking-wide text-slate-400">
                                             <span>Tracking ID <span className="text-slate-500">{app.id}</span></span>
                                             <span>Submitted <span className="text-slate-500">{app.date}</span></span>
+                                            {app.last_updated && (
+                                                <span>Status Updated <span className="text-slate-500">{app.last_updated}</span></span>
+                                            )}
                                         </div>
 
                                         {app.status !== 'completed' && !isRedCard && !isYellowCard && <Pipeline phase={app.phase} status={app.status} />}

@@ -1,9 +1,10 @@
-import React, { useState, useMemo, useEffect } from 'react';
-import { Head, Link, router } from '@inertiajs/react';
+import React, { useState, useMemo } from 'react';
+import { Head, Link } from '@inertiajs/react';
+import useBackgroundRefresh from '@/hooks/useBackgroundRefresh';
 import BPLOLayout from '@/Layouts/BPLOLayout';
 import {
     Search, Award, ChevronRight, ChevronLeft, Bike,
-    Hash, CheckCircle2, Inbox, Info, X, RotateCcw,
+    Hash, CheckCircle2, Inbox, X, RotateCcw,
     FolderCheck, MapPin, Receipt, TrendingUp
 } from 'lucide-react';
 
@@ -20,43 +21,25 @@ export default function ReleasingQueue({
     activeRegistryCount = 0,
 }) {
     const [query, setQuery] = useState('');
-    const [todaFilter, setTodaFilter] = useState('all');
     const [currentPage, setCurrentPage] = useState(1);
 
-    // Silent background refresh — a TMO payment verification elsewhere feeds new units into this
-    // queue without a manual reload.
-    useEffect(() => {
-        const { stop } = router.poll(15000, {
-            only: ['applications', 'pendingCount', 'issuedTodayCount', 'activeRegistryCount'],
-        });
-        return () => stop();
-    }, []);
-
-    // Extract unique TODA zones from current applications
-    const todaOptions = useMemo(() => {
-        const set = new Set();
-        applications.forEach((a) => {
-            if (a.toda) set.add(a.toda);
-        });
-        return Array.from(set).sort();
-    }, [applications]);
+    // Silent background refresh — a TMO physical inspection pass elsewhere feeds new units into
+    // this queue without a manual reload.
+    useBackgroundRefresh(['applications', 'pendingCount', 'issuedTodayCount', 'activeRegistryCount']);
 
     const filtered = useMemo(() => {
         const q = query.trim().toLowerCase();
         return applications.filter((a) => {
-            const matchesQuery =
+            return (
                 !q ||
                 String(a.id).toLowerCase().includes(q) ||
                 (a.reference && a.reference.toLowerCase().includes(q)) ||
                 (a.operator && a.operator.toLowerCase().includes(q)) ||
                 (a.make && a.make.toLowerCase().includes(q)) ||
-                (a.plate && a.plate.toLowerCase().includes(q)) ||
-                (a.or_number && a.or_number.toLowerCase().includes(q));
-
-            const matchesToda = todaFilter === 'all' || a.toda === todaFilter;
-            return matchesQuery && matchesToda;
+                (a.plate && a.plate.toLowerCase().includes(q))
+            );
         });
-    }, [applications, query, todaFilter]);
+    }, [applications, query]);
 
     const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE) || 1;
     const activePage = Math.min(currentPage, totalPages);
@@ -64,11 +47,10 @@ export default function ReleasingQueue({
     const endIndex = Math.min(startIndex + ITEMS_PER_PAGE, filtered.length);
     const paginated = filtered.slice(startIndex, endIndex);
 
-    const isFiltering = query.trim() !== '' || todaFilter !== 'all';
+    const isFiltering = query.trim() !== '';
 
     const handleClearAll = () => {
         setQuery('');
-        setTodaFilter('all');
         setCurrentPage(1);
     };
 
@@ -85,7 +67,7 @@ export default function ReleasingQueue({
                         Releasing Queue
                     </h1>
                     <p className="mt-1 text-xs sm:text-sm text-slate-500 max-w-2xl leading-relaxed">
-                        Assign tricycle number coding scheme and release official MTOP stickers for verified, roadworthy units
+                        Assign the Sticker Number and release official MTOP permits for verified, roadworthy units
                     </p>
                 </div>
             </div>
@@ -114,7 +96,7 @@ export default function ReleasingQueue({
                             </span>
                         </div>
                         <p className="mt-1 text-[11px] text-slate-500">
-                            Payment verified, ready to release
+                            Cleared inspection, ready for release
                         </p>
                     </div>
 
@@ -251,22 +233,6 @@ export default function ReleasingQueue({
                     </div>
 
                     <div className="flex items-center gap-2">
-                        {todaOptions.length > 0 && (
-                            <select
-                                value={todaFilter}
-                                onChange={(e) => {
-                                    setTodaFilter(e.target.value);
-                                    setCurrentPage(1);
-                                }}
-                                className="h-10 rounded-lg border border-slate-200 bg-white px-3 pr-8 text-xs font-semibold text-slate-700 shadow-2xs transition-colors focus:border-[#1D2542] focus:outline-none focus:ring-2 focus:ring-[#1D2542]/10 cursor-pointer max-w-[200px] truncate"
-                            >
-                                <option value="all">All TODAs ({applications.length})</option>
-                                {todaOptions.map((toda) => (
-                                    <option key={toda} value={toda}>{toda}</option>
-                                ))}
-                            </select>
-                        )}
-
                         {isFiltering && (
                             <button
                                 type="button"
@@ -295,8 +261,8 @@ export default function ReleasingQueue({
                     </h3>
                     <p className="mx-auto mt-1 max-w-sm text-xs text-slate-500 leading-relaxed">
                         {isFiltering
-                            ? 'No applications match your search query or TODA filter.'
-                            : 'Units that have completed payment verification will appear here ready for sticker release.'}
+                            ? 'No applications match your search query or filter.'
+                            : 'Units that have cleared physical inspection will appear here, ready for sticker release.'}
                     </p>
                     {isFiltering && (
                         <button
@@ -324,10 +290,7 @@ export default function ReleasingQueue({
                                             Operator &amp; Unit
                                         </th>
                                         <th scope="col" className="py-3 px-4 text-[11px] font-bold uppercase tracking-wider text-slate-500">
-                                            TODA Association
-                                        </th>
-                                        <th scope="col" className="py-3 px-4 text-[11px] font-bold uppercase tracking-wider text-slate-500">
-                                            Inspection &amp; Payment
+                                            Inspection
                                         </th>
                                         <th scope="col" className="py-3 pl-3 pr-5 text-right text-[11px] font-bold uppercase tracking-wider text-slate-500">
                                             Action
@@ -445,22 +408,6 @@ export default function ReleasingQueue({
                 </>
             )}
 
-            {/* ══════════════════════════════════════════════════════════════
-                5. ADMINISTRATIVE NOTICE
-               ══════════════════════════════════════════════════════════════ */}
-            <div className={`mt-5 rounded-2xl border border-slate-200/70 bg-white p-4 sm:p-5 ${CARD_SHADOW} flex items-start gap-3.5`}>
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-[#1D2542]/[0.10] to-[#1D2542]/[0.02] text-[#1D2542] mt-0.5">
-                    <Info size={16} strokeWidth={2.2} />
-                </div>
-                <div>
-                    <h4 className="text-xs font-bold uppercase tracking-wider text-slate-900">
-                        Administrative Protocol
-                    </h4>
-                    <p className="mt-1 text-xs text-slate-500 leading-relaxed max-w-3xl">
-                        Only units that have successfully passed TMO physical inspection and completed cashier payment verification appear in this queue. Finalizing the issuance assigns the official tricycle number coding scheme, releases the sticker, and registers the unit in the active franchise masterlist.
-                    </p>
-                </div>
-            </div>
         </BPLOLayout>
     );
 }
@@ -519,26 +466,14 @@ function DesktopReleasingRow({ app }) {
                 </div>
             </td>
 
-            {/* Column 3: TODA Association */}
-            <td className="py-3.5 px-4 align-middle">
-                <div className="flex items-center gap-1.5 text-xs text-slate-700 font-medium">
-                    <MapPin size={12} className="text-slate-400 shrink-0" />
-                    <span>{app.toda}</span>
-                </div>
-            </td>
 
-            {/* Column 4: Inspection & Payment */}
+            {/* Column 4: Inspection */}
             <td className="py-3.5 px-4 align-middle">
                 <div className="flex flex-wrap items-center gap-1.5">
                     <span className="inline-flex items-center gap-1 rounded-md bg-emerald-50 px-2 py-0.5 text-[10.5px] font-semibold text-emerald-700 border border-emerald-200/70">
                         <CheckCircle2 size={11} strokeWidth={2.5} />
-                        TMO Passed · {app.tmo_passed_at || 'Verified'}
+                        TMO Passed · {app.tmo_passed_at || 'Passed'}
                     </span>
-                    {app.or_number && (
-                        <span className="inline-flex items-center font-mono text-[10px] font-medium text-slate-600 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200/70" title="Cashier Official Receipt">
-                            {app.or_number}
-                        </span>
-                    )}
                 </div>
             </td>
 
@@ -548,7 +483,7 @@ function DesktopReleasingRow({ app }) {
                     href={`/bplo/issue/${app.id}`}
                     className="inline-flex items-center gap-1 rounded-full bg-[#1D2542] hover:bg-[#283256] text-white px-3.5 py-1.5 text-xs font-semibold shadow-2xs transition-all active:scale-[0.98]"
                 >
-                    <span>Issue Number Coding</span>
+                    <span>Issue Sticker Number</span>
                     <ChevronRight size={13} strokeWidth={2.5} className="text-slate-300" />
                 </Link>
             </td>
@@ -580,15 +515,8 @@ function MobileReleasingCard({ app }) {
                     </div>
                     <div className="min-w-0">
                         <p className="truncate text-xs font-semibold text-slate-900">{app.operator}</p>
-                        <p className="truncate text-[11px] text-slate-400">{app.toda}</p>
                     </div>
                 </div>
-
-                {app.or_number && (
-                    <span className="inline-flex items-center font-mono text-[10px] font-medium text-slate-600 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200/70 shrink-0">
-                        {app.or_number}
-                    </span>
-                )}
             </div>
 
             {/* Vehicle Info */}
@@ -610,7 +538,7 @@ function MobileReleasingCard({ app }) {
                     href={`/bplo/issue/${app.id}`}
                     className="flex w-full items-center justify-center gap-1.5 rounded-full bg-[#1D2542] hover:bg-[#283256] text-white py-2 text-xs font-bold shadow-2xs transition-all active:scale-[0.98]"
                 >
-                    <span>Issue Number Coding</span>
+                    <span>Issue Sticker Number</span>
                     <ChevronRight size={13} strokeWidth={2.5} className="text-slate-300" />
                 </Link>
             </div>

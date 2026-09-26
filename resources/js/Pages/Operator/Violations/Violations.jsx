@@ -1,8 +1,8 @@
 import React, { useMemo, useState } from 'react';
 import { Head, Link } from '@inertiajs/react';
+import useBackgroundRefresh from '@/hooks/useBackgroundRefresh';
 import OperatorLayout from '@/Layouts/OperatorLayout';
 import {
-    AlertOctagon,
     AlertCircle,
     MapPin,
     Clock,
@@ -10,7 +10,6 @@ import {
     ShieldAlert,
     Activity,
     Scale,
-    ArrowRight,
     ChevronLeft,
     ChevronRight,
     Search,
@@ -26,11 +25,29 @@ const CARD_SHADOW = 'shadow-[0_1px_2px_0_rgba(15,23,42,0.04),0_8px_24px_-8px_rgb
 
 export default function Violations({ violations = [], auth }) {
     const [query, setQuery] = useState('');
+    const [statusFilter, setStatusFilter] = useState('all');
     const [detectionFilter, setDetectionFilter] = useState('all');
     const [currentPage, setCurrentPage] = useState(1);
+
+    // Background refresh of the driver's violation list: an appeal decision or settlement made in
+    // the TMO panel elsewhere appears here without a manual reload. The filters and page above
+    // are local state and survive every refresh.
+    useBackgroundRefresh(['violations']);
     const operatorName = auth?.user?.name || 'Driver';
 
     const activeViolations = violations;
+
+    // Detection Method counts for the filter — derived from the real detection_key the backend
+    // resolved from the GPS ping source (tricycle_locations.source).
+    const detectionCounts = useMemo(() => {
+        const counts = { mobile_gps: 0, iot_gps: 0 };
+        activeViolations.forEach((v) => {
+            if (Object.prototype.hasOwnProperty.call(counts, v.detection_key)) {
+                counts[v.detection_key] += 1;
+            }
+        });
+        return counts;
+    }, [activeViolations]);
 
     const filtered = useMemo(() => {
         const q = query.trim().toLowerCase();
@@ -39,29 +56,33 @@ export default function Violations({ violations = [], auth }) {
                 v.id.toLowerCase().includes(q) ||
                 v.unit.toLowerCase().includes(q) ||
                 v.location.toLowerCase().includes(q);
-            const matchesDetection = detectionFilter === 'all' || (detectionFilter === 'iot' ? v.isIot : !v.isIot);
-            return matchesQuery && matchesDetection;
+            const matchesStatus = statusFilter === 'all' || v.status === statusFilter;
+            const matchesDetection = detectionFilter === 'all' || v.detection_key === detectionFilter;
+            return matchesQuery && matchesStatus && matchesDetection;
         });
-    }, [activeViolations, query, detectionFilter]);
+    }, [activeViolations, query, statusFilter, detectionFilter]);
 
     const totalPages = Math.ceil(filtered.length / PAGE_SIZE) || 1;
     const activePage = Math.min(currentPage, totalPages);
     const startIndex = (activePage - 1) * PAGE_SIZE;
     const paginated = filtered.slice(startIndex, startIndex + PAGE_SIZE);
 
-    const isFiltering = query.trim() !== '' || detectionFilter !== 'all';
+    const isFiltering = query.trim() !== '' || statusFilter !== 'all' || detectionFilter !== 'all';
 
     const handleClearFilters = () => {
         setQuery('');
+        setStatusFilter('all');
         setDetectionFilter('all');
         setCurrentPage(1);
     };
 
     const totalFines = activeViolations.reduce((sum, v) => sum + v.fine, 0);
     const activeCount = activeViolations.length;
-    const iotCount = activeViolations.filter((v) => v.isIot).length;
     const uniqueUnits = [...new Set(activeViolations.map(v => v.unit))].length;
-    const appealsCount = activeViolations.filter((v) => v.status === 'appeal_pending' || v.status === 'appeal_rejected').length;
+    const unpaidCount = activeViolations.filter((v) => v.status === 'unpaid').length;
+    const appealPendingCount = activeViolations.filter((v) => v.status === 'appeal_pending').length;
+    const appealRejectedCount = activeViolations.filter((v) => v.status === 'appeal_rejected').length;
+    const appealsCount = appealPendingCount + appealRejectedCount;
 
     return (
         <OperatorLayout title="Active Violations" operatorName={operatorName}>
@@ -76,16 +97,6 @@ export default function Violations({ violations = [], auth }) {
                     <p className="mt-1 max-w-2xl text-xs leading-relaxed text-slate-500 sm:text-sm">
                         Real-time IoT detection logs for the Color Coding Ordinance.
                     </p>
-                </div>
-
-                <div className="flex shrink-0 items-center gap-2 self-start sm:self-center">
-                    <Link
-                        href={route('operator.payments')}
-                        className="inline-flex h-9 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3.5 text-xs font-semibold text-slate-700 shadow-sm transition-all hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900 active:scale-[0.99]"
-                    >
-                        <span>View Settled Records</span>
-                        <ArrowRight size={14} strokeWidth={2.2} className="text-slate-400" />
-                    </Link>
                 </div>
             </div>
 
@@ -130,7 +141,7 @@ export default function Violations({ violations = [], auth }) {
                         <span className="text-slate-400">Detection</span>
                         <span className="flex items-center gap-1.5 font-semibold text-slate-700">
                             <span className="h-1.5 w-1.5 rounded-full bg-[#1D2542] animate-pulse" />
-                            {iotCount} IoT-Detected
+                            {detectionCounts.mobile_gps} Mobile GPS · {detectionCounts.iot_gps} IoT GPS
                         </span>
                     </div>
                 </div>
@@ -203,13 +214,24 @@ export default function Violations({ violations = [], auth }) {
 
                     <div className="grid grid-cols-1 items-center gap-2 sm:flex sm:flex-wrap">
                         <select
+                            value={statusFilter}
+                            onChange={(e) => { setStatusFilter(e.target.value); setCurrentPage(1); }}
+                            className="h-10 w-full cursor-pointer rounded-lg border border-slate-200 bg-white px-3 pr-8 text-xs font-semibold text-slate-700 shadow-2xs transition-colors focus:border-[#1D2542] focus:outline-none focus:ring-2 focus:ring-[#1D2542]/10 sm:w-48"
+                        >
+                            <option value="all">All Statuses ({activeCount})</option>
+                            <option value="unpaid">Unpaid ({unpaidCount})</option>
+                            <option value="appeal_pending">Appeal Pending ({appealPendingCount})</option>
+                            <option value="appeal_rejected">Appeal Rejected ({appealRejectedCount})</option>
+                        </select>
+
+                        <select
                             value={detectionFilter}
                             onChange={(e) => { setDetectionFilter(e.target.value); setCurrentPage(1); }}
                             className="h-10 w-full cursor-pointer rounded-lg border border-slate-200 bg-white px-3 pr-8 text-xs font-semibold text-slate-700 shadow-2xs transition-colors focus:border-[#1D2542] focus:outline-none focus:ring-2 focus:ring-[#1D2542]/10 sm:w-48"
                         >
-                            <option value="all">All Detection Methods</option>
-                            <option value="iot">IoT Auto ({iotCount})</option>
-                            <option value="manual">Manual ({activeCount - iotCount})</option>
+                            <option value="all">All Detection Methods ({activeCount})</option>
+                            <option value="mobile_gps">Mobile GPS ({detectionCounts.mobile_gps})</option>
+                            <option value="iot_gps">IoT GPS ({detectionCounts.iot_gps})</option>
                         </select>
                     </div>
                 </div>
@@ -291,15 +313,6 @@ export default function Violations({ violations = [], auth }) {
                 </>
             )}
 
-            <div className={`mt-6 flex gap-4 rounded-2xl border border-amber-200/70 bg-amber-50 p-5 ${CARD_SHADOW}`}>
-                <AlertOctagon size={22} className="shrink-0 text-amber-600" />
-                <div>
-                    <p className="mb-1 text-[13px] font-bold text-amber-900">Color Coding Policy Reminder</p>
-                    <p className="text-xs leading-relaxed text-amber-800">
-                        Violations flagged with the <strong>IoT Detected</strong> tag indicate that your tricycle operated on a restricted coding day based on its assigned color zone. Unpaid fines after 30 days will result in an automatic suspension of MTOP renewal privileges. Settled violations are automatically moved to your Payment History.
-                    </p>
-                </div>
-            </div>
         </OperatorLayout>
     );
 }
@@ -347,13 +360,11 @@ function PaginationFooter({ activePage, totalPages, totalItems, onPageChange, no
     );
 }
 
-function DetectionTag({ isIot }) {
-    return isIot ? (
+function DetectionTag({ label }) {
+    return (
         <span className="inline-flex items-center gap-1 rounded bg-[#1D2542]/[0.08] px-1.5 py-0.5 text-[9px] font-extrabold uppercase text-[#1D2542]">
-            <Activity size={8} /> IoT Auto
+            <Activity size={8} /> {label}
         </span>
-    ) : (
-        <span className="inline-flex items-center gap-1 rounded bg-amber-50 px-1.5 py-0.5 text-[9px] font-extrabold uppercase text-amber-700">Manual</span>
     );
 }
 
@@ -378,7 +389,7 @@ function DesktopViolationRow({ v }) {
             <td className="py-3.5 pl-5 pr-3 align-middle">
                 <div className="mb-1.5 flex items-center gap-2">
                     <p className="text-[13px] font-bold text-slate-900">{v.type}</p>
-                    <DetectionTag isIot={v.isIot} />
+                    <DetectionTag label={v.detection_label} />
                 </div>
                 <p className="font-mono text-[11px] text-slate-400">{v.id}</p>
             </td>
@@ -428,7 +439,7 @@ function MobileViolationCard({ v }) {
             <div className="mt-2.5 flex items-center justify-between gap-2">
                 <div className="min-w-0">
                     <p className="truncate text-xs font-semibold text-slate-900">{v.type}</p>
-                    <div className="mt-1"><DetectionTag isIot={v.isIot} /></div>
+                    <div className="mt-1"><DetectionTag label={v.detection_label} /></div>
                 </div>
                 <div className="shrink-0 text-right">
                     <span className="text-sm font-extrabold tabular-nums text-red-600">₱{v.fine.toFixed(2)}</span>
