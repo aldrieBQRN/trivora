@@ -15,7 +15,7 @@ use Tests\TestCase;
 /**
  * TMO Live Monitoring Online/Offline determination (DashboardController::index()):
  *   drivers.is_online = false -> Offline immediately (never waits for the GPS threshold);
- *   drivers.is_online = true  -> Online only while the latest GPS is <= fleet_online_threshold_seconds (20s).
+ *   drivers.is_online = true  -> Online only while the latest GPS is <= fleet_online_threshold_seconds (10s).
  */
 class LiveMonitoringOnlineStatusTest extends TestCase
 {
@@ -90,10 +90,10 @@ class LiveMonitoringOnlineStatusTest extends TestCase
     }
 
     #[Test]
-    public function the_threshold_is_20_seconds_and_the_reporting_interval_stays_15(): void
+    public function the_threshold_is_10_seconds_and_the_reporting_interval_is_5(): void
     {
-        $this->assertSame(20, config('tracking.fleet_online_threshold_seconds'));
-        $this->assertSame(15, config('tracking.gps_interval_seconds'));
+        $this->assertSame(10, config('tracking.fleet_online_threshold_seconds'));
+        $this->assertSame(5, config('tracking.gps_interval_seconds'));
     }
 
     #[Test]
@@ -116,30 +116,30 @@ class LiveMonitoringOnlineStatusTest extends TestCase
     }
 
     #[Test]
-    public function online_driver_with_gps_10_seconds_old_is_online(): void
+    public function online_driver_with_gps_0_seconds_old_is_online(): void
+    {
+        $this->ping(0);
+        $this->assertTrue($this->unit()['is_online']);
+    }
+
+    #[Test]
+    public function online_driver_with_gps_5_seconds_old_is_online(): void
+    {
+        $this->ping(5);
+        $this->assertTrue($this->unit()['is_online']);
+    }
+
+    #[Test]
+    public function online_driver_with_gps_exactly_10_seconds_old_is_still_online(): void
     {
         $this->ping(10);
         $this->assertTrue($this->unit()['is_online']);
     }
 
     #[Test]
-    public function online_driver_with_gps_15_seconds_old_is_online(): void
+    public function online_driver_with_gps_older_than_10_seconds_is_offline_stale(): void
     {
-        $this->ping(15);
-        $this->assertTrue($this->unit()['is_online']);
-    }
-
-    #[Test]
-    public function online_driver_with_gps_exactly_20_seconds_old_is_still_online(): void
-    {
-        $this->ping(20);
-        $this->assertTrue($this->unit()['is_online']);
-    }
-
-    #[Test]
-    public function online_driver_with_gps_older_than_20_seconds_is_offline_stale(): void
-    {
-        $this->ping(21);
+        $this->ping(11);
 
         $unit = $this->unit();
         $this->assertFalse($unit['is_online']);
@@ -166,5 +166,21 @@ class LiveMonitoringOnlineStatusTest extends TestCase
         $this->driver->update(['is_online' => true]);
         $this->ping(0);
         $this->assertTrue($this->unit()['is_online']);
+    }
+
+    #[Test]
+    public function pings_every_5_seconds_keep_the_driver_online_until_the_latest_is_older_than_10_seconds(): void
+    {
+        // GPS at 12:00:00, 12:00:05, 12:00:10, then nothing (clock frozen in setUp at 10:00:00,
+        // so pings are placed relative to "now" and time is advanced after the last one).
+        $this->ping(10);
+        $this->ping(5);
+        $this->ping(0);
+
+        Carbon::setTestNow(now()->addSeconds(10));
+        $this->assertTrue($this->unit()['is_online'], 'Latest GPS exactly 10s old: still Online.');
+
+        Carbon::setTestNow(now()->addSeconds(1));
+        $this->assertFalse($this->unit()['is_online'], 'Latest GPS 11s old: Offline/Stale.');
     }
 }

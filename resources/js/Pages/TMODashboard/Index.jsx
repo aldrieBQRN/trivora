@@ -16,6 +16,10 @@ const CODING_SCHEDULE = {
     Friday:    { color: 'White',  hex: '#64748B', digits: '9, 0',  bg: '#F8FAFC', border: '#E2E8F0' },
 };
 
+// Live Monitoring refresh cadence (this page only). GPS itself arrives every 5s; the 10s
+// Online/Offline threshold is decided server-side (config/tracking.php).
+const LIVE_MONITORING_REFRESH_MS = 3000;
+
 const WEEKDAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
 // Shared soft, layered shadow token — same elevation language used across TMO dashboards.
@@ -54,7 +58,11 @@ export default function LiveMonitoring({ initialTricycles = [], stats = {} }) {
 
     // Poll the SAME Laravel route this page already renders from, requesting only the props that
     // change (initialTricycles, stats) — no separate API, no client-side coordinate fabrication.
-    useBackgroundRefresh(['initialTricycles', 'stats']);
+    // Live Monitoring only: 3s refresh (every other page keeps the shared 5s default). The hook's
+    // in-flight guard skips a tick while the previous reload is still running, so a slow response
+    // never stacks requests. Refreshing faster than GPS arrives (every 5s) just re-reads the latest
+    // stored coordinate — it never creates one.
+    useBackgroundRefresh(['initialTricycles', 'stats'], { interval: LIVE_MONITORING_REFRESH_MS });
 
     // Regulatory numbers (breach counts, compliance) are computed from real coordinate data only.
     const realViolations = useMemo(() => realTricycles.filter(t => t.status === 'violator'), [realTricycles]);
@@ -99,7 +107,7 @@ export default function LiveMonitoring({ initialTricycles = [], stats = {} }) {
 
     // All / Online / Offline status filter — derives from the same server-side freshness flag
     // (is_online, computed in DashboardController::index(): drivers.is_online first, then the
-    // 20s GPS threshold from config/tracking.fleet_online_threshold_seconds) that the roster's Online/Offline badges
+    // 10s GPS threshold from config/tracking.fleet_online_threshold_seconds) that the roster's Online/Offline badges
     // and the map already display. No separate client-side timing logic.
     const statusCounts = useMemo(() => ({
         all:    searchFilteredUnits.length,

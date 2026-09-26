@@ -57,7 +57,7 @@ class DashboardController extends Controller
                 })->count();
         }
 
-        $onlineThresholdSeconds = config('tracking.fleet_online_threshold_seconds', 20);
+        $onlineThresholdSeconds = config('tracking.fleet_online_threshold_seconds', 10);
 
         // The driver's explicit Online/Offline toggle (drivers.is_online) outranks GPS freshness:
         // a driver who went Offline is Offline immediately, never after the freshness window.
