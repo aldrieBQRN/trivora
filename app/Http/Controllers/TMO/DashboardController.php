@@ -50,10 +50,11 @@ class DashboardController extends Controller
         }
         unset($stage);
 
-        // BPLO payment stage — read-only visibility for TMO, not actionable here.
+        // BPLO releasing stage — read-only visibility for TMO, not actionable here. Payment
+        // itself happens entirely offline at the Municipal Treasurer's Office; the system never
+        // verifies it, so there's only one count here now (not a separate "verified" sub-state).
         $bplo = [
-            'pending_verification'      => Application::whereIn('status', ['pending_payment', 'payment_issue'])->count(),
-            'verified_awaiting_release' => Application::paymentVerified()->count(),
+            'pending_release' => Application::where('status', 'pending_bplo_release')->count(),
         ];
 
         // This officer's own activity today, mirroring each queue controller's Auth::id()-scoped "today" count.

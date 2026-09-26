@@ -1,15 +1,15 @@
 import React, { useState } from 'react';
-import { Head, Link, router, useForm } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
+import useBackgroundRefresh from '@/hooks/useBackgroundRefresh';
 import TrivoraLayout from '@/Layouts/TrivoraLayout';
 import Swal from 'sweetalert2';
 import { MapContainer, TileLayer, Marker, Popup, ZoomControl } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { Modal, Button, Label, Input, Textarea, ErrorText } from '@/Components/TMO';
 import {
-    Calendar, MapPin, AlertCircle, Map, User, Bike, Printer, CheckCircle2,
+    MapPin, AlertCircle, Map, User, Bike, CheckCircle2,
     MessageSquareText, ThumbsUp, ThumbsDown, Clock, ImageOff, ArrowUpRight,
-    Phone, ShieldAlert, Scale, ChevronLeft, Gauge, FileText, Check, X, Wallet,
+    Phone, ShieldAlert, Scale, ChevronLeft, FileText, Wallet,
 } from 'lucide-react';
 
 // Custom Pulsing Pin for the Violation Location
@@ -55,7 +55,6 @@ export default function ViolationDetails({ violationId = 'VIO-26-0001', initialR
         location_desc: 'Nasugbu Highway, Zone 1',
         operator: 'Pedro Ramos',
         operator_contact: '0917-555-0192',
-        toda: 'TODA Bucana',
         coding_scheme_number: '0142',
         plate_no: 'AAA-1234',
         make_model: 'Kawasaki Barako II 175',
@@ -63,7 +62,7 @@ export default function ViolationDetails({ violationId = 'VIO-26-0001', initialR
         color_hex: '#EF4444',
         restricted_day: 'Monday',
         type: 'Color Coding',
-        source: 'Automated GPS',
+        source: 'Mobile GPS',
         fine: 500,
         status: 'unsettled',
         notes: 'System detected Red-coded tricycle operating on a restricted Monday.',
@@ -71,52 +70,37 @@ export default function ViolationDetails({ violationId = 'VIO-26-0001', initialR
     };
 
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [showPaymentModal, setShowPaymentModal] = useState(false);
+
+    // Background refresh of this violation record — an appeal decision or settlement made in the
+    // TMO panel elsewhere appears here without a manual reload. Paused while an action on this
+    // record is being submitted; the appeal sheet is driven by `record`, and any appeal text the
+    // officer has typed lives in local state this hook never touches.
+    useBackgroundRefresh(['violationId', 'initialRecord'], { paused: isSubmitting });
     const appeal = record.appeal;
     const isSettled = record.status === 'settled';
     const isAppealed = appeal && appeal.status === 'under_review';
-    const initials = getInitials(record.operator);
+    const initials = getInitials(record.owner_name || record.operator);
 
-    const paymentForm = useForm({
-        official_receipt_number: '',
-        amount_paid: record.fine.toFixed(2),
-        payment_date: new Date().toISOString().slice(0, 10),
-        notes: '',
-    });
-
-    const openPaymentModal = () => {
-        paymentForm.clearErrors();
-        paymentForm.reset();
-        paymentForm.setData('amount_paid', record.fine.toFixed(2));
-        paymentForm.setData('payment_date', new Date().toISOString().slice(0, 10));
-        setShowPaymentModal(true);
-    };
-
+    // Plain confirmation only — no receipt/OR details are captured here. The cashier's
+    // official receipt stays a physical, offline record; this just marks the fine settled.
     const handleConfirmPayment = () => {
-        if (!paymentForm.data.official_receipt_number.trim()) {
-            Swal.fire({ icon: 'warning', title: 'Receipt number required', text: "Enter the official receipt number from the Treasurer's cashier before confirming.", confirmButtonColor: '#1D2542' });
-            return;
-        }
-
         Swal.fire({
-            title: 'Confirm this payment?',
-            html: `<div style="text-align:left;font-size:13px;line-height:1.6">
-                <strong>${record.id}</strong> &mdash; ${record.operator}<br/>
-                Amount: <strong>₱${Number(paymentForm.data.amount_paid || 0).toFixed(2)}</strong><br/>
-                Receipt No.: <strong>${paymentForm.data.official_receipt_number}</strong>
-            </div>`,
+            title: 'Confirm Payment',
+            text: 'Confirm that this violation has been paid?',
             icon: 'question',
             showCancelButton: true,
-            confirmButtonColor: '#1D2542',
-            cancelButtonColor: '#6B7280',
-            confirmButtonText: 'Yes, Confirm Payment',
+            confirmButtonText: 'Confirm',
+            cancelButtonText: 'Cancel',
+            confirmButtonColor: '#059669',
+            cancelButtonColor: '#64748B',
         }).then((result) => {
             if (!result.isConfirmed) return;
 
-            paymentForm.post(`/tmo/violations/${record.db_id}/confirm-payment`, {
+            setIsSubmitting(true);
+            router.post(`/tmo/violations/${record.db_id}/confirm-payment`, {}, {
                 preserveScroll: true,
+                onFinish: () => setIsSubmitting(false),
                 onSuccess: () => {
-                    setShowPaymentModal(false);
                     Swal.fire({
                         title: 'Payment Confirmed',
                         text: 'This violation has been marked as Settled.',
@@ -195,13 +179,6 @@ export default function ViolationDetails({ violationId = 'VIO-26-0001', initialR
                ══════════════════════════════════════════════════════════════ */}
             <div className="mb-6 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between border-b border-slate-200/80 pb-5">
                 <div>
-                    <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-400">
-                        <span>Traffic Violation Record</span>
-                        <span>·</span>
-                        <span className="text-emerald-700 flex items-center gap-1 font-semibold">
-                            100% Automated GPS
-                        </span>
-                    </div>
                     <h1 className="mt-1 text-2xl sm:text-[28px] font-extrabold tracking-tight text-slate-900 leading-tight">
                         {record.id}
                     </h1>
@@ -230,19 +207,19 @@ export default function ViolationDetails({ violationId = 'VIO-26-0001', initialR
                     </p>
                     <div className="mt-2 flex items-center gap-1 text-[11px] text-slate-500">
                         <ShieldAlert size={12} className="text-amber-500" />
-                        <span>Automatic Detection</span>
+                        <span>{record.source}</span>
                     </div>
                 </div>
 
-                {/* Metric 2: TODA & Scheme */}
+                {/* Metric 2: Color Coding Scheme */}
                 <div className={`rounded-2xl border border-slate-200/70 bg-white p-4 ${CARD_SHADOW}`}>
-                    <p className="text-[11px] font-semibold text-slate-400">TODA Route</p>
-                    <p className="mt-1.5 text-base sm:text-lg font-bold text-slate-900 truncate">
-                        {record.toda}
+                    <p className="text-[11px] font-semibold text-slate-400">Color Coding Scheme</p>
+                    <p className="mt-1.5 text-base sm:text-lg font-bold text-slate-900 truncate flex items-center gap-2">
+                        <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: record.color_hex || '#EF4444' }} />
+                        {record.color_scheme || 'Standard'}
                     </p>
                     <div className="mt-2 flex items-center gap-1 text-[11px] text-slate-500">
-                        <MapPin size={12} className="text-slate-400" />
-                        <span>Scheme #{record.coding_scheme_number || '0142'}</span>
+                        <span>Sticker Number #{record.coding_scheme_number || 'N/A'}</span>
                     </div>
                 </div>
 
@@ -252,9 +229,9 @@ export default function ViolationDetails({ violationId = 'VIO-26-0001', initialR
                     <p className="mt-1.5 text-base sm:text-lg font-bold text-slate-900 truncate" title={record.location_desc}>
                         {record.location_desc}
                     </p>
-                    <div className="mt-2 flex items-center gap-1 text-[11px] text-slate-500">
-                        <Gauge size={12} className="text-slate-400" />
-                        <span>{record.speed_kmh || 22} km/h recorded speed</span>
+                    <div className="mt-2 flex items-center gap-1 text-[11px] text-slate-500 font-mono">
+                        <MapPin size={12} className="text-slate-400 shrink-0" />
+                        <span>{record.lat && record.lng ? `${Number(record.lat).toFixed(4)}° N, ${Number(record.lng).toFixed(4)}° E` : (record.toda || 'Nasugbu Zone')}</span>
                     </div>
                 </div>
 
@@ -279,9 +256,15 @@ export default function ViolationDetails({ violationId = 'VIO-26-0001', initialR
                 {/* ── LEFT COLUMN: GPS MAP & APPEAL (7 cols) ── */}
                 <div className="flex flex-col gap-6 lg:col-span-7">
 
-                    {/* GPS Map Evidence Card */}
-                    <div className={`overflow-hidden rounded-2xl border border-slate-200/70 bg-white ${CARD_SHADOW}`}>
-                        <div className="flex items-center justify-between border-b border-slate-100 px-5 py-3.5">
+                    {/* GPS Map Evidence Card — stretched to fill the column's full height (the
+                        grid row is already as tall as the right column's two stacked cards; this
+                        card just needs to grow into that space instead of sitting at its natural
+                        content height with empty space left below it) so both columns align at
+                        the top and bottom. The map section grows with it (flex-1, min-height kept
+                        at the original size so it's never smaller/less usable than before); the
+                        header and notes footer keep their natural height. */}
+                    <div className={`flex flex-1 flex-col overflow-hidden rounded-2xl border border-slate-200/70 bg-white ${CARD_SHADOW}`}>
+                        <div className="flex shrink-0 items-center justify-between border-b border-slate-100 px-5 py-3.5">
                             <div className="flex items-center gap-2">
                                 <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-[#1D2542]/[0.10] to-[#1D2542]/[0.02] text-[#1D2542]">
                                     <Map size={15} strokeWidth={2.2} />
@@ -296,7 +279,7 @@ export default function ViolationDetails({ violationId = 'VIO-26-0001', initialR
                         </div>
 
                         {/* Interactive Leaflet Map */}
-                        <div className="relative z-[1] h-[340px] sm:h-[380px] w-full bg-slate-100">
+                        <div className="relative z-[1] min-h-[340px] sm:min-h-[380px] w-full flex-1 bg-slate-100">
                             <MapContainer
                                 center={[record.lat, record.lng]}
                                 zoom={16}
@@ -333,9 +316,9 @@ export default function ViolationDetails({ violationId = 'VIO-26-0001', initialR
                         </div>
 
                         {/* Detection Notes & Telematics Strip */}
-                        <div className="border-t border-slate-100 bg-slate-50/50 p-4 sm:p-5">
+                        <div className="shrink-0 border-t border-slate-100 bg-slate-50/50 p-4 sm:p-5">
                             <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                                Automated Detection Notes
+                                Detection Notes
                             </p>
                             <p className="mt-1 text-xs sm:text-sm font-medium text-slate-700 leading-relaxed">
                                 {record.notes}
@@ -343,95 +326,6 @@ export default function ViolationDetails({ violationId = 'VIO-26-0001', initialR
                         </div>
                     </div>
 
-                    {/* Driver Appeal Review Card (Elevated to left column if present) */}
-                    {appeal && (
-                        <div className={`overflow-hidden rounded-2xl border border-indigo-200/70 bg-white ${CARD_SHADOW}`}>
-                            <div className="flex items-center justify-between border-b border-indigo-100 bg-indigo-50/50 px-5 py-3.5">
-                                <div className="flex items-center gap-2">
-                                    <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500/[0.16] to-indigo-500/[0.02] text-indigo-700">
-                                        <MessageSquareText size={15} strokeWidth={2.2} />
-                                    </div>
-                                    <h3 className="text-sm font-bold text-slate-900">
-                                        Driver Appeal Review
-                                    </h3>
-                                </div>
-                                <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-bold border ${
-                                    appeal.status === 'under_review'
-                                        ? 'bg-amber-50 text-amber-800 border-amber-200'
-                                        : appeal.status === 'approved'
-                                        ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                                        : 'bg-rose-50 text-rose-700 border-rose-200'
-                                }`}>
-                                    {appeal.status === 'under_review' ? 'Pending Review' : appeal.status === 'approved' ? 'Approved' : 'Rejected'}
-                                </span>
-                            </div>
-
-                            <div className="p-5">
-                                <div className="flex items-center justify-between text-xs text-slate-500 mb-3">
-                                    <span>Submitted by: <strong className="text-slate-800">{appeal.driver_name}</strong></span>
-                                    <span>{appeal.submitted_at}</span>
-                                </div>
-
-                                {/* Driver Statement Quote Box */}
-                                <div className="rounded-lg border border-slate-200/80 bg-slate-50/70 p-3.5 text-xs sm:text-sm text-slate-800 leading-relaxed italic">
-                                    "{appeal.reason}"
-                                </div>
-
-                                {/* Evidence Photo if attached */}
-                                {appeal.evidence_url ? (
-                                    <div className="mt-4">
-                                        <p className="text-xs font-bold text-slate-500 mb-2">Attached Photo Evidence:</p>
-                                        <a href={appeal.evidence_url} target="_blank" rel="noopener noreferrer" className="block group">
-                                            <img
-                                                src={appeal.evidence_url}
-                                                alt="Appeal evidence"
-                                                className="max-h-64 rounded-lg border border-slate-200 object-cover shadow-2xs transition-transform group-hover:scale-[1.01]"
-                                            />
-                                        </a>
-                                    </div>
-                                ) : (
-                                    <div className="mt-3 flex items-center gap-1.5 text-xs text-slate-400">
-                                        <ImageOff size={13} />
-                                        <span>No supporting image was attached with this appeal.</span>
-                                    </div>
-                                )}
-
-                                {/* Action Buttons or Adjudication History */}
-                                {appeal.status === 'under_review' ? (
-                                    <div className="mt-5 flex items-center gap-3 border-t border-slate-100 pt-4">
-                                        <button
-                                            type="button"
-                                            onClick={handleApprove}
-                                            disabled={isSubmitting}
-                                            className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white py-2.5 text-xs font-bold shadow-2xs transition-all active:scale-[0.98] disabled:opacity-50"
-                                        >
-                                            <ThumbsUp size={14} strokeWidth={2.2} />
-                                            <span>Approve Appeal</span>
-                                        </button>
-
-                                        <button
-                                            type="button"
-                                            onClick={handleReject}
-                                            disabled={isSubmitting}
-                                            className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-lg border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-700 py-2.5 text-xs font-bold shadow-2xs transition-all active:scale-[0.98] disabled:opacity-50"
-                                        >
-                                            <ThumbsDown size={14} strokeWidth={2.2} />
-                                            <span>Reject Appeal</span>
-                                        </button>
-                                    </div>
-                                ) : (
-                                    <div className="mt-4 rounded-lg border border-slate-100 bg-slate-50/60 p-3 text-xs text-slate-600">
-                                        <p className="font-semibold">
-                                            Reviewed by: {appeal.reviewer_name || 'TMO Review Officer'} on {appeal.reviewed_at}
-                                        </p>
-                                        {appeal.review_notes && (
-                                            <p className="mt-1 text-slate-500 italic">"{appeal.review_notes}"</p>
-                                        )}
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    )}
                 </div>
 
                 {/* ── RIGHT COLUMN: VEHICLE, DRIVER & PAYMENT (5 cols) ── */}
@@ -474,20 +368,12 @@ export default function ViolationDetails({ violationId = 'VIO-26-0001', initialR
                             </span>
                         </div>
 
-                        {/* TODA Route & Coding Scheme */}
+                        {/* Sticker Number */}
                         <div className="mt-4 rounded-lg border border-slate-100 bg-slate-50/70 p-3">
                             <div className="flex items-center justify-between text-xs">
-                                <span className="text-slate-400">Assigned TODA</span>
-                                <span className="font-bold text-slate-800 flex items-center gap-1">
-                                    <MapPin size={12} className="text-slate-400" />
-                                    {record.toda}
-                                </span>
-                            </div>
-
-                            <div className="mt-2 flex items-center justify-between text-xs border-t border-slate-200/60 pt-2">
                                 <span className="text-slate-400">Scheme Number</span>
                                 <span className="font-mono font-bold text-slate-900">
-                                    #{record.coding_scheme_number || '0142'}
+                                    #{record.coding_scheme_number || 'N/A'}
                                 </span>
                             </div>
 
@@ -506,30 +392,59 @@ export default function ViolationDetails({ violationId = 'VIO-26-0001', initialR
                             )}
                         </div>
 
-                        {/* Driver Profile */}
+                        {/* Owner & Driver — both people on record for this unit */}
                         <div className="mt-4 border-t border-slate-100 pt-4">
-                            <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-2.5">
-                                Driver / Operator
-                            </p>
-                            <div className="flex items-center gap-3">
-                                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#1D2542] text-xs font-bold text-white shadow-2xs">
-                                    {initials}
-                                </div>
-                                <div className="min-w-0 flex-1">
-                                    <p className="truncate text-xs sm:text-sm font-bold text-slate-900">
-                                        {record.operator}
+                            <div className="space-y-3.5">
+                                {/* Tricycle Owner (the operators record — primary person on the unit) */}
+                                <div>
+                                    <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-2.5">
+                                        Tricycle Owner
                                     </p>
-                                    {record.operator_contact ? (
-                                        <a
-                                            href={`tel:${record.operator_contact}`}
-                                            className="mt-0.5 inline-flex items-center gap-1 text-xs text-slate-500 hover:text-slate-800"
-                                        >
-                                            <Phone size={11} className="text-slate-400" />
-                                            <span>{record.operator_contact}</span>
-                                        </a>
-                                    ) : (
-                                        <span className="text-xs text-slate-400">No contact provided</span>
-                                    )}
+                                    <div className="flex items-center gap-3">
+                                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#1D2542] text-xs font-bold text-white shadow-2xs">
+                                            {initials}
+                                        </div>
+                                        <div className="min-w-0 flex-1">
+                                            <p className="truncate text-xs sm:text-sm font-bold text-slate-900">
+                                                {record.owner_name || record.operator}
+                                            </p>
+                                            {record.operator_contact ? (
+                                                <a
+                                                    href={`tel:${record.operator_contact}`}
+                                                    className="mt-0.5 inline-flex items-center gap-1 text-xs text-slate-500 hover:text-slate-800"
+                                                >
+                                                    <Phone size={11} className="text-slate-400" />
+                                                    <span>{record.operator_contact}</span>
+                                                </a>
+                                            ) : (
+                                                <span className="text-xs text-slate-400">No contact provided</span>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Tricycle Driver — the actual person driving, or the owner again */}
+                                <div className="border-t border-slate-100 pt-3">
+                                    <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-2.5">
+                                        Tricycle Driver
+                                    </p>
+                                    <div className="flex items-center gap-3">
+                                        <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-bold shadow-2xs ${record.owner_is_driver ? 'bg-slate-200 text-slate-600' : 'bg-indigo-600 text-white'}`}>
+                                            {record.owner_is_driver ? <User size={15} strokeWidth={2.2} /> : getInitials(record.driver_name)}
+                                        </div>
+                                        <div className="min-w-0 flex-1">
+                                            <p className="truncate text-xs sm:text-sm font-bold text-slate-900">
+                                                {record.owner_is_driver
+                                                    ? (record.owner_name || record.operator)
+                                                    : (record.driver_name || 'No separate driver on record')}
+                                            </p>
+                                            <span className="mt-0.5 inline-flex items-center gap-1 text-[11px] font-semibold text-slate-500">
+                                                {record.owner_is_driver
+                                                    ? 'Owner is also the driver'
+                                                    : 'Separate from the owner'}
+                                            </span>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -561,26 +476,6 @@ export default function ViolationDetails({ violationId = 'VIO-26-0001', initialR
                                     <p className="mt-1 text-emerald-700 leading-relaxed">
                                         Payment confirmed on {record.paid_at || record.date}. This violation is resolved and does not hold any franchise restrictions.
                                     </p>
-                                    {record.official_receipt_number && (
-                                        <div className="mt-3 space-y-1.5 border-t border-emerald-200/70 pt-3 text-emerald-800">
-                                            <div className="flex items-center justify-between">
-                                                <span className="text-[10px] font-bold uppercase tracking-wide text-emerald-600">Official Receipt No.</span>
-                                                <span className="font-mono font-semibold">{record.official_receipt_number}</span>
-                                            </div>
-                                            {record.amount_paid !== null && (
-                                                <div className="flex items-center justify-between">
-                                                    <span className="text-[10px] font-bold uppercase tracking-wide text-emerald-600">Amount Paid</span>
-                                                    <span className="font-semibold">₱{Number(record.amount_paid).toFixed(2)}</span>
-                                                </div>
-                                            )}
-                                            {record.confirmed_by_name && (
-                                                <div className="flex items-center justify-between">
-                                                    <span className="text-[10px] font-bold uppercase tracking-wide text-emerald-600">Confirmed By</span>
-                                                    <span className="font-semibold">{record.confirmed_by_name}</span>
-                                                </div>
-                                            )}
-                                        </div>
-                                    )}
                                 </div>
                             ) : (
                                 <div className="rounded-lg border border-amber-200/80 bg-amber-50/70 p-3.5 text-xs">
@@ -598,8 +493,9 @@ export default function ViolationDetails({ violationId = 'VIO-26-0001', initialR
                                     ) : (
                                         <button
                                             type="button"
-                                            onClick={openPaymentModal}
-                                            className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-lg bg-amber-600 py-2.5 text-xs font-bold text-white shadow-2xs transition-all hover:bg-amber-700 active:scale-[0.98]"
+                                            onClick={handleConfirmPayment}
+                                            disabled={isSubmitting}
+                                            className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-lg bg-amber-600 py-2.5 text-xs font-bold text-white shadow-2xs transition-all hover:bg-amber-700 active:scale-[0.98] disabled:opacity-50"
                                         >
                                             <Wallet size={14} strokeWidth={2.2} />
                                             <span>Confirm Payment</span>
@@ -608,92 +504,104 @@ export default function ViolationDetails({ violationId = 'VIO-26-0001', initialR
                                 </div>
                             )}
                         </div>
-
-                        {/* Print Button (Pill button styled in #1D2542) */}
-                        <div className="mt-5 pt-3 border-t border-slate-100 print:hidden">
-                            <button
-                                type="button"
-                                onClick={() => window.print()}
-                                className="flex w-full items-center justify-center gap-2 rounded-full bg-[#1D2542] hover:bg-[#283256] text-white py-2.5 text-xs font-bold shadow-2xs transition-all active:scale-[0.98]"
-                            >
-                                <Printer size={14} strokeWidth={2.2} />
-                                <span>Print Official Notice</span>
-                            </button>
-                        </div>
                     </div>
 
                 </div>
             </div>
 
-            <Modal
-                show={showPaymentModal}
-                onClose={() => !paymentForm.processing && setShowPaymentModal(false)}
-                title={`Confirm Payment — ${record.id}`}
-                description="Enter the details from the official receipt the driver received at the Municipal Treasurer's cashier."
-                maxWidth="lg"
-                footer={
-                    <>
-                        <Button variant="secondary" onClick={() => setShowPaymentModal(false)} disabled={paymentForm.processing}>Cancel</Button>
-                        <Button variant="primary" onClick={handleConfirmPayment} loading={paymentForm.processing} icon={CheckCircle2}>
-                            Confirm Payment
-                        </Button>
-                    </>
-                }
-            >
-                <div className="space-y-4">
-                    <div className="flex items-center justify-between rounded-lg bg-slate-50 px-4 py-3">
-                        <span className="text-xs font-bold uppercase tracking-wide text-slate-500">Fine Amount</span>
-                        <span className="text-lg font-extrabold text-slate-900">₱{record.fine.toFixed(2)}</span>
-                    </div>
-
-                    <div>
-                        <Label required>Official Receipt Number</Label>
-                        <Input
-                            value={paymentForm.data.official_receipt_number}
-                            onChange={(e) => paymentForm.setData('official_receipt_number', e.target.value)}
-                            placeholder="e.g. OR-2026-004821"
-                            error={paymentForm.errors.official_receipt_number}
-                        />
-                        <ErrorText>{paymentForm.errors.official_receipt_number}</ErrorText>
-                    </div>
-
-                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                        <div>
-                            <Label required>Amount Paid</Label>
-                            <Input
-                                type="number"
-                                step="0.01"
-                                min="0"
-                                value={paymentForm.data.amount_paid}
-                                onChange={(e) => paymentForm.setData('amount_paid', e.target.value)}
-                                error={paymentForm.errors.amount_paid}
-                            />
-                            <ErrorText>{paymentForm.errors.amount_paid}</ErrorText>
+            {/* ══════════════════════════════════════════════════════════════
+                5. DRIVER APPEAL REVIEW — full-width row so it balances both
+                   columns above instead of stretching only the left one
+               ══════════════════════════════════════════════════════════════ */}
+            {appeal && (
+                <div className={`mt-6 overflow-hidden rounded-2xl border border-indigo-200/70 bg-white ${CARD_SHADOW}`}>
+                    <div className="flex items-center justify-between border-b border-indigo-100 bg-indigo-50/50 px-5 py-3.5">
+                        <div className="flex items-center gap-2">
+                            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500/[0.16] to-indigo-500/[0.02] text-indigo-700">
+                                <MessageSquareText size={15} strokeWidth={2.2} />
+                            </div>
+                            <h3 className="text-sm font-bold text-slate-900">
+                                Driver Appeal Review
+                            </h3>
                         </div>
-                        <div>
-                            <Label required>Payment Date</Label>
-                            <Input
-                                type="date"
-                                max={new Date().toISOString().slice(0, 10)}
-                                value={paymentForm.data.payment_date}
-                                onChange={(e) => paymentForm.setData('payment_date', e.target.value)}
-                                error={paymentForm.errors.payment_date}
-                            />
-                            <ErrorText>{paymentForm.errors.payment_date}</ErrorText>
-                        </div>
+                        <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-bold border ${
+                            appeal.status === 'under_review'
+                                ? 'bg-amber-50 text-amber-800 border-amber-200'
+                                : appeal.status === 'approved'
+                                ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                : 'bg-rose-50 text-rose-700 border-rose-200'
+                        }`}>
+                            {appeal.status === 'under_review' ? 'Pending Review' : appeal.status === 'approved' ? 'Approved' : 'Rejected'}
+                        </span>
                     </div>
 
-                    <div>
-                        <Label>Notes (optional)</Label>
-                        <Textarea
-                            value={paymentForm.data.notes}
-                            onChange={(e) => paymentForm.setData('notes', e.target.value)}
-                            placeholder="e.g. Cashier name, remarks"
-                            rows={2}
-                        />
+                    <div className="p-5">
+                        <div className="flex items-center justify-between text-xs text-slate-500 mb-3">
+                            <span>Submitted by: <strong className="text-slate-800">{appeal.driver_name}</strong></span>
+                            <span>{appeal.submitted_at}</span>
+                        </div>
+
+                        {/* Statement & evidence side-by-side on wide screens */}
+                        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+                            <div className="rounded-lg border border-slate-200/80 bg-slate-50/70 p-3.5 text-xs sm:text-sm text-slate-800 leading-relaxed italic h-full">
+                                "{appeal.reason}"
+                            </div>
+
+                            {appeal.evidence_url ? (
+                                <div>
+                                    <p className="text-xs font-bold text-slate-500 mb-2">Attached Photo Evidence:</p>
+                                    <a href={appeal.evidence_url} target="_blank" rel="noopener noreferrer" className="block group">
+                                        <img
+                                            src={appeal.evidence_url}
+                                            alt="Appeal evidence"
+                                            className="max-h-56 w-full rounded-lg border border-slate-200 object-cover shadow-2xs transition-transform group-hover:scale-[1.01]"
+                                        />
+                                    </a>
+                                </div>
+                            ) : (
+                                <div className="flex items-center gap-1.5 rounded-lg border border-dashed border-slate-200 px-3.5 py-4 text-xs text-slate-400 h-full">
+                                    <ImageOff size={13} />
+                                    <span>No supporting image was attached with this appeal.</span>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Action Buttons or Adjudication History */}
+                        {appeal.status === 'under_review' ? (
+                            <div className="mt-5 flex items-center gap-3 border-t border-slate-100 pt-4">
+                                <button
+                                    type="button"
+                                    onClick={handleApprove}
+                                    disabled={isSubmitting}
+                                    className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white py-2.5 text-xs font-bold shadow-2xs transition-all active:scale-[0.98] disabled:opacity-50"
+                                >
+                                    <ThumbsUp size={14} strokeWidth={2.2} />
+                                    <span>Approve Appeal</span>
+                                </button>
+
+                                <button
+                                    type="button"
+                                    onClick={handleReject}
+                                    disabled={isSubmitting}
+                                    className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-lg border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-700 py-2.5 text-xs font-bold shadow-2xs transition-all active:scale-[0.98] disabled:opacity-50"
+                                >
+                                    <ThumbsDown size={14} strokeWidth={2.2} />
+                                    <span>Reject Appeal</span>
+                                </button>
+                            </div>
+                        ) : (
+                            <div className="mt-4 rounded-lg border border-slate-100 bg-slate-50/60 p-3 text-xs text-slate-600">
+                                <p className="font-semibold">
+                                    Reviewed by: {appeal.reviewer_name || 'TMO Review Officer'} on {appeal.reviewed_at}
+                                </p>
+                                {appeal.review_notes && (
+                                    <p className="mt-1 text-slate-500 italic">"{appeal.review_notes}"</p>
+                                )}
+                            </div>
+                        )}
                     </div>
                 </div>
-            </Modal>
+            )}
         </TrivoraLayout>
     );
 }

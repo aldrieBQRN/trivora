@@ -7,9 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Application;
 use App\Models\ApplicationStatusHistory;
 use App\Models\FranchiseScheme;
-use App\Models\Payment;
 use App\Models\Tricycle;
-use App\Models\TodaZone;
 use App\Models\Violation;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -24,7 +22,7 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
  * TMO Reports & Analytics — historical/trend analytics, distinct from every other
  * TMO page (dashboard + 4 pipeline queues), which only ever show today's snapshot
  * counts. Every metric here is computed straight from the real Violation/Application/
- * Tricycle/Payment tables — no fabricated values, no hardcoded "Automated GPS"-style
+ * Tricycle tables — no fabricated values, no hardcoded "Automated GPS"-style
  * shortcuts like the older DashboardController::violations() takes.
  */
 class ReportController extends Controller
@@ -33,29 +31,39 @@ class ReportController extends Controller
 
     public function index(Request $request): Response
     {
+        // Tabbed the same way as BPLO\ReportController — only the active tab's data is
+        // computed per request, not all three every time. Unknown/legacy tab values fall
+        // back to the default tab instead of erroring.
         $tab = $request->query('tab', 'violations');
-        [$from, $to] = $this->resolveDateRange($request);
+        if (! in_array($tab, ['violations', 'applications', 'fleet'], true)) {
+            $tab = 'violations';
+        }
 
-        $reportData = match ($tab) {
-            'applications' => $this->applicationsReport($from, $to, $request),
-            'fleet'        => $this->fleetReport($request),
-            'collections'  => $this->collectionsReport($from, $to),
-            default        => $this->violationsReport($from, $to, $request),
-        };
+        // Fleet is a registry cohort filtered by registration date, and unlike Violations/
+        // Applications has no default range — leaving it blank means "all time", not "last 30
+        // days", so the tab's default view still shows the whole registry.
+        if ($tab === 'fleet') {
+            [$from, $to] = $this->resolveOptionalDateRange($request);
+            $reportData = ['fleet' => $this->fleetReport($from, $to, $request)];
+        } else {
+            [$from, $to] = $this->resolveDateRange($request);
+            $reportData = $tab === 'applications'
+                ? ['applications' => $this->applicationsReport($from, $to, $request)]
+                : ['violations' => $this->violationsReport($from, $to, $request)];
+        }
 
         return Inertia::render('TMODashboard/Reports/Index', [
-            'tab'       => $tab,
-            'from'      => $from->toDateString(),
-            'to'        => $to->toDateString(),
-            'filters'   => [
-                'toda_zone_id'     => $request->query('toda_zone_id'),
+            'tab'        => $tab,
+            'from'       => $from?->toDateString() ?? '',
+            'to'         => $to?->toDateString() ?? '',
+            'filters'    => [
                 'violation_type'   => $request->query('violation_type'),
                 'detection_method' => $request->query('detection_method'),
+                'violation_status' => $request->query('violation_status'),
                 'application_type' => $request->query('application_type'),
                 'tricycle_status'  => $request->query('tricycle_status'),
             ],
-            'todaZones' => TodaZone::orderBy('name')->get(['id', 'name']),
-            'reportData'=> $reportData,
+            'reportData' => $reportData,
         ]);
     }
 
@@ -85,11 +93,19 @@ class ReportController extends Controller
             'Appeals Filed'    => number_format($data['kpis']['appeals_filed']),
         ], [2, 2, 2, 2, 3]);
 
+        $row = $this->writeSectionTitle($sheet, $row, 'Violation Status Breakdown');
+        $row = $this->writeTable(
+            $sheet,
+            $row,
+            ['Status', 'Violations Count'],
+            collect($data['by_status'])->map(fn ($s) => [$s['label'], (int) $s['count']])->all()
+        );
+
         $row = $this->writeSectionTitle($sheet, $row, 'Official Violation Log');
         $row = $this->writeTable(
             $sheet,
             $row,
-            ['Ticket No.', 'Date', 'Time', 'Type', 'Detection Method', 'Operator', 'Plate No.', 'TODA Zone', 'Fine Amount (PHP)', 'Paid', 'Appeal Status'],
+            ['Ticket No.', 'Date', 'Time', 'Type', 'Detection Method', 'Operator', 'Plate No.', 'Fine Amount (PHP)', 'Paid', 'Appeal Status'],
             $data['records']->map(fn ($r) => [
                 $r['id'],
                 $r['date'],
@@ -98,7 +114,6 @@ class ReportController extends Controller
                 $r['detection_method'],
                 $r['operator'],
                 $r['plate'],
-                $r['toda'],
                 (float) $r['fine'],
                 $r['is_paid'] ? 'Paid' : 'Unpaid',
                 $r['appeal_status'] ? ucfirst(str_replace('_', ' ', $r['appeal_status'])) : 'None',
@@ -138,14 +153,13 @@ class ReportController extends Controller
 
         $totalSubmitted = max($data['kpis']['submitted'], 1);
         $stagePhases = [
-            'Document Review'             => 'Initial Evaluation',
-            'Re-submission'               => 'Applicant Revision',
-            'Physical Inspection'         => 'Field Inspection',
-            'Re-inspection'               => 'Follow-up Inspection',
-            'Municipal Treasurer Payment' => 'Treasury Assessment',
-            'BPLO Releasing'              => 'BPLO Processing',
-            'Final Confirmation'          => 'Final Endorsement',
-            'Completed'                   => 'Franchise Issued',
+            'Document Review'      => 'Initial Evaluation',
+            'Re-submission'        => 'Applicant Revision',
+            'Physical Inspection'  => 'Field Inspection',
+            'Re-inspection'        => 'Follow-up Inspection',
+            'Pending BPLO Release' => 'Cashier Referral & BPLO Processing',
+            'Final Confirmation'   => 'Final Endorsement',
+            'Completed'            => 'Franchise Issued',
         ];
 
         $row = $this->writeSectionTitle($sheet, $row, 'Current Stage Breakdown');
@@ -194,7 +208,8 @@ class ReportController extends Controller
 
     public function exportFleetExcel(Request $request): StreamedResponse
     {
-        $data = $this->fleetReport($request);
+        [$from, $to] = $this->resolveOptionalDateRange($request);
+        $data = $this->fleetReport($from, $to, $request);
 
         $spreadsheet = new Spreadsheet();
         $spreadsheet->getDefaultStyle()->getFont()->setName('Segoe UI');
@@ -205,31 +220,36 @@ class ReportController extends Controller
         $row = $this->writeReportHeader(
             $sheet,
             'Fleet & Franchise Registry Report',
-            'As of: ' . now()->format('F d, Y \a\t h:i A'),
+            ($from && $to)
+                ? 'Registered: ' . $from->format('F d, Y') . ' to ' . $to->format('F d, Y')
+                : 'As of: ' . now()->format('F d, Y \a\t h:i A'),
             5
         );
 
         $row = $this->writeKpiRow($sheet, $row, [
-            'Total Registered' => number_format($data['kpis']['total']),
-            'Active Units'     => number_format($data['kpis']['active']),
-            'Suspended Units'  => number_format($data['kpis']['suspended']),
-            'Revoked Units'    => number_format($data['kpis']['revoked']),
-        ], [2, 1, 1, 1]);
+            'Total Registered'   => number_format($data['kpis']['total']),
+            'Active Units'       => number_format($data['kpis']['active']),
+            'Unregistered Units' => number_format($data['kpis']['unregistered']),
+            'Suspended Units'    => number_format($data['kpis']['suspended']),
+            'Revoked Units'      => number_format($data['kpis']['revoked']),
+        ], [1, 1, 1, 1, 1]);
 
         $totalFleet = max($data['kpis']['total'], 1);
 
-        $row = $this->writeSectionTitle($sheet, $row, 'Fleet Distribution by TODA Zone');
+        $row = $this->writeSectionTitle($sheet, $row, 'Fleet Status Breakdown');
         $row = $this->writeTable(
             $sheet,
             $row,
-            ['TODA Zone', 'Zone Category', 'Units Registered', 'Fleet Share', 'Operational Status'],
-            $data['by_toda']->map(fn ($z) => [
-                $z['zone'],
-                'Recognized TODA',
-                (int) $z['count'],
-                number_format(($z['count'] / $totalFleet) * 100, 1) . '%',
-                $z['count'] > 0 ? 'Active Route' : 'No Active Units',
-            ])->all()
+            ['Status', 'Units Count'],
+            collect($data['by_status'])->map(fn ($s) => [$s['label'], (int) $s['count']])->all()
+        );
+
+        $row = $this->writeSectionTitle($sheet, $row, 'Registry Activity (Daily)');
+        $row = $this->writeTable(
+            $sheet,
+            $row,
+            ['Date', 'Units Registered'],
+            collect($data['registration_trend'])->map(fn ($t) => [$t['date'], (int) $t['count']])->all()
         );
 
         $row = $this->writeSectionTitle($sheet, $row, 'Fleet by Color Coding Scheme');
@@ -273,56 +293,15 @@ class ReportController extends Controller
             );
         }
 
-        $filename = 'trivora_fleet_report_' . now()->toDateString() . '.xlsx';
-
-        return $this->streamExcel($spreadsheet, $filename);
-    }
-
-    public function exportCollectionsExcel(Request $request): StreamedResponse
-    {
-        [$from, $to] = $this->resolveDateRange($request);
-        $data = $this->collectionsReport($from, $to);
-
-        $spreadsheet = new Spreadsheet();
-        $spreadsheet->getDefaultStyle()->getFont()->setName('Segoe UI');
-        $sheet = $spreadsheet->getActiveSheet();
-        $sheet->setTitle('Collections Report');
-        $sheet->getPageSetup()->setOrientation(PageSetup::ORIENTATION_PORTRAIT);
-
-        $row = $this->writeReportHeader(
-            $sheet,
-            'Revenue & Collections Summary Report',
-            'Period: ' . $from->format('F d, Y') . ' to ' . $to->format('F d, Y'),
-            4
-        );
-
-        $row = $this->writeKpiRow($sheet, $row, [
-            'MTOP Franchise Fees' => 'PHP ' . number_format($data['kpis']['fees_collected'], 2),
-            'Violation Fines'     => 'PHP ' . number_format($data['kpis']['fines_collected'], 2),
-            'Combined Total'      => 'PHP ' . number_format($data['kpis']['combined_total'], 2),
-        ], [1, 1, 2]);
-
-        $row = $this->writeSectionTitle($sheet, $row, 'Daily Collections Breakdown');
-        $row = $this->writeTable(
-            $sheet,
-            $row,
-            ['Collection Date', 'Franchise Fees (PHP)', 'Violation Fines (PHP)', 'Daily Total (PHP)'],
-            $data['trend']->map(fn ($t) => [
-                $t['date'],
-                (float) $t['fees'],
-                (float) $t['fines'],
-                (float) ($t['fees'] + $t['fines']),
-            ])->all(),
-            true
-        );
-
-        $filename = 'trivora_collections_report_' . $from->toDateString() . '_to_' . $to->toDateString() . '.xlsx';
+        $filename = ($from && $to)
+            ? 'trivora_fleet_report_' . $from->toDateString() . '_to_' . $to->toDateString() . '.xlsx'
+            : 'trivora_fleet_report_' . now()->toDateString() . '.xlsx';
 
         return $this->streamExcel($spreadsheet, $filename);
     }
 
     // -------------------------------------------------------------------------
-    // Per-tab report builders
+    // Per-tab report builders (only the active tab's builder runs per request)
     // -------------------------------------------------------------------------
 
     private function resolveDateRange(Request $request): array
@@ -332,22 +311,56 @@ class ReportController extends Controller
         return [$from, $to];
     }
 
+    /**
+     * Like resolveDateRange(), but with no default range at all — used by the Fleet report,
+     * whose natural default view is the entire registry, not a rolling 30-day window. Returns
+     * [null, null] when the caller hasn't supplied both bounds, so the fleet query stays
+     * unrestricted until the officer explicitly picks a day or a range.
+     */
+    private function resolveOptionalDateRange(Request $request): array
+    {
+        $fromParam = $request->query('from');
+        $toParam = $request->query('to');
+
+        $from = $fromParam ? Carbon::parse($fromParam)->startOfDay() : null;
+        $to = $toParam ? Carbon::parse($toParam)->endOfDay() : null;
+
+        return [$from, $to];
+    }
+
+    /**
+     * UI-facing status groups for the Violations report filter, mapped onto the real
+     * violations.status enum (open/acknowledged/contested/resolved/dismissed) — the same
+     * "unsettled vs settled" grouping already used elsewhere (e.g. ViolationPaymentController,
+     * Operator\DashboardController), so these buckets match how the rest of the app already
+     * reasons about violation status. 'dismissed' has no dedicated filter option but is still
+     * included whenever no status filter is applied ("All Statuses").
+     *
+     * Deliberately no "Appeal" bucket: whether an appeal was ever filed is a different facet
+     * from settlement status (a violation can be pending-with-an-appeal, settled-with-an-appeal,
+     * or settled-with-no-appeal), and cramming it into this single-select would blur that
+     * distinction. The "Appeals Filed" KPI and its approval rate already cover appeal analysis.
+     */
+    private const VIOLATION_STATUS_GROUPS = [
+        'pending' => ['open', 'acknowledged'],
+        'settled' => ['resolved'],
+    ];
+
     private function violationsReport(Carbon $from, Carbon $to, Request $request): array
     {
-        $todaId = $request->query('toda_zone_id');
         $type = $request->query('violation_type');
         $method = $request->query('detection_method');
+        $statusGroup = $request->query('violation_status');
+        $statusValues = self::VIOLATION_STATUS_GROUPS[$statusGroup] ?? null;
 
         $base = Violation::whereBetween('detected_at', [$from, $to])
             ->when($type, fn ($q) => $q->where('violation_type', $type))
             ->when($method, fn ($q) => $q->where('detection_method', $method))
-            ->when($todaId, function ($q) use ($todaId) {
-                $q->whereHas('tricycle', fn ($t) => $t->where('toda_zone_id', $todaId));
-            });
+            ->when($statusValues, fn ($q) => $q->whereIn('status', $statusValues));
 
         $totalViolations = (clone $base)->count();
         $finesAssessed = (float) (clone $base)->sum('fine_amount');
-        $finesCollected = (float) (clone $base)->whereNotNull('fine_paid_at')->sum('amount_paid');
+        $finesCollected = (float) (clone $base)->whereNotNull('fine_paid_at')->sum('fine_amount');
         $collectionRate = $finesAssessed > 0 ? round(($finesCollected / $finesAssessed) * 100, 1) : 0.0;
 
         $appealsFiled = (clone $base)->whereHas('appeal')->count();
@@ -382,23 +395,29 @@ class ReportController extends Controller
             'count' => (int) ($byDayRows[$d]->c ?? 0),
         ])->values();
 
-        $byToda = DB::table('toda_zones')
-            ->leftJoin('tricycles', 'toda_zones.id', '=', 'tricycles.toda_zone_id')
-            ->leftJoin('violations', function ($j) use ($from, $to) {
-                $j->on('violations.tricycle_id', '=', 'tricycles.id')
-                    ->whereBetween('violations.detected_at', [$from, $to]);
-            })
-            ->select('toda_zones.name', DB::raw('COUNT(violations.id) as c'))
-            ->groupBy('toda_zones.id', 'toda_zones.name')
-            ->get()
-            ->map(fn ($r) => ['zone' => $r->name, 'count' => (int) $r->c])
+        // Full, real breakdown across every violations.status value — deliberately not collapsed
+        // into the filter's pending/settled grouping, so contested/dismissed cases (a compliance-
+        // relevant signal) stay visible in the chart even though they have no dedicated filter option.
+        $statusLabels = [
+            'open'         => 'Open',
+            'acknowledged' => 'Acknowledged',
+            'contested'    => 'Contested',
+            'resolved'     => 'Resolved',
+            'dismissed'    => 'Dismissed',
+        ];
+        $statusCounts = (clone $base)
+            ->selectRaw('status, COUNT(*) as c')
+            ->groupBy('status')
+            ->pluck('c', 'status');
+        $byStatus = collect($statusLabels)
+            ->map(fn ($label, $key) => ['status' => $key, 'label' => $label, 'count' => (int) ($statusCounts[$key] ?? 0)])
             ->values();
 
         $automatedCount = (clone $base)->where('detection_method', 'automated')->count();
         $manualCount = (clone $base)->where('detection_method', 'manual')->count();
 
         $records = (clone $base)
-            ->with(['tricycle.operator', 'tricycle.todaZone', 'appeal'])
+            ->with(['tricycle.operator', 'appeal'])
             ->orderByDesc('detected_at')
             ->get()
             ->map(fn ($v) => [
@@ -410,7 +429,6 @@ class ReportController extends Controller
                 'detection_method' => ucfirst($v->detection_method),
                 'operator'         => $v->tricycle?->operator?->full_name ?: 'N/A',
                 'plate'            => $v->tricycle?->plate_number ?: 'N/A',
-                'toda'             => $v->tricycle?->todaZone?->name ?: 'Unassigned',
                 'fine'             => (float) $v->fine_amount,
                 'is_paid'          => $v->fine_paid_at !== null,
                 'appeal_status'    => $v->appeal?->status,
@@ -429,7 +447,7 @@ class ReportController extends Controller
             'trend'           => $trend,
             'by_type'         => $byType,
             'by_day_of_week'  => $byDayOfWeek,
-            'by_toda'         => $byToda,
+            'by_status'       => $byStatus,
             'detection_split' => ['automated' => $automatedCount, 'manual' => $manualCount],
             'records'         => $records,
             // Filter dropdowns only ever offer values that actually occur somewhere in the
@@ -443,35 +461,56 @@ class ReportController extends Controller
         ];
     }
 
-    private function fleetReport(Request $request): array
+    private function fleetReport(?Carbon $from, ?Carbon $to, Request $request): array
     {
-        $todaId = $request->query('toda_zone_id');
         $status = $request->query('tricycle_status');
+        $hasDateFilter = $from && $to;
 
         $base = Tricycle::query()
-            ->when($status, fn ($q) => $q->where('status', $status))
-            ->when($todaId, fn ($q) => $q->where('toda_zone_id', $todaId));
+            ->when($hasDateFilter, fn ($q) => $q->whereBetween('tricycles.created_at', [$from, $to]))
+            ->when($status, fn ($q) => $q->where('tricycles.status', $status));
 
         $total = (clone $base)->count();
         $active = (clone $base)->where('status', 'active')->count();
         $suspended = (clone $base)->where('status', 'suspended')->count();
         $revoked = (clone $base)->where('status', 'revoked')->count();
+        // 'unregistered' is the real, live status a tricycle is created with (see
+        // RegistrationController) before its franchise is finalized — usually the largest
+        // cohort while applications are still mid-pipeline, so it belongs in the breakdown.
+        $unregistered = (clone $base)->where('status', 'unregistered')->count();
 
         $iotCount = (clone $base)->where('active_tracking_mode', 'iot_device')->count();
         $mobileCount = (clone $base)->where('active_tracking_mode', 'mobile_app')->count();
 
-        $byToda = DB::table('toda_zones')
-            ->leftJoin('tricycles', 'toda_zones.id', '=', 'tricycles.toda_zone_id')
-            ->select('toda_zones.name', DB::raw('count(tricycles.id) as c'))
-            ->groupBy('toda_zones.id', 'toda_zones.name')
-            ->get()
-            ->map(fn ($r) => ['zone' => $r->name, 'count' => (int) $r->c])
+        $statusLabels = [
+            'active'       => 'Active',
+            'unregistered' => 'Unregistered',
+            'suspended'    => 'Suspended',
+            'revoked'      => 'Revoked',
+        ];
+        $statusCounts = ['active' => $active, 'unregistered' => $unregistered, 'suspended' => $suspended, 'revoked' => $revoked];
+        $byStatus = collect($statusLabels)
+            ->map(fn ($label, $key) => ['status' => $key, 'label' => $label, 'count' => $statusCounts[$key]])
             ->values();
 
+        $registrationTrend = (clone $base)
+            ->selectRaw('DATE(created_at) as d, COUNT(*) as c')
+            ->groupBy('d')
+            ->orderBy('d')
+            ->get()
+            ->map(fn ($r) => ['date' => $r->d, 'count' => (int) $r->c])
+            ->values();
+
+        // Scoped to the same filtered cohort as everything else above — a franchise scheme only
+        // counts toward a color here if its tricycle is one of the ones matching the current
+        // date/status filters, not the whole registry.
+        $tricycleIds = (clone $base)->pluck('id');
+
         $byColorScheme = DB::table('color_coding_schemes')
-            ->leftJoin('franchise_schemes', function ($j) {
+            ->leftJoin('franchise_schemes', function ($j) use ($tricycleIds) {
                 $j->on('franchise_schemes.color_coding_scheme_id', '=', 'color_coding_schemes.id')
-                    ->where('franchise_schemes.is_active', true);
+                    ->where('franchise_schemes.is_active', true)
+                    ->whereIn('franchise_schemes.tricycle_id', $tricycleIds);
             })
             ->select('color_coding_schemes.name', 'color_coding_schemes.color_hex', DB::raw('count(franchise_schemes.id) as c'))
             ->groupBy('color_coding_schemes.id', 'color_coding_schemes.name', 'color_coding_schemes.color_hex')
@@ -495,17 +534,20 @@ class ReportController extends Controller
 
         return [
             'kpis' => [
-                'total'      => $total,
-                'active'     => $active,
-                'suspended'  => $suspended,
-                'revoked'    => $revoked,
-                'iot_pct'    => $total > 0 ? round(($iotCount / $total) * 100, 1) : 0.0,
-                'mobile_pct' => $total > 0 ? round(($mobileCount / $total) * 100, 1) : 0.0,
+                'total'        => $total,
+                'active'       => $active,
+                'suspended'    => $suspended,
+                'revoked'      => $revoked,
+                'unregistered' => $unregistered,
+                'iot_pct'      => $total > 0 ? round(($iotCount / $total) * 100, 1) : 0.0,
+                'mobile_pct'   => $total > 0 ? round(($mobileCount / $total) * 100, 1) : 0.0,
             ],
-            'by_toda'         => $byToda,
-            'by_color_scheme' => $byColorScheme,
-            'tracking_split'  => ['iot' => $iotCount, 'mobile' => $mobileCount],
-            'expiring'        => $expiring,
+            'has_date_filter'    => $hasDateFilter,
+            'registration_trend' => $registrationTrend,
+            'by_status'          => $byStatus,
+            'by_color_scheme'    => $byColorScheme,
+            'tracking_split'     => ['iot' => $iotCount, 'mobile' => $mobileCount],
+            'expiring'           => $expiring,
         ];
     }
 
@@ -538,15 +580,20 @@ class ReportController extends Controller
             ->map(fn ($r) => ['date' => $r->d, 'count' => (int) $r->c])
             ->values();
 
+        // Mirrors the real, live Application.status vocabulary (see Application.php's scopes) —
+        // 'pending_payment'/'payment_issue'/'payment_verified'/'paid' were retired when the
+        // Municipal Treasurer payment step was removed from the system; 'pending_bplo_release'
+        // is the single status that now covers "cleared inspection, pay externally, then BPLO
+        // releases the sticker/plate." Keeping the old dead statuses here silently dropped every
+        // pending-BPLO-release application from this breakdown entirely.
         $stageGroups = [
-            'Document Review'              => ['draft', 'pending_review', 'under_review'],
-            'Re-submission'                => ['rejected'],
-            'Physical Inspection'          => ['pending_inspection', 'under_inspection'],
-            'Re-inspection'                => ['failed_inspection'],
-            'Municipal Treasurer Payment'  => ['pending_payment', 'payment_issue'],
-            'BPLO Releasing'               => ['payment_verified', 'paid'],
-            'Final Confirmation'           => ['awaiting_tmo_confirmation'],
-            'Completed'                    => ['completed', 'scheme_issued'],
+            'Document Review'       => ['draft', 'pending_review', 'under_review'],
+            'Re-submission'         => ['rejected'],
+            'Physical Inspection'   => ['pending_inspection', 'under_inspection'],
+            'Re-inspection'         => ['failed_inspection'],
+            'Pending BPLO Release'  => ['pending_bplo_release'],
+            'Final Confirmation'    => ['awaiting_tmo_confirmation'],
+            'Completed'             => ['completed'],
         ];
         $byStage = collect($stageGroups)
             ->map(fn ($statuses, $label) => ['stage' => $label, 'count' => (clone $base)->whereIn('status', $statuses)->count()])
@@ -588,46 +635,6 @@ class ReportController extends Controller
             'by_stage'          => $byStage,
             'type_split'        => ['new' => $newCount, 'renewal' => $renewalCount],
             'avg_time_in_stage' => $avgTimeInStage,
-        ];
-    }
-
-    private function collectionsReport(Carbon $from, Carbon $to): array
-    {
-        $fees = (float) Payment::whereBetween('payment_date', [$from->toDateString(), $to->toDateString()])
-            ->where('is_verified', true)
-            ->sum('amount');
-
-        $fines = (float) Violation::whereBetween('fine_paid_at', [$from, $to])->sum('amount_paid');
-
-        $feesTrend = Payment::whereBetween('payment_date', [$from->toDateString(), $to->toDateString()])
-            ->where('is_verified', true)
-            ->selectRaw('payment_date as d, SUM(amount) as c')
-            ->groupBy('d')
-            ->orderBy('d')
-            ->get()
-            ->keyBy(fn ($r) => (string) $r->d);
-
-        $finesTrend = Violation::whereBetween('fine_paid_at', [$from, $to])
-            ->selectRaw('DATE(fine_paid_at) as d, SUM(amount_paid) as c')
-            ->groupBy('d')
-            ->orderBy('d')
-            ->get()
-            ->keyBy(fn ($r) => (string) $r->d);
-
-        $allDates = $feesTrend->keys()->merge($finesTrend->keys())->unique()->sort()->values();
-        $trend = $allDates->map(fn ($date) => [
-            'date'  => $date,
-            'fees'  => (float) ($feesTrend[$date]->c ?? 0),
-            'fines' => (float) ($finesTrend[$date]->c ?? 0),
-        ])->values();
-
-        return [
-            'kpis' => [
-                'fees_collected'  => $fees,
-                'fines_collected' => $fines,
-                'combined_total'  => $fees + $fines,
-            ],
-            'trend' => $trend,
         ];
     }
 }

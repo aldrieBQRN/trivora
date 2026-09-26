@@ -32,10 +32,15 @@ class SimulateTelematics extends Command
 
         $this->info("🚀 Starting TODA Telematics Simulator ({$count} cycles, {$interval}s interval)...");
 
-        $tricycles = Tricycle::all();
+        // Only simulate for tricycles whose franchise has actually been activated — a unit still
+        // mid-application has no real GPS history yet, and the Driver Portal now relies on that
+        // absence to correctly hide tracking data for pending applications (see operator.fleet /
+        // operator.tracking in routes/web.php). Simulating pings for a pending unit would defeat
+        // that guard with fake-but-present data.
+        $tricycles = Tricycle::where('status', 'active')->get();
 
         if ($tricycles->isEmpty()) {
-            $this->warn('No tricycles found in database. Seed tricycles first.');
+            $this->warn('No active tricycles found in database. Nothing to simulate for pending/unregistered units.');
             return;
         }
 

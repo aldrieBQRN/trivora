@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Models\Application;
 use App\Models\ApplicationStatusHistory;
 use App\Models\Inspection;
-use App\Models\TodaZone;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -27,7 +26,7 @@ class InspectionController extends Controller
         // append-only application_status_histories table's own created_at is the true, immutable
         // "entered this phase" timestamp. Oldest-entered first, so the longest-waiting unit is
         // processed first.
-        $applications = Application::with(['operator.todaZone', 'tricycle.todaZone', 'inspections'])
+        $applications = Application::with(['operator', 'tricycle', 'inspections'])
             ->whereIn('status', ['pending_inspection', 'under_inspection', 'failed_inspection'])
             ->addSelect(['queue_entered_at' => ApplicationStatusHistory::select('created_at')
                 ->whereColumn('application_id', 'applications.id')
@@ -38,35 +37,33 @@ class InspectionController extends Controller
             ->orderBy('queue_entered_at', 'asc')
             ->get()
             ->map(function ($app) {
-                if ($app->status === 'failed_inspection' || $app->inspections->contains('result', 'failed')) {
-                    $statusLabel = 'Re-inspection';
+                if ($app->status === 'failed_inspection') {
+                    $statusLabel = 'Reinspection Required';
+                } elseif ($app->inspections->contains('result', 'failed')) {
+                    $statusLabel = 'Ready for Reinspection';
                 } else {
-                    $statusLabel = 'Scheduled';
+                    $statusLabel = 'Awaiting Inspection';
                 }
 
-                $todaName = $app->tricycle?->todaZone?->name 
-                    ?? $app->operator?->todaZone?->name 
-                    ?? 'Unassigned';
-                
                 return [
                     'id'             => $app->id,
                     'reference'      => $app->reference_number,
                     'operator'       => $app->operator ? $app->operator->full_name : 'N/A',
                     'contact'        => $app->operator ? $app->operator->contact_number : 'N/A',
-                    'toda'           => $todaName,
-                    'toda_id'        => $app->tricycle?->toda_zone_id ?? $app->operator?->toda_zone_id,
                     'make'           => $app->tricycle ? trim("{$app->tricycle->make} {$app->tricycle->model}") : 'N/A',
                     'plate'          => $app->tricycle ? ($app->tricycle->plate_number ?: '—') : '—',
-                    'scheduled_date' => $app->updated_at->toDateString(),
-                    'time_slot'      => $app->updated_at->format('h:i A'),
                     'status'         => $statusLabel,
                     'raw_status'     => $app->status,
+                    'submitted_at'   => $app->submitted_at ? $app->submitted_at->format('M d, Y') : ($app->created_at ? $app->created_at->format('M d, Y') : null),
+                    'updated_at_fmt' => $app->updated_at ? $app->updated_at->format('M d, Y · h:i A') : null,
                 ];
             });
 
-        $scheduledCount = $applications->where('status', 'Scheduled')->count();
-        $reinspectionCount = $applications->where('status', 'Re-inspection')->count();
-        
+        $awaitingCount = $applications->where('status', 'Awaiting Inspection')->count();
+        $readyReinspectionCount = $applications->where('status', 'Ready for Reinspection')->count();
+        $reinspectionRequiredCount = $applications->where('status', 'Reinspection Required')->count();
+        $reinspectionCount = $readyReinspectionCount + $reinspectionRequiredCount;
+
         // Count inspections passed today by the current inspector
         $passedTodayCount = Inspection::where('inspector_id', Auth::id())
             ->whereDate('created_at', now()->toDateString())
@@ -78,16 +75,15 @@ class InspectionController extends Controller
             ->whereDate('created_at', now()->toDateString())
             ->count();
 
-        // Get all TODA zones from the database for filter dropdown
-        $todaZones = TodaZone::orderBy('name')->get(['id', 'name']);
-
         return Inertia::render('TMODashboard/PhysicalQueue', [
-            'applications'        => $applications,
-            'todaZones'           => $todaZones,
-            'scheduledCount'      => $scheduledCount,
-            'reinspectionCount'   => $reinspectionCount,
-            'passedTodayCount'    => $passedTodayCount,
-            'completedTodayCount' => $completedTodayCount,
+            'applications'              => $applications,
+            'awaitingCount'             => $awaitingCount,
+            'readyReinspectionCount'    => $readyReinspectionCount,
+            'reinspectionRequiredCount' => $reinspectionRequiredCount,
+            'scheduledCount'            => $awaitingCount,
+            'reinspectionCount'         => $reinspectionCount,
+            'passedTodayCount'          => $passedTodayCount,
+            'completedTodayCount'       => $completedTodayCount,
         ]);
     }
 
@@ -96,48 +92,44 @@ class InspectionController extends Controller
      */
     public function show(Application $application): Response
     {
-        $application->load(['operator.todaZone', 'tricycle.todaZone', 'inspections']);
+        $application->load(['operator', 'tricycle', 'tricycleDriver', 'inspections']);
 
         $operator = $application->operator;
         $tricycle = $application->tricycle;
         $latestInspection = $application->inspections->sortByDesc('attempt_number')->first();
 
-        // Load pre-existing state if any (useful for re-inspection)
-        $inspectionStatuses = [];
-        $defectNotes = [];
-        if ($latestInspection && $latestInspection->inspector_notes) {
-            $notesData = json_decode($latestInspection->inspector_notes, true);
-            if (is_array($notesData)) {
-                $inspectionStatuses = $notesData['statuses'] ?? [];
-                $defectNotes = $notesData['defects'] ?? [];
-            }
+        // Check if this is a re-inspection attempt
+        $attemptCount = $application->inspections->count();
+        $isReinspection = $attemptCount > 0 && $latestInspection && $latestInspection->result === 'failed';
+        $previousRejectionReason = null;
+        if ($isReinspection) {
+            $previousRejectionReason = $latestInspection->overall_notes;
         }
 
-        $todaName = $tricycle?->todaZone?->name 
-            ?? $operator?->todaZone?->name 
-            ?? 'Unassigned';
-
         $appData = [
-            'id'                 => $application->id,
-            'reference'          => $application->reference_number,
-            'operator'           => $operator ? $operator->full_name : 'N/A',
-            'contact'            => $operator ? $operator->contact_number : 'N/A',
-            'barangay'           => $operator ? $operator->barangay : 'N/A',
-            'toda'               => $todaName,
-            'make'               => $tricycle ? trim("{$tricycle->make} {$tricycle->model}") : 'N/A',
-            'make_name'          => $tricycle ? $tricycle->make : 'N/A',
-            'model_name'         => $tricycle ? $tricycle->model : 'N/A',
-            'year_model'         => $tricycle ? ($tricycle->year_model ?: '—') : '—',
-            'body_color'         => $tricycle ? ($tricycle->body_color ?: '—') : '—',
-            'body_type'          => $tricycle ? ($tricycle->body_type ?: '—') : '—',
-            'engine_number'      => $tricycle ? ($tricycle->engine_number ?: '—') : '—',
-            'chassis_number'     => $tricycle ? ($tricycle->chassis_number ?: '—') : '—',
-            'plate'              => $tricycle ? ($tricycle->plate_number ?: '—') : '—',
-            'or_number'          => $tricycle ? ($tricycle->or_number ?: '—') : '—',
-            'cr_number'          => $tricycle ? ($tricycle->cr_number ?: '—') : '—',
-            'status'             => $application->status,
-            'inspectionStatuses' => $inspectionStatuses,
-            'defectNotes'        => $defectNotes,
+            'id'                        => $application->id,
+            'reference'                 => $application->reference_number,
+            'operator'                  => $operator ? $operator->full_name : 'N/A',
+            'owner'                     => $application->ownerDetails(),
+            'ownerIsDriver'             => (bool) $application->owner_is_driver,
+            'tricycleDriver'            => $application->driverDetails(),
+            'contact'                   => $operator ? $operator->contact_number : 'N/A',
+            'barangay'                  => $operator ? $operator->barangay : 'N/A',
+            'make'                      => $tricycle ? trim("{$tricycle->make} {$tricycle->model}") : 'N/A',
+            'make_name'                 => $tricycle ? $tricycle->make : 'N/A',
+            'model_name'                => $tricycle ? $tricycle->model : 'N/A',
+            'year_model'                => $tricycle ? ($tricycle->year_model ?: '—') : '—',
+            'body_color'                => $tricycle ? ($tricycle->body_color ?: '—') : '—',
+            'body_type'                 => $tricycle ? ($tricycle->body_type ?: '—') : '—',
+            'engine_number'             => $tricycle ? ($tricycle->engine_number ?: '—') : '—',
+            'chassis_number'            => $tricycle ? ($tricycle->chassis_number ?: '—') : '—',
+            'plate'                     => $tricycle ? ($tricycle->plate_number ?: '—') : '—',
+            'or_number'                 => $tricycle ? ($tricycle->or_number ?: '—') : '—',
+            'cr_number'                 => $tricycle ? ($tricycle->cr_number ?: '—') : '—',
+            'status'                    => $application->status,
+            'attempt_count'             => $attemptCount,
+            'is_reinspection'           => $isReinspection,
+            'previous_rejection_reason' => $previousRejectionReason,
         ];
 
         return Inertia::render('TMODashboard/PhysicalInspection', [
@@ -146,43 +138,70 @@ class InspectionController extends Controller
     }
 
     /**
-     * Submit physical inspection report.
+     * Submit physical inspection report (Single overall decision: Approve or Reject).
      */
     public function store(Request $request, Application $application): RedirectResponse
     {
-        $request->validate([
-            'action'             => 'required|in:pass,fail',
-            'inspectionStatuses' => 'required|array',
-            'defectNotes'        => 'nullable|array',
-        ]);
+        $action = strtolower((string) $request->input('action'));
 
-        $action = $request->input('action');
-        $inspectionStatuses = $request->input('inspectionStatuses');
-        $defectNotes = $request->input('defectNotes', []);
+        // Support both 'approve'/'reject' and legacy 'pass'/'fail'
+        $isApprove = in_array($action, ['approve', 'pass']);
+        $isReject = in_array($action, ['reject', 'fail']);
 
-        DB::transaction(function () use ($application, $action, $inspectionStatuses, $defectNotes) {
+        if (!$isApprove && !$isReject) {
+            return back()->withErrors(['action' => 'Invalid inspection decision. Must be Approve or Reject.']);
+        }
+
+        $rejectionReason = null;
+        if ($isReject) {
+            $rejectionReason = trim((string) (
+                $request->input('rejection_reason')
+                ?? $request->input('rejection_comment')
+                ?? $request->input('comments')
+                ?? (is_array($request->input('defectNotes')) ? implode('; ', array_filter($request->input('defectNotes'))) : null)
+                ?? $request->input('remarks')
+            ));
+
+            if (empty($rejectionReason)) {
+                return back()->withErrors([
+                    'rejection_reason' => 'A reason for rejection is required when rejecting physical inspection.',
+                ]);
+            }
+        }
+
+        DB::transaction(function () use ($application, $isApprove, $rejectionReason) {
             $fromStatus = $application->status;
             $fromStep = $application->current_step;
 
             $attemptNumber = $application->inspections()->count() + 1;
 
-            // Map granular frontend checkboxes to aggregated DB columns
-            $safetyPassed = ($inspectionStatuses['mirrors'] ?? '') === 'passed' 
-                && ($inspectionStatuses['horn'] ?? '') === 'passed' 
-                && ($inspectionStatuses['plate'] ?? '') === 'passed';
-                
-            $lightsPassed = ($inspectionStatuses['headlights'] ?? '') === 'passed' 
-                && ($inspectionStatuses['taillights'] ?? '') === 'passed' 
-                && ($inspectionStatuses['signals'] ?? '') === 'passed';
+            if ($isApprove) {
+                $result = 'passed';
+                $safetyPassed = true;
+                $brakesPassed = true;
+                $lightsPassed = true;
+                $tiresPassed = true;
+                $emissionsTest = true;
+                $licenseDocs = true;
+                $inspectorNotes = 'Physical inspection approved.';
 
-            $brakesPassed = ($inspectionStatuses['brakes'] ?? '') === 'passed';
-            $tiresPassed = ($inspectionStatuses['sidecar'] ?? '') === 'passed';
+                $toStatus = 'pending_bplo_release';
+                $toStep = 3; // Step 3: proceed to BPLO for sticker/plate release
+                $notes = "Passed physical tricycle inspection attempt #{$attemptNumber}. Driver instructed to proceed to BPLO for sticker/plate release.";
+            } else {
+                $result = 'failed';
+                $safetyPassed = false;
+                $brakesPassed = false;
+                $lightsPassed = false;
+                $tiresPassed = false;
+                $emissionsTest = false;
+                $licenseDocs = false;
+                $inspectorNotes = $rejectionReason;
 
-            // Store detailed state in inspector_notes as JSON
-            $inspectorNotes = json_encode([
-                'statuses' => $inspectionStatuses,
-                'defects'  => $defectNotes,
-            ]);
+                $toStatus = 'failed_inspection';
+                $toStep = 2; // Stay at Physical Inspection step for re-inspection
+                $notes = "Failed physical tricycle inspection attempt #{$attemptNumber}. Reason: {$rejectionReason}";
+            }
 
             // Save Inspection
             Inspection::create([
@@ -192,26 +211,15 @@ class InspectionController extends Controller
                 'inspection_date'   => now()->toDateString(),
                 'inspection_time'   => now()->toTimeString(),
                 'location_address'  => 'TMO Compound, Municipal Hall',
-                'result'            => $action === 'pass' ? 'passed' : 'failed',
+                'result'            => $result,
                 'safety_equipment'  => $safetyPassed,
                 'brakes_steering'   => $brakesPassed,
                 'lights_reflectors' => $lightsPassed,
                 'tires_suspension'  => $tiresPassed,
-                'emissions_test'    => true, // Assumed pass for core workflow
-                'license_toda_docs' => true, // Assumed pass for core workflow
+                'emissions_test'    => $emissionsTest,
+                'license_toda_docs' => $licenseDocs,
                 'inspector_notes'   => $inspectorNotes,
             ]);
-
-            // Save status history transition
-            if ($action === 'pass') {
-                $toStatus = 'pending_payment';
-                $toStep = 4; // Step 4: Payment Ticket & Cashier Payment
-                $notes = "Passed physical tricycle inspection attempt #{$attemptNumber}. Official Payment Ticket generated for Municipal Cashier settlement.";
-            } else {
-                $toStatus = 'failed_inspection';
-                $toStep = 3; // Keep at inspection step for re-inspection
-                $notes = "Failed physical tricycle inspection attempt #{$attemptNumber}. Defect notices sent to operator.";
-            }
 
             $application->update([
                 'status'       => $toStatus,
@@ -231,9 +239,9 @@ class InspectionController extends Controller
             ]);
         });
 
-        if ($action === 'pass') {
-            return redirect()->route('tmo.ticket', $application->id)
-                ->with('success', 'Physical inspection passed! Official Payment Ticket generated. Please print this ticket for the driver.');
+        if ($isApprove) {
+            return redirect()->route('tmo.physical')
+                ->with('success', 'Physical inspection approved! The application has proceeded to BPLO Releasing.');
         }
 
         return redirect()->route('tmo.physical')

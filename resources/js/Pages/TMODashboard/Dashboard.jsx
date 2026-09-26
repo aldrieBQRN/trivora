@@ -1,5 +1,6 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { Head, Link, router, usePage } from '@inertiajs/react';
+import React, { useMemo, useState } from 'react';
+import { Head, Link, usePage } from '@inertiajs/react';
+import useBackgroundRefresh from '@/hooks/useBackgroundRefresh';
 import TrivoraLayout from '@/Layouts/TrivoraLayout';
 import {
     FileSearch, ClipboardCheck, ShieldCheck, Bike,
@@ -23,6 +24,15 @@ const CARD_SHADOW_HOVER = 'hover:shadow-[0_2px_4px_0_rgba(15,23,42,0.06),0_16px_
 const FADE = 'dash-fade';
 const delay = (ms) => ({ animationDelay: `${ms}ms` });
 
+// Every number this page renders arrives as a raw Inertia prop. Coerce each one at its point of
+// use so a missing/renamed field can never reach the DOM as `NaN`: a non-numeric value becomes 0
+// — the same "nothing here yet" this page already shows for an empty queue — while a real number
+// is passed through untouched. Nothing is computed, estimated or fabricated here.
+const toCount = (value) => {
+    const n = Number(value);
+    return Number.isFinite(n) ? n : 0;
+};
+
 export default function Dashboard({
     pipeline = { document_review: 0, physical: 0, final_confirmation: 0 },
     pipelineBreakdown = {
@@ -30,7 +40,11 @@ export default function Dashboard({
         physical: { scheduled: 0, reinspection: 0, oldest: null },
         final_confirmation: { oldest: null },
     },
-    bplo = { pending_verification: 0, verified_awaiting_release: 0 },
+    // Shape matches TMO\DashboardController::index(), which sends exactly one BPLO count:
+    // `pending_release` (status `pending_bplo_release`). The old default advertised two other
+    // fields the backend never sends, and summing those `undefined` values is what produced the
+    // `NaN` rendered in the hero stage chip and the "In Pipeline" total.
+    bplo = { pending_release: 0 },
     myActivityToday = { docs_reviewed: 0, inspections_completed: 0, confirmations_completed: 0 },
     fleet = { active_fleet: 0, violations_today: 0, open_violations: 0 },
     recentActivity = [],
@@ -42,12 +56,7 @@ export default function Dashboard({
 
     // Silent background refresh so a workflow change made by another TMO/BPLO user shows up here
     // without a manual reload — only re-requests the counts/lists this page actually renders.
-    useEffect(() => {
-        const { stop } = router.poll(15000, {
-            only: ['pipeline', 'pipelineBreakdown', 'bplo', 'myActivityToday', 'fleet', 'recentActivity'],
-        });
-        return () => stop();
-    }, []);
+    useBackgroundRefresh(['pipeline', 'pipelineBreakdown', 'bplo', 'myActivityToday', 'fleet', 'recentActivity']);
 
     const [hoveredStage, setHoveredStage] = useState(null);
 
@@ -62,16 +71,24 @@ export default function Dashboard({
     }, [firstName]);
 
     const stages = useMemo(() => ([
-        { key: 'document_review', count: pipeline.document_review, ...STAGE_META.document_review },
-        { key: 'physical', count: pipeline.physical, ...STAGE_META.physical },
-        { key: 'bplo', count: bplo.pending_verification + bplo.verified_awaiting_release, ...STAGE_META.bplo },
-        { key: 'final_confirmation', count: pipeline.final_confirmation, ...STAGE_META.final_confirmation },
+        { key: 'document_review', count: toCount(pipeline.document_review), ...STAGE_META.document_review },
+        { key: 'physical', count: toCount(pipeline.physical), ...STAGE_META.physical },
+        // BPLO stage = applications sitting in the sticker-release queue. The backend sends that
+        // as `pending_release` (TMO\DashboardController::index()), the exact same count the Quick
+        // Facts card below already shows as "Pending BPLO Release".
+        { key: 'bplo', count: toCount(bplo.pending_release), ...STAGE_META.bplo },
+        { key: 'final_confirmation', count: toCount(pipeline.final_confirmation), ...STAGE_META.final_confirmation },
     ]), [pipeline, bplo]);
 
     const totalInFlight = stages.reduce((sum, s) => sum + s.count, 0);
-    const activityMax = Math.max(myActivityToday.docs_reviewed, myActivityToday.inspections_completed, myActivityToday.confirmations_completed, 1);
-    const actionableTotal = pipeline.document_review + pipeline.physical + pipeline.final_confirmation;
-    const totalActionsToday = myActivityToday.docs_reviewed + myActivityToday.inspections_completed + myActivityToday.confirmations_completed;
+    const activityMax = Math.max(
+        toCount(myActivityToday.docs_reviewed),
+        toCount(myActivityToday.inspections_completed),
+        toCount(myActivityToday.confirmations_completed),
+        1
+    );
+    const actionableTotal = toCount(pipeline.document_review) + toCount(pipeline.physical) + toCount(pipeline.final_confirmation);
+    const totalActionsToday = toCount(myActivityToday.docs_reviewed) + toCount(myActivityToday.inspections_completed) + toCount(myActivityToday.confirmations_completed);
 
     const donutData = stages.filter(s => s.count > 0).map(s => ({ key: s.key, name: s.label, value: s.count, color: s.hex }));
 
@@ -190,27 +207,27 @@ export default function Dashboard({
             </div>
             <div className={`mb-7 grid grid-cols-1 gap-3.5 sm:grid-cols-3 sm:gap-5 ${FADE}`} style={delay(120)}>
                 <PipelineCard
-                    href="/tmo/docs" icon={FileSearch} count={pipeline.document_review} label="Document Review"
+                    href="/tmo/docs" icon={FileSearch} count={toCount(pipeline.document_review)} label="Document Review"
                     total={actionableTotal}
                     segments={[
-                        { label: 'New', value: pipelineBreakdown.document_review.new, color: '#1D2542' },
-                        { label: 'Resubmission', value: pipelineBreakdown.document_review.resubmission, color: '#F43F5E' },
+                        { label: 'New', value: toCount(pipelineBreakdown.document_review.new), color: '#1D2542' },
+                        { label: 'Resubmission', value: toCount(pipelineBreakdown.document_review.resubmission), color: '#F43F5E' },
                     ]}
                     oldest={pipelineBreakdown.document_review.oldest}
                 />
                 <PipelineCard
-                    href="/tmo/physical" icon={ClipboardCheck} count={pipeline.physical} label="Physical Inspection"
+                    href="/tmo/physical" icon={ClipboardCheck} count={toCount(pipeline.physical)} label="Physical Inspection"
                     total={actionableTotal}
                     segments={[
-                        { label: 'Scheduled', value: pipelineBreakdown.physical.scheduled, color: '#1D2542' },
-                        { label: 'Re-inspection', value: pipelineBreakdown.physical.reinspection, color: '#F43F5E' },
+                        { label: 'Scheduled', value: toCount(pipelineBreakdown.physical.scheduled), color: '#1D2542' },
+                        { label: 'Re-inspection', value: toCount(pipelineBreakdown.physical.reinspection), color: '#F43F5E' },
                     ]}
                     oldest={pipelineBreakdown.physical.oldest}
                 />
                 <PipelineCard
-                    href="/tmo/final-confirmation" icon={ShieldCheck} count={pipeline.final_confirmation} label="Final Confirmation"
+                    href="/tmo/final-confirmation" icon={ShieldCheck} count={toCount(pipeline.final_confirmation)} label="Final Confirmation"
                     total={actionableTotal}
-                    note={`${myActivityToday.confirmations_completed} confirmed today`}
+                    note={`${toCount(myActivityToday.confirmations_completed)} confirmed today`}
                     oldest={pipelineBreakdown.final_confirmation.oldest}
                 />
             </div>
@@ -223,50 +240,44 @@ export default function Dashboard({
             </h2>
             <div className={`mb-7 grid grid-cols-1 gap-4 sm:grid-cols-2 ${FADE}`} style={delay(200)}>
                 <div className={`rounded-2xl border border-slate-200/70 bg-white p-5 ${CARD_SHADOW} transition-shadow ${CARD_SHADOW_HOVER}`}>
-                    <div className="flex items-center justify-between border-b border-slate-100 pb-3.5">
-                        <div className="flex items-center gap-2.5">
-                            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-[#1D2542]/[0.09] to-[#1D2542]/[0.02] text-[#1D2542]">
+                    <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-3.5">
+                        <div className="flex min-w-0 items-center gap-2.5">
+                            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#1D2542]/[0.09] to-[#1D2542]/[0.02] text-[#1D2542]">
                                 <Landmark size={16} strokeWidth={2.2} />
                             </div>
-                            <h3 className="text-[13.5px] font-bold text-slate-900">Sticker Release (BPLO)</h3>
+                            <h3 className="truncate text-[13.5px] font-bold text-slate-900">Sticker Release (BPLO)</h3>
                         </div>
-                        <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[9.5px] font-bold uppercase tracking-wider text-slate-500">Read-only</span>
+                        <span className="shrink-0 rounded-full bg-slate-100 px-2 py-0.5 text-[9.5px] font-bold uppercase tracking-wider text-slate-500">Read-only</span>
                     </div>
-                    <div className="mt-4 grid grid-cols-2 gap-4">
-                        <div>
-                            <span className="text-[26px] font-extrabold tracking-tight tabular-nums text-slate-900">{bplo.pending_verification}</span>
-                            <p className="mt-0.5 text-xs font-semibold text-slate-500">Pending Payment Verification</p>
-                        </div>
-                        <div>
-                            <span className="text-[26px] font-extrabold tracking-tight tabular-nums text-slate-900">{bplo.verified_awaiting_release}</span>
-                            <p className="mt-0.5 text-xs font-semibold text-slate-500">Awaiting Sticker Release</p>
-                        </div>
+                    <div className="mt-4">
+                        <span className="text-[26px] font-extrabold tracking-tight tabular-nums text-slate-900">{toCount(bplo.pending_release)}</span>
+                        <p className="mt-0.5 text-xs font-semibold text-slate-500">Pending BPLO Release (cleared inspection, instructed to pay &amp; proceed to BPLO)</p>
                     </div>
                 </div>
 
                 <Link href="/violations" className={`group rounded-2xl border border-slate-200/70 bg-white p-5 ${CARD_SHADOW} transition-all hover:-translate-y-0.5 hover:border-slate-300 ${CARD_SHADOW_HOVER}`}>
-                    <div className="flex items-center justify-between border-b border-slate-100 pb-3.5">
-                        <div className="flex items-center gap-2.5">
-                            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-[#1D2542]/[0.09] to-[#1D2542]/[0.02] text-[#1D2542]">
+                    <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-3.5">
+                        <div className="flex min-w-0 items-center gap-2.5">
+                            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#1D2542]/[0.09] to-[#1D2542]/[0.02] text-[#1D2542]">
                                 <Bike size={16} strokeWidth={2.2} />
                             </div>
-                            <h3 className="text-[13.5px] font-bold text-slate-900">Fleet &amp; Violations</h3>
+                            <h3 className="truncate text-[13.5px] font-bold text-slate-900">Fleet &amp; Violations</h3>
                         </div>
-                        <span className="flex h-6 w-6 items-center justify-center rounded-full bg-slate-100 text-slate-400 transition-all group-hover:bg-[#1D2542] group-hover:text-white">
+                        <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-400 transition-all group-hover:bg-[#1D2542] group-hover:text-white">
                             <ArrowUpRight size={13} strokeWidth={2.4} />
                         </span>
                     </div>
                     <div className="mt-4 grid grid-cols-3 gap-3">
                         <div>
-                            <span className="text-[26px] font-extrabold tracking-tight tabular-nums text-slate-900">{fleet.active_fleet}</span>
+                            <span className="text-[26px] font-extrabold tracking-tight tabular-nums text-slate-900">{toCount(fleet.active_fleet)}</span>
                             <p className="mt-0.5 text-[11px] font-semibold text-slate-500">Active Fleet</p>
                         </div>
                         <div>
-                            <span className="text-[26px] font-extrabold tracking-tight tabular-nums text-slate-900">{fleet.violations_today}</span>
+                            <span className="text-[26px] font-extrabold tracking-tight tabular-nums text-slate-900">{toCount(fleet.violations_today)}</span>
                             <p className="mt-0.5 text-[11px] font-semibold text-slate-500">Today</p>
                         </div>
                         <div>
-                            <span className={`text-[26px] font-extrabold tracking-tight tabular-nums ${fleet.open_violations > 0 ? 'text-rose-600' : 'text-slate-900'}`}>{fleet.open_violations}</span>
+                            <span className={`text-[26px] font-extrabold tracking-tight tabular-nums ${toCount(fleet.open_violations) > 0 ? 'text-rose-600' : 'text-slate-900'}`}>{toCount(fleet.open_violations)}</span>
                             <p className="mt-0.5 text-[11px] font-semibold text-slate-500">Open</p>
                         </div>
                     </div>
@@ -282,13 +293,13 @@ export default function Dashboard({
             <div className={`grid grid-cols-1 gap-4 lg:grid-cols-12 ${FADE}`} style={delay(280)}>
                 <div className={`lg:col-span-7 flex flex-col rounded-2xl border border-slate-200/70 bg-white ${CARD_SHADOW}`}>
                     <div className="flex items-center justify-between gap-2 border-b border-slate-100 px-5 py-4">
-                        <div className="flex items-center gap-2.5">
-                            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-[#1D2542]/[0.09] to-[#1D2542]/[0.02] text-[#1D2542]">
+                        <div className="flex min-w-0 items-center gap-2.5">
+                            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-[#1D2542]/[0.09] to-[#1D2542]/[0.02] text-[#1D2542]">
                                 <Clock size={15} strokeWidth={2.2} />
                             </div>
-                            <h3 className="text-[13.5px] font-bold text-slate-900">Recent Activity</h3>
+                            <h3 className="truncate text-[13.5px] font-bold text-slate-900">Recent Activity</h3>
                         </div>
-                        <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10.5px] font-semibold text-slate-500">Last {recentActivity.length}</span>
+                        <span className="shrink-0 rounded-full bg-slate-100 px-2 py-0.5 text-[10.5px] font-semibold text-slate-500">Last {recentActivity.length}</span>
                     </div>
 
                     {recentActivity.length === 0 ? (
@@ -309,9 +320,9 @@ export default function Dashboard({
                                                 <span className="font-mono text-xs font-bold text-slate-900">{item.reference}</span>
                                                 <span className="text-[11px] text-slate-400">{item.operator}</span>
                                             </div>
-                                            <div className="mt-1.5 flex items-center gap-1.5 text-[11px] text-slate-500">
+                                            <div className="mt-1.5 flex flex-wrap items-center gap-1.5 text-[11px] text-slate-500">
                                                 <span className="rounded-md bg-slate-100 px-1.5 py-0.5 font-semibold text-slate-600">{formatStatus(item.from_status)}</span>
-                                                <ChevronRight size={11} className="text-slate-300" />
+                                                <ChevronRight size={11} className="shrink-0 text-slate-300" />
                                                 <span className="rounded-md bg-slate-100 px-1.5 py-0.5 font-semibold text-slate-600">{formatStatus(item.to_status)}</span>
                                             </div>
                                         </div>
@@ -337,9 +348,9 @@ export default function Dashboard({
 
                     <div className="flex-1 flex flex-col justify-center gap-2 py-2">
                         <div className="grid grid-cols-3 gap-2">
-                            <ActivityRadial value={myActivityToday.docs_reviewed} max={activityMax} label="Docs Reviewed" color={STAGE_META.document_review.hex} size={92} />
-                            <ActivityRadial value={myActivityToday.inspections_completed} max={activityMax} label="Inspections" color={STAGE_META.physical.hex} size={92} />
-                            <ActivityRadial value={myActivityToday.confirmations_completed} max={activityMax} label="Confirmations" color={STAGE_META.final_confirmation.hex} size={92} />
+                            <ActivityRadial value={toCount(myActivityToday.docs_reviewed)} max={activityMax} label="Docs Reviewed" color={STAGE_META.document_review.hex} size={92} />
+                            <ActivityRadial value={toCount(myActivityToday.inspections_completed)} max={activityMax} label="Inspections" color={STAGE_META.physical.hex} size={92} />
+                            <ActivityRadial value={toCount(myActivityToday.confirmations_completed)} max={activityMax} label="Confirmations" color={STAGE_META.final_confirmation.hex} size={92} />
                         </div>
                     </div>
 
@@ -369,15 +380,16 @@ function DonutTooltip({ active, payload }) {
                 <span className="h-2 w-2 rounded-full" style={{ background: d.payload.color }} />
                 <span className="text-[11px] font-bold text-slate-800">{d.name}</span>
             </div>
-            <span className="mt-0.5 block text-sm font-extrabold tabular-nums text-slate-900">{d.value} applications</span>
+            <span className="mt-0.5 block text-sm font-extrabold tabular-nums text-slate-900">{toCount(d.value)} applications</span>
         </div>
     );
 }
 
 function PipelineCard({ href, icon: Icon, count, label, segments, oldest, note, total = 0 }) {
-    const active = count > 0;
-    const segTotal = segments ? segments.reduce((sum, s) => sum + s.value, 0) : 0;
-    const shareOfQueue = total > 0 ? Math.round((count / total) * 100) : 0;
+    const safeCount = toCount(count);
+    const active = safeCount > 0;
+    const segTotal = segments ? segments.reduce((sum, s) => sum + toCount(s.value), 0) : 0;
+    const shareOfQueue = total > 0 ? Math.round((safeCount / total) * 100) : 0;
 
     return (
         <Link
@@ -400,7 +412,7 @@ function PipelineCard({ href, icon: Icon, count, label, segments, oldest, note, 
             <div className="mt-4">
                 <div className="flex items-baseline gap-2">
                     <span className={`text-[32px] font-extrabold tracking-tight tabular-nums leading-none ${active ? 'text-[#1D2542]' : 'text-slate-900'}`}>
-                        {count}
+                        {safeCount}
                     </span>
                     {active && total > 0 && (
                         <span className="text-[11px] font-bold text-slate-400">{shareOfQueue}% of queue</span>
@@ -413,15 +425,15 @@ function PipelineCard({ href, icon: Icon, count, label, segments, oldest, note, 
                 {segTotal > 0 ? (
                     <>
                         <div className="flex h-1.5 w-full gap-0.5 overflow-hidden rounded-full bg-slate-100">
-                            {segments.filter(s => s.value > 0).map(s => (
-                                <div key={s.label} className="h-full rounded-full" style={{ background: s.color, flexGrow: s.value, flexBasis: 0 }} />
+                            {segments.filter(s => toCount(s.value) > 0).map(s => (
+                                <div key={s.label} className="h-full rounded-full" style={{ background: s.color, flexGrow: toCount(s.value), flexBasis: 0 }} />
                             ))}
                         </div>
                         <div className="mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[10.5px]">
                             {segments.map(s => (
                                 <span key={s.label} className="flex items-center gap-1 font-semibold text-slate-500">
                                     <span className="h-1.5 w-1.5 rounded-full" style={{ background: s.color }} />
-                                    {s.value} {s.label}
+                                    {toCount(s.value)} {s.label}
                                 </span>
                             ))}
                         </div>
@@ -444,7 +456,10 @@ function ActivityRadial({ value, max, label, color, size = 76 }) {
     const barSize = Math.max(6, Math.round(size * 0.1));
     return (
         <div className="flex flex-col items-center gap-1.5">
-            <div className="relative" style={{ height: size, width: size }}>
+            {/* Scales down to fit its grid cell on narrow phones (three of these side by side can
+                exceed a ~320px screen at a fixed pixel size) instead of overflowing; `size` is
+                still the cap on larger screens. */}
+            <div className="relative mx-auto w-full" style={{ maxWidth: size, aspectRatio: '1 / 1' }}>
                 <ResponsiveContainer width="100%" height="100%">
                     <RadialBarChart
                         innerRadius="72%"

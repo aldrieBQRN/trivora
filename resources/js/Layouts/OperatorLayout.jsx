@@ -4,7 +4,7 @@ import {
     Bell, Menu, Settings, LogOut,
     ChevronDown, ChevronRight,
     LayoutDashboard, ShieldAlert,
-    FileText, Wallet, Bike, X
+    FileText, Bike, X
 } from 'lucide-react';
 
 /* ─────────────────────────────────────────────────────────────────────────
@@ -50,7 +50,6 @@ export default function OperatorLayout({
             links: [
                 { name: 'MTOP Applications', icon: FileText,    path: '/operator/mtop'       },
                 { name: 'Violation Records',  icon: ShieldAlert, path: '/operator/violations' },
-                { name: 'Payment History',    icon: Wallet,      path: '/operator/payments'   },
             ]
         }
     ];
@@ -62,7 +61,6 @@ export default function OperatorLayout({
         if (link.path === '/operator/fleet' && path.startsWith('/operator/tracking')) return true;
         if (link.path === '/operator/mtop' && path.startsWith('/operator/mtop')) return true;
         if (link.path === '/operator/violations' && path.startsWith('/operator/violations')) return true;
-        if (link.path === '/operator/payments' && path.startsWith('/operator/payments')) return true;
         return false;
     };
 
@@ -128,13 +126,6 @@ export default function OperatorLayout({
                 parentRoute: '/operator/violations',
                 defaultLeaf: 'Violation Details',
             },
-            {
-                prefix: '/operator/payments/',
-                group: 'Franchise & Compliance',
-                parentName: 'Payment History',
-                parentRoute: '/operator/payments',
-                defaultLeaf: 'Official Receipt',
-            },
         ];
 
         // 1. Check if path matches a known subpage
@@ -189,7 +180,14 @@ export default function OperatorLayout({
     const handleLogout = () => {
         setIsExiting(true);
         setTimeout(() => {
-            router.post('/logout');
+            router.post('/logout', {}, {
+                onFinish: () => {
+                    window.location.href = '/login';
+                },
+                onError: () => {
+                    window.location.href = '/login';
+                },
+            });
         }, 400);
     };
 

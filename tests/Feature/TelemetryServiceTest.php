@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\ColorCodingScheme;
+use App\Models\Driver;
 use App\Models\FranchiseScheme;
 use App\Models\Operator;
 use App\Models\TodaZone;
@@ -32,7 +33,7 @@ class TelemetryServiceTest extends TestCase
     protected Tricycle $tricycle;
     protected TelemetryService $service;
 
-    /** Tricycle body number ends in 2, which ColorCodingRuleService restricts on Mondays. */
+    /** Tricycle Sticker Number ends in 2, which ColorCodingRuleService restricts on Mondays. */
     protected function setUp(): void
     {
         parent::setUp();
@@ -88,20 +89,50 @@ class TelemetryServiceTest extends TestCase
         ]);
     }
 
+    /** A pure north offset using the same spherical-Earth radius GeoService::haversineKm() uses,
+     * so the resulting distance is exact relative to what the production code computes. */
+    private function metersNorth(float $lat, float $meters): float
+    {
+        return $lat + rad2deg($meters / 6371000.0);
+    }
+
     #[Test]
     public function process_persists_a_location_and_runs_the_color_coding_check_for_normalized_telemetry(): void
     {
+        // The coding/restricted-day 100-meter movement rule requires an online session (see
+        // CodingViolationMovementRuleTest) plus two consecutive readings at/beyond the movement
+        // threshold from that session's anchor before a violation fires — a single ping is never
+        // enough on its own, so this seeds a realistic anchor -> candidate -> confirming sequence.
+        Driver::create([
+            'user_id' => $this->tricycle->operator->user_id,
+            'operator_id' => $this->tricycle->operator_id,
+            'tricycle_id' => $this->tricycle->id,
+            'license_number' => 'LIC-TELEMSVC-001',
+            'is_online' => true,
+            'online_since' => now(),
+        ]);
+
         $monday = Carbon::parse('next Monday')->setTime(9, 0);
 
-        $result = $this->service->process([
+        $this->service->process([
             'tricycle_id' => $this->tricycle->id,
-            'latitude'    => 14.07,
-            'longitude'   => 120.63,
-            'speed_kmh'   => 15,
-            'heading_deg' => 90,
-            'accuracy_m'  => 5,
-            'source'      => 'mobile_app',
-            'recorded_at' => $monday,
+            'latitude' => 14.07, 'longitude' => 120.63,
+            'source' => 'mobile_app', 'recorded_at' => $monday,
+        ]);
+        $this->service->process([
+            'tricycle_id' => $this->tricycle->id,
+            'latitude' => $this->metersNorth(14.07, 102), 'longitude' => 120.63,
+            'source' => 'mobile_app', 'recorded_at' => $monday->copy()->addSeconds(15),
+        ]);
+        $result = $this->service->process([
+            'tricycle_id'   => $this->tricycle->id,
+            'latitude'      => $this->metersNorth(14.07, 107),
+            'longitude'     => 120.63,
+            'speed_kmh'     => 15,
+            'heading_deg'   => 90,
+            'accuracy_m'    => 5,
+            'source'        => 'mobile_app',
+            'recorded_at'   => $monday->copy()->addSeconds(30),
         ]);
 
         $this->assertInstanceOf(TricycleLocation::class, $result['location']);

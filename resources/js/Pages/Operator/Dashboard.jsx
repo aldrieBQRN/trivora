@@ -1,5 +1,6 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { Head, Link } from '@inertiajs/react';
+import useBackgroundRefresh from '@/hooks/useBackgroundRefresh';
 import OperatorLayout from '@/Layouts/OperatorLayout';
 import { Button } from '@/Components/TMO';
 import { RadialBarChart, RadialBar, PolarAngleAxis, ResponsiveContainer } from 'recharts';
@@ -47,6 +48,10 @@ const CODING_RULES = [
 
 export default function OperatorDashboard({ operator, stats, tricycles, recentViolations, expiringRegistrations = [], applicationProgress }) {
     const [currentTime, setCurrentTime] = useState(new Date());
+
+    // Background refresh of the driver's live counters/queues — an application moving stage or a
+    // new violation showing up elsewhere updates this dashboard without a manual reload.
+    useBackgroundRefresh(['stats', 'tricycles', 'recentViolations', 'expiringRegistrations', 'applicationProgress']);
     const codingInfo = getCodingDetails();
     const todayName = new Date().toLocaleDateString('en-US', { weekday: 'long' });
     const expiredUnit = tricycles.find((t) => t.is_expired);
@@ -56,6 +61,21 @@ export default function OperatorDashboard({ operator, stats, tricycles, recentVi
     const soonestExpiring = expiringRegistrations.length > 0
         ? [...expiringRegistrations].sort((a, b) => a.days_left - b.days_left)[0]
         : null;
+    // Human-readable renewal countdown — rounds defensively so a raw float can never
+    // leak into the card, and switches to months/years for long-dated franchises.
+    const renewalCountdown = (() => {
+        if (!soonestExpiring) return null;
+        const days = Math.round(Number(soonestExpiring.days_left));
+        if (!Number.isFinite(days)) return null;
+        if (days <= 0) return 'due today';
+        if (days < 30) return `in ${days} day${days === 1 ? '' : 's'}`;
+        if (days < 365) {
+            const months = Math.max(1, Math.round(days / 30));
+            return `in ~${months} month${months === 1 ? '' : 's'}`;
+        }
+        const years = (days / 365).toFixed(1).replace(/\.0$/, '');
+        return `in ~${years} year${years === '1' ? '' : 's'}`;
+    })();
 
     useEffect(() => {
         const timer = setInterval(() => setCurrentTime(new Date()), 1000);
@@ -154,8 +174,8 @@ export default function OperatorDashboard({ operator, stats, tricycles, recentVi
                             </p>
                             <p className="mt-1 text-xs text-red-700">
                                 {expiredUnit.has_pending_renewal
-                                    ? `The franchise permit for Unit #${expiredUnit.body_number} expired on ${expiredUnit.mtop_expiry}. Renewal application is currently in progress.`
-                                    : `The franchise permit for Unit #${expiredUnit.body_number || '1'} expired on ${expiredUnit.mtop_expiry}. Check your application status in the Application Tracker.`}
+                                    ? `The franchise permit for Unit #${expiredUnit.coding_scheme_number} expired on ${expiredUnit.mtop_expiry}. Renewal application is currently in progress.`
+                                    : `The franchise permit for Unit #${expiredUnit.coding_scheme_number || 'N/A'} expired on ${expiredUnit.mtop_expiry}. Check your application status in the Application Tracker.`}
                             </p>
                         </div>
                     </div>
@@ -173,7 +193,7 @@ export default function OperatorDashboard({ operator, stats, tricycles, recentVi
                     href={route('operator.fleet')}
                     icon={Bike}
                     active
-                    value={primaryUnit?.body_number || 'No Unit'}
+                    value={primaryUnit?.coding_scheme_number || 'No Unit'}
                     label="Registered Tricycle"
                     meta={primaryUnit ? `Plate ${primaryUnit.plate_number || 'N/A'}` : 'Register a unit to get started'}
                     cta="Manage Unit"
@@ -205,7 +225,7 @@ export default function OperatorDashboard({ operator, stats, tricycles, recentVi
                     danger={!!soonestExpiring && soonestExpiring.days_left <= 30}
                     value={expiringRegistrations.length}
                     label="Renewal Alerts"
-                    meta={soonestExpiring ? `${soonestExpiring.body_number} in ${soonestExpiring.days_left}d` : 'No upcoming renewals'}
+                    meta={soonestExpiring && renewalCountdown ? `${soonestExpiring.coding_scheme_number} — renews ${renewalCountdown}` : 'No upcoming renewals'}
                     cta="View Franchise"
                 />
             </div>
@@ -343,13 +363,13 @@ export default function OperatorDashboard({ operator, stats, tricycles, recentVi
                             <p className="mt-1 text-xs text-slate-500">Register a unit to start tracking compliance.</p>
                         </div>
                     ) : tricycles.slice(0, 1).map((trike) => (
-                        <div key={trike.id} className="flex flex-1 flex-col p-4 sm:p-5">
-                            <div className="mb-4 flex items-center gap-3 sm:gap-4">
+                        <div key={trike.id} className="flex flex-1 flex-col gap-4 p-4 sm:p-5">
+                            <div className="flex items-center gap-3 sm:gap-4">
                                 <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#1D2542]/[0.10] to-[#1D2542]/[0.02] text-[#1D2542] sm:h-12 sm:w-12">
                                     <Bike size={20} strokeWidth={2.5} />
                                 </div>
                                 <div className="min-w-0">
-                                    <h3 className="truncate text-base font-bold leading-tight text-slate-900">{trike.body_number || 'N/A'}</h3>
+                                    <h3 className="truncate text-base font-bold leading-tight text-slate-900">{trike.coding_scheme_number || 'N/A'}</h3>
                                     <span className="mt-0.5 inline-block rounded-md bg-slate-100 px-2 py-0.5 font-mono text-[11px] font-bold uppercase tracking-wide text-slate-500">
                                         {trike.plate_number || 'N/A'}
                                     </span>
@@ -366,7 +386,7 @@ export default function OperatorDashboard({ operator, stats, tricycles, recentVi
                             </div>
 
                             {trike.mtop_days_left !== null && trike.mtop_days_left <= 30 && (
-                                <p className="mt-2.5 flex items-center gap-1.5 text-[11px] font-semibold text-[#1D2542]">
+                                <p className="flex items-center gap-1.5 text-[11px] font-semibold text-[#1D2542]">
                                     <Clock size={11} className="shrink-0" />
                                     {trike.mtop_days_left > 0
                                         ? `Expires in ${trike.mtop_days_left} day${trike.mtop_days_left !== 1 ? 's' : ''} — renew soon.`
@@ -376,7 +396,7 @@ export default function OperatorDashboard({ operator, stats, tricycles, recentVi
 
                             <Link
                                 href={route('operator.fleet')}
-                                className="mt-4 flex items-center justify-center gap-1.5 rounded-lg border border-slate-200 py-2 text-[11px] font-bold uppercase tracking-wide text-slate-600 hover:bg-slate-50 lg:mt-auto"
+                                className="flex items-center justify-center gap-1.5 rounded-lg border border-slate-200 py-2 text-[11px] font-bold uppercase tracking-wide text-slate-600 hover:bg-slate-50 lg:mt-auto"
                             >
                                 View Full Vehicle Details <ChevronRight size={12} />
                             </Link>
@@ -410,7 +430,7 @@ export default function OperatorDashboard({ operator, stats, tricycles, recentVi
                                         </div>
                                         <div className="min-w-0">
                                             <p className="truncate text-[13px] font-bold text-slate-900">Color Coding Breach</p>
-                                            <p className="truncate text-[11px] text-slate-500">{v.date} &bull; Unit {v.body_number}</p>
+                                            <p className="truncate text-[11px] text-slate-500">{v.date} &bull; Unit {v.coding_scheme_number}</p>
                                         </div>
                                     </div>
                                     <Link

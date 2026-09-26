@@ -134,7 +134,14 @@ export default function BPLOLayout({ children, title, role = "BPLO Officer", bre
     const handleLogout = () => {
         setIsExiting(true);
         setTimeout(() => {
-            router.post('/logout');
+            router.post('/logout', {}, {
+                onFinish: () => {
+                    window.location.href = '/login';
+                },
+                onError: () => {
+                    window.location.href = '/login';
+                },
+            });
         }, 400);
     };
 

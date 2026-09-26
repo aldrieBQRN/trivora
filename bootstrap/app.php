@@ -22,7 +22,22 @@ $app = Application::configure(basePath: dirname(__DIR__))
         // Register role-based access middleware alias
         $middleware->alias([
             'role' => \App\Http\Middleware\RoleMiddleware::class,
+            'franchise.operational' => \App\Http\Middleware\EnsureFranchiseIsOperational::class,
         ]);
+
+        // Redirect authenticated users to their specific role dashboard
+        $middleware->redirectUsersTo(function (\Illuminate\Http\Request $request) {
+            $user = \Illuminate\Support\Facades\Auth::user();
+            return match ($user?->role) {
+                'tmo_personnel'      => route('tmo.dashboard'),
+                'bplo_staff'         => route('bplo.dashboard'),
+                'tricycle_driver'    => route('operator.dashboard'),
+                default              => route('dashboard'),
+            };
+        });
+
+        // Redirect guests attempting to access protected routes to unified login
+        $middleware->redirectGuestsTo(fn () => route('login'));
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

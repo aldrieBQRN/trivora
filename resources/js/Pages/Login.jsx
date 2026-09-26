@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Head, Link, useForm } from '@inertiajs/react';
 import {
-    ShieldCheck, User, KeyRound, ArrowLeft,
+    ShieldCheck, User, KeyRound,
     Banknote, Award, Bike, Shield,
     Eye, EyeOff, AlertCircle, Loader2
 } from 'lucide-react';
@@ -118,6 +118,7 @@ const CSS = `
 
 /* ── Form side ───────────────────────────────────────────────────────── */
 .ol-form-side {
+  position: relative;
   flex: 1;
   background: #FFFFFF;
   display: flex; align-items: center; justify-content: center;
@@ -264,18 +265,19 @@ const CSS = `
 .ol-spin { animation: olSpin .8s linear infinite; }
 @keyframes olSpin { to { transform: rotate(360deg); } }
 
-/* ── Back button ─────────────────────────────────────────────────────── */
-/* Icon-only, sitting above the heading — the standard "return to site" affordance on a
-   login screen, rather than a text link competing with the form's own actions. */
-.ol-back-btn {
-  display: inline-flex; align-items: center; justify-content: center;
-  width: 38px; height: 38px; margin-left: -8px;
-  border: none; background: transparent;
-  color: #5A6488; text-decoration: none;
-  margin-bottom: 20px;
-  transition: color .18s, transform .18s;
+/* ── Back link ──────────────────────────────────────────────────────── */
+/* Same "Cancel & Return Home" affordance as Public Registration — an Inertia <Link>
+   that always navigates to "/" (never browser history), sitting top-right of the
+   form side so it doesn't compete with the form's own actions. */
+.ol-back-link {
+  position: absolute; top: 28px; right: 36px;
+  display: inline-flex; align-items: center; gap: 6px;
+  font-family: 'DM Sans', sans-serif; font-size: 10px; font-weight: 700;
+  letter-spacing: .1em; text-transform: uppercase;
+  color: #8A96BC; text-decoration: none; transition: color .18s;
 }
-.ol-back-btn:hover { color: #4F5BCB; transform: translateX(-2px); }
+.ol-back-link:hover { color: #1C2340; }
+@media (max-width: 900px) { .ol-back-link { top: 18px; right: 20px; } }
 
 /* ── Demo Accounts Section ───────────────────────────────────────────── */
 .ol-demo-wrap {
@@ -326,7 +328,9 @@ export default function Login() {
         post('/login');
     };
 
-    // Auto-fill form fields for quick demo access
+    // Auto-fill form fields for quick demo access — login accepts either an account's
+    // registered email address or its registered mobile number; demo accounts use their
+    // registered email here (see database/seeders/UsersSeeder.php for the matching records).
     const setDemoAccount = (role) => {
         const credentials = {
             tmo: { login_id: 'tmo.jdelacruz@trivora.gov.ph', password: 'TmoUser@123' },
@@ -389,11 +393,9 @@ export default function Login() {
 
             {/* ── Form side ── */}
             <div className="ol-form-side">
+                {/* Same wording/behavior as Public Registration's back link */}
+                <Link href="/" className="ol-back-link">Cancel &amp; Return Home</Link>
                 <div className="ol-form-inner">
-                    <Link href="/" className="ol-back-btn" aria-label="Return to Home">
-                        <ArrowLeft size={17} strokeWidth={2} />
-                    </Link>
-
                     <div className="ol-form-heading">
                         <p className="ol-form-title">Welcome back</p>
                         <p className="ol-form-sub">Sign in with your registered email or mobile number.</p>
@@ -408,7 +410,7 @@ export default function Login() {
 
                     <form onSubmit={submit}>
                         <div className="ol-fields">
-                            {/* Generic Email/Mobile Input */}
+                            {/* Email or Mobile Number — either of the account's existing registered identifiers */}
                             <div>
                                 <label className="ol-label" htmlFor="login_id">Email or Mobile Number</label>
                                 <div className="ol-input-wrap">
@@ -418,8 +420,9 @@ export default function Login() {
                                     <input
                                         id="login_id"
                                         type="text"
+                                        autoComplete="username"
                                         className="ol-input"
-                                        placeholder="Enter email or mobile no."
+                                        placeholder="e.g. juan@email.com or 0917 123 4567"
                                         value={data.login_id}
                                         onChange={e => setData('login_id', e.target.value)}
                                     />

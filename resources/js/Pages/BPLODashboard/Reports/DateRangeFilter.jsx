@@ -1,17 +1,18 @@
 import { Calendar } from 'lucide-react';
 
 /**
- * Shared date-range control for BPLO Reports & Analytics — quick presets (7 days, 30 days,
- * 3 months, 1 year, as requested) + native date inputs for a custom range. Mirrors
- * TMODashboard/Reports/DateRangeFilter.jsx's structure, restyled with BPLO's own slate/#1D2542
- * convention. No date-picker library: native `<input type="date">` plus server-side Carbon math
- * (see BPLOReportController) is enough at this scale.
+ * Shared date-range control for BPLO Reports & Analytics — a Quick Range preset dropdown plus
+ * custom from/to inputs, in one compact row. Mirrors TMODashboard/Reports/DateRangeFilter.jsx's
+ * structure and preset set exactly (Today/This Week/This Month/This Quarter/This Year), restyled
+ * with BPLO's own slate/#1D2542 convention. No date-picker library: native `<input type="date">`
+ * plus server-side Carbon math (see BPLOReportController) is enough at this scale.
  */
 const PRESETS = [
-    { value: '7d', label: 'Last 7 Days' },
-    { value: '30d', label: 'Last 30 Days' },
-    { value: '90d', label: 'Last 3 Months' },
-    { value: '365d', label: 'Last 1 Year' },
+    { value: 'today', label: 'Today' },
+    { value: '7d', label: 'This Week' },
+    { value: '30d', label: 'This Month' },
+    { value: '90d', label: 'This Quarter' },
+    { value: '365d', label: 'This Year' },
 ];
 
 // Uses local calendar-date components (not toISOString, which converts to UTC and can silently
@@ -26,10 +27,17 @@ function fmtLocalDate(d) {
 function presetToRange(preset) {
     const to = new Date();
     const from = new Date();
-    if (preset === '7d') from.setDate(from.getDate() - 6);
-    else if (preset === '30d') from.setDate(from.getDate() - 29);
-    else if (preset === '90d') from.setDate(from.getDate() - 89);
-    else if (preset === '365d') from.setDate(from.getDate() - 364);
+    if (preset === 'today') {
+        // from === to === today
+    } else if (preset === '7d') {
+        from.setDate(from.getDate() - 6);
+    } else if (preset === '30d') {
+        from.setDate(from.getDate() - 29);
+    } else if (preset === '90d') {
+        from.setDate(from.getDate() - 89);
+    } else if (preset === '365d') {
+        from.setDate(from.getDate() - 364);
+    }
     return { from: fmtLocalDate(from), to: fmtLocalDate(to) };
 }
 
@@ -48,7 +56,7 @@ export default function DateRangeFilter({ from, to, onChange }) {
     };
 
     return (
-        <div className="flex flex-col gap-2.5 rounded-xl border border-slate-200/70 bg-white p-3 sm:flex-row sm:items-center sm:justify-between sm:p-3.5">
+        <div className="flex flex-wrap items-center gap-2 sm:flex-nowrap">
             <select
                 value={activePreset}
                 onChange={handlePreset}

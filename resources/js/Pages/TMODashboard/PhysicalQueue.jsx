@@ -1,25 +1,40 @@
-import React, { useState, useMemo, useEffect } from 'react';
-import { Head, Link, router } from '@inertiajs/react';
+import React, { useState, useMemo } from 'react';
+import { Head, Link } from '@inertiajs/react';
+import useBackgroundRefresh from '@/hooks/useBackgroundRefresh';
 import TrivoraLayout from '@/Layouts/TrivoraLayout';
 import {
     Clock, ChevronRight, ChevronLeft, Inbox, Bike,
     Search, X, RotateCcw, CheckCircle2, ShieldCheck,
-    AlertTriangle, Printer, Gauge, Phone,
+    AlertTriangle, Printer, Phone,
 } from 'lucide-react';
 
 const CARD_SHADOW = 'shadow-[0_1px_2px_0_rgba(15,23,42,0.04),0_8px_24px_-8px_rgba(15,23,42,0.10)]';
 
+// Filter labels only — the underlying `value`s still match the real backend status strings
+// (TMO\InspectionController's Awaiting Inspection / Ready for Reinspection / Reinspection
+// Required). "Ready for Reinspection" and "Reinspection Required" are two real, distinct
+// backend states (driver-confirmed-ready vs. not yet confirmed) but already share the exact
+// same action/route on this page, so they're grouped under one user-facing "Reinspect" option
+// here — see displayGroupOf() below, which every filter/pill/action label goes through.
 const STATUS_OPTIONS = [
-    { value: 'all', label: 'All Statuses' },
-    { value: 'Scheduled', label: 'Scheduled' },
-    { value: 'Re-inspection', label: 'Needs Re-inspection' },
+    { value: 'all', label: 'All' },
+    { value: 'Awaiting Inspection', label: 'Pending' },
+    { value: 'Reinspect', label: 'Reinspect' },
 ];
 
 const ITEMS_PER_PAGE = 10;
 
 function bucketOf(app) {
-    if (app.status === 'Re-inspection' || app.raw_status === 'failed_inspection') return 'Re-inspection';
-    return 'Scheduled';
+    if (app.status === 'Ready for Reinspection') return 'Ready for Reinspection';
+    if (app.status === 'Reinspection Required' || app.raw_status === 'failed_inspection') return 'Reinspection Required';
+    return 'Awaiting Inspection';
+}
+
+// One-word user-facing grouping for the Status column, filter, and Action button — collapses
+// the two real reinspection buckets (see bucketOf()) into a single "Reinspect" facing label,
+// since they already behave identically here (same action, same destination route).
+function displayGroupOf(bucket) {
+    return bucket === 'Awaiting Inspection' ? 'Awaiting Inspection' : 'Reinspect';
 }
 
 function getInitials(name) {
@@ -30,23 +45,25 @@ function getInitials(name) {
 }
 
 function StatusPill({ status }) {
-    if (status === 'Re-inspection') {
+    if (displayGroupOf(status) === 'Reinspect') {
         return (
             <span className="inline-flex items-center gap-1.5 rounded-full border border-rose-200/90 bg-rose-50 px-2.5 py-0.5 text-xs font-semibold text-rose-700 shadow-2xs">
-                Needs Re-inspection
+                Reinspect
             </span>
         );
     }
     return (
         <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-200/90 bg-amber-50 px-2.5 py-0.5 text-xs font-semibold text-amber-800 shadow-2xs">
-            Scheduled
+            Pending
         </span>
     );
 }
 
 export default function PhysicalQueue({
     applications = [],
-    todaZones = [],
+    awaitingCount = 0,
+    readyReinspectionCount = 0,
+    reinspectionRequiredCount = 0,
     scheduledCount = 0,
     reinspectionCount = 0,
     passedTodayCount = 0,
@@ -54,46 +71,13 @@ export default function PhysicalQueue({
 }) {
     const [query, setQuery] = useState('');
     const [statusFilter, setStatusFilter] = useState('all');
-    const [todaFilter, setTodaFilter] = useState('all');
     const [currentPage, setCurrentPage] = useState(1);
 
     // Silent background refresh — a document-review approval elsewhere feeds new units into this
     // queue without a manual reload.
-    useEffect(() => {
-        const { stop } = router.poll(15000, {
-            only: ['applications', 'scheduledCount', 'reinspectionCount', 'passedTodayCount', 'completedTodayCount'],
-        });
-        return () => stop();
-    }, []);
-
-    // Official TODA list from database paired with current queue counts
-    const todaOptions = useMemo(() => {
-        const countMap = {};
-        applications.forEach(a => {
-            const t = a.toda || 'Unassigned';
-            countMap[t] = (countMap[t] || 0) + 1;
-        });
-
-        const dbNames = (todaZones && todaZones.length > 0)
-            ? todaZones.map(z => z.name)
-            : ['TODA Brgy. 10', 'TODA Brgy. 4', 'TODA Brgy. 8', 'TODA Bucana'];
-
-        const list = dbNames.map(name => ({
-            name,
-            count: countMap[name] || 0,
-        }));
-
-        Object.keys(countMap).forEach(name => {
-            if (!dbNames.includes(name)) {
-                list.push({
-                    name,
-                    count: countMap[name],
-                });
-            }
-        });
-
-        return list.sort((a, b) => a.name.localeCompare(b.name));
-    }, [applications, todaZones]);
+    useBackgroundRefresh(
+        ['applications', 'awaitingCount', 'readyReinspectionCount', 'reinspectionRequiredCount', 'scheduledCount', 'reinspectionCount', 'passedTodayCount', 'completedTodayCount']
+    );
 
     const filtered = useMemo(() => {
         const q = query.trim().toLowerCase();
@@ -104,14 +88,12 @@ export default function PhysicalQueue({
                 (a.reference && a.reference.toLowerCase().includes(q)) ||
                 (a.operator && a.operator.toLowerCase().includes(q)) ||
                 (a.plate && a.plate.toLowerCase().includes(q)) ||
-                (a.make && a.make.toLowerCase().includes(q)) ||
-                (a.toda && a.toda.toLowerCase().includes(q));
+                (a.make && a.make.toLowerCase().includes(q));
 
-            const matchesStatus = statusFilter === 'all' || bucket === statusFilter;
-            const matchesToda = todaFilter === 'all' || a.toda === todaFilter;
-            return matchesQuery && matchesStatus && matchesToda;
+            const matchesStatus = statusFilter === 'all' || displayGroupOf(bucket) === statusFilter;
+            return matchesQuery && matchesStatus;
         });
-    }, [applications, query, statusFilter, todaFilter]);
+    }, [applications, query, statusFilter]);
 
     const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE) || 1;
     const activePage = Math.min(currentPage, totalPages);
@@ -119,16 +101,17 @@ export default function PhysicalQueue({
     const endIndex = Math.min(startIndex + ITEMS_PER_PAGE, filtered.length);
     const paginated = filtered.slice(startIndex, endIndex);
 
-    const isFiltering = query.trim() !== '' || statusFilter !== 'all' || todaFilter !== 'all';
+    const isFiltering = query.trim() !== '' || statusFilter !== 'all';
 
     const handleClearAll = () => {
         setQuery('');
         setStatusFilter('all');
-        setTodaFilter('all');
         setCurrentPage(1);
     };
 
-    const queueTotal = scheduledCount + reinspectionCount;
+    const totalAwaiting = awaitingCount || scheduledCount;
+    const totalReadyReinspection = readyReinspectionCount || reinspectionCount;
+    const queueTotal = totalAwaiting + totalReadyReinspection;
     const pct = (n) => queueTotal > 0 ? Math.round((n / queueTotal) * 100) : 0;
 
     return (
@@ -153,7 +136,7 @@ export default function PhysicalQueue({
                 2. PREMIUM KPI CARD DECK
                ══════════════════════════════════════════════════════════════ */}
             <div className="mb-5 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
-                {/* Card 1: Scheduled for Inspection */}
+                {/* Card 1: Awaiting Inspection */}
                 <div className={`group rounded-2xl border border-slate-200/70 bg-white p-4 sm:p-5 ${CARD_SHADOW} transition-all hover:border-slate-300`}>
                     <div className="flex items-center justify-between">
                         <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-amber-500/[0.14] to-amber-500/[0.02] text-amber-600">
@@ -161,59 +144,59 @@ export default function PhysicalQueue({
                         </div>
                         <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-700 border border-amber-200/70">
                             <span className="h-1 w-1 rounded-full bg-amber-500 animate-pulse" />
-                            Awaiting
+                            Pending
                         </span>
                     </div>
 
                     <div className="mt-3">
                         <div className="flex items-baseline gap-1.5">
                             <span className="text-2xl sm:text-3xl font-extrabold tracking-tight tabular-nums text-slate-900">
-                                {scheduledCount}
+                                {totalAwaiting}
                             </span>
-                            <span className="text-xs font-semibold text-slate-400">{pct(scheduledCount)}% of queue</span>
+                            <span className="text-xs font-semibold text-slate-400">{pct(totalAwaiting)}% of queue</span>
                         </div>
                         <p className="mt-0.5 text-xs font-semibold text-slate-700">
-                            Scheduled for Inspection
+                            Awaiting Inspection
                         </p>
                     </div>
 
                     <div className="mt-3.5 flex items-center justify-between border-t border-slate-100 pt-2.5 text-[11px]">
-                        <span className="text-slate-400">Status</span>
-                        <span className="font-semibold text-amber-700">Awaiting Inspection</span>
+                        <span className="text-slate-400">Queue Stage</span>
+                        <span className="font-semibold text-amber-700">First-Time Inspection</span>
                     </div>
                 </div>
 
-                {/* Card 2: Needs Re-inspection */}
+                {/* Card 2: Ready for Re-inspection */}
                 <div className={`group rounded-2xl border border-slate-200/70 bg-white p-4 sm:p-5 ${CARD_SHADOW} transition-all hover:border-slate-300`}>
                     <div className="flex items-center justify-between">
-                        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-rose-500/[0.14] to-rose-500/[0.02] text-rose-600">
-                            <AlertTriangle size={16} strokeWidth={2.2} />
+                        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-sky-500/[0.14] to-sky-500/[0.02] text-sky-600">
+                            <RotateCcw size={16} strokeWidth={2.2} />
                         </div>
                         <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold border ${
-                            reinspectionCount > 0
-                                ? 'bg-rose-50 text-rose-700 border-rose-200/70'
+                            totalReadyReinspection > 0
+                                ? 'bg-sky-50 text-sky-700 border-sky-200/70'
                                 : 'bg-slate-100 text-slate-600 border-slate-200/70'
                         }`}>
-                            {reinspectionCount > 0 ? 'Action Needed' : 'All Clear'}
+                            {totalReadyReinspection > 0 ? 'Ready' : 'All Clear'}
                         </span>
                     </div>
 
                     <div className="mt-3">
                         <div className="flex items-baseline gap-1.5">
                             <span className="text-2xl sm:text-3xl font-extrabold tracking-tight tabular-nums text-slate-900">
-                                {reinspectionCount}
+                                {totalReadyReinspection}
                             </span>
-                            <span className="text-xs font-semibold text-slate-400">{pct(reinspectionCount)}% re-inspection</span>
+                            <span className="text-xs font-semibold text-slate-400">{pct(totalReadyReinspection)}% of queue</span>
                         </div>
                         <p className="mt-0.5 text-xs font-semibold text-slate-700">
-                            Needs Re-inspection
+                            Ready for Re-inspection
                         </p>
                     </div>
 
                     <div className="mt-3.5 flex items-center justify-between border-t border-slate-100 pt-2.5 text-[11px]">
-                        <span className="text-slate-400">Defects to repair</span>
-                        <span className={`font-semibold ${reinspectionCount > 0 ? 'text-rose-700' : 'text-slate-600'}`}>
-                            {reinspectionCount > 0 ? 'Awaiting Repair' : '0 Pending'}
+                        <span className="text-slate-400">Driver Confirmed</span>
+                        <span className={`font-semibold ${totalReadyReinspection > 0 ? 'text-sky-700' : 'text-slate-600'}`}>
+                            {totalReadyReinspection > 0 ? 'Awaiting Re-test' : '0 Pending'}
                         </span>
                     </div>
                 </div>
@@ -292,7 +275,7 @@ export default function PhysicalQueue({
                             type="text"
                             value={query}
                             onChange={e => setQuery(e.target.value)}
-                            placeholder="Search by driver, reference number, plate, or TODA…"
+                            placeholder="Search by driver, reference number, or plate…"
                             className="h-10 w-full rounded-lg border border-slate-200 bg-slate-50/50 pl-10 pr-9 text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 shadow-2xs transition-all focus:border-tmo-primary focus:bg-white focus:outline-none focus:ring-2 focus:ring-tmo-primary/10"
                         />
                         {query && (
@@ -317,20 +300,6 @@ export default function PhysicalQueue({
                                 <option key={opt.value} value={opt.value}>{opt.label}</option>
                             ))}
                         </select>
-
-                        {/* TODA Zone Filter */}
-                        <select
-                            value={todaFilter}
-                            onChange={e => setTodaFilter(e.target.value)}
-                            className="h-10 w-full sm:w-48 rounded-lg border border-slate-200 bg-white px-3 pr-8 text-xs font-semibold text-slate-700 shadow-2xs transition-colors focus:border-tmo-primary focus:outline-none focus:ring-2 focus:ring-tmo-primary/10 cursor-pointer truncate"
-                        >
-                            <option value="all">All TODAs ({applications.length})</option>
-                            {todaOptions.map(opt => (
-                                <option key={opt.name} value={opt.name}>
-                                    {opt.name} ({opt.count})
-                                </option>
-                            ))}
-                        </select>
                     </div>
                 </div>
             </div>
@@ -349,7 +318,7 @@ export default function PhysicalQueue({
                     <p className="mx-auto mt-1 max-w-sm text-xs text-slate-500 leading-relaxed">
                         {isFiltering
                             ? 'No units match your search or filters.'
-                            : 'No tricycles are scheduled for inspection right now.'}
+                            : 'No tricycles are awaiting physical inspection right now.'}
                     </p>
                     {isFiltering && (
                         <button
@@ -374,13 +343,10 @@ export default function PhysicalQueue({
                                             Reference No.
                                         </th>
                                         <th scope="col" className="py-3 px-4 text-[11px] font-bold uppercase tracking-wider text-slate-500">
-                                            Tricycle Driver
+                                            Tricycle Owner
                                         </th>
                                         <th scope="col" className="py-3 px-4 text-[11px] font-bold uppercase tracking-wider text-slate-500">
                                             Tricycle Unit
-                                        </th>
-                                        <th scope="col" className="py-3 px-4 text-[11px] font-bold uppercase tracking-wider text-slate-500">
-                                            Schedule
                                         </th>
                                         <th scope="col" className="py-3 px-4 text-[11px] font-bold uppercase tracking-wider text-slate-500">
                                             Status
@@ -499,22 +465,6 @@ export default function PhysicalQueue({
                     </div>
                 </>
             )}
-
-            {/* ══════════════════════════════════════════════════════════════
-                5. TMO FIELD PROTOCOL BANNER
-               ══════════════════════════════════════════════════════════════ */}
-            <div className="mt-6 flex items-start gap-4 rounded-2xl border border-slate-200/70 bg-slate-50/70 p-4 sm:p-5">
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-700 shadow-2xs">
-                    <Gauge size={18} strokeWidth={2} />
-                </div>
-                <div>
-                    <p className="text-xs font-bold uppercase tracking-wide text-slate-800">TMO Field Testing Protocol</p>
-                    <p className="mt-0.5 text-xs leading-relaxed text-slate-600">
-                        Conduct on-site testing only when the tricycle driver and unit are physically present at the inspection bay.
-                        Verify brake responsiveness, light functionality, horn loudness, mirror completeness, and frame integrity.
-                    </p>
-                </div>
-            </div>
         </TrivoraLayout>
     );
 }
@@ -542,7 +492,7 @@ function DesktopPhysicalRow({ app }) {
                 </div>
             </td>
 
-            {/* Column 2: Tricycle Driver */}
+            {/* Column 2: Tricycle Owner */}
             <td className="py-3.5 px-4 align-middle">
                 <div className="flex items-center gap-2.5">
                     <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-100 text-[11px] font-bold text-slate-700">
@@ -571,37 +521,22 @@ function DesktopPhysicalRow({ app }) {
                     </div>
                     <div className="mt-0.5 flex items-center gap-2 text-[11px] text-slate-500">
                         <span>Plate: <strong className="text-slate-700 font-semibold">{app.plate}</strong></span>
-                        <span className="text-slate-300">·</span>
-                        <span className="truncate">{app.toda}</span>
                     </div>
                 </div>
             </td>
 
-            {/* Column 4: Schedule */}
-            <td className="py-3.5 px-4 align-middle">
-                <div className="flex flex-col">
-                    <span className="text-xs font-semibold text-slate-800">
-                        {app.scheduled_date}
-                    </span>
-                    <span className="mt-0.5 flex items-center gap-1 text-[11px] text-slate-400">
-                        <Clock size={10} strokeWidth={2.2} />
-                        {app.time_slot}
-                    </span>
-                </div>
-            </td>
-
-            {/* Column 5: Status */}
+            {/* Column 4: Status */}
             <td className="py-3.5 px-4 align-middle">
                 <StatusPill status={bucket} />
             </td>
 
-            {/* Column 6: Action */}
+            {/* Column 5: Action */}
             <td className="py-3.5 pl-3 pr-5 text-right align-middle">
                 <Link
                     href={`/tmo/review/physical/${app.id}`}
                     className="inline-flex items-center gap-1 rounded-full bg-[#1D2542] hover:bg-[#283256] text-white px-3.5 py-1.5 text-xs font-semibold shadow-2xs transition-all active:scale-[0.98]"
                 >
-                    <span>{bucket === 'Re-inspection' ? 'Re-inspect' : 'Start Inspection'}</span>
+                    <span>{displayGroupOf(bucket) === 'Reinspect' ? 'Reinspect' : 'Inspect'}</span>
                     <ChevronRight size={13} strokeWidth={2.5} className="text-slate-300" />
                 </Link>
             </td>
@@ -624,7 +559,7 @@ function MobilePhysicalCard({ app }) {
                 <StatusPill status={bucket} />
             </div>
 
-            {/* Driver & TODA */}
+            {/* Driver */}
             <div className="mt-2.5 flex items-center justify-between gap-2">
                 <div className="flex items-center gap-2 min-w-0">
                     <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-100 text-[10px] font-bold text-slate-700">
@@ -632,7 +567,6 @@ function MobilePhysicalCard({ app }) {
                     </div>
                     <div className="min-w-0">
                         <p className="truncate text-xs font-semibold text-slate-900">{app.operator}</p>
-                        <p className="truncate text-[11px] text-slate-400">{app.toda}</p>
                     </div>
                 </div>
 
@@ -647,22 +581,13 @@ function MobilePhysicalCard({ app }) {
                 <span className="truncate font-medium">{app.make}</span>
             </div>
 
-            {/* Schedule Row */}
-            <div className="mt-2.5 flex items-center justify-between gap-2 border-t border-slate-100 pt-2 text-xs">
-                <span className="text-[11px] font-medium text-slate-500">{app.scheduled_date}</span>
-                <span className="text-[10px] text-slate-400 flex items-center gap-1">
-                    <Clock size={10} />
-                    {app.time_slot}
-                </span>
-            </div>
-
             {/* Action Button */}
             <div className="mt-2.5 pt-2 border-t border-slate-100">
                 <Link
                     href={`/tmo/review/physical/${app.id}`}
                     className="flex w-full items-center justify-center gap-1.5 rounded-full bg-[#1D2542] hover:bg-[#283256] text-white py-2 text-xs font-bold shadow-2xs transition-all active:scale-[0.98]"
                 >
-                    <span>{bucket === 'Re-inspection' ? 'Re-inspect' : 'Start Inspection'}</span>
+                    <span>{displayGroupOf(bucket) === 'Reinspect' ? 'Reinspect' : 'Inspect'}</span>
                     <ChevronRight size={13} strokeWidth={2.5} className="text-slate-300" />
                 </Link>
             </div>

@@ -1,5 +1,6 @@
-import React, { useEffect } from 'react';
-import { Head, Link, router } from '@inertiajs/react';
+import React from 'react';
+import { Head, Link } from '@inertiajs/react';
+import useBackgroundRefresh from '@/hooks/useBackgroundRefresh';
 import BPLOLayout from '@/Layouts/BPLOLayout';
 import {
     FileText, CheckCircle2, TrendingUp,
@@ -21,10 +22,7 @@ export default function BPLODashboard({ stats }) {
     const pendingReleasing = stats?.pendingReleasingCount || 0;
 
     // Silent background refresh so these counts stay current without a manual reload.
-    useEffect(() => {
-        const { stop } = router.poll(15000, { only: ['stats'] });
-        return () => stop();
-    }, []);
+    useBackgroundRefresh(['stats']);
 
     // MTOP Issuance Trend data
     const chartData = [
@@ -45,7 +43,7 @@ export default function BPLODashboard({ stats }) {
 
     return (
         <BPLOLayout title="Dashboard" role="BPLO Officer">
-            <Head title="BPLO Dashboard | TRIVORA" />
+            <Head title="Dashboard | TRIVORA" />
 
             {/* ══════════════════════════════════════════════════════════════
                 1. CLEAN HEADER (Consistent with TMO Standard)
@@ -53,7 +51,7 @@ export default function BPLODashboard({ stats }) {
             <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-slate-200/80 pb-5">
                 <div>
                     <h1 className="text-2xl sm:text-[28px] font-extrabold tracking-tight text-slate-900 leading-tight">
-                        BPLO Overview
+                        Dashboard
                     </h1>
                     <p className="mt-1 text-xs sm:text-sm text-slate-500 max-w-2xl leading-relaxed">
                         Municipal Tricycle Operator's Permit (MTOP) licensing, issuance &amp; fleet registry status
@@ -129,7 +127,7 @@ export default function BPLODashboard({ stats }) {
                             </span>
                         </div>
                         <p className="mt-1 text-[11px] text-slate-500">
-                            Payment verified, awaiting sticker
+                            Cleared inspection, awaiting sticker
                         </p>
                     </div>
 
@@ -298,7 +296,7 @@ export default function BPLODashboard({ stats }) {
                                 </div>
                                 <div className="flex-1 min-w-0">
                                     <div className="text-xs font-bold text-slate-900 truncate">Plate #8812 Issued</div>
-                                    <div className="text-[11px] text-slate-500 truncate">Mario Dela Cruz • TODA Bucana</div>
+                                    <div className="text-[11px] text-slate-500 truncate">Mario Dela Cruz • Brgy. Bucana</div>
                                 </div>
                                 <span className="text-[10px] font-semibold text-slate-400 shrink-0">10m ago</span>
                             </div>
@@ -309,7 +307,7 @@ export default function BPLODashboard({ stats }) {
                                 </div>
                                 <div className="flex-1 min-w-0">
                                     <div className="text-xs font-bold text-slate-900 truncate">Plate #4491 Issued</div>
-                                    <div className="text-[11px] text-slate-500 truncate">Ricardo Dalisay • TODA Brgy. 8</div>
+                                    <div className="text-[11px] text-slate-500 truncate">Ricardo Dalisay • Brgy. 8</div>
                                 </div>
                                 <span className="text-[10px] font-semibold text-slate-400 shrink-0">1h ago</span>
                             </div>
@@ -320,7 +318,7 @@ export default function BPLODashboard({ stats }) {
                                 </div>
                                 <div className="flex-1 min-w-0">
                                     <div className="text-xs font-bold text-slate-900 truncate">Awaiting Plate Number</div>
-                                    <div className="text-[11px] text-amber-700 truncate">Arnaldo Baquiran (Fee Verified)</div>
+                                    <div className="text-[11px] text-amber-700 truncate">Arnaldo Baquiran (Inspection Passed)</div>
                                 </div>
                                 <span className="text-[10px] font-semibold text-slate-400 shrink-0">2h ago</span>
                             </div>
@@ -370,7 +368,7 @@ export default function BPLODashboard({ stats }) {
                             Plate &amp; Sticker Releasing
                         </h4>
                         <p className="text-[11px] text-slate-500 truncate">
-                            Assign tricycle number coding scheme &amp; release permits
+                            Assign the Sticker Number &amp; release permits
                         </p>
                     </div>
                     <ChevronRight size={15} className="text-slate-400 group-hover:translate-x-0.5 transition-transform" />

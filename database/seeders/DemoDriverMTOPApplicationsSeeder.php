@@ -17,39 +17,41 @@ use Illuminate\Database\Seeder;
 use Illuminate\Support\Str;
 
 /**
- * Gives the demo driver login (driver.pramos@trivora.ph / "Pedro Ramos") one MTOP
- * application per stage of the finalized franchise workflow, so the Driver ->
- * Franchise & Compliance -> MTOP Applications tracker and its detail page can be
- * demoed end-to-end without needing real applicants to walk through every step.
+ * Gives the demo driver login (driver.pramos@trivora.ph / "Pedro Ramos") EXACTLY ONE
+ * MTOP application per Application Tracker stage, so Driver -> Franchise & Compliance ->
+ * MTOP Applications shows only the five states the demo walks through — nothing else:
  *
- * Reuses the exact Application/ApplicationDocument/Inspection/Payment/FranchiseScheme/
+ *   - APP-2026-00001  completed                 -> Expired (issued permit past expiry)
+ *   - APP-2026-00007  pending_review            -> Document Review (requirements)
+ *   - APP-2026-00020  pending_inspection        -> Physical Inspection
+ *   - APP-2026-00030  pending_bplo_release      -> BPLO Release: Sticker & Plate for Coding
+ *   - APP-2026-00035  awaiting_tmo_confirmation -> TMO Final Confirmation & GPS Setup
+ *       (the only application seeded right here)
+ *
+ * The first four are owned by ApplicationsSeeder.php. This seeder also RETIRES the
+ * older exception/duplicate-stage fixtures it used to create — APP-2026-00031
+ * (rejected), APP-2026-00032 (reinspection), APP-2026-00033 (duplicate BPLO) and
+ * APP-2026-00034 (ready-for-reinspection) — together with the purpose-built
+ * PLT-6001..6004 units that only existed to carry them, so the tracker never shows an
+ * extra or repeated stage and My Tricycles, TMO queues, and the tracker all agree.
+ *
+ * There is no online/in-system payment step anywhere in this workflow — the Municipal
+ * Treasurer's Office payment is a real-world, offline process with no corresponding
+ * application status or Payment row.
+ *
+ * Reuses the exact Application/ApplicationDocument/Inspection/FranchiseScheme/
  * ApplicationStatusHistory shapes and status values already established in
  * ApplicationsSeeder.php — no new statuses, columns, or workflow states are introduced.
  *
- * Pedro Ramos already has 4 applications seeded by ApplicationsSeeder covering:
- *   - APP-2026-00001  completed               -> Franchise Active / Completed
- *   - APP-2026-00007  pending_review          -> Document Review
- *   - APP-2026-00020  pending_inspection      -> Physical Inspection
- *   - APP-2026-00030  payment_verified        -> TMO Payment Verification (outcome) /
- *                                                 Awaiting BPLO Releasing
- * This seeder adds the 5 stages/exceptions that account has none of yet:
- *   - APP-2026-00031  rejected                -> Document Re-submission
- *   - APP-2026-00032  failed_inspection       -> Re-inspection
- *   - APP-2026-00033  pending_payment         -> Municipal Treasurer Payment (offline)
- *   - APP-2026-00034  payment_issue           -> Payment Issue / Return to TMO
- *   - APP-2026-00035  awaiting_tmo_confirmation -> TMO Final Confirmation & GPS Setup
- *
- * Note: the real system has no separate "TMO is verifying, not yet forwarded" status —
- * MTOPController::show() only ever sets phase 'bplo-release' the instant status becomes
- * 'payment_verified', which is also the moment BPLO's queue picks it up. So "TMO Payment
- * Verification" and "BPLO Releasing" render identically (same phase/ActionBox) and are
- * both represented by APP-2026-00030 rather than two visually-duplicate records.
- *
  * Idempotent: every record is looked up by its fixed reference_number via updateOrCreate,
- * so re-running this seeder never duplicates data.
+ * so re-running this seeder never duplicates data. APP-2026-00035's append-only
+ * application_status_histories trail is rebuilt from scratch first (resetStatusHistory),
+ * so stale rows from earlier runs or manual UI testing can never contradict the
+ * application's current status or the Application Tracker's status-history-derived dates.
  *
  * Not wired into DatabaseSeeder::run() — invoke explicitly after the main seeders:
  *   php artisan db:seed --class=Database\\Seeders\\DemoDriverMTOPApplicationsSeeder
+ * (ApplicationsSeeder first, since it owns APP-2026-00001/00007/00020/00030).
  */
 class DemoDriverMTOPApplicationsSeeder extends Seeder
 {
@@ -62,384 +64,32 @@ class DemoDriverMTOPApplicationsSeeder extends Seeder
             return;
         }
 
-        $tmo   = User::where('email', 'tmo.jdelacruz@trivora.gov.ph')->first();
-        $bplo  = User::where('email', 'bplo.areyes@trivora.gov.ph')->first();
-        $admin = User::where('role', 'admin')->first();
+        $tmo  = User::where('email', 'tmo.jdelacruz@trivora.gov.ph')->first();
+        $bplo = User::where('email', 'bplo.areyes@trivora.gov.ph')->first();
 
         $todaBucana = TodaZone::where('code', 'TODA-BUCANA')->orWhere('name', 'TODA Bucana')->first();
-        $todaBrgy10 = TodaZone::where('code', 'TODA-BRGY10')->orWhere('name', 'TODA Brgy. 10')->first();
-        $todaBrgy8  = TodaZone::where('code', 'TODA-BRGY8')->orWhere('name', 'TODA Brgy. 8')->first();
-        $todaBrgy4  = TodaZone::where('code', 'TODA-BRGY4')->orWhere('name', 'TODA Brgy. 4')->first();
 
         $redScheme = ColorCodingScheme::where('name', 'Red')->first();
 
         // -----------------------------------------------------------------
-        // APP-2026-00031 — Document Re-submission (rejected)
+        // Retire the exception/duplicate-stage demo fixtures
         // -----------------------------------------------------------------
-        $tri31 = Tricycle::updateOrCreate(
-            ['plate_number' => 'PLT-6001'],
-            [
-                'operator_id'    => $operator->id,
-                'toda_zone_id'   => $todaBucana?->id,
-                'make'           => 'Honda',
-                'model'          => 'TMX 125',
-                'year_model'     => 2024,
-                'body_color'     => 'Red/White',
-                'body_type'      => 'Pass-Thru Sidecar',
-                'engine_number'  => 'ENG-DEMO-60011',
-                'chassis_number' => 'CHS-DEMO-60011',
-                'or_number'      => 'OR-2026-60011',
-                'cr_number'      => 'CR-2026-60011',
-                'status'         => 'unregistered',
-            ]
-        );
-
-        $app31 = Application::updateOrCreate(
-            ['reference_number' => 'APP-2026-00031'],
-            [
-                'operator_id'      => $operator->id,
-                'tricycle_id'      => $tri31->id,
-                'application_type' => 'new',
-                'current_step'     => 1,
-                'status'           => 'rejected',
-                'submitted_at'     => now()->subDays(4),
-                'completed_at'     => null,
-                'remarks'          => "Requirements rejected. Driver's License copy is blurry.",
-            ]
-        );
-
-        Payment::where('application_id', $app31->id)->delete();
-        Inspection::where('application_id', $app31->id)->delete();
-
-        $this->seedDocuments($app31, 'approved', $tmo);
-        $licenseDoc = $app31->documents()->where('document_type', 'drivers_license')->first();
-        if ($licenseDoc) {
-            $licenseDoc->update([
-                'review_status'    => 'rejected',
-                'rejection_reason' => "The uploaded Driver's License photo is blurry and illegible. Please upload a clear, high-resolution scan.",
-            ]);
+        // The tracker now shows exactly one application per stage (see the class
+        // docblock). Remove the retired applications — their documents, status
+        // histories, inspections, payments, and franchise schemes all cascade on
+        // delete — and then the units that only existed to carry them. Those units
+        // have no other references (no violations, GPS locations, or paired devices),
+        // and whereDoesntHave() keeps the delete from ever touching a unit that has
+        // gained an application since.
+        foreach (['APP-2026-00031', 'APP-2026-00032', 'APP-2026-00033', 'APP-2026-00034'] as $retiredRef) {
+            Application::where('reference_number', $retiredRef)->delete();
         }
 
-        ApplicationStatusHistory::updateOrCreate(
-            ['application_id' => $app31->id, 'to_status' => 'pending_review'],
-            [
-                'changed_by'  => $operator->user_id,
-                'from_status' => null,
-                'from_step'   => null,
-                'to_step'     => 1,
-                'notes'       => 'Application submitted by operator.',
-                'created_at'  => now()->subDays(4),
-            ]
-        );
-        ApplicationStatusHistory::updateOrCreate(
-            ['application_id' => $app31->id, 'to_status' => 'rejected'],
-            [
-                'changed_by'  => $tmo?->id,
-                'from_status' => 'pending_review',
-                'from_step'   => 1,
-                'to_step'     => 1,
-                'notes'       => "Driver's License document rejected due to blurriness.",
-                'created_at'  => now()->subDays(2),
-            ]
-        );
-
-        // -----------------------------------------------------------------
-        // APP-2026-00032 — Re-inspection (failed_inspection)
-        // -----------------------------------------------------------------
-        $tri32 = Tricycle::updateOrCreate(
-            ['plate_number' => 'PLT-6002'],
-            [
-                'operator_id'    => $operator->id,
-                'toda_zone_id'   => $todaBrgy10?->id,
-                'make'           => 'Kawasaki',
-                'model'          => 'Barako 175',
-                'year_model'     => 2023,
-                'body_color'     => 'Blue/Silver',
-                'body_type'      => 'Pass-Thru Sidecar',
-                'engine_number'  => 'ENG-DEMO-60022',
-                'chassis_number' => 'CHS-DEMO-60022',
-                'or_number'      => 'OR-2026-60022',
-                'cr_number'      => 'CR-2026-60022',
-                'status'         => 'unregistered',
-            ]
-        );
-
-        $app32 = Application::updateOrCreate(
-            ['reference_number' => 'APP-2026-00032'],
-            [
-                'operator_id'      => $operator->id,
-                'tricycle_id'      => $tri32->id,
-                'application_type' => 'renewal',
-                'current_step'     => 3,
-                'status'           => 'failed_inspection',
-                'submitted_at'     => now()->subDays(9),
-                'completed_at'     => null,
-                'remarks'          => 'Physical inspection failed. Safety defects detected.',
-            ]
-        );
-
-        Payment::where('application_id', $app32->id)->delete();
-        $this->seedDocuments($app32, 'approved', $tmo);
-
-        ApplicationStatusHistory::updateOrCreate(
-            ['application_id' => $app32->id, 'to_status' => 'pending_review'],
-            [
-                'changed_by'  => $operator->user_id,
-                'from_status' => null,
-                'from_step'   => null,
-                'to_step'     => 1,
-                'notes'       => 'Application submitted by operator.',
-                'created_at'  => now()->subDays(9),
-            ]
-        );
-        ApplicationStatusHistory::updateOrCreate(
-            ['application_id' => $app32->id, 'to_status' => 'pending_inspection'],
-            [
-                'changed_by'  => $tmo?->id,
-                'from_status' => 'pending_review',
-                'from_step'   => 1,
-                'to_step'     => 2,
-                'notes'       => 'Requirements verified and approved. Endorsed for tricycle inspection.',
-                'created_at'  => now()->subDays(7),
-            ]
-        );
-        ApplicationStatusHistory::updateOrCreate(
-            ['application_id' => $app32->id, 'to_status' => 'failed_inspection'],
-            [
-                'changed_by'  => $tmo?->id,
-                'from_status' => 'pending_inspection',
-                'from_step'   => 3,
-                'to_step'     => 3,
-                'notes'       => 'Physical inspection failed: side mirror and horn defects.',
-                'created_at'  => now()->subDays(4),
-            ]
-        );
-
-        Inspection::updateOrCreate(
-            ['application_id' => $app32->id, 'attempt_number' => 1],
-            [
-                'inspector_id'      => $tmo?->id,
-                'inspection_date'   => now()->subDays(4)->toDateString(),
-                'inspection_time'   => '10:15:00',
-                'location_address'  => 'TMO Compound, Municipal Hall',
-                'result'            => 'failed',
-                'safety_equipment'  => false,
-                'brakes_steering'   => true,
-                'lights_reflectors' => true,
-                'tires_suspension'  => true,
-                'emissions_test'    => true,
-                'license_toda_docs' => true,
-                'inspector_notes'   => json_encode([
-                    'statuses' => [
-                        'headlights' => 'passed',
-                        'taillights' => 'passed',
-                        'signals'    => 'passed',
-                        'horn'       => 'failed',
-                        'mirrors'    => 'failed',
-                        'brakes'     => 'passed',
-                        'plate'      => 'passed',
-                        'sidecar'    => 'passed',
-                    ],
-                    'defects' => [
-                        'mirrors' => 'Missing right-side mirror.',
-                        'horn'    => 'Horn is not working.',
-                    ],
-                ]),
-            ]
-        );
-
-        // -----------------------------------------------------------------
-        // APP-2026-00033 — Municipal Treasurer Payment (pending_payment, offline)
-        // -----------------------------------------------------------------
-        $tri33 = Tricycle::updateOrCreate(
-            ['plate_number' => 'PLT-6003'],
-            [
-                'operator_id'    => $operator->id,
-                'toda_zone_id'   => $todaBrgy8?->id,
-                'make'           => 'Yamaha',
-                'model'          => 'STX 125',
-                'year_model'     => 2024,
-                'body_color'     => 'Black/Red',
-                'body_type'      => 'Pass-Thru Sidecar',
-                'engine_number'  => 'ENG-DEMO-60033',
-                'chassis_number' => 'CHS-DEMO-60033',
-                'or_number'      => 'OR-2026-60033',
-                'cr_number'      => 'CR-2026-60033',
-                'status'         => 'unregistered',
-            ]
-        );
-
-        $app33 = Application::updateOrCreate(
-            ['reference_number' => 'APP-2026-00033'],
-            [
-                'operator_id'      => $operator->id,
-                'tricycle_id'      => $tri33->id,
-                'application_type' => 'new',
-                'current_step'     => 4,
-                'status'           => 'pending_payment',
-                'submitted_at'     => now()->subDays(6),
-                'completed_at'     => null,
-                'remarks'          => null,
-            ]
-        );
-
-        Payment::where('application_id', $app33->id)->delete();
-        $this->seedDocuments($app33, 'approved', $tmo);
-
-        ApplicationStatusHistory::updateOrCreate(
-            ['application_id' => $app33->id, 'to_status' => 'pending_review'],
-            [
-                'changed_by'  => $operator->user_id,
-                'from_status' => null,
-                'from_step'   => null,
-                'to_step'     => 1,
-                'notes'       => 'Application submitted by operator.',
-                'created_at'  => now()->subDays(6),
-            ]
-        );
-        ApplicationStatusHistory::updateOrCreate(
-            ['application_id' => $app33->id, 'to_status' => 'pending_inspection'],
-            [
-                'changed_by'  => $tmo?->id,
-                'from_status' => 'pending_review',
-                'from_step'   => 1,
-                'to_step'     => 2,
-                'notes'       => 'Requirements verified and approved. Endorsed for tricycle inspection.',
-                'created_at'  => now()->subDays(4),
-            ]
-        );
-        ApplicationStatusHistory::updateOrCreate(
-            ['application_id' => $app33->id, 'to_status' => 'pending_payment'],
-            [
-                'changed_by'  => $tmo?->id,
-                'from_status' => 'pending_inspection',
-                'from_step'   => 3,
-                'to_step'     => 4,
-                'notes'       => 'Tricycle passed physical inspection. Payment Ticket issued for payment at the Municipal Treasurer\'s Office.',
-                'created_at'  => now()->subDays(2),
-            ]
-        );
-
-        Inspection::updateOrCreate(
-            ['application_id' => $app33->id, 'attempt_number' => 1],
-            [
-                'inspector_id'      => $tmo?->id,
-                'inspection_date'   => now()->subDays(2)->toDateString(),
-                'inspection_time'   => '09:00:00',
-                'location_address'  => 'TMO Compound, Municipal Hall',
-                'result'            => 'passed',
-                'safety_equipment'  => true,
-                'brakes_steering'   => true,
-                'lights_reflectors' => true,
-                'tires_suspension'  => true,
-                'emissions_test'    => true,
-                'license_toda_docs' => true,
-                'inspector_notes'   => 'Vehicle passed all roadworthiness checks.',
-            ]
-        );
-
-        // -----------------------------------------------------------------
-        // APP-2026-00034 — Payment Issue / Return to TMO (payment_issue)
-        // -----------------------------------------------------------------
-        $tri34 = Tricycle::updateOrCreate(
-            ['plate_number' => 'PLT-6004'],
-            [
-                'operator_id'    => $operator->id,
-                'toda_zone_id'   => $todaBrgy4?->id,
-                'make'           => 'Suzuki',
-                'model'          => 'Raider J',
-                'year_model'     => 2023,
-                'body_color'     => 'Yellow/Black',
-                'body_type'      => 'Pass-Thru Sidecar',
-                'engine_number'  => 'ENG-DEMO-60044',
-                'chassis_number' => 'CHS-DEMO-60044',
-                'or_number'      => 'OR-2026-60044',
-                'cr_number'      => 'CR-2026-60044',
-                'status'         => 'unregistered',
-            ]
-        );
-
-        $app34 = Application::updateOrCreate(
-            ['reference_number' => 'APP-2026-00034'],
-            [
-                'operator_id'      => $operator->id,
-                'tricycle_id'      => $tri34->id,
-                'application_type' => 'renewal',
-                'current_step'     => 4,
-                'status'           => 'payment_issue',
-                'submitted_at'     => now()->subDays(8),
-                'completed_at'     => null,
-                'remarks'          => 'TMO flagged an issue with the presented Official Receipt.',
-            ]
-        );
-
-        // No Payment record yet — TMO::PaymentVerificationController::verify()'s
-        // flag_issue branch never creates one, it only records the status change.
-        Payment::where('application_id', $app34->id)->delete();
-        $this->seedDocuments($app34, 'approved', $tmo);
-
-        ApplicationStatusHistory::updateOrCreate(
-            ['application_id' => $app34->id, 'to_status' => 'pending_review'],
-            [
-                'changed_by'  => $operator->user_id,
-                'from_status' => null,
-                'from_step'   => null,
-                'to_step'     => 1,
-                'notes'       => 'Application submitted by operator.',
-                'created_at'  => now()->subDays(8),
-            ]
-        );
-        ApplicationStatusHistory::updateOrCreate(
-            ['application_id' => $app34->id, 'to_status' => 'pending_inspection'],
-            [
-                'changed_by'  => $tmo?->id,
-                'from_status' => 'pending_review',
-                'from_step'   => 1,
-                'to_step'     => 2,
-                'notes'       => 'Requirements verified and approved. Endorsed for tricycle inspection.',
-                'created_at'  => now()->subDays(6),
-            ]
-        );
-        ApplicationStatusHistory::updateOrCreate(
-            ['application_id' => $app34->id, 'to_status' => 'pending_payment'],
-            [
-                'changed_by'  => $tmo?->id,
-                'from_status' => 'pending_inspection',
-                'from_step'   => 3,
-                'to_step'     => 4,
-                'notes'       => 'Tricycle passed physical inspection. Payment Ticket issued.',
-                'created_at'  => now()->subDays(4),
-            ]
-        );
-        ApplicationStatusHistory::updateOrCreate(
-            ['application_id' => $app34->id, 'to_status' => 'payment_issue'],
-            [
-                'changed_by'  => $tmo?->id,
-                'from_status' => 'pending_payment',
-                'from_step'   => 4,
-                'to_step'     => 4,
-                'notes'       => "TMO flagged issue with payment documents: Official Receipt number does not match Municipal Treasurer records.",
-                'created_at'  => now()->subDays(1),
-            ]
-        );
-
-        Inspection::updateOrCreate(
-            ['application_id' => $app34->id, 'attempt_number' => 1],
-            [
-                'inspector_id'      => $tmo?->id,
-                'inspection_date'   => now()->subDays(4)->toDateString(),
-                'inspection_time'   => '13:30:00',
-                'location_address'  => 'TMO Compound, Municipal Hall',
-                'result'            => 'passed',
-                'safety_equipment'  => true,
-                'brakes_steering'   => true,
-                'lights_reflectors' => true,
-                'tires_suspension'  => true,
-                'emissions_test'    => true,
-                'license_toda_docs' => true,
-                'inspector_notes'   => 'Vehicle passed all roadworthiness checks.',
-            ]
-        );
+        foreach (['PLT-6001', 'PLT-6002', 'PLT-6003', 'PLT-6004'] as $retiredPlate) {
+            Tricycle::where('plate_number', $retiredPlate)
+                ->whereDoesntHave('applications')
+                ->delete();
+        }
 
         // -----------------------------------------------------------------
         // APP-2026-00035 — TMO Final Confirmation & GPS Setup (awaiting_tmo_confirmation)
@@ -463,36 +113,65 @@ class DemoDriverMTOPApplicationsSeeder extends Seeder
             ]
         );
 
-        $app35 = $this->seedAwaitingConfirmationApp(
+        $this->seedAwaitingConfirmationApp(
             'APP-2026-00035',
             $operator,
             $tri35,
             'new',
             $redScheme,
             $tmo,
-            $bplo,
-            $admin
+            $bplo
         );
-        $app35->update(['sticker_number' => 'STK-2026-0715']);
 
-        $this->command->info('✔ Demo driver MTOP applications seeded for driver.pramos@trivora.ph (APP-2026-00031 to 00035, plus existing 00001/00007/00020/00030 covering the remaining stages).');
+        $this->command->info('✔ Demo driver tracker stages for driver.pramos@trivora.ph: APP-2026-00001 expired, 00007 document review, 00020 physical inspection, 00030 BPLO release, 00035 final confirmation (retired 00031-00034 and PLT-6001..6004).');
     }
 
     // -------------------------------------------------------------------------
     // Helpers (mirrors ApplicationsSeeder.php's conventions)
     // -------------------------------------------------------------------------
 
-    private function seedDocuments(Application $app, string $reviewStatus, ?User $reviewer): void
+    /**
+     * Rebuild an application's append-only status-history trail before seeding the
+     * canonical rows. This seeder IS the demo state for APP-2026-00035: stale rows
+     * recorded by earlier runs or manual UI testing (legacy payment-step statuses, or a
+     * stray transition contradicting the application's current status) must never survive
+     * to contradict the tracker's real status or its status-history-derived step dates.
+     */
+    private function resetStatusHistory(Application $app): void
+    {
+        ApplicationStatusHistory::where('application_id', $app->id)->delete();
+    }
+
+    /**
+     * Seeds the 9 mandatory items from the canonical franchise registration requirement list
+     * (App\Models\ApplicationDocument::CANONICAL_REQUIREMENTS) using the SAME document_type
+     * vocabulary the real registration workflow writes. The 2 conditional items
+     * (delivery_receipt, authorization_letter) are situational and left unsubmitted by default.
+     *
+     * A renewal application additionally gets Prangkisa seeded, matching Operator\
+     * MTOPController::store()'s real renewal-only requirement.
+     */
+    private function seedDocuments(Application $app, string $reviewStatus, ?User $reviewer, array $statusOverrides = []): void
     {
         $types = [
+            'police_clearance',
+            'health_certificate',
+            'orcr_photocopy',
             'drivers_license',
-            'or_cr',
-            'proof_of_residence',
+            'barangay_clearance',
             'toda_clearance',
-            'photo_id',
+            'cedula',
+            'driver_id',
+            'tariff_list',
         ];
 
+        if ($app->application_type === 'renewal') {
+            $types[] = 'prangkisa';
+        }
+
         foreach ($types as $type) {
+            $status = $statusOverrides[$type] ?? $reviewStatus;
+
             ApplicationDocument::updateOrCreate(
                 [
                     'application_id' => $app->id,
@@ -503,10 +182,10 @@ class DemoDriverMTOPApplicationsSeeder extends Seeder
                     'file_path'        => 'documents/' . $app->reference_number . '/' . Str::slug($type) . '.pdf',
                     'file_size_kb'     => rand(80, 500),
                     'mime_type'        => 'application/pdf',
-                    'review_status'    => $reviewStatus,
-                    'reviewed_by'      => $reviewStatus !== 'pending' ? $reviewer?->id : null,
-                    'reviewed_at'      => $reviewStatus !== 'pending' ? now()->subDays(rand(1, 5)) : null,
-                    'rejection_reason' => null,
+                    'review_status'    => $status,
+                    'reviewed_by'      => $status !== 'pending' ? $reviewer?->id : null,
+                    'reviewed_at'      => $status !== 'pending' ? now()->subDays(rand(1, 5)) : null,
+                    'rejection_reason' => $status === 'rejected' ? 'Document image is unclear or invalid; please resubmit a clearer copy.' : null,
                 ]
             );
         }
@@ -519,8 +198,7 @@ class DemoDriverMTOPApplicationsSeeder extends Seeder
         string $appType,
         ?ColorCodingScheme $colorScheme,
         ?User $tmo,
-        ?User $bplo,
-        ?User $admin
+        ?User $bplo
     ): Application {
         $app = Application::updateOrCreate(
             ['reference_number' => $ref],
@@ -528,17 +206,19 @@ class DemoDriverMTOPApplicationsSeeder extends Seeder
                 'operator_id'      => $operator->id,
                 'tricycle_id'      => $tricycle->id,
                 'application_type' => $appType,
-                'current_step'     => 5,
+                'current_step'     => 4,
                 'status'           => 'awaiting_tmo_confirmation',
                 'tracking_method'  => null,
                 'iot_device_id'    => null,
                 'submitted_at'     => now()->subDays(11),
                 'completed_at'     => null,
-                'remarks'          => 'Franchise sticker and coding plate released by BPLO. Returned to TMO for tracking setup and activation.',
+                'remarks'          => 'Franchise Number and coding plate released by BPLO. Returned to TMO for tracking setup and activation.',
             ]
         );
 
         $this->seedDocuments($app, 'approved', $tmo);
+
+        $this->resetStatusHistory($app);
 
         ApplicationStatusHistory::updateOrCreate(
             ['application_id' => $app->id, 'to_status' => 'pending_review'],
@@ -563,35 +243,24 @@ class DemoDriverMTOPApplicationsSeeder extends Seeder
             ]
         );
         ApplicationStatusHistory::updateOrCreate(
-            ['application_id' => $app->id, 'to_status' => 'pending_payment'],
+            ['application_id' => $app->id, 'to_status' => 'pending_bplo_release'],
             [
                 'changed_by'  => $tmo?->id,
                 'from_status' => 'pending_inspection',
-                'from_step'   => 3,
-                'to_step'     => 4,
-                'notes'       => 'Tricycle passed physical roadworthiness inspection. Payment Ticket issued.',
+                'from_step'   => 2,
+                'to_step'     => 3,
+                'notes'       => "Tricycle passed physical roadworthiness inspection. Driver instructed to pay at the Municipal Treasurer's Office, then proceed to BPLO for sticker/plate release.",
                 'created_at'  => now()->subDays(6),
-            ]
-        );
-        ApplicationStatusHistory::updateOrCreate(
-            ['application_id' => $app->id, 'to_status' => 'payment_verified'],
-            [
-                'changed_by'  => $tmo?->id,
-                'from_status' => 'pending_payment',
-                'from_step'   => 4,
-                'to_step'     => 5,
-                'notes'       => 'Municipal Treasurer Official Receipt verified by TMO. Forwarded to BPLO for sticker release.',
-                'created_at'  => now()->subDays(3),
             ]
         );
         ApplicationStatusHistory::updateOrCreate(
             ['application_id' => $app->id, 'to_status' => 'awaiting_tmo_confirmation'],
             [
                 'changed_by'  => $bplo?->id,
-                'from_status' => 'payment_verified',
-                'from_step'   => 5,
-                'to_step'     => 5,
-                'notes'       => 'Franchise sticker released by BPLO. Driver instructed to return to TMO for GPS configuration and final activation.',
+                'from_status' => 'pending_bplo_release',
+                'from_step'   => 3,
+                'to_step'     => 4,
+                'notes'       => 'Franchise Number released by BPLO. Driver instructed to return to TMO for GPS configuration and final activation.',
                 'created_at'  => now()->subDays(1),
             ]
         );
@@ -614,22 +283,22 @@ class DemoDriverMTOPApplicationsSeeder extends Seeder
             ]
         );
 
-        Payment::updateOrCreate(
-            ['application_id' => $app->id],
-            [
-                'processed_by'            => $tmo?->id ?? $admin?->id,
-                'official_receipt_number' => 'OR-2026-060715',
-                'amount'                  => 750.00,
-                'payment_method'          => 'cash',
-                'payment_date'            => now()->subDays(3)->toDateString(),
-                'payment_time'            => '11:00:00',
-                'is_verified'             => true,
-                'verified_at'             => now()->subDays(3),
-                'notes'                   => 'Municipal Treasurer Official Receipt verified by TMO.',
-            ]
-        );
+        // No Payment row — the system never records or verifies payment under the current
+        // workflow; the applicant pays entirely offline at the Municipal Treasurer's Office.
+        Payment::where('application_id', $app->id)->delete();
 
         $codingNumber = $tricycle->coding_scheme_number ?: '0715';
+
+        // Franchise Number (STK-YYYY-NNNN): this application is already at TMO Final
+        // Confirmation, so BPLO release has happened — which generates the serial once
+        // (BPLOController::showReleaseForm), persists it to the application, then copies the
+        // same serial onto the scheme (release()). Written here so the two rows can never
+        // disagree, and never regenerated once issued.
+        $franchiseNumber = $app->sticker_number
+            ?: 'STK-' . now()->format('Y') . '-' . str_pad($codingNumber, 4, '0', STR_PAD_LEFT);
+        if ($app->sticker_number !== $franchiseNumber) {
+            $app->update(['sticker_number' => $franchiseNumber]);
+        }
 
         if ($colorScheme && $bplo) {
             FranchiseScheme::updateOrCreate(
@@ -638,6 +307,7 @@ class DemoDriverMTOPApplicationsSeeder extends Seeder
                     'application_id'         => $app->id,
                     'color_coding_scheme_id' => $colorScheme->id,
                     'franchise_number'       => $codingNumber,
+                    'sticker_number'         => $franchiseNumber,
                     'issued_by'              => $bplo->id,
                     'issue_date'             => now()->subDays(1)->toDateString(),
                     'expiry_date'            => now()->addYears(3)->toDateString(),

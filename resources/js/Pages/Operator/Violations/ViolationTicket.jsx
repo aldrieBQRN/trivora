@@ -1,50 +1,25 @@
 import React, { useRef, useState } from 'react';
 import { Head, usePage, useForm } from '@inertiajs/react';
+import useBackgroundRefresh from '@/hooks/useBackgroundRefresh';
 import OperatorLayout from '@/Layouts/OperatorLayout';
-import { BackLink, Button, Label, ErrorText, Textarea, Modal } from '@/Components/TMO';
+import { BackLink, Button, Label, ErrorText, Textarea } from '@/Components/TMO';
 import {
-    Printer,
-    Ticket,
     CheckCircle2,
     XCircle,
     AlertCircle,
-    Building2,
     User,
     Bike,
     MapPin,
     Clock,
     Landmark,
     Scale,
-    Camera,
     ImagePlus,
     X,
 } from 'lucide-react';
 
-const PRINT_CSS = `
-@media print {
-  body * { visibility: hidden; }
-  .vt-paper, .vt-paper * { visibility: visible; }
-  .vt-paper { position: absolute; left: 0; top: 0; width: 100%; box-shadow: none; border: none; padding: 0; }
-}
-`;
-
 // Shared soft, layered shadow token — same elevation language used across the TMO/Operator SaaS
-// redesign, so this page's screen chrome reads as one consistent product. Only used on chrome
-// (cards/headers/buttons) — never inside .vt-paper, which is the preserved printable ticket.
+// redesign, so this page's screen chrome reads as one consistent product.
 const CARD_SHADOW = 'shadow-[0_1px_2px_0_rgba(15,23,42,0.04),0_8px_24px_-8px_rgba(15,23,42,0.10)]';
-
-function Row({ label, children, valueClassName = '' }) {
-    return (
-        <div className="mb-3.5 flex items-start justify-between gap-4 last:mb-0">
-            <span className="text-[10px] font-bold uppercase tracking-wide text-tmo-subtle">{label}</span>
-            <span className={`max-w-[60%] text-right text-[13px] font-semibold leading-relaxed text-tmo-ink ${valueClassName}`}>{children}</span>
-        </div>
-    );
-}
-
-const Divider = () => (
-    <div className="my-6 h-px" style={{ backgroundImage: 'repeating-linear-gradient(to right, rgba(28,35,64,.15) 0, rgba(28,35,64,.15) 6px, transparent 6px, transparent 12px)' }} />
-);
 
 function Card({ icon: Icon, title, children }) {
     return (
@@ -147,10 +122,9 @@ function AppealStatusPanel({ appeal }) {
 /* ─────────────────────── Appeal: submission form ──────────────────────── */
 
 function AppealForm({ appealUrl }) {
-    const [open, setOpen] = useState(false);
+    // Always shown, cannot be collapsed/hidden — no toggle-open state.
     const [step, setStep] = useState(1);
     const [preview, setPreview] = useState(null);
-    const cameraInputRef = useRef(null);
     const galleryInputRef = useRef(null);
 
     const { data, setData, post, processing, errors, reset, clearErrors } = useForm({
@@ -167,12 +141,10 @@ function AppealForm({ appealUrl }) {
     const removePhoto = () => {
         setData('proof', null);
         setPreview(null);
-        if (cameraInputRef.current) cameraInputRef.current.value = '';
         if (galleryInputRef.current) galleryInputRef.current.value = '';
     };
 
-    const closeAndReset = () => {
-        setOpen(false);
+    const resetForm = () => {
         setStep(1);
         reset();
         clearErrors();
@@ -185,39 +157,22 @@ function AppealForm({ appealUrl }) {
         post(appealUrl, {
             forceFormData: true,
             preserveScroll: true,
-            onSuccess: () => closeAndReset(),
+            onSuccess: () => resetForm(),
         });
     };
 
-    if (!open) {
-        return (
-            <button
-                type="button"
-                onClick={() => setOpen(true)}
-                className="mb-6 inline-flex items-center gap-1.5 text-xs font-bold text-[#1D2542] decoration-[#1D2542]/40 underline-offset-2 hover:underline"
-            >
-                <Scale size={13} /> Appeal this violation
-            </button>
-        );
-    }
-
     return (
         <div className={`mb-6 rounded-2xl border border-slate-200/70 bg-white p-5 sm:p-6 ${CARD_SHADOW}`}>
-            <div className="mb-4 flex items-center justify-between">
-                <div className="flex items-center gap-2.5">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-[#1D2542]/[0.10] to-[#1D2542]/[0.02] text-[#1D2542]">
-                        <Scale size={16} />
-                    </div>
-                    <div>
-                        <h3 className="text-sm font-bold text-slate-900">
-                            {step === 1 ? 'File an Appeal' : 'Review Your Appeal'}
-                        </h3>
-                        <p className="text-[11px] text-slate-400">Step {step} of 2</p>
-                    </div>
+            <div className="mb-4 flex items-center gap-2.5">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-[#1D2542]/[0.10] to-[#1D2542]/[0.02] text-[#1D2542]">
+                    <Scale size={16} />
                 </div>
-                <button type="button" onClick={closeAndReset} className="text-slate-400 hover:text-slate-700" disabled={processing}>
-                    <X size={18} />
-                </button>
+                <div>
+                    <h3 className="text-sm font-bold text-slate-900">
+                        {step === 1 ? 'File an Appeal' : 'Review Your Appeal'}
+                    </h3>
+                    <p className="text-[11px] text-slate-400">Step {step} of 2</p>
+                </div>
             </div>
 
             {step === 1 && (
@@ -252,13 +207,6 @@ function AppealForm({ appealUrl }) {
                             <div className="flex flex-wrap gap-2.5">
                                 <button
                                     type="button"
-                                    onClick={() => cameraInputRef.current?.click()}
-                                    className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 transition-colors hover:border-[#1D2542] hover:text-[#1D2542]"
-                                >
-                                    <Camera size={14} /> Take Photo
-                                </button>
-                                <button
-                                    type="button"
                                     onClick={() => galleryInputRef.current?.click()}
                                     className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 transition-colors hover:border-[#1D2542] hover:text-[#1D2542]"
                                 >
@@ -266,7 +214,6 @@ function AppealForm({ appealUrl }) {
                                 </button>
                             </div>
                         )}
-                        <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" hidden onChange={(e) => handleFile(e.target.files?.[0])} />
                         <input ref={galleryInputRef} type="file" accept="image/*" hidden onChange={(e) => handleFile(e.target.files?.[0])} />
                         <ErrorText>{errors.proof}</ErrorText>
                     </div>
@@ -313,13 +260,16 @@ function AppealForm({ appealUrl }) {
 export default function ViolationTicket({ violation }) {
     const { auth } = usePage().props;
     const operatorName = auth?.user?.name || 'Driver';
-    const [showTicket, setShowTicket] = useState(false);
-    const handlePrint = () => window.print();
+
+    // Background refresh of this violation record: a settlement or appeal decision made in the
+    // TMO panel elsewhere updates it without a manual reload. The appeal form below holds its
+    // own local state, and the hook defers any refresh while a field is focused, a dialog is
+    // open, or a request is in flight — so an appeal being written is never interrupted.
+    useBackgroundRefresh(['violation']);
 
     return (
         <OperatorLayout title="Violation Details" operatorName={operatorName}>
             <Head title={`Violation ${violation.id} | TRIVORA`} />
-            <style dangerouslySetInnerHTML={{ __html: PRINT_CSS }} />
 
             <div className="mx-auto max-w-[1400px] pb-10">
                 <div className="mb-2 flex items-center justify-between">
@@ -329,15 +279,10 @@ export default function ViolationTicket({ violation }) {
                     </span>
                 </div>
 
-                <div className="mb-6 flex flex-col gap-3 border-b border-slate-200/80 pb-5 sm:flex-row sm:items-center sm:justify-between">
-                    <div>
-                        <span className="text-[10.5px] font-bold uppercase tracking-widest text-slate-400">Violation Record</span>
-                        <h1 className="mt-1 text-2xl font-extrabold tracking-tight text-slate-900 sm:text-[28px]">Violation Details</h1>
-                        <p className="mt-1 text-sm text-slate-500">{violation.type} &bull; {violation.date}</p>
-                    </div>
-                    <Button variant="primary" size="md" icon={Ticket} onClick={() => setShowTicket(true)} className="shrink-0">
-                        View Ticket
-                    </Button>
+                <div className="mb-6 border-b border-slate-200/80 pb-5">
+                    <span className="text-[10.5px] font-bold uppercase tracking-widest text-slate-400">Violation Record</span>
+                    <h1 className="mt-1 text-2xl font-extrabold tracking-tight text-slate-900 sm:text-[28px]">Violation Details</h1>
+                    <p className="mt-1 text-sm text-slate-500">{violation.type} &bull; {violation.date}</p>
                 </div>
 
                 {violation.isPaid ? (
@@ -398,10 +343,7 @@ export default function ViolationTicket({ violation }) {
 
                             {violation.isPaid && (
                                 <div className="mt-5 grid grid-cols-1 gap-4 border-t border-dashed border-slate-200 pt-5 sm:grid-cols-2">
-                                    <InfoItem label="Official Receipt No." value={violation.officialReceiptNumber} mono />
-                                    <InfoItem label="Amount Paid" value={`₱${Number(violation.amountPaid ?? violation.fine).toFixed(2)}`} />
-                                    <InfoItem label="Payment Date" value={violation.paidAt} />
-                                    <InfoItem label="Confirmed By" value={violation.confirmedByName || 'TMO Personnel'} />
+                                    <InfoItem label="Payment Date" value={violation.paidAt || '—'} />
                                 </div>
                             )}
                         </div>
@@ -411,7 +353,7 @@ export default function ViolationTicket({ violation }) {
                     <div className="space-y-5">
                         <Card icon={Bike} title="Tricycle Information">
                             <div className="grid grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-2">
-                                <InfoItem label="Unit / Body No." value={violation.unit} />
+                                <InfoItem label="Sticker Number" value={violation.unit} />
                                 <InfoItem label="Plate Number" value={violation.plateNumber} mono />
                                 <InfoItem label="Make &amp; Model" value={violation.makeModel} />
                                 <InfoItem label="Coding Scheme" value={violation.colorScheme} />
@@ -428,107 +370,7 @@ export default function ViolationTicket({ violation }) {
                     </div>
 
                 </div>
-
-                <Modal
-                    show={showTicket}
-                    onClose={() => setShowTicket(false)}
-                    title="Violation Ticket"
-                    description="Present or print this official ticket at the Municipal Treasurer's Office."
-                    maxWidth="2xl"
-                    footer={
-                        <>
-                            <Button variant="secondary" size="sm" onClick={() => setShowTicket(false)}>Close</Button>
-                            <Button variant="primary" size="sm" icon={Printer} onClick={handlePrint}>Print</Button>
-                        </>
-                    }
-                >
-                    <div className="vt-paper relative overflow-hidden rounded-xl border border-tmo-border bg-white p-6 sm:p-8">
-                        <div className="mb-8 text-center">
-                            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-tmo-primarySoft text-tmo-primary">
-                                <Building2 size={24} strokeWidth={1.5} />
-                            </div>
-                            <p className="mb-1 text-[9px] font-bold uppercase tracking-[0.2em] text-tmo-subtle">Republika ng Pilipinas &bull; Province of Batangas</p>
-                            <h2 className="text-base font-extrabold uppercase tracking-wide text-tmo-ink">Municipality of Nasugbu</h2>
-                            <p className="mb-6 text-[11px] text-tmo-muted">Traffic Management Office (TMO)</p>
-
-                            <h1 className="flex items-center justify-center gap-2 text-xl font-extrabold tracking-tight text-red-600">
-                                <AlertCircle size={22} strokeWidth={2.5} /> Violation Ticket
-                            </h1>
-                            <p className="mt-2 font-mono text-2xl font-extrabold tracking-wide text-tmo-ink">{violation.id}</p>
-                            <div className="mt-3 flex justify-center">
-                                <StatusBadgeInline violation={violation} />
-                            </div>
-                        </div>
-
-                        <p className="mb-3 flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wide text-tmo-muted"><User size={12} /> Driver Information</p>
-                        <Row label="Name">{violation.driverName}</Row>
-                        <Row label="Contact Number">{violation.contactNumber || 'N/A'}</Row>
-                        <Row label="License Number">{violation.licenseNumber || 'N/A'}</Row>
-
-                        <Divider />
-
-                        <p className="mb-3 flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wide text-tmo-muted"><Bike size={12} /> Tricycle Information</p>
-                        <Row label="Unit / Body No.">{violation.unit}</Row>
-                        <Row label="Plate Number" valueClassName="font-mono">{violation.plateNumber}</Row>
-                        <Row label="Make &amp; Model">{violation.makeModel}</Row>
-                        <Row label="Coding Scheme">{violation.colorScheme}</Row>
-
-                        <Divider />
-
-                        <p className="mb-3 flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wide text-tmo-muted"><MapPin size={12} /> Violation Details</p>
-                        <Row label="Violation Type">{violation.type}</Row>
-                        <Row label="Date &amp; Time">{violation.date} &bull; {violation.time}</Row>
-                        <Row label="Location">{violation.location}</Row>
-                        <Row label="Detection Method">{violation.detectionMethod}</Row>
-                        {violation.notes && <Row label="Remarks">{violation.notes}</Row>}
-
-                        <div className="mt-8 rounded-xl border border-tmo-border bg-tmo-bg p-6">
-                            <div className="flex items-center justify-between">
-                                <span className="text-[11px] font-extrabold uppercase tracking-[0.15em] text-tmo-ink">Fine Amount Due</span>
-                                <span className="text-2xl font-extrabold tracking-tight text-red-600">₱{violation.fine.toFixed(2)}</span>
-                            </div>
-
-                            {violation.isPaid && (
-                                <div className="mt-5 space-y-3 border-t border-dashed border-tmo-border pt-5">
-                                    <Row label="Official Receipt No." valueClassName="font-mono">{violation.officialReceiptNumber}</Row>
-                                    <Row label="Amount Paid">₱{Number(violation.amountPaid ?? violation.fine).toFixed(2)}</Row>
-                                    <Row label="Payment Date">{violation.paidAt}</Row>
-                                    <Row label="Confirmed By">{violation.confirmedByName || 'TMO Personnel'}</Row>
-                                </div>
-                            )}
-                        </div>
-
-                        <div className="mt-8 text-center">
-                            <p className="text-[11px] leading-relaxed text-tmo-subtle">
-                                This is a system-generated violation ticket.<br />
-                                TRIVORA Fleet Operations System &bull; Nasugbu Traffic Management Office
-                            </p>
-                        </div>
-                    </div>
-                </Modal>
             </div>
         </OperatorLayout>
-    );
-}
-
-function StatusBadgeInline({ violation }) {
-    if (violation.isPaid) {
-        return (
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700">
-                Settled
-            </span>
-        );
-    }
-    if (violation.appeal?.status === 'under_review') {
-        return (
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-bold text-amber-700">
-                Appeal Under Review
-            </span>
-        );
-    }
-    return (
-        <span className="inline-flex items-center gap-1.5 rounded-full border border-red-200 bg-red-50 px-3 py-1 text-xs font-bold text-red-700">
-            Unpaid
-        </span>
     );
 }

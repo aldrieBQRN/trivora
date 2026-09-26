@@ -18,6 +18,7 @@ class Driver extends Model
         'license_number',
         'mobile_number',
         'is_online',
+        'online_since',
         'is_available',
         'current_lat',
         'current_lng',
@@ -29,6 +30,7 @@ class Driver extends Model
 
     protected $casts = [
         'is_online' => 'boolean',
+        'online_since' => 'datetime',
         'is_available' => 'boolean',
         'current_lat' => 'float',
         'current_lng' => 'float',
@@ -56,6 +58,50 @@ class Driver extends Model
     public function bookings(): HasMany
     {
         return $this->hasMany(Booking::class);
+    }
+
+    /**
+     * The driver's latest stored GPS heading (tricycle_locations.heading_deg, degrees 0-360) —
+     * the raw device heading the Driver App uploaded, never a computed bearing. Null when the
+     * tricycle has no location record or the latest record carries no heading. Not serialized by
+     * default: booking responses opt in with ->append('heading_deg') so passengers can orient the
+     * driver's map marker to the real direction of travel.
+     */
+    public function getHeadingDegAttribute(): ?int
+    {
+        if (!$this->tricycle_id) {
+            return null;
+        }
+
+        $heading = TricycleLocation::where('tricycle_id', $this->tricycle_id)
+            ->latest('recorded_at')
+            ->value('heading_deg');
+
+        return $heading === null ? null : (int) $heading;
+    }
+
+    /**
+     * The franchise (permit) this driver's assigned tricycle currently holds — the tricycle's
+     * one CURRENT FranchiseScheme record (Tricycle::franchiseScheme(), scoped to is_active=true).
+     * Null when the driver has no tricycle assignment, or the tricycle has no current franchise
+     * (e.g. a renewal mid-process, between BPLO release and TMO Final Confirmation).
+     */
+    public function franchise(): ?FranchiseScheme
+    {
+        return $this->tricycle?->franchiseScheme;
+    }
+
+    /**
+     * Whether this driver is currently authorized to operate: go Online, accept/perform
+     * bookings, transmit GPS telematics. Operational authorization belongs to the FRANCHISE, not
+     * the individual driver account — a driver whose franchise was suspended/revoked by TMO
+     * cannot operate even though their own account/login is untouched. The single check every
+     * enforcement point (EnsureFranchiseIsOperational middleware, BookingDispatchService, ...)
+     * consults, so the rule is defined in exactly one place.
+     */
+    public function canOperate(): bool
+    {
+        return $this->franchise()?->canOperate() ?? false;
     }
 
     /**
@@ -98,7 +144,7 @@ class Driver extends Model
             return true;
         }
 
-        $distKm = \App\Services\TodaRouteMatcher::haversineKm(
+        $distKm = \App\Services\GeoService::haversineKm(
             (float) $this->current_lat,
             (float) $this->current_lng,
             $pickupLat,

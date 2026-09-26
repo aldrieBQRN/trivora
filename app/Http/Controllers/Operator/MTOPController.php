@@ -7,9 +7,11 @@ use Illuminate\Http\Request;
 use Inertia\Inertia;
 use App\Models\Application;
 use App\Models\ApplicationDocument;
+use App\Models\ApplicationDriver;
 use App\Models\Inspection;
 use App\Models\Payment;
 use App\Models\FranchiseScheme;
+use Illuminate\Validation\Rule;
 
 class MTOPController extends Controller
 {
@@ -28,19 +30,22 @@ class MTOPController extends Controller
         if ($unitId && $operator) {
             $tri = \App\Models\Tricycle::where('id', $unitId)
                 ->where('operator_id', $operator->id)
-                ->with('todaZone')
                 ->first();
 
             if ($tri) {
+                // Same 9 vehicle fields as Public Registration, so a renewal's Vehicle Details
+                // step pre-fills identically to what a fresh registration would collect.
                 $tricycleData = [
                     'id'             => $tri->id,
                     'plate_number'   => $tri->plate_number,
+                    'make_model'     => trim("{$tri->make} {$tri->model}"),
+                    'year_model'     => $tri->year_model,
+                    'body_color'     => $tri->body_color,
+                    'body_type'      => $tri->body_type,
                     'engine_number'  => $tri->engine_number,
                     'chassis_number' => $tri->chassis_number,
-                    'make'           => $tri->make,
-                    'model'          => $tri->model,
-                    'make_model'     => "{$tri->make} {$tri->model}",
-                    'toda'           => $tri->todaZone ? "Zone {$tri->todaZone->code} ({$tri->todaZone->name})" : 'A (Poblacion)',
+                    'or_number'      => $tri->or_number,
+                    'cr_number'      => $tri->cr_number,
                 ];
             }
         }
@@ -48,6 +53,9 @@ class MTOPController extends Controller
         return Inertia::render('Operator/Compliance/MTOPWizard', [
             'applicationType' => $type,
             'tricycleUnit'    => $tricycleData,
+            // The Tricycle Owner (this portal account) — same person Public Registration's
+            // applicant block collects, rendered read-only in the wizard's owner/driver split.
+            'owner'           => $operator ? $operator->personDetails() : null,
         ]);
     }
 
@@ -65,6 +73,74 @@ class MTOPController extends Controller
 
         $appType = $request->input('application_type', 'new');
         $unitId  = $request->input('unit_id');
+        $currentYear = (int) date('Y');
+
+        // Whether the tricycle OWNER (this portal account) is also the tricycle driver —
+        // identical contract to RegistrationController::store(): an absent flag is treated
+        // as "owner is also the driver", and a separate driver is only collected/validated
+        // when the owner is NOT the driver.
+        $ownerIsDriver = $request->boolean('owner_is_driver', true);
+
+        // Same vehicle-field rules as Public Registration (RegistrationController::store()),
+        // plus the same canonical document vocabulary — enforced server-side here, not just via
+        // the wizard's client-side step gates. Xerox Prangkisa is required only for a renewal;
+        // never shown or required for a new unit registration.
+        $rules = [
+            'application_type' => 'required|in:new,renewal',
+            'owner_is_driver'  => 'nullable|boolean',
+
+            'plate_number'   => 'required|string|max:20',
+            'make_model'     => 'required|string|max:100',
+            'year_model'     => 'required|integer|min:1980|max:' . ($currentYear + 1),
+            'body_color'     => 'required|string|max:50',
+            'body_type'      => 'required|string|max:100',
+            'engine_number'  => 'required|string|max:50',
+            'chassis_number' => 'required|string|max:50',
+            'or_number'      => 'required|string|max:50',
+            'cr_number'      => 'required|string|max:50',
+
+            'documents'                         => 'required|array',
+            'documents.police_clearance'        => 'required|array|min:1',
+            'documents.police_clearance.*'      => 'required|file|mimes:pdf,jpg,jpeg,png,webp|max:5120',
+            'documents.health_certificate'      => 'required|array|min:1',
+            'documents.health_certificate.*'    => 'required|file|mimes:pdf,jpg,jpeg,png,webp|max:5120',
+            'documents.orcr_photocopy'          => 'required|array|min:1',
+            'documents.orcr_photocopy.*'        => 'required|file|mimes:pdf,jpg,jpeg,png,webp|max:5120',
+            'documents.drivers_license'         => 'required|array|min:1',
+            'documents.drivers_license.*'       => 'required|file|mimes:pdf,jpg,jpeg,png,webp|max:5120',
+            'documents.barangay_clearance'      => 'required|array|min:1',
+            'documents.barangay_clearance.*'    => 'required|file|mimes:pdf,jpg,jpeg,png,webp|max:5120',
+            'documents.toda_clearance'          => 'required|array|min:1',
+            'documents.toda_clearance.*'        => 'required|file|mimes:pdf,jpg,jpeg,png,webp|max:5120',
+            'documents.cedula'                  => 'required|array|min:1',
+            'documents.cedula.*'                => 'required|file|mimes:pdf,jpg,jpeg,png,webp|max:5120',
+            'documents.driver_id'               => 'required|array|min:1',
+            'documents.driver_id.*'             => 'required|file|mimes:pdf,jpg,jpeg,png,webp|max:5120',
+            'documents.tariff_list'             => 'required|array|min:1',
+            'documents.tariff_list.*'           => 'required|file|mimes:pdf,jpg,jpeg,png,webp|max:5120',
+            'documents.delivery_receipt'        => 'nullable|array',
+            'documents.delivery_receipt.*'      => 'file|mimes:pdf,jpg,jpeg,png,webp|max:5120',
+            'documents.authorization_letter'    => 'nullable|array',
+            'documents.authorization_letter.*'  => 'file|mimes:pdf,jpg,jpeg,png,webp|max:5120',
+            // Renewal-only requirement (App\Models\ApplicationDocument::CANONICAL_REQUIREMENTS
+            // 'prangkisa', renewal_only => true).
+            'documents.prangkisa'               => 'required_if:application_type,renewal|array|min:1',
+            'documents.prangkisa.*'             => 'file|mimes:pdf,jpg,jpeg,png,webp|max:5120',
+        ];
+
+        // A separate Tricycle Driver is only collected (and only validated) when the owner
+        // is NOT the driver — same explicit conditional rules as RegistrationController.
+        if (! $ownerIsDriver) {
+            $rules = array_merge($rules, [
+                'driver_first_name' => 'required|string|max:100',
+                'driver_last_name'  => 'required|string|max:100',
+                'driver_birthday'   => 'required|date|before_or_equal:today',
+                'driver_contact'    => 'required|string|max:20',
+                'driver_barangay'   => ['required', 'string', Rule::in(\App\Support\NasugbuBarangays::values())],
+            ]);
+        }
+
+        $request->validate($rules);
 
         // For a renewal, resolve and authorize the tricycle, and enforce the SAME server-side
         // eligibility rule the tracker UI uses to decide whether to show the "Renew" button —
@@ -90,7 +166,7 @@ class MTOPController extends Controller
             }
         }
 
-        return \Illuminate\Support\Facades\DB::transaction(function () use ($request, $user, $operator, $appType, $unitId) {
+        return \Illuminate\Support\Facades\DB::transaction(function () use ($request, $user, $operator, $appType, $unitId, $ownerIsDriver) {
             $tricycle = null;
 
             // 1. Resolve Tricycle Unit
@@ -105,7 +181,7 @@ class MTOPController extends Controller
             // never fall back to a global plate/engine lookup or create a brand-new tricycle.
             if ($appType !== 'renewal' && !$tricycle) {
                 // Find by plate or engine if already registered
-                $plate = $request->input('plate');
+                $plate = $request->input('plate_number');
                 $engine = $request->input('engine_number');
 
                 if ($plate) {
@@ -118,31 +194,28 @@ class MTOPController extends Controller
             }
 
             if (!$tricycle && $appType !== 'renewal') {
-                // Create a new Tricycle record
-                $makeModel = $request->input('make_model', 'Generic Tricycle');
+                // Create a new Tricycle record from the validated vehicle details — same fields
+                // Public Registration collects. No TODA zone assignment here: TODA is only a
+                // registration document requirement (the TODA/NAFTODA/ACTODAN Clearance), never
+                // an operational zone/route relationship set during registration.
+                $makeModel = $request->input('make_model');
                 $parts = explode(' ', $makeModel, 2);
-                $make = $parts[0] ?? 'Generic';
-                $model = $parts[1] ?? 'Tricycle';
-
-                $todaCode = $request->input('toda', 'A (Poblacion)');
-                $todaZone = \App\Models\TodaZone::where('name', 'LIKE', "%{$todaCode}%")
-                    ->orWhere('code', 'LIKE', "%{$todaCode}%")
-                    ->first();
-
-                $plate   = $request->input('plate') ?: ('TEMP-' . rand(1000, 9999));
-                $engine  = $request->input('engine_number') ?: ('ENG-' . rand(10000, 99999));
-                $chassis = $request->input('chassis_number') ?: ('CHAS-' . rand(10000, 99999));
+                $make = $parts[0] ?? $makeModel;
+                $model = $parts[1] ?? '';
 
                 $tricycle = \App\Models\Tricycle::create([
                     'operator_id'    => $operator->id,
-                    'toda_zone_id'   => $todaZone ? $todaZone->id : null,
-                    'plate_number'   => $plate,
-                    'engine_number'  => $engine,
-                    'chassis_number' => $chassis,
+                    'toda_zone_id'   => null,
+                    'plate_number'   => $request->input('plate_number'),
+                    'engine_number'  => $request->input('engine_number'),
+                    'chassis_number' => $request->input('chassis_number'),
                     'make'           => $make,
                     'model'          => $model,
-                    'year_model'     => 2024,
-                    'body_color'     => 'Red',
+                    'year_model'     => $request->input('year_model'),
+                    'body_color'     => $request->input('body_color'),
+                    'body_type'      => $request->input('body_type'),
+                    'or_number'      => $request->input('or_number'),
+                    'cr_number'      => $request->input('cr_number'),
                     'status'         => 'unregistered',
                 ]);
             }
@@ -153,14 +226,15 @@ class MTOPController extends Controller
                 abort(422, 'No tricycle unit could be resolved for this application.');
             }
 
-            // 2. Create Application
-            $appCount = \App\Models\Application::count();
-            $refNo = 'APP-2026-' . str_pad($appCount + 1, 5, '0', STR_PAD_LEFT);
+            // 2. Create Application — reference derived from the highest existing
+            //    suffix (not a row count), so seeded gaps can't cause a duplicate.
+            $refNo = \App\Models\Application::generateReferenceNumber();
 
             $application = \App\Models\Application::create([
                 'reference_number' => $refNo,
                 'operator_id'      => $operator->id,
                 'tricycle_id'      => $tricycle->id,
+                'owner_is_driver'  => $ownerIsDriver,
                 'application_type' => $appType === 'renewal' ? 'renewal' : 'new',
                 'current_step'     => 1, // Step 1: Document review (TMO)
                 'status'           => 'pending_review',
@@ -170,32 +244,35 @@ class MTOPController extends Controller
                     : 'New Unit Registration Application submitted online by Operator.',
             ]);
 
-            // 3. Save Uploaded Documents
-            $docKeys = [
-                'receipt'   => 'other',
-                'prangkisa' => 'other',
-                'police'    => 'other',
-                'health'    => 'other',
-                'orcr'      => 'or_cr',
-                'license'   => 'drivers_license',
-                'brgy'      => 'proof_of_residence',
-                'toda'      => 'toda_clearance',
-                'cedula'    => 'other',
-                'driver_id' => 'photo_id',
-                'tariff'    => 'other',
-                'auth'      => 'other',
-            ];
+            // Separate Tricycle Driver — only when the owner is NOT the driver. Same
+            // application-scoped person data as Public Registration (no User/Driver account
+            // is created for them).
+            if (! $ownerIsDriver) {
+                \App\Models\ApplicationDriver::create([
+                    'application_id' => $application->id,
+                    'first_name'     => $request->input('driver_first_name'),
+                    'last_name'      => $request->input('driver_last_name'),
+                    'date_of_birth'  => $request->date('driver_birthday')->toDateString(),
+                    'contact_number' => $request->input('driver_contact'),
+                    'barangay'       => $request->input('driver_barangay'),
+                ]);
+            }
+
+            // 3. Save Uploaded Documents — same canonical vocabulary as Public Registration
+            // (App\Models\ApplicationDocument::CANONICAL_REQUIREMENTS): the frontend key IS the
+            // stored document_type directly, no more collapsing into a generic 'other' value.
+            $validDocKeys = array_keys(\App\Models\ApplicationDocument::CANONICAL_REQUIREMENTS);
 
             if ($request->file('documents')) {
                 foreach ($request->file('documents') as $key => $fileOrFiles) {
-                    if (isset($docKeys[$key])) {
+                    if (in_array($key, $validDocKeys, true)) {
                         $files = is_array($fileOrFiles) ? $fileOrFiles : [$fileOrFiles];
                         foreach ($files as $file) {
                             $path = $file->store('applications/documents', 'public');
                             \App\Models\ApplicationDocument::create([
                                 'application_id' => $application->id,
-                                'document_type'  => $docKeys[$key],
-                                'file_name'      => $key . '_' . $file->getClientOriginalName(),
+                                'document_type'  => $key,
+                                'file_name'      => $file->getClientOriginalName(),
                                 'file_path'      => $path,
                                 'file_size_kb'   => round($file->getSize() / 1024),
                                 'mime_type'      => $file->getMimeType(),
@@ -239,13 +316,19 @@ class MTOPController extends Controller
         }
 
         $applications = Application::where('operator_id', $operator->id)
-            ->with(['tricycle', 'franchiseScheme', 'statusHistories'])
+            ->with(['tricycle', 'franchiseScheme', 'statusHistories', 'inspections'])
             ->orderByDesc('created_at')
             ->get()
             ->map(function ($app) {
                 $phase = 'tmo-docs';
                 $status = 'in-progress';
                 $message = 'Undergoing document review.';
+
+                // Latest real status-history timestamp — "Status updated" on the card, so the
+                // tracker always shows when the application last actually moved, never a
+                // hardcoded/demo date.
+                $lastUpdated = $app->statusHistories->sortByDesc('created_at')->first()?->created_at
+                    ?? $app->created_at;
 
                 // This application's OWN franchise period (application_id-scoped), not simply the
                 // tricycle's currently active one — an old, superseded renewal must keep showing
@@ -276,35 +359,31 @@ class MTOPController extends Controller
                     case 'under_inspection':
                         $phase = 'tmo-phys-inspect';
                         $status = 'in-progress';
-                        $message = 'Requirements approved! Please bring your tricycle unit to the TMO inspection compound.';
+                        $hasFailedInspection = $app->inspections->contains('result', 'failed');
+                        if ($hasFailedInspection) {
+                            $message = 'Vehicle confirmed ready for reinspection. Please bring your tricycle unit to the TMO inspection compound.';
+                        } else {
+                            $message = 'Requirements approved! Please bring your tricycle unit to the TMO inspection compound for physical roadworthiness and safety inspection.';
+                        }
                         break;
                     case 'failed_inspection':
                         $phase = 'tmo-phys-inspect';
                         $status = 'action-req';
+                        $latestFailedInspection = $app->inspections->where('result', 'failed')->sortByDesc('attempt_number')->first()
+                            ?? $app->inspections->sortByDesc('attempt_number')->first();
                         $lastHistory = $app->statusHistories()->where('to_status', 'failed_inspection')->latest()->first();
-                        $message = $lastHistory ? $lastHistory->notes : 'Physical inspection failed. Fix defects and request re-inspection.';
+                        $reason = $latestFailedInspection?->overall_notes ?: ($lastHistory?->notes ?: 'Defects identified during physical inspection.');
+                        $message = "Reinspection Required: {$reason}";
                         break;
-                    case 'pending_payment':
-                        $phase = 'cashier-pay';
-                        $status = 'action-req';
-                        $message = 'Inspection cleared! Payment ticket issued. Pay ₱750.00 in person (cash) at the Municipal Treasurer\'s cashier counter.';
-                        break;
-                    case 'payment_issue':
-                        $phase = 'tmo-payment';
-                        $status = 'action-req';
-                        $lastHistory = $app->statusHistories()->where('to_status', 'payment_issue')->latest()->first();
-                        $message = $lastHistory ? $lastHistory->notes : 'TMO flagged an issue with your payment receipt. Please visit TMO with your Official Receipt.';
-                        break;
-                    case 'payment_verified':
-                    case 'paid':
+                    case 'pending_bplo_release':
                         $phase = 'bplo-release';
-                        $status = 'in-progress';
-                        $message = 'Payment verified by TMO! Awaiting BPLO release of franchise sticker and number coding.';
+                        $status = 'action-req';
+                        $message = 'Physical inspection passed! Please proceed to the Municipal Treasurer\'s Office, present your TMO ticket, and complete the required payment before proceeding to BPLO for sticker and plate release.';
                         break;
                     case 'awaiting_tmo_confirmation':
                         $phase = 'tmo-final-confirm';
                         $status = 'action-req';
-                        $message = 'Franchise sticker and plate released by BPLO! Return to TMO with your signed payment ticket for GPS tracking setup and final activation.';
+                        $message = 'Franchise Number and plate released by BPLO! Return to TMO with your signed payment ticket for GPS tracking setup and final activation.';
                         break;
                     case 'completed':
                     case 'scheme_issued':
@@ -355,6 +434,10 @@ class MTOPController extends Controller
                     'type'                   => $app->application_type === 'new' ? 'New Franchise' : 'Franchise Renewal',
                     'unit'                   => $app->tricycle ? "{$app->tricycle->make} {$app->tricycle->model} (Plate: {$app->tricycle->plate_number})" : 'N/A',
                     'date'                   => $app->created_at->format('M d, Y'),
+                    // Real status-history-derived dates: when the application last moved,
+                    // and when each workflow step was actually completed (null until reached).
+                    'last_updated'           => $lastUpdated->format('M d, Y'),
+                    'step_dates'             => $this->trackerStepDates($app),
                     'status'                 => $status,
                     'phase'                  => $phase,
                     'message'                => $message,
@@ -363,6 +446,7 @@ class MTOPController extends Controller
                     'card_color'             => $cardColor,
                     'has_pending_renewal'    => $hasPendingRenewal,
                     'has_active_valid'       => $hasActiveValidFranchise,
+                    'is_ready_for_reinspection' => in_array($app->status, ['pending_inspection', 'under_inspection']) && $app->inspections->contains('result', 'failed'),
                 ];
             });
 
@@ -388,126 +472,44 @@ class MTOPController extends Controller
                 $query->where('id', $refNo)
                       ->orWhere('reference_number', $refNo);
             })
-            ->with(['tricycle.todaZone', 'statusHistories', 'documents', 'inspections'])
+            ->with(['tricycle.todaZone', 'statusHistories', 'tricycleDriver', 'documents' => function ($query) {
+                $query->orderBy('created_at');
+            }, 'inspections'])
             ->firstOrFail();
 
-        // 1. Process documents mapping
-        $requirementsMap = [
-            'drivers_license'    => 'license',
-            'or_cr'              => 'orcr',
-            'proof_of_residence' => 'brgy',
-            'toda_clearance'     => 'toda',
-            'photo_id'           => 'driver_id',
-        ];
-
-        $docLabels = [
-            'license'   => "Driver's License Back-to-back (Prof/Restriction 1/A1)",
-            'orcr'      => 'Xerox OR/CR',
-            'brgy'      => 'Barangay Clearance (Original)',
-            'toda'      => 'TODA/NAFTODA/ACTODAN Clearance (Original)',
-            'driver_id' => "Driver's ID Issued by NAFTODA/ACTODAN",
-            'prangkisa' => 'Xerox Prangkisa (Kung Renew)',
-            'receipt'   => 'Delivery Receipt (Kung walang OR/CR / New)',
-            'tariff'    => 'List of Existing Tariff Fee (For sidecar)',
-            'auth'      => 'Authorization Letter & ID (Kung hindi may-ari)',
-        ];
-
-        $categoryStatuses = [];
-        $categoryNotes = [];
-
+        // 1. Process documents mapping — same canonical requirement resolution used by TMO's
+        // Document Review and Tricycle Registry Details (ApplicationDocument::
+        // resolveRequirementKey()), so a document submitted via this Driver Portal wizard is
+        // recognized identically everywhere. Oldest-first eager load above means the LATEST
+        // submission for a requirement (e.g. after a resubmission) is the one that wins below.
+        $latestPerRequirement = [];
         foreach ($app->documents as $doc) {
-            $category = $requirementsMap[$doc->document_type] ?? 'other';
-            if ($category === 'other') {
-                $parts = explode('_', $doc->file_name, 2);
-                if (count($parts) > 1 && in_array($parts[0], ['prangkisa', 'receipt', 'tariff', 'auth'])) {
-                    $category = $parts[0];
-                }
-            }
-
-            if (!isset($categoryStatuses[$category]) || $categoryStatuses[$category] !== 'rejected') {
-                $categoryStatuses[$category] = $doc->review_status;
-            }
-            if ($doc->review_status === 'rejected') {
-                $categoryNotes[$category] = $doc->rejection_reason;
-            }
+            $latestPerRequirement[ApplicationDocument::resolveRequirementKey($doc)] = $doc;
         }
 
         $documents = [];
-        foreach ($docLabels as $catId => $label) {
-            $hasAny = $app->documents->contains(function ($doc) use ($requirementsMap, $catId) {
-                $category = $requirementsMap[$doc->document_type] ?? 'other';
-                if ($category === 'other') {
-                    $parts = explode('_', $doc->file_name, 2);
-                    if (count($parts) > 1 && in_array($parts[0], ['prangkisa', 'receipt', 'tariff', 'auth'])) {
-                        $category = $parts[0];
-                    }
-                }
-                return $category === $catId;
-            });
-
-            if ($hasAny) {
-                $status = $categoryStatuses[$catId] ?? 'pending';
-                $documents[] = [
-                    'id'     => $catId,
-                    'name'   => $label,
-                    'status' => $status,
-                    'note'   => $categoryNotes[$catId] ?? '',
-                ];
-            }
-        }
-
-        // 2. Process inspection details mapping
-        $inspections = [];
-        $checklist = [
-            'headlights' => 'Headlights (High/Low Beam)',
-            'taillights' => 'Tail Lights & Brake Lights',
-            'signals'    => 'Signal Lights (Left/Right)',
-            'horn'       => 'Horn (Working/Loud)',
-            'mirrors'    => 'Side Mirrors (Complete Pair)',
-            'brakes'     => 'Brakes & Drive Chain',
-            'plate'      => 'Body Plate Attachment',
-            'sidecar'    => 'Sidecar Structural Integrity',
-        ];
-
-        $latestInspection = $app->inspections()->orderByDesc('attempt_number')->first();
-        $decoded = null;
-        if ($latestInspection) {
-            $decoded = json_decode($latestInspection->inspector_notes, true);
-        }
-
-        foreach ($checklist as $key => $label) {
-            $status = 'pending';
-            $note = '';
-            
-            if ($latestInspection) {
-                if ($decoded && isset($decoded['statuses'])) {
-                    // Real dynamic details from TMO inspection
-                    $itemStatus = $decoded['statuses'][$key] ?? 'passed';
-                    $status = $itemStatus === 'passed' ? 'approved' : ($itemStatus === 'failed' ? 'rejected' : 'pending');
-                    $note = $decoded['defects'][$key] ?? '';
-                } else {
-                    // Seeded fallback / Legacy fallback using aggregated columns
-                    if ($key === 'headlights' || $key === 'taillights' || $key === 'signals') {
-                        $passed = (bool)$latestInspection->lights_reflectors;
-                    } elseif ($key === 'mirrors' || $key === 'horn' || $key === 'plate') {
-                        $passed = (bool)$latestInspection->safety_equipment;
-                    } elseif ($key === 'brakes') {
-                        $passed = (bool)$latestInspection->brakes_steering;
-                    } else { // sidecar
-                        $passed = (bool)$latestInspection->tires_suspension;
-                    }
-                    $status = $passed ? 'approved' : 'rejected';
-                    $note = $passed ? '' : 'Defective component identified.';
-                }
+        foreach (ApplicationDocument::CANONICAL_REQUIREMENTS as $key => $meta) {
+            $doc = $latestPerRequirement[$key] ?? null;
+            if (!$doc) {
+                continue; // only list requirements the driver has actually submitted something for
             }
 
-            $inspections[] = [
+            $documents[] = [
                 'id'     => $key,
-                'name'   => $label,
-                'status' => $status,
-                'note'   => $note,
+                'name'   => $meta['label'],
+                'status' => $doc->review_status,
+                'note'   => $doc->review_status === 'rejected' ? $doc->rejection_reason : '',
+                // Openable link to the file the driver actually uploaded (only present when
+                // a file exists), matching TMO Document Review's '/storage/' URL shape.
+                'url'    => $doc->file_path ? '/storage/' . ltrim($doc->file_path, '/') : null,
+                'file_name' => $doc->file_name,
             ];
         }
+
+        // 2. Physical inspection is a single overall decision, not a per-item checklist — the
+        // canonical 13-item list is purely descriptive/reference information and lives once,
+        // client-side, in resources/js/data/physicalInspectionItems.js. Only the overall
+        // result (rejection_reason / is_reinspection_required below) matters here.
 
         // 3. Process payment mapping
         $payment = null;
@@ -535,7 +537,7 @@ class MTOPController extends Controller
         $franchiseScheme = FranchiseScheme::with('colorCodingScheme')->where('application_id', $app->id)->first();
         if ($franchiseScheme) {
             $bplo = [
-                'assignedBody' => $franchiseScheme->franchise_number,
+                'assignedStickerNumber' => $franchiseScheme->franchise_number,
                 'issueDate'    => $franchiseScheme->issue_date ? $franchiseScheme->issue_date->format('M d, Y') : null,
                 'expiryDate'   => $franchiseScheme->expiry_date ? $franchiseScheme->expiry_date->format('M d, Y') : null,
                 'colorCoding'  => $franchiseScheme->colorCodingScheme ? [
@@ -564,18 +566,9 @@ class MTOPController extends Controller
                 $phase = 'tmo-phys-inspect';
                 $status = 'action-req';
                 break;
-            case 'pending_payment':
-                $phase = 'cashier-pay';
-                $status = 'action-req';
-                break;
-            case 'payment_issue':
-                $phase = 'tmo-payment';
-                $status = 'action-req';
-                break;
-            case 'payment_verified':
-            case 'paid':
+            case 'pending_bplo_release':
                 $phase = 'bplo-release';
-                $status = 'in-progress';
+                $status = 'action-req';
                 break;
             case 'awaiting_tmo_confirmation':
                 $phase = 'tmo-final-confirm';
@@ -612,6 +605,11 @@ class MTOPController extends Controller
             }
         }
 
+        $latestFailedInspection = $app->inspections->where('result', 'failed')->sortByDesc('attempt_number')->first();
+        $latestInspection = $app->inspections->sortByDesc('attempt_number')->first();
+        $lastHistory = $app->statusHistories->where('to_status', 'failed_inspection')->last();
+        $latestRejectionReason = $latestFailedInspection?->overall_notes ?: ($latestInspection?->overall_notes ?: ($lastHistory?->notes ?: ''));
+
         $appData = [
             'id'                     => $app->reference_number,
             'db_id'                  => $app->id,
@@ -620,14 +618,23 @@ class MTOPController extends Controller
             'phase'                  => $phase,
             'raw_status'             => $app->status,
             'date'                   => $app->created_at->format('F d, Y'),
+            // Real status-history-derived dates — same fields the tracker list shows.
+            'last_updated'           => ($app->statusHistories->sortByDesc('created_at')->first()?->created_at ?? $app->created_at)->format('F d, Y'),
+            'step_dates'             => $this->trackerStepDates($app),
             'toda'                   => $app->tricycle?->todaZone ? $app->tricycle->todaZone->name : 'N/A',
             'make'                   => $app->tricycle ? "{$app->tricycle->make} {$app->tricycle->model}" : 'N/A',
             'plate'                  => $app->tricycle ? $app->tricycle->plate_number : 'N/A',
             'engine'                 => $app->tricycle ? $app->tricycle->engine_number : 'N/A',
             'chassis'                => $app->tricycle ? $app->tricycle->chassis_number : 'N/A',
             'operatorName'           => $operator->full_name,
+            // Tricycle Owner (this applicant) + optional separate Tricycle Driver — the
+            // tracker's own applicant section renders these; list rows keep operatorName.
+            'owner'                  => $app->ownerDetails(),
+            'ownerIsDriver'          => (bool) $app->owner_is_driver,
+            'tricycleDriver'         => $app->driverDetails(),
             'documents'              => $documents,
-            'inspections'            => $inspections,
+            'rejection_reason'       => $latestRejectionReason,
+            'is_reinspection_required' => $app->status === 'failed_inspection',
             'payment'                => $payment,
             'payment_due'            => $paymentRecord ? (float)$paymentRecord->amount : 750.00,
             'payment_ticket'         => $app->payment_ticket,
@@ -638,11 +645,48 @@ class MTOPController extends Controller
             'can_renew'              => $canRenew,
             'has_pending_renewal'    => $hasPendingRenewal,
             'has_active_valid'       => $hasActiveValidFranchise,
+            'is_ready_for_reinspection' => in_array($app->status, ['pending_inspection', 'under_inspection']) && $app->inspections->contains('result', 'failed'),
         ];
 
         return Inertia::render('Operator/Compliance/MTOPDetails', [
             'application' => $appData,
         ]);
+    }
+
+    /**
+     * The date (M d, Y) each workflow step was COMPLETED, derived purely from this
+     * application's append-only status history — never hardcoded, so the tracker's
+     * completed-step dates always match what actually happened. Keys are the same
+     * phase keys the frontend pipeline uses. A step the application has not reached
+     * yet stays null. First recorded completion wins: a later return to an earlier
+     * queue (e.g. the driver confirming reinspection readiness) must not rewrite when
+     * the step in front of it was actually cleared.
+     */
+    private function trackerStepDates(Application $app): array
+    {
+        $dates = [
+            'tmo-docs'          => null,
+            'tmo-phys-inspect'  => null,
+            'bplo-release'      => null,
+            'tmo-final-confirm' => null,
+        ];
+
+        foreach ($app->statusHistories->sortBy('created_at') as $history) {
+            if ($dates['tmo-docs'] === null && in_array($history->to_status, ['pending_inspection', 'under_inspection'], true)) {
+                $dates['tmo-docs'] = $history->created_at->format('M d, Y');
+            }
+            if ($dates['tmo-phys-inspect'] === null && $history->to_status === 'pending_bplo_release') {
+                $dates['tmo-phys-inspect'] = $history->created_at->format('M d, Y');
+            }
+            if ($dates['bplo-release'] === null && $history->to_status === 'awaiting_tmo_confirmation') {
+                $dates['bplo-release'] = $history->created_at->format('M d, Y');
+            }
+            if ($dates['tmo-final-confirm'] === null && in_array($history->to_status, ['completed', 'scheme_issued'], true)) {
+                $dates['tmo-final-confirm'] = $history->created_at->format('M d, Y');
+            }
+        }
+
+        return $dates;
     }
 
     /**
@@ -662,130 +706,46 @@ class MTOPController extends Controller
                 $query->where('id', $id)
                       ->orWhere('reference_number', $id);
             })
-            ->with(['tricycle.todaZone', 'statusHistories', 'documents', 'inspections'])
+            ->with(['tricycle.todaZone', 'statusHistories', 'documents' => function ($query) {
+                $query->orderBy('created_at');
+            }, 'inspections'])
             ->firstOrFail();
 
-        $requirementsMap = [
-            'drivers_license'    => 'license',
-            'or_cr'              => 'orcr',
-            'proof_of_residence' => 'brgy',
-            'toda_clearance'     => 'toda',
-            'photo_id'           => 'driver_id',
-        ];
-
-        $docLabels = [
-            'license'   => "Driver's License Back-to-back (Prof/Restriction 1/A1)",
-            'orcr'      => 'Xerox OR/CR',
-            'brgy'      => 'Barangay Clearance (Original)',
-            'toda'      => 'TODA/NAFTODA/ACTODAN Clearance (Original)',
-            'driver_id' => "Driver's ID Issued by NAFTODA/ACTODAN",
-            'prangkisa' => 'Xerox Prangkisa (Kung Renew)',
-            'receipt'   => 'Delivery Receipt (Kung walang OR/CR / New)',
-            'tariff'    => 'List of Existing Tariff Fee (For sidecar)',
-            'auth'      => 'Authorization Letter & ID (Kung hindi may-ari)',
-        ];
-
-        $categoryStatuses = [];
-        $categoryNotes = [];
-
+        // Same canonical requirement resolution as show() — see the identical comment there.
+        $latestPerRequirement = [];
         foreach ($app->documents as $doc) {
-            $category = $requirementsMap[$doc->document_type] ?? 'other';
-            if ($category === 'other') {
-                $parts = explode('_', $doc->file_name, 2);
-                if (count($parts) > 1 && in_array($parts[0], ['prangkisa', 'receipt', 'tariff', 'auth'])) {
-                    $category = $parts[0];
-                }
-            }
-
-            if (!isset($categoryStatuses[$category]) || $categoryStatuses[$category] !== 'rejected') {
-                $categoryStatuses[$category] = $doc->review_status;
-            }
-            if ($doc->review_status === 'rejected') {
-                $categoryNotes[$category] = $doc->rejection_reason;
-            }
+            $latestPerRequirement[ApplicationDocument::resolveRequirementKey($doc)] = $doc;
         }
 
         $mappedDocs = [];
-        foreach ($docLabels as $catId => $label) {
-            $hasAny = $app->documents->contains(function ($doc) use ($requirementsMap, $catId) {
-                $category = $requirementsMap[$doc->document_type] ?? 'other';
-                if ($category === 'other') {
-                    $parts = explode('_', $doc->file_name, 2);
-                    if (count($parts) > 1 && in_array($parts[0], ['prangkisa', 'receipt', 'tariff', 'auth'])) {
-                        $category = $parts[0];
-                    }
-                }
-                return $category === $catId;
-            });
-
-            if ($hasAny) {
-                $status = $categoryStatuses[$catId] ?? 'pending';
-                $mappedDocs[] = [
-                    'id'     => $catId,
-                    'name'   => $label,
-                    'status' => $status,
-                    'note'   => $categoryNotes[$catId] ?? '',
-                ];
-            }
-        }
-
-        $inspections = [];
-        $checklist = [
-            'headlights' => 'Headlights (High/Low Beam)',
-            'taillights' => 'Tail Lights & Brake Lights',
-            'signals'    => 'Signal Lights (Left/Right)',
-            'horn'       => 'Horn (Working/Loud)',
-            'mirrors'    => 'Side Mirrors (Complete Pair)',
-            'brakes'     => 'Brakes & Drive Chain',
-            'plate'      => 'Body Plate Attachment',
-            'sidecar'    => 'Sidecar Structural Integrity',
-        ];
-
-        $latestInspection = $app->inspections->sortByDesc('attempt_number')->first();
-        $decoded = null;
-        if ($latestInspection) {
-            $decoded = json_decode($latestInspection->inspector_notes, true);
-        }
-
-        foreach ($checklist as $key => $label) {
-            $status = 'pending';
-            $note = '';
-            
-            if ($latestInspection) {
-                if ($decoded && isset($decoded['statuses'])) {
-                    $itemStatus = $decoded['statuses'][$key] ?? 'passed';
-                    $status = $itemStatus === 'passed' ? 'approved' : ($itemStatus === 'failed' ? 'rejected' : 'pending');
-                    $note = $decoded['defects'][$key] ?? '';
-                } else {
-                    if ($key === 'headlights' || $key === 'taillights' || $key === 'signals') {
-                        $passed = (bool)$latestInspection->lights_reflectors;
-                    } elseif ($key === 'mirrors' || $key === 'horn' || $key === 'plate') {
-                        $passed = (bool)$latestInspection->safety_equipment;
-                    } elseif ($key === 'brakes') {
-                        $passed = (bool)$latestInspection->brakes_steering;
-                    } else { // sidecar
-                        $passed = (bool)$latestInspection->tires_suspension;
-                    }
-                    $status = $passed ? 'approved' : 'rejected';
-                    $note = $passed ? '' : 'Defective component identified.';
-                }
+        foreach (ApplicationDocument::CANONICAL_REQUIREMENTS as $key => $meta) {
+            $doc = $latestPerRequirement[$key] ?? null;
+            if (!$doc) {
+                continue;
             }
 
-            $inspections[] = [
+            $mappedDocs[] = [
                 'id'     => $key,
-                'name'   => $label,
-                'status' => $status,
-                'note'   => $note,
+                'name'   => $meta['label'],
+                'status' => $doc->review_status,
+                'note'   => $doc->review_status === 'rejected' ? $doc->rejection_reason : '',
             ];
         }
 
+        // Physical inspection is a single overall decision, not a per-item checklist — see the
+        // identical comment in show().
+        $latestFailedInspection = $app->inspections->where('result', 'failed')->sortByDesc('attempt_number')->first();
+        $latestInspection = $app->inspections->sortByDesc('attempt_number')->first();
+        $lastHistory = $app->statusHistories->where('to_status', 'failed_inspection')->last();
+        $latestRejectionReason = $latestFailedInspection?->overall_notes ?: ($latestInspection?->overall_notes ?: ($lastHistory?->notes ?: ''));
+
         $appData = [
-            'id'             => $app->id,
-            'reference'      => $app->reference_number,
-            'operatorName'   => $operator->full_name,
-            'phase'          => in_array($app->status, ['failed_inspection']) ? 'tmo-phys' : 'tmo-docs',
-            'documents'      => $mappedDocs,
-            'inspections'    => $inspections,
+            'id'               => $app->id,
+            'reference'        => $app->reference_number,
+            'operatorName'     => $operator->full_name,
+            'phase'            => in_array($app->status, ['failed_inspection']) ? 'tmo-phys' : 'tmo-docs',
+            'documents'        => $mappedDocs,
+            'rejection_reason' => $latestRejectionReason,
         ];
 
         return Inertia::render('Operator/Compliance/MTOPFix', [
@@ -819,52 +779,11 @@ class MTOPController extends Controller
             $fromStatus = $app->status;
 
             if ($isPhysFix) {
-                // Update the latest inspection's rejected items to pending
-                $latestInspection = $app->inspections->sortByDesc('attempt_number')->first();
-                if ($latestInspection) {
-                    $decoded = json_decode($latestInspection->inspector_notes, true);
-                    if ($decoded && isset($decoded['statuses'])) {
-                        $updatedStatuses = $decoded['statuses'];
-                        $updatedDefects = $decoded['defects'] ?? [];
-
-                        // Reset lights
-                        if (($updatedStatuses['headlights'] ?? '') === 'failed' || ($updatedStatuses['taillights'] ?? '') === 'failed' || ($updatedStatuses['signals'] ?? '') === 'failed') {
-                            $latestInspection->lights_reflectors = null;
-                        }
-                        // Reset safety
-                        if (($updatedStatuses['mirrors'] ?? '') === 'failed' || ($updatedStatuses['horn'] ?? '') === 'failed' || ($updatedStatuses['plate'] ?? '') === 'failed') {
-                            $latestInspection->safety_equipment = null;
-                        }
-                        // Reset brakes
-                        if (($updatedStatuses['brakes'] ?? '') === 'failed') {
-                            $latestInspection->brakes_steering = null;
-                        }
-                        // Reset sidecar
-                        if (($updatedStatuses['sidecar'] ?? '') === 'failed') {
-                            $latestInspection->tires_suspension = null;
-                        }
-
-                        // Set item statuses in JSON to pending (which clears the red and displays them as pending recheck)
-                        foreach ($updatedStatuses as $key => $status) {
-                            if ($status === 'failed') {
-                                $updatedStatuses[$key] = 'pending';
-                                unset($updatedDefects[$key]);
-                            }
-                        }
-
-                        $latestInspection->inspector_notes = json_encode([
-                            'statuses' => $updatedStatuses,
-                            'defects'  => $updatedDefects,
-                        ]);
-                        $latestInspection->save();
-                    }
-                }
-
                 $toStatus = 'pending_inspection';
                 $app->update([
                     'status'       => $toStatus,
                     'current_step' => 2,
-                    'remarks'      => 'Operator requested re-inspection after fixing safety defects.',
+                    'remarks'      => 'Driver confirmed vehicle is ready for reinspection after addressing inspection issues.',
                 ]);
 
                 \App\Models\ApplicationStatusHistory::create([
@@ -872,36 +791,24 @@ class MTOPController extends Controller
                     'changed_by'     => $user->id,
                     'from_status'    => $fromStatus,
                     'to_status'      => $toStatus,
-                    'notes'          => 'Operator confirmed defect repairs and requested re-inspection.',
+                    'from_step'      => 2,
+                    'to_step'        => 2,
+                    'notes'          => 'Driver confirmed vehicle is ready for reinspection (all inspection issues addressed).',
+                    'created_at'     => now(),
                 ]);
             } else {
-                // Document review fix
-                $requirementsMap = [
-                    'license'   => 'drivers_license',
-                    'orcr'      => 'or_cr',
-                    'brgy'      => 'proof_of_residence',
-                    'toda'      => 'toda_clearance',
-                    'driver_id' => 'photo_id',
-                    'prangkisa' => 'other',
-                    'receipt'   => 'other',
-                    'tariff'    => 'other',
-                    'auth'      => 'other',
-                ];
+                // Document review fix — same canonical vocabulary as store()/show()/fix(): the
+                // frontend key (from app.documents[].id, itself resolved via
+                // ApplicationDocument::resolveRequirementKey()) IS the document_type to store.
+                $validDocKeys = array_keys(\App\Models\ApplicationDocument::CANONICAL_REQUIREMENTS);
 
                 if ($request->file('documents')) {
                     foreach ($request->file('documents') as $key => $fileOrFiles) {
-                        if (isset($requirementsMap[$key])) {
-                            // 1. Find and delete the old rejected files in this category
-                            $oldDocs = $app->documents->filter(function ($doc) use ($requirementsMap, $key) {
-                                $category = $requirementsMap[$doc->document_type] ?? 'other';
-                                if ($category === 'other') {
-                                    $parts = explode('_', $doc->file_name, 2);
-                                    if (count($parts) > 1 && in_array($parts[0], ['prangkisa', 'receipt', 'tariff', 'auth'])) {
-                                        $category = $parts[0];
-                                    }
-                                }
-                                return $category === $key;
-                            });
+                        if (in_array($key, $validDocKeys, true)) {
+                            // 1. Find and delete the old rejected files for this requirement
+                            $oldDocs = $app->documents->filter(
+                                fn ($doc) => \App\Models\ApplicationDocument::resolveRequirementKey($doc) === $key
+                            );
 
                             foreach ($oldDocs as $oldDoc) {
                                 // Optional: Delete physical file if exists
@@ -909,14 +816,14 @@ class MTOPController extends Controller
                                 $oldDoc->delete();
                             }
 
-                            // 2. Store the new files under this category
+                            // 2. Store the new files under this requirement
                             $files = is_array($fileOrFiles) ? $fileOrFiles : [$fileOrFiles];
                             foreach ($files as $file) {
                                 $path = $file->store('applications/documents', 'public');
                                 \App\Models\ApplicationDocument::create([
                                     'application_id' => $app->id,
-                                    'document_type'  => $requirementsMap[$key],
-                                    'file_name'      => $key . '_' . $file->getClientOriginalName(),
+                                    'document_type'  => $key,
+                                    'file_name'      => $file->getClientOriginalName(),
                                     'file_path'      => $path,
                                     'file_size_kb'   => round($file->getSize() / 1024),
                                     'mime_type'      => $file->getMimeType(),
@@ -947,46 +854,6 @@ class MTOPController extends Controller
         return redirect()->route('operator.mtop.details', ['id' => $app->id]);
     }
 
-    /**
-     * Display the official Payment Ticket for an application.
-     */
-    public function paymentTicket(Request $request, $id)
-    {
-        $user = $request->user();
-
-        // Staff members (TMO, BPLO, Admin) can view any application's ticket
-        if (in_array($user->role, ['tmo_personnel', 'bplo_staff', 'admin'])) {
-            $app = Application::where(function ($query) use ($id) {
-                    $query->where('id', $id)
-                          ->orWhere('reference_number', $id);
-                })
-                ->with(['tricycle.todaZone', 'operator'])
-                ->firstOrFail();
-        } else {
-            $operator = $user->operator;
-            if (!$operator) {
-                abort(403);
-            }
-
-            $app = Application::where('operator_id', $operator->id)
-                ->where(function ($query) use ($id) {
-                    $query->where('id', $id)
-                          ->orWhere('reference_number', $id);
-                })
-                ->with(['tricycle.todaZone', 'operator'])
-                ->firstOrFail();
-        }
-
-        return Inertia::render('Operator/Compliance/PaymentTicket', [
-            'application' => [
-                'id'               => $app->id,
-                'reference_number' => $app->reference_number,
-                'status'           => $app->status,
-                'payment_ticket'   => $app->payment_ticket,
-                'operator_name'    => $app->operator?->full_name ?? 'N/A',
-            ],
-        ]);
-    }
 
     /**
      * The single source of truth for whether a tricycle currently has a franchise eligible for

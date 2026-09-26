@@ -42,7 +42,9 @@ export default function CreateViolation({ units = [], selectedTricycleId = null 
         u.label.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
-    // Form attributes using Inertia form handler
+    // Form attributes using Inertia form handler.
+    // Color Coding is the only active violation type, so the offense is fixed at color_coding
+    // and the fine is a static default — there is no per-type fine mapping left to react to.
     const { data, setData, post, processing, errors } = useForm({
         tricycle_id: selectedTricycleId || '',
         violation_type: 'color_coding',
@@ -50,21 +52,6 @@ export default function CreateViolation({ units = [], selectedTricycleId = null 
         location: '',
         notes: ''
     });
-
-    // Reactively update default fine amounts based on violation type selection
-    const handleTypeChange = (e) => {
-        const type = e.target.value;
-        let defaultFine = 200;
-        if (type === 'color_coding') defaultFine = 500;
-        else if (type === 'route_violation') defaultFine = 300;
-        else if (type === 'expired_franchise') defaultFine = 1000;
-
-        setData(prev => ({
-            ...prev,
-            violation_type: type,
-            fine_amount: defaultFine
-        }));
-    };
 
     // Form Submit
     const handleSubmit = (e) => {
@@ -128,11 +115,8 @@ export default function CreateViolation({ units = [], selectedTricycleId = null 
                         {/* Offense Category */}
                         <div>
                             <Label>Offense Category</Label>
-                            <Select value={data.violation_type} error={errors.violation_type} onChange={handleTypeChange}>
+                            <Select value={data.violation_type} error={errors.violation_type} readOnly>
                                 <option value="color_coding">Color Coding Violation</option>
-                                <option value="route_violation">Route Violation</option>
-                                <option value="expired_franchise">Expired Franchise</option>
-                                <option value="other">Other/Minor Violation</option>
                             </Select>
                             <ErrorText>{errors.violation_type}</ErrorText>
                         </div>

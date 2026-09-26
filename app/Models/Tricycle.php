@@ -43,7 +43,11 @@ class Tricycle extends Model
     }
 
     /**
-     * Get the Tricycle Number Coding Scheme dynamically.
+     * Get the Sticker Number (the tricycle's 4-digit municipal number).
+     *
+     * Always sourced from stored data — never fabricated. The DEMO plates used to be
+     * hard-coded to '0081'/'0101'/'0011' here, which both invented an identifier the
+     * database does not hold and duplicated the real '0101' owned by another unit.
      */
     public function getCodingSchemeNumberAttribute($value)
     {
@@ -51,13 +55,8 @@ class Tricycle extends Model
             return $value;
         }
 
-        // Demo seed tricycles mapped to authentic 4-digit coding scheme numbers (Red: ends in 1)
-        if ($this->plate_number === 'DEMO-0001') return '0081';
-        if ($this->plate_number === 'DEMO-0002') return '0101';
-        if ($this->plate_number === 'DEMO-0003') return '0011';
-
         $fallback = $this->franchiseScheme?->franchise_number;
-        // Never use franchise application numbers (e.g. FRAN-DEMO-0003 or FS-...) as a coding scheme number
+        // Never use franchise application numbers (e.g. FRAN-DEMO-0003 or FS-...) as a Sticker Number
         if ($fallback && !str_starts_with($fallback, 'FRAN-') && !str_starts_with($fallback, 'FS-')) {
             return $fallback;
         }
@@ -66,7 +65,11 @@ class Tricycle extends Model
     }
 
     /**
-     * Legacy accessor alias for backward compatibility.
+     * Legacy API alias for the Sticker Number.
+     *
+     * @deprecated "Body Number" is not an identifier in Trivora — this exists only so
+     *             clients built against the old payload key keep working through the
+     *             deprecation cycle. New code must read `coding_scheme_number`.
      */
     public function getBodyNumberAttribute()
     {
@@ -74,7 +77,7 @@ class Tricycle extends Model
     }
 
     /**
-     * Get the tricycle number dynamically from the active franchise scheme.
+     * The Sticker Number, read from the active franchise scheme.
      */
     public function getTricycleNumberAttribute()
     {

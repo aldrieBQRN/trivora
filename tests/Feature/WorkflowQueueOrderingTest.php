@@ -54,7 +54,7 @@ class WorkflowQueueOrderingTest extends TestCase
         foreach ([$appNewer, $appOlder] as $app) {
             $this->actingAs($tmo)->post(route('tmo.review.submit', $app), [
                 'action' => 'approve',
-                'docStatuses' => ['orcr' => 'approved', 'license' => 'approved', 'brgy' => 'approved', 'toda' => 'approved'],
+                'docStatuses' => ['orcr_photocopy' => 'approved', 'drivers_license' => 'approved', 'barangay_clearance' => 'approved', 'toda_clearance' => 'approved'],
             ])->assertRedirect();
         }
 
@@ -89,7 +89,7 @@ class WorkflowQueueOrderingTest extends TestCase
         foreach ([$appA, $appB] as $app) {
             $this->actingAs($tmo)->post(route('tmo.review.submit', $app), [
                 'action' => 'approve',
-                'docStatuses' => ['orcr' => 'approved', 'license' => 'approved', 'brgy' => 'approved', 'toda' => 'approved'],
+                'docStatuses' => ['orcr_photocopy' => 'approved', 'drivers_license' => 'approved', 'barangay_clearance' => 'approved', 'toda_clearance' => 'approved'],
             ])->assertRedirect();
         }
         $this->backdateQueueEntry($appA->fresh(), 30); // A is the genuinely older/first-in-line one.
@@ -114,40 +114,6 @@ class WorkflowQueueOrderingTest extends TestCase
     }
 
     #[Test]
-    public function payment_verification_queue_shows_the_oldest_entered_application_first(): void
-    {
-        $tmo = $this->makeTmoUser();
-        $applications = [];
-
-        foreach (['ORD-PAY-NEWER', 'ORD-PAY-OLDER'] as $plate) {
-            [, , $app] = $this->registerNewApplication(['plate_number' => $plate]);
-            $this->actingAs($tmo)->post(route('tmo.review.submit', $app), [
-                'action' => 'approve',
-                'docStatuses' => ['orcr' => 'approved', 'license' => 'approved', 'brgy' => 'approved', 'toda' => 'approved'],
-            ]);
-            $this->actingAs($tmo)->post(route('tmo.review.physical.submit', $app), [
-                'action' => 'pass', 'inspectionStatuses' => $this->allInspectionItemsPassed(),
-            ]);
-            $applications[$plate] = $app->fresh();
-        }
-
-        $this->backdateQueueEntry($applications['ORD-PAY-OLDER'], 30);
-
-        $response = $this->actingAs($tmo)->get(route('tmo.payments'));
-        $response->assertInertia(function ($page) use ($applications) {
-            $page->where('applications', function ($apps) use ($applications) {
-                $ids = $apps->pluck('id')->all();
-                \PHPUnit\Framework\Assert::assertLessThan(
-                    array_search($applications['ORD-PAY-NEWER']->id, $ids, true),
-                    array_search($applications['ORD-PAY-OLDER']->id, $ids, true)
-                );
-
-                return true;
-            });
-        });
-    }
-
-    #[Test]
     public function bplo_releasing_queue_shows_the_oldest_entered_application_first(): void
     {
         $tmo = $this->makeTmoUser();
@@ -157,13 +123,10 @@ class WorkflowQueueOrderingTest extends TestCase
             [, , $app] = $this->registerNewApplication(['plate_number' => $plate]);
             $this->actingAs($tmo)->post(route('tmo.review.submit', $app), [
                 'action' => 'approve',
-                'docStatuses' => ['orcr' => 'approved', 'license' => 'approved', 'brgy' => 'approved', 'toda' => 'approved'],
+                'docStatuses' => ['orcr_photocopy' => 'approved', 'drivers_license' => 'approved', 'barangay_clearance' => 'approved', 'toda_clearance' => 'approved'],
             ]);
             $this->actingAs($tmo)->post(route('tmo.review.physical.submit', $app), [
                 'action' => 'pass', 'inspectionStatuses' => $this->allInspectionItemsPassed(),
-            ]);
-            $this->actingAs($tmo)->post(route('tmo.verify-payment.submit', $app), [
-                'action' => 'verify', 'official_receipt_number' => 'OR-' . $plate, 'amount' => 750, 'payment_date' => now()->toDateString(),
             ]);
             $applications[$plate] = $app->fresh();
         }
@@ -196,13 +159,10 @@ class WorkflowQueueOrderingTest extends TestCase
             [, , $app] = $this->registerNewApplication(['plate_number' => $plate]);
             $this->actingAs($tmo)->post(route('tmo.review.submit', $app), [
                 'action' => 'approve',
-                'docStatuses' => ['orcr' => 'approved', 'license' => 'approved', 'brgy' => 'approved', 'toda' => 'approved'],
+                'docStatuses' => ['orcr_photocopy' => 'approved', 'drivers_license' => 'approved', 'barangay_clearance' => 'approved', 'toda_clearance' => 'approved'],
             ]);
             $this->actingAs($tmo)->post(route('tmo.review.physical.submit', $app), [
                 'action' => 'pass', 'inspectionStatuses' => $this->allInspectionItemsPassed(),
-            ]);
-            $this->actingAs($tmo)->post(route('tmo.verify-payment.submit', $app), [
-                'action' => 'verify', 'official_receipt_number' => 'OR-' . $plate, 'amount' => 750, 'payment_date' => now()->toDateString(),
             ]);
             $this->actingAs($bplo)->post(route('bplo.release.submit', $app), [
                 'body_number' => substr(md5($plate), 0, 4), 'sticker_number' => 'STK-' . $plate,
@@ -216,13 +176,10 @@ class WorkflowQueueOrderingTest extends TestCase
         // backend response (the page's own "Completed"/"All" tab needs it), just not first.
         [, , $appCompleted] = $this->registerNewApplication(['plate_number' => 'ORD-FC-DONE']);
         $this->actingAs($tmo)->post(route('tmo.review.submit', $appCompleted), [
-            'action' => 'approve', 'docStatuses' => ['orcr' => 'approved', 'license' => 'approved', 'brgy' => 'approved', 'toda' => 'approved'],
+            'action' => 'approve', 'docStatuses' => ['orcr_photocopy' => 'approved', 'drivers_license' => 'approved', 'barangay_clearance' => 'approved', 'toda_clearance' => 'approved'],
         ]);
         $this->actingAs($tmo)->post(route('tmo.review.physical.submit', $appCompleted), [
             'action' => 'pass', 'inspectionStatuses' => $this->allInspectionItemsPassed(),
-        ]);
-        $this->actingAs($tmo)->post(route('tmo.verify-payment.submit', $appCompleted), [
-            'action' => 'verify', 'official_receipt_number' => 'OR-DONE', 'amount' => 750, 'payment_date' => now()->toDateString(),
         ]);
         $this->actingAs($bplo)->post(route('bplo.release.submit', $appCompleted), [
             'body_number' => 'DONE', 'sticker_number' => 'STK-DONE',

@@ -28,7 +28,7 @@ class DriverTelematicsBatchTest extends TestCase
     protected User $driverUser;
     protected Tricycle $tricycle;
 
-    /** Tricycle body number ends in 2, which ColorCodingRuleService restricts on Mondays. */
+    /** Tricycle Sticker Number ends in 2, which ColorCodingRuleService restricts on Mondays. */
     protected function setUp(): void
     {
         parent::setUp();
@@ -80,6 +80,22 @@ class DriverTelematicsBatchTest extends TestCase
             'issue_date' => '2024-01-01', 'expiry_date' => '2029-01-01',
             'is_active' => true,
         ]);
+
+        Driver::create([
+            'user_id' => $this->driverUser->id,
+            'operator_id' => $operator->id,
+            'tricycle_id' => $this->tricycle->id,
+            'license_number' => 'LIC-BATCH-001',
+            'is_online' => true,
+            'online_since' => now()->subDay(),
+        ]);
+    }
+
+    /** A pure north offset using the same spherical-Earth radius GeoService::haversineKm() uses,
+     * so the resulting distance is exact relative to what the production code computes. */
+    private function metersNorth(float $lat, float $meters): float
+    {
+        return $lat + rad2deg($meters / 6371000.0);
     }
 
     #[Test]
@@ -90,34 +106,33 @@ class DriverTelematicsBatchTest extends TestCase
         $monday1 = Carbon::parse('next Monday')->setTime(9, 0);
         $monday2 = $monday1->copy()->addWeek();
 
+        // Each restricted date needs its own anchor -> candidate -> confirming sequence (the
+        // 100-meter movement rule, see CodingViolationMovementRuleTest) — batchStore() runs the
+        // coding check once per distinct date using that date's LATEST ping, so each date's 3rd
+        // (confirming) reading is what the check actually judges.
         $response = $this->postJson('/api/v1/driver/telematics/batch', [
             'pings' => [
                 ['latitude' => 14.07, 'longitude' => 120.63, 'recorded_at' => $monday1->toISOString()],
-                ['latitude' => 14.0701, 'longitude' => 120.6301, 'recorded_at' => $monday1->copy()->addMinutes(5)->toISOString()],
-                ['latitude' => 14.0702, 'longitude' => 120.6302, 'recorded_at' => $monday2->toISOString()],
+                ['latitude' => $this->metersNorth(14.07, 102), 'longitude' => 120.63, 'recorded_at' => $monday1->copy()->addSeconds(15)->toISOString()],
+                ['latitude' => $this->metersNorth(14.07, 107), 'longitude' => 120.63, 'recorded_at' => $monday1->copy()->addSeconds(30)->toISOString()],
+                ['latitude' => 14.08, 'longitude' => 120.64, 'recorded_at' => $monday2->toISOString()],
+                ['latitude' => $this->metersNorth(14.08, 102), 'longitude' => 120.64, 'recorded_at' => $monday2->copy()->addSeconds(15)->toISOString()],
+                ['latitude' => $this->metersNorth(14.08, 107), 'longitude' => 120.64, 'recorded_at' => $monday2->copy()->addSeconds(30)->toISOString()],
             ],
         ]);
 
         $response->assertStatus(200);
-        $response->assertJsonPath('processed_count', 3);
+        $response->assertJsonPath('processed_count', 6);
 
-        // 3 pings inserted, but only 2 distinct restricted calendar dates -> exactly 2 violations,
+        // 6 pings inserted, but only 2 distinct restricted calendar dates -> exactly 2 violations,
         // never one per ping (the whole point of grouping by date before running the check).
-        $this->assertSame(3, \App\Models\TricycleLocation::where('tricycle_id', $this->tricycle->id)->count());
+        $this->assertSame(6, \App\Models\TricycleLocation::where('tricycle_id', $this->tricycle->id)->count());
         $this->assertSame(2, Violation::where('tricycle_id', $this->tricycle->id)->where('violation_type', 'color_coding')->count());
     }
 
     #[Test]
     public function batch_flush_updates_the_drivers_current_position_from_the_latest_ping(): void
     {
-        $driver = Driver::create([
-            'user_id' => $this->driverUser->id,
-            'operator_id' => $this->tricycle->operator_id,
-            'tricycle_id' => $this->tricycle->id,
-            'license_number' => 'LIC-BATCH-001',
-            'is_online' => true, 'is_available' => true,
-        ]);
-
         Sanctum::actingAs($this->driverUser, ['*']);
 
         $earlier = Carbon::parse('next Tuesday')->setTime(8, 0);
@@ -130,7 +145,7 @@ class DriverTelematicsBatchTest extends TestCase
             ],
         ])->assertStatus(200);
 
-        $driver->refresh();
+        $driver = Driver::where('tricycle_id', $this->tricycle->id)->first()->refresh();
         $this->assertEquals(14.02, $driver->current_lat);
         $this->assertEquals(120.02, $driver->current_lng);
     }

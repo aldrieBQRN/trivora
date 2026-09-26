@@ -1,15 +1,19 @@
-import React, { useState, useMemo, useEffect } from 'react';
-import { Head, Link, router } from '@inertiajs/react';
+import React, { useState, useMemo } from 'react';
+import { Head, Link } from '@inertiajs/react';
+import useBackgroundRefresh from '@/hooks/useBackgroundRefresh';
 import TrivoraLayout from '@/Layouts/TrivoraLayout';
 import {
     Clock, ChevronRight, ChevronLeft, Inbox, FileText,
     Search, X, RotateCcw, CheckCircle2, TrendingUp,
 } from 'lucide-react';
 
+// Labels only — the `value`s are the real backend status strings (Application.status /
+// ApplicationController's grouping) and are left untouched so filtering keeps matching the
+// correct records.
 const STATUS_OPTIONS = [
-    { value: 'all', label: 'All Statuses' },
-    { value: 'Pending', label: 'Waiting for Review' },
-    { value: 'Re-submission', label: 'Needs Correction' },
+    { value: 'all', label: 'All' },
+    { value: 'Pending', label: 'Pending' },
+    { value: 'Re-submission', label: 'Correction' },
 ];
 
 const ITEMS_PER_PAGE = 10;
@@ -20,55 +24,17 @@ const CARD_SHADOW = 'shadow-[0_1px_2px_0_rgba(15,23,42,0.04),0_8px_24px_-8px_rgb
 
 export default function DocumentQueue({
     applications = [],
-    todaZones = [],
     pendingCount = 0,
     reviewedTodayCount = 0,
     resubmissionCount = 0,
 }) {
     const [query, setQuery] = useState('');
     const [statusFilter, setStatusFilter] = useState('all');
-    const [todaFilter, setTodaFilter] = useState('all');
     const [currentPage, setCurrentPage] = useState(1);
 
     // Silent background refresh — another TMO officer approving/rejecting a document elsewhere
     // should update this queue without a manual reload.
-    useEffect(() => {
-        const { stop } = router.poll(15000, {
-            only: ['applications', 'pendingCount', 'reviewedTodayCount', 'resubmissionCount'],
-        });
-        return () => stop();
-    }, []);
-
-    // Official TODA list from database paired with current queue counts
-    const todaOptions = useMemo(() => {
-        const countMap = {};
-        applications.forEach(a => {
-            const t = a.toda || 'Unassigned';
-            countMap[t] = (countMap[t] || 0) + 1;
-        });
-
-        // Use official TODAs passed from database
-        const dbNames = (todaZones && todaZones.length > 0)
-            ? todaZones.map(z => z.name)
-            : ['TODA Brgy. 10', 'TODA Brgy. 4', 'TODA Brgy. 8', 'TODA Bucana'];
-
-        const list = dbNames.map(name => ({
-            name,
-            count: countMap[name] || 0,
-        }));
-
-        // Include any queue item whose TODA isn't in dbNames (e.g. Unassigned)
-        Object.keys(countMap).forEach(name => {
-            if (!dbNames.includes(name)) {
-                list.push({
-                    name,
-                    count: countMap[name],
-                });
-            }
-        });
-
-        return list.sort((a, b) => a.name.localeCompare(b.name));
-    }, [applications, todaZones]);
+    useBackgroundRefresh(['applications', 'pendingCount', 'reviewedTodayCount', 'resubmissionCount']);
 
     const filtered = useMemo(() => {
         const q = query.trim().toLowerCase();
@@ -76,13 +42,11 @@ export default function DocumentQueue({
             const matchesQuery = !q ||
                 String(a.id).toLowerCase().includes(q) ||
                 (a.reference && a.reference.toLowerCase().includes(q)) ||
-                (a.operator && a.operator.toLowerCase().includes(q)) ||
-                (a.toda && a.toda.toLowerCase().includes(q));
+                (a.operator && a.operator.toLowerCase().includes(q));
             const matchesStatus = statusFilter === 'all' || a.status === statusFilter;
-            const matchesToda = todaFilter === 'all' || a.toda === todaFilter;
-            return matchesQuery && matchesStatus && matchesToda;
+            return matchesQuery && matchesStatus;
         });
-    }, [applications, query, statusFilter, todaFilter]);
+    }, [applications, query, statusFilter]);
 
     const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE) || 1;
     const activePage = Math.min(currentPage, totalPages);
@@ -90,12 +54,11 @@ export default function DocumentQueue({
     const endIndex = Math.min(startIndex + ITEMS_PER_PAGE, filtered.length);
     const paginated = filtered.slice(startIndex, endIndex);
 
-    const isFiltering = query.trim() !== '' || statusFilter !== 'all' || todaFilter !== 'all';
+    const isFiltering = query.trim() !== '' || statusFilter !== 'all';
 
     const handleClearAll = () => {
         setQuery('');
         setStatusFilter('all');
-        setTodaFilter('all');
         setCurrentPage(1);
     };
 
@@ -262,7 +225,7 @@ export default function DocumentQueue({
                             type="text"
                             value={query}
                             onChange={e => setQuery(e.target.value)}
-                            placeholder="Search by name, reference number, or TODA…"
+                            placeholder="Search by applicant name or reference number…"
                             className="h-10 w-full rounded-lg border border-slate-200 bg-slate-50/50 pl-10 pr-9 text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 shadow-2xs transition-all focus:border-tmo-primary focus:bg-white focus:outline-none focus:ring-2 focus:ring-tmo-primary/10"
                         />
                         {query && (
@@ -285,20 +248,6 @@ export default function DocumentQueue({
                         >
                             {STATUS_OPTIONS.map(opt => (
                                 <option key={opt.value} value={opt.value}>{opt.label}</option>
-                            ))}
-                        </select>
-
-                        {/* TODA Zone Filter */}
-                        <select
-                            value={todaFilter}
-                            onChange={e => setTodaFilter(e.target.value)}
-                            className="h-10 w-full sm:w-48 rounded-lg border border-slate-200 bg-white px-3 pr-8 text-xs font-semibold text-slate-700 shadow-2xs transition-colors focus:border-tmo-primary focus:outline-none focus:ring-2 focus:ring-tmo-primary/10 cursor-pointer truncate"
-                        >
-                            <option value="all">All TODAs ({applications.length})</option>
-                            {todaOptions.map(opt => (
-                                <option key={opt.name} value={opt.name}>
-                                    {opt.name} ({opt.count})
-                                </option>
                             ))}
                         </select>
                     </div>
@@ -344,7 +293,7 @@ export default function DocumentQueue({
                                             Reference No.
                                         </th>
                                         <th scope="col" className="py-3 px-4 text-[11px] font-bold uppercase tracking-wider text-slate-500">
-                                            Applicant &amp; TODA
+                                            Applicant
                                         </th>
                                         <th scope="col" className="py-3 px-4 text-[11px] font-bold uppercase tracking-wider text-slate-500">
                                             Documents
@@ -495,7 +444,7 @@ function StatusPill({ status }) {
                     : 'border border-rose-200/90 bg-rose-50 text-rose-700'
             }`}
         >
-            {isPending ? 'Waiting for Review' : 'Needs Correction'}
+            {isPending ? 'Pending' : 'Correction'}
         </span>
     );
 }
@@ -517,7 +466,7 @@ function DesktopQueueRow({ app }) {
                 </div>
             </td>
 
-            {/* Column 2: Applicant & TODA */}
+            {/* Column 2: Applicant */}
             <td className="py-3.5 px-4 align-middle">
                 <div className="flex items-center gap-2.5">
                     <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-100 text-[11px] font-bold text-slate-700">
@@ -526,9 +475,6 @@ function DesktopQueueRow({ app }) {
                     <div className="min-w-0">
                         <p className="truncate text-xs sm:text-[13px] font-semibold text-slate-900 group-hover:text-slate-950">
                             {app.operator}
-                        </p>
-                        <p className="mt-0.5 truncate text-[11px] text-slate-500">
-                            {app.toda}
                         </p>
                     </div>
                 </div>
@@ -566,7 +512,7 @@ function DesktopQueueRow({ app }) {
                     href={`/tmo/review/docs/${app.id}`}
                     className="inline-flex items-center gap-1 rounded-full bg-[#1D2542] hover:bg-[#283256] text-white px-3.5 py-1.5 text-xs font-semibold shadow-2xs transition-all active:scale-[0.98]"
                 >
-                    <span>Review Documents</span>
+                    <span>{app.status === 'Pending' ? 'Review' : 'Re-review'}</span>
                     <ChevronRight size={13} strokeWidth={2.5} className="text-slate-300" />
                 </Link>
             </td>
@@ -595,7 +541,6 @@ function MobileQueueCard({ app }) {
                     </div>
                     <div className="min-w-0">
                         <p className="truncate text-xs font-semibold text-slate-900">{app.operator}</p>
-                        <p className="truncate text-[11px] text-slate-400">{app.toda}</p>
                     </div>
                 </div>
 
@@ -620,7 +565,7 @@ function MobileQueueCard({ app }) {
                     href={`/tmo/review/docs/${app.id}`}
                     className="flex w-full items-center justify-center gap-1.5 rounded-full bg-[#1D2542] hover:bg-[#283256] text-white py-2 text-xs font-bold shadow-2xs transition-all active:scale-[0.98]"
                 >
-                    <span>Review Documents</span>
+                    <span>{app.status === 'Pending' ? 'Review' : 'Re-review'}</span>
                     <ChevronRight size={13} strokeWidth={2.5} className="text-slate-300" />
                 </Link>
             </div>

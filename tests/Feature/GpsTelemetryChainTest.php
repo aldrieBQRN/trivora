@@ -34,7 +34,7 @@ class GpsTelemetryChainTest extends TestCase
     protected Tricycle $tricycle;
     protected TodaZone $toda;
 
-    /** Tricycle body number ends in 2, which ColorCodingRuleService restricts on Mondays. */
+    /** Tricycle Sticker Number ends in 2, which ColorCodingRuleService restricts on Mondays. */
     protected function setUp(): void
     {
         parent::setUp();
@@ -251,15 +251,40 @@ class GpsTelemetryChainTest extends TestCase
     // Part 9: the day AFTER a violation is a valid (non-restricted) operating day
     // -------------------------------------------------------------------------
 
+    /** A pure north offset using the same spherical-Earth radius GeoService::haversineKm() uses,
+     * so the resulting distance is exact relative to what the production code computes. */
+    private function metersNorth(float $lat, float $meters): float
+    {
+        return $lat + rad2deg($meters / 6371000.0);
+    }
+
     #[Test]
     public function the_day_after_a_coding_violation_the_same_tricycle_can_operate_without_flagging(): void
     {
         $this->attachActiveFranchiseScheme();
+        Driver::create([
+            'user_id' => $this->driverUser->id,
+            'operator_id' => $this->operator->id,
+            'tricycle_id' => $this->tricycle->id,
+            'license_number' => 'LIC-GPSCHAIN-001',
+            'is_online' => true,
+            'online_since' => now()->subDay(),
+        ]);
         Sanctum::actingAs($this->driverUser, ['*']);
 
+        // The 100-meter movement rule (see CodingViolationMovementRuleTest) needs an anchor,
+        // candidate, and confirming reading before a violation fires.
         $monday = Carbon::parse('next Monday')->setTime(9, 0);
         $this->postJson('/api/v1/driver/telematics', [
             'latitude' => 14.07, 'longitude' => 120.63, 'recorded_at' => $monday->toISOString(),
+        ])->assertJsonPath('violation.flagged', false);
+        $this->postJson('/api/v1/driver/telematics', [
+            'latitude' => $this->metersNorth(14.07, 102), 'longitude' => 120.63,
+            'recorded_at' => $monday->copy()->addSeconds(15)->toISOString(),
+        ])->assertJsonPath('violation.flagged', false);
+        $this->postJson('/api/v1/driver/telematics', [
+            'latitude' => $this->metersNorth(14.07, 107), 'longitude' => 120.63,
+            'recorded_at' => $monday->copy()->addSeconds(30)->toISOString(),
         ])->assertJsonPath('violation.flagged', true);
 
         // Tuesday: digit 2 is not restricted (only Monday: 1,2 per ColorCodingRuleService).
@@ -271,10 +296,19 @@ class GpsTelemetryChainTest extends TestCase
         $response->assertJsonPath('violation.flagged', false);
         $this->assertSame(1, Violation::where('tricycle_id', $this->tricycle->id)->count(), 'Only the Monday violation should exist.');
 
-        // The FOLLOWING Monday is a new calendar date — dedup is per-date, so it flags again.
+        // The FOLLOWING Monday is a new calendar date — dedup is per-date, so it flags again once
+        // the movement rule is satisfied for that date too.
         $nextMonday = $monday->copy()->addWeek();
         $this->postJson('/api/v1/driver/telematics', [
             'latitude' => 14.07, 'longitude' => 120.63, 'recorded_at' => $nextMonday->toISOString(),
+        ])->assertJsonPath('violation.flagged', false);
+        $this->postJson('/api/v1/driver/telematics', [
+            'latitude' => $this->metersNorth(14.07, 102), 'longitude' => 120.63,
+            'recorded_at' => $nextMonday->copy()->addSeconds(15)->toISOString(),
+        ])->assertJsonPath('violation.flagged', false);
+        $this->postJson('/api/v1/driver/telematics', [
+            'latitude' => $this->metersNorth(14.07, 107), 'longitude' => 120.63,
+            'recorded_at' => $nextMonday->copy()->addSeconds(30)->toISOString(),
         ])->assertJsonPath('violation.flagged', true);
         $this->assertSame(2, Violation::where('tricycle_id', $this->tricycle->id)->count());
     }

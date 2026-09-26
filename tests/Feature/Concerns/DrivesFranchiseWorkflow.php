@@ -28,7 +28,7 @@ trait DrivesFranchiseWorkflow
             ['code' => 'TODA-WORKFLOW-TEST', 'barangay' => 'Poblacion', 'is_active' => true]
         );
 
-        // Body numbers ending in 1 or 2 are Monday-restricted (ColorCodingRuleService) — this
+        // Sticker Numbers ending in 1 or 2 are Monday-restricted (ColorCodingRuleService) — this
         // scheme lets BPLOController::release() resolve a real match instead of falling back to
         // ColorCodingScheme::first().
         ColorCodingScheme::firstOrCreate(
@@ -47,10 +47,13 @@ trait DrivesFranchiseWorkflow
         $unique = uniqid();
 
         return array_merge([
+            // Applicant (tricycle owner) info
             'first_name'              => 'Juan',
             'last_name'               => 'Dela Cruz',
+            'birthday'                => '1990-05-20',
             'contact'                 => '09171234567',
-            'barangay'                => 'Poblacion',
+            'barangay'                => 'Bucana', // must be one of NasugbuBarangays::values()
+            'owner_is_driver'         => true,    // default scenario: owner drives their own unit
             'email'                   => "juan.delacruz.{$unique}@trivora.test",
             'password'                => 'password123',
             'plate_number'            => "WFL-{$unique}",
@@ -62,14 +65,18 @@ trait DrivesFranchiseWorkflow
             'chassis_number'          => "CHS-{$unique}",
             'or_number'               => "OR-{$unique}",
             'cr_number'               => "CR-{$unique}",
-            'toda'                    => 'TODA Bucana',
             'terms_accepted'          => true,
             'privacy_policy_accepted' => true,
             'documents'      => [
-                'orcr'    => [$this->fakeDocument('orcr.pdf')],
-                'license' => [$this->fakeDocument('license.pdf')],
-                'brgy'    => [$this->fakeDocument('brgy.pdf')],
-                'toda'    => [$this->fakeDocument('toda.pdf')],
+                'police_clearance'   => [$this->fakeDocument('police_clearance.pdf')],
+                'health_certificate' => [$this->fakeDocument('health_certificate.pdf')],
+                'orcr_photocopy'     => [$this->fakeDocument('orcr_photocopy.pdf')],
+                'drivers_license'    => [$this->fakeDocument('drivers_license.pdf')],
+                'barangay_clearance' => [$this->fakeDocument('barangay_clearance.pdf')],
+                'toda_clearance'     => [$this->fakeDocument('toda_clearance.pdf')],
+                'cedula'             => [$this->fakeDocument('cedula.pdf')],
+                'driver_id'          => [$this->fakeDocument('driver_id.pdf')],
+                'tariff_list'        => [$this->fakeDocument('tariff_list.pdf')],
             ],
         ], $overrides);
     }

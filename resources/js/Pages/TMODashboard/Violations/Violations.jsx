@@ -1,9 +1,11 @@
-import React, { useState, useMemo, useEffect } from 'react';
-import { Head, Link, router } from '@inertiajs/react';
+import React, { useState, useMemo } from 'react';
+import { Head, Link } from '@inertiajs/react';
+import useBackgroundRefresh from '@/hooks/useBackgroundRefresh';
 import TrivoraLayout from '@/Layouts/TrivoraLayout';
 import {
     ShieldAlert, AlertCircle, CheckCircle2, Clock, ChevronRight, ChevronLeft,
     Search, X, RotateCcw, MapPin, Scale, Phone, Bike, SlidersHorizontal, ArrowUpRight,
+    FileSpreadsheet,
 } from 'lucide-react';
 
 // Shared soft, layered shadow token — same elevation language used across the redesigned TMO
@@ -17,26 +19,25 @@ export default function Violations({ initialViolations = [], summaryStats = null
     // Filter states
     const [query, setQuery] = useState('');
     const [statusFilter, setStatusFilter] = useState('all');
-    const [typeFilter, setTypeFilter] = useState('all');
+    const [detectionFilter, setDetectionFilter] = useState('all');
     const [onlyUnsettled, setOnlyUnsettled] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 10;
 
     // Silent background refresh — a new automated coding detection or a TMO appeal decision
     // elsewhere should appear here without a manual reload.
-    useEffect(() => {
-        const { stop } = router.poll(15000, { only: ['initialViolations', 'summaryStats'] });
-        return () => stop();
-    }, []);
+    useBackgroundRefresh(['initialViolations', 'summaryStats']);
 
-    // Dynamic violation type options derived from records
-    const typeOptions = useMemo(() => {
-        const map = {};
+    // Detection Method options derived from records — Color Coding is the only active violation
+    // type, so the meaningful split left is HOW a record was detected (Mobile GPS vs IoT GPS).
+    const detectionOptions = useMemo(() => {
+        const counts = { mobile_gps: 0, iot_gps: 0 };
         violations.forEach(v => {
-            const t = v.type || 'Other Violation';
-            map[t] = (map[t] || 0) + 1;
+            if (Object.prototype.hasOwnProperty.call(counts, v.detection_key)) {
+                counts[v.detection_key] += 1;
+            }
         });
-        return Object.entries(map).sort((a, b) => b[1] - a[1]);
+        return counts;
     }, [violations]);
 
     // Pre-computed or dynamic stats
@@ -76,11 +77,8 @@ export default function Violations({ initialViolations = [], summaryStats = null
                 (v.operator && v.operator.toLowerCase().includes(q)) ||
                 (v.plate_no && v.plate_no.toLowerCase().includes(q)) ||
                 (v.coding_scheme_number && String(v.coding_scheme_number).toLowerCase().includes(q)) ||
-                (v.body_no && String(v.body_no).toLowerCase().includes(q)) ||
-                (v.toda && v.toda.toLowerCase().includes(q)) ||
                 (v.type && v.type.toLowerCase().includes(q)) ||
-                (v.notes && v.notes.toLowerCase().includes(q)) ||
-                (v.official_receipt_number && v.official_receipt_number.toLowerCase().includes(q))
+                (v.notes && v.notes.toLowerCase().includes(q))
             );
 
             let matchesStatus = true;
@@ -94,11 +92,11 @@ export default function Violations({ initialViolations = [], summaryStats = null
                 matchesStatus = v.appeal_status === 'under_review' || v.raw_status === 'contested';
             }
 
-            const matchesType = typeFilter === 'all' || v.type === typeFilter;
+            const matchesDetection = detectionFilter === 'all' || v.detection_key === detectionFilter;
 
-            return matchesQuery && matchesStatus && matchesType;
+            return matchesQuery && matchesStatus && matchesDetection;
         });
-    }, [violations, query, statusFilter, typeFilter, onlyUnsettled]);
+    }, [violations, query, statusFilter, detectionFilter, onlyUnsettled]);
 
     // Pagination
     const totalPages = Math.ceil(filtered.length / itemsPerPage) || 1;
@@ -107,12 +105,12 @@ export default function Violations({ initialViolations = [], summaryStats = null
     const endIndex = Math.min(startIndex + itemsPerPage, filtered.length);
     const paginated = filtered.slice(startIndex, endIndex);
 
-    const isFiltering = query.trim() !== '' || statusFilter !== 'all' || typeFilter !== 'all' || onlyUnsettled;
+    const isFiltering = query.trim() !== '' || statusFilter !== 'all' || detectionFilter !== 'all' || onlyUnsettled;
 
     const handleClearFilters = () => {
         setQuery('');
         setStatusFilter('all');
-        setTypeFilter('all');
+        setDetectionFilter('all');
         setOnlyUnsettled(false);
         setCurrentPage(1);
     };
@@ -130,8 +128,18 @@ export default function Violations({ initialViolations = [], summaryStats = null
                         Violation Records
                     </h1>
                     <p className="mt-1 text-xs sm:text-sm text-slate-500 max-w-2xl leading-relaxed">
-                        Records of all traffic violations, route breaches, and fines in Nasugbu
+                        Records of color coding violations, detections, and fines in Nasugbu
                     </p>
+                </div>
+                {/* Real server-side .xlsx export (DashboardController::exportViolationRecordsExcel),
+                    same shared municipal styling as the Reports exports. */}
+                <div className="flex items-center gap-2">
+                    <a
+                        href={route('tmo.violations.export-excel')}
+                        className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 shadow-2xs hover:bg-slate-50 hover:text-slate-900 transition-colors"
+                    >
+                        <FileSpreadsheet size={13} /> Export to Excel
+                    </a>
                 </div>
             </div>
 
@@ -159,7 +167,7 @@ export default function Violations({ initialViolations = [], summaryStats = null
                             </span>
                         </div>
                         <p className="mt-1 text-[11px] text-slate-500">
-                            Detected via automated GPS monitoring
+                            Detected via GPS monitoring
                         </p>
                     </div>
 
@@ -167,7 +175,7 @@ export default function Violations({ initialViolations = [], summaryStats = null
                         <span className="text-[11px] font-medium text-slate-500">Detection:</span>
                         <span className="inline-flex items-center gap-1.5 font-bold text-slate-800 text-xs">
                             <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                            100% Automated
+                            {detectionOptions.mobile_gps} Mobile GPS · {detectionOptions.iot_gps} IoT GPS
                         </span>
                     </div>
                 </div>
@@ -290,7 +298,7 @@ export default function Violations({ initialViolations = [], summaryStats = null
                                 setQuery(e.target.value);
                                 setCurrentPage(1);
                             }}
-                            placeholder="Search by ticket ID (VIO-26-...), plate, driver, TODA, or receipt number…"
+                            placeholder="Search by ticket ID (VIO-26-...), plate, driver, or receipt number…"
                             className="h-10 w-full rounded-lg border border-slate-200 bg-slate-50/50 pl-10 pr-9 text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 shadow-2xs transition-all focus:border-tmo-primary focus:bg-white focus:outline-none focus:ring-2 focus:ring-tmo-primary/10"
                         />
                         {query && (
@@ -328,20 +336,19 @@ export default function Violations({ initialViolations = [], summaryStats = null
                             </select>
                         </div>
 
-                        {/* Infraction Type Filter */}
+                        {/* Detection Method Filter */}
                         <div className="col-span-1">
                             <select
-                                value={typeFilter}
+                                value={detectionFilter}
                                 onChange={e => {
-                                    setTypeFilter(e.target.value);
+                                    setDetectionFilter(e.target.value);
                                     setCurrentPage(1);
                                 }}
-                                className="h-10 w-full sm:w-44 rounded-lg border border-slate-200 bg-white px-3 pr-8 text-xs font-semibold text-slate-700 shadow-2xs transition-colors focus:border-tmo-primary focus:outline-none focus:ring-2 focus:ring-tmo-primary/10 cursor-pointer truncate"
+                                className="h-10 w-full sm:w-48 rounded-lg border border-slate-200 bg-white px-3 pr-8 text-xs font-semibold text-slate-700 shadow-2xs transition-colors focus:border-tmo-primary focus:outline-none focus:ring-2 focus:ring-tmo-primary/10 cursor-pointer truncate"
                             >
-                                <option value="all">All Violation Types ({violations.length})</option>
-                                {typeOptions.map(([type, count]) => (
-                                    <option key={type} value={type}>{type} ({count})</option>
-                                ))}
+                                <option value="all">All Detection Methods ({violations.length})</option>
+                                <option value="mobile_gps">Mobile GPS ({detectionOptions.mobile_gps})</option>
+                                <option value="iot_gps">IoT GPS ({detectionOptions.iot_gps})</option>
                             </select>
                         </div>
 
@@ -414,7 +421,7 @@ export default function Violations({ initialViolations = [], summaryStats = null
                                             Tricycle &amp; Driver
                                         </th>
                                         <th scope="col" className="py-3 px-4 text-[11px] font-bold uppercase tracking-wider text-slate-500">
-                                            TODA
+                                            Sticker Number
                                         </th>
                                         <th scope="col" className="py-3 px-4 text-[11px] font-bold uppercase tracking-wider text-slate-500">
                                             Violation
@@ -630,20 +637,15 @@ function DesktopViolationRow({ record }) {
                 </div>
             </td>
 
-            {/* Column 3: TODA */}
+            {/* Column 3: Sticker Number */}
             <td className="py-3.5 px-4 align-middle">
                 <div className="flex flex-col">
-                    <div className="flex items-center gap-1.5 text-xs">
-                        <MapPin size={12} className={record.toda === 'N/A' || record.toda === 'Unassigned' ? 'text-amber-500 shrink-0' : 'text-slate-400 shrink-0'} />
-                        <span className={record.toda === 'N/A' || record.toda === 'Unassigned' ? 'text-amber-700 font-medium' : 'text-slate-700 font-medium'}>
-                            {record.toda}
-                        </span>
-                    </div>
-                    {(record.coding_scheme_number || record.body_no) && (
-                        <span className="font-mono text-[11px] text-slate-400 mt-0.5 pl-4">
-                            #{record.coding_scheme_number || record.body_no}
-                        </span>
-                    )}
+                    <span className="font-mono text-xs sm:text-[13px] font-bold text-slate-900">
+                        #{record.coding_scheme_number || 'N/A'}
+                    </span>
+                    <span className="text-[11px] text-slate-400 mt-0.5">
+                        Municipal Sticker
+                    </span>
                 </div>
             </td>
 
@@ -654,7 +656,7 @@ function DesktopViolationRow({ record }) {
                         {record.type}
                     </span>
                     <span className="mt-0.5 text-[11px] text-slate-400">
-                        Automated GPS
+                        {record.detection_label}
                     </span>
                 </div>
             </td>
@@ -715,15 +717,11 @@ function MobileViolationCard({ record }) {
                     </div>
                     <div className="min-w-0">
                         <p className="truncate text-xs font-semibold text-slate-900">{record.operator}</p>
-                        <div className="flex items-center gap-1.5 text-[11px] text-slate-400">
-                            <span className="truncate">{record.toda}</span>
-                            {(record.coding_scheme_number || record.body_no) && (
-                                <>
-                                    <span>·</span>
-                                    <span className="font-mono font-medium text-slate-500">#{record.coding_scheme_number || record.body_no}</span>
-                                </>
-                            )}
-                        </div>
+                        {record.coding_scheme_number && (
+                            <div className="flex items-center gap-1.5 text-[11px] text-slate-400">
+                                <span className="font-mono font-medium text-slate-500">#{record.coding_scheme_number}</span>
+                            </div>
+                        )}
                     </div>
                 </div>
 

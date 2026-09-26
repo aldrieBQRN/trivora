@@ -7,7 +7,6 @@ use App\Models\Application;
 use App\Models\ApplicationStatusHistory;
 use App\Models\FranchiseScheme;
 use App\Models\GpsDevice;
-use App\Models\TodaZone;
 use App\Models\Tricycle;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -27,8 +26,6 @@ class FinalConfirmationController extends Controller
 
         $query = Application::with([
             'operator.user',
-            'operator.todaZone',
-            'tricycle.todaZone',
             'payment',
             'franchiseScheme.colorCodingScheme',
             'inspections.inspector'
@@ -72,16 +69,10 @@ class FinalConfirmationController extends Controller
             $ticket = $app->payment_ticket;
             $lastInspection = $app->inspections->where('result', 'passed')->last();
 
-            $todaName = ($tricycle && $tricycle->todaZone)
-                ? $tricycle->todaZone->name
-                : (($operator && $operator->todaZone) ? $operator->todaZone->name : 'Unassigned');
-            $todaId = $tricycle?->toda_zone_id ?? $operator?->toda_id;
-
             $driverUser = $operator?->user;
             $driverEmail = $driverUser?->email ?? ('driver.' . strtolower(preg_replace('/[^a-z0-9]/i', '', $operator?->first_name ?? 'driver')) . '@trivora.ph');
             $driverPhone = $operator?->contact_number ?? '09XXXXXXXXX';
 
-            $suggestedSerial = $tricycle?->iot_device_id ?: ('TRV-GPS-' . str_pad($tricycle?->id ?? $app->id, 4, '0', STR_PAD_LEFT));
             $gpsStatus = $tricycle ? $tricycle->gpsStatus() : ['status' => 'awaiting', 'last_seen_at' => null];
             $pairedDevice = $tricycle?->gpsDevice;
 
@@ -97,14 +88,12 @@ class FinalConfirmationController extends Controller
                 'contact_number'      => $driverPhone,
                 'address'             => $operator ? $operator->address : 'N/A',
                 'barangay'            => $operator ? $operator->barangay : 'N/A',
-                'toda_zone'           => $todaName,
-                'toda_id'             => $todaId,
                 'plate_number'        => $tricycle ? $tricycle->plate_number : 'N/A',
                 'make_model'          => $tricycle ? "{$tricycle->make} {$tricycle->model}" : 'N/A',
                 'engine_number'       => $tricycle ? $tricycle->engine_number : 'N/A',
                 'chassis_number'      => $tricycle ? $tricycle->chassis_number : 'N/A',
                 'coding_number'       => $tricycle?->coding_scheme_number ?: ($scheme?->franchise_number ?: 'N/A'),
-                'body_number'         => $tricycle?->coding_scheme_number ?: ($scheme?->franchise_number ?: 'N/A'),
+                'coding_scheme_number' => $tricycle?->coding_scheme_number ?: ($scheme?->franchise_number ?: 'N/A'),
                 'sticker_number'      => $app->sticker_number ?: ($scheme ? $scheme->sticker_number : 'N/A'),
                 'color_scheme'        => ($scheme && $scheme->colorCodingScheme) ? $scheme->colorCodingScheme->name : 'Standard',
                 'color_hex'           => ($scheme && $scheme->colorCodingScheme) ? $scheme->colorCodingScheme->color_hex : '#1C2340',
@@ -117,7 +106,6 @@ class FinalConfirmationController extends Controller
                 'inspector_name'      => $lastInspection && $lastInspection->inspector ? $lastInspection->inspector->name : 'TMO Inspector',
                 'tracking_method'     => $app->tracking_method ?: ($tricycle && $tricycle->active_tracking_mode === 'iot_device' ? 'iot_device' : 'mobile_gps'),
                 'iot_device_id'       => $app->iot_device_id ?: ($tricycle ? $tricycle->iot_device_id : ''),
-                'suggested_iot_id'    => $suggestedSerial,
                 'gps_status'          => $gpsStatus['status'],
                 'gps_last_seen_at'    => $gpsStatus['last_seen_at'] ? $gpsStatus['last_seen_at']->format('M d, Y · h:i A') : null,
                 'device_imei'         => $pairedDevice?->imei,
@@ -134,7 +122,6 @@ class FinalConfirmationController extends Controller
             ->count();
         $iotActiveCount = Tricycle::where('active_tracking_mode', 'iot_device')->where('status', 'active')->count();
         $mobileActiveCount = Tricycle::where('active_tracking_mode', 'mobile_app')->where('status', 'active')->count();
-        $todaZones = TodaZone::orderBy('name')->get(['id', 'name']);
 
         return Inertia::render('TMODashboard/FinalConfirmationQueue', [
             'applications'        => $applications,
@@ -143,7 +130,6 @@ class FinalConfirmationController extends Controller
             'confirmedTodayCount' => $confirmedTodayCount,
             'iotActiveCount'      => $iotActiveCount,
             'mobileActiveCount'   => $mobileActiveCount,
-            'todaZones'           => $todaZones,
         ]);
     }
 
@@ -154,8 +140,7 @@ class FinalConfirmationController extends Controller
     {
         $application->load([
             'operator.user',
-            'operator.todaZone',
-            'tricycle.todaZone',
+            'tricycleDriver',
             'payment',
             'franchiseScheme.colorCodingScheme',
             'inspections.inspector',
@@ -168,15 +153,10 @@ class FinalConfirmationController extends Controller
         $payment = $application->payment;
         $ticket = $application->payment_ticket;
 
-        $todaName = ($tricycle && $tricycle->todaZone)
-            ? $tricycle->todaZone->name
-            : (($operator && $operator->todaZone) ? $operator->todaZone->name : 'Unassigned');
-
         $driverUser = $operator?->user;
         $driverEmail = $driverUser?->email ?? ('driver.' . strtolower(preg_replace('/[^a-z0-9]/i', '', $operator?->first_name ?? 'driver')) . '@trivora.ph');
         $driverPhone = $operator?->contact_number ?? '09XXXXXXXXX';
 
-        $suggestedSerial = $tricycle?->iot_device_id ?: ('TRV-GPS-' . str_pad($tricycle?->id ?? $application->id, 4, '0', STR_PAD_LEFT));
         $gpsStatus = $tricycle ? $tricycle->gpsStatus() : ['status' => 'awaiting', 'last_seen_at' => null];
         $pairedDevice = $tricycle?->gpsDevice;
 
@@ -186,18 +166,20 @@ class FinalConfirmationController extends Controller
             'status'              => $application->status,
             'application_type'    => ucfirst($application->application_type),
             'operator_name'       => $operator ? $operator->full_name : 'N/A',
+            'owner'               => $application->ownerDetails(),
+            'ownerIsDriver'       => (bool) $application->owner_is_driver,
+            'tricycleDriver'      => $application->driverDetails(),
             'driver_email'        => $driverEmail,
             'driver_phone'        => $driverPhone,
             'contact_number'      => $driverPhone,
             'address'             => $operator ? $operator->address : 'N/A',
             'barangay'            => $operator ? $operator->barangay : 'N/A',
-            'toda_zone'           => $todaName,
             'plate_number'        => $tricycle ? $tricycle->plate_number : 'N/A',
             'make_model'          => $tricycle ? "{$tricycle->make} {$tricycle->model}" : 'N/A',
             'engine_number'       => $tricycle ? $tricycle->engine_number : 'N/A',
             'chassis_number'      => $tricycle ? $tricycle->chassis_number : 'N/A',
             'coding_number'       => $tricycle?->coding_scheme_number ?: ($scheme?->franchise_number ?: 'N/A'),
-            'body_number'         => $tricycle?->coding_scheme_number ?: ($scheme?->franchise_number ?: 'N/A'),
+            'coding_scheme_number' => $tricycle?->coding_scheme_number ?: ($scheme?->franchise_number ?: 'N/A'),
             'sticker_number'      => $application->sticker_number ?: ($scheme ? $scheme->sticker_number : 'N/A'),
             'color_scheme'        => ($scheme && $scheme->colorCodingScheme) ? $scheme->colorCodingScheme->name : 'N/A',
             'color_hex'           => ($scheme && $scheme->colorCodingScheme) ? $scheme->colorCodingScheme->color_hex : '#1C2340',
@@ -210,7 +192,6 @@ class FinalConfirmationController extends Controller
             'ticket_number'       => $ticket['ticket_number'] ?? 'TKT-2026-00000',
             'tracking_method'     => $application->tracking_method ?: ($tricycle && $tricycle->active_tracking_mode === 'iot_device' ? 'iot_device' : 'mobile_gps'),
             'iot_device_id'       => $application->iot_device_id ?: ($tricycle ? $tricycle->iot_device_id : ''),
-            'suggested_iot_id'    => $suggestedSerial,
             'gps_status'          => $gpsStatus['status'],
             'gps_last_seen_at'    => $gpsStatus['last_seen_at'] ? $gpsStatus['last_seen_at']->format('M d, Y · h:i A') : null,
             'device_imei'         => $pairedDevice?->imei,
@@ -358,7 +339,7 @@ class FinalConfirmationController extends Controller
 
             // 3. Mark Application as Completed
             $toStatus = 'completed';
-            $toStep = 6;
+            $toStep = 5;
             $finalRemarks = "Franchise completed and activated. Tracking method: " .
                 ($trackingMethod === 'iot_device' ? "IoT Device #{$iotDeviceId}" : "Mobile GPS") .
                 ($officerNotes ? " (Remarks: {$officerNotes})" : "");

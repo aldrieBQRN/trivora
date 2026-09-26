@@ -93,7 +93,7 @@ class DashboardController extends Controller
 
             return [
                 'id'                  => $tri->id,
-                'body_number'         => $tri->body_number ?: 'N/A',
+                'coding_scheme_number' => $tri->coding_scheme_number ?: 'N/A',
                 'plate_number'        => $tri->plate_number,
                 'status'              => ucfirst($tri->status),
                 'driver'              => 'Self / Unassigned',
@@ -122,7 +122,7 @@ class DashboardController extends Controller
             ->map(function ($v) {
                 return [
                     'id'          => $v->id,
-                    'body_number' => $v->tricycle?->body_number ?: 'N/A',
+                    'coding_scheme_number' => $v->tricycle?->coding_scheme_number ?: 'N/A',
                     'violation'   => ucwords(str_replace('_', ' ', $v->violation_type)),
                     'date'        => $v->detected_at->toDateString(),
                     'status'      => 'Pending Review',
@@ -134,9 +134,11 @@ class DashboardController extends Controller
             ->where('is_active', true)
             ->get()
             ->map(function ($scheme) {
-                $daysLeft = now()->diffInDays($scheme->expiry_date, false);
+                // Carbon 3 returns a float from diffInDays() — cast to whole days so the
+                // dashboard never renders a raw value like "1095.9565737817825d".
+                $daysLeft = (int) now()->diffInDays($scheme->expiry_date, false);
                 return [
-                    'body_number'     => $scheme->franchise_number,
+                    'coding_scheme_number' => $scheme->franchise_number,
                     'expiration_date' => $scheme->expiry_date->toDateString(),
                     'days_left'       => $daysLeft,
                 ];
@@ -174,7 +176,7 @@ class DashboardController extends Controller
                 'db_id'       => $activeApplication->id,
                 'reference'   => $activeApplication->reference_number,
                 'type'        => $activeApplication->application_type === 'new' ? 'New Franchise' : 'Franchise Renewal',
-                'unit'        => $activeApplication->tricycle?->body_number ?: ($activeApplication->tricycle?->plate_number ?: 'N/A'),
+                'unit'        => $activeApplication->tricycle?->coding_scheme_number ?: ($activeApplication->tricycle?->plate_number ?: 'N/A'),
                 'step'        => $meta[0],
                 'stepLabel'   => $meta[1],
                 'needsAction' => $meta[2],

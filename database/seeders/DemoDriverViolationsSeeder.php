@@ -38,7 +38,7 @@ class DemoDriverViolationsSeeder extends Seeder
             'detected_at' => '2026-09-06 16:40:00',
             'lat' => 14.0689,
             'lng' => 120.6274,
-            'note' => 'System detected Red-coded tricycle (DEMO-0002) operating outside the assigned TODA Brgy. 8 route boundary on a restricted Saturday.',
+            'note' => 'System detected Red-coded tricycle (DEMO-0002) operating near Brgy. 8 Public Market on a restricted Saturday.',
         ],
         'driver.brgy4@trivora.test' => [
             'detected_at' => '2026-09-08 11:05:00',
@@ -83,7 +83,11 @@ class DemoDriverViolationsSeeder extends Seeder
 
         $detectedAt = Carbon::parse($data['detected_at']);
 
-        if (Violation::where('tricycle_id', $tricycleId)->where('detected_at', $detectedAt)->exists()) {
+        $existing = Violation::where('tricycle_id', $tricycleId)->where('detected_at', $detectedAt)->first();
+        if ($existing) {
+            // Re-running must also heal a record that lost its GPS ping, so every demo driver's
+            // open-violation scenario always keeps a real Detection Method source.
+            $this->ensureGpsSnapshot($existing, $detectedAt, $data['lat'], $data['lng']);
             return;
         }
 
@@ -94,7 +98,7 @@ class DemoDriverViolationsSeeder extends Seeder
             'speed_kmh' => 22.0,
             'heading_deg' => 90,
             'accuracy_m' => 5.0,
-            'source' => 'mobile_app',
+            'source' => self::pingSource($tricycleId),
             'recorded_at' => $detectedAt,
         ]);
 
@@ -115,5 +119,43 @@ class DemoDriverViolationsSeeder extends Seeder
         ]);
 
         $this->command->info("✔ Violation seeded for {$email} (tricycle {$tricycle?->plate_number}).");
+    }
+
+    /**
+     * Attach a real tricycle_locations ping to a record that has none, recorded at the
+     * violation's own detected_at so it is that record's true position rather than a stray ping
+     * from another time.
+     */
+    private function ensureGpsSnapshot(Violation $violation, Carbon $detectedAt, float $lat, float $lng): void
+    {
+        if ($violation->location_snapshot_id) {
+            return;
+        }
+
+        $location = TricycleLocation::create([
+            'tricycle_id' => $violation->tricycle_id,
+            'latitude' => $lat,
+            'longitude' => $lng,
+            'speed_kmh' => 22.0,
+            'heading_deg' => 90,
+            'accuracy_m' => 5.0,
+            'source' => self::pingSource($violation->tricycle_id),
+            'recorded_at' => $detectedAt,
+        ]);
+
+        $violation->forceFill(['location_snapshot_id' => $location->id])->save();
+    }
+
+    /**
+     * The project's canonical ping source — the same rule MobileAppDataSeeder already applies:
+     * a unit fitted with an IoT tracker reports from its gps_device, any other unit reports from
+     * the driver's phone. Both are real GPS sources, so no record has to fall back on
+     * detection_method to produce a Detection Method label.
+     */
+    private static function pingSource(int $tricycleId): string
+    {
+        $mode = Tricycle::whereKey($tricycleId)->value('active_tracking_mode');
+
+        return $mode === 'iot_device' ? 'gps_device' : 'mobile_app';
     }
 }

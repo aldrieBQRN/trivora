@@ -54,8 +54,8 @@ Route::middleware('auth')->group(function () {
     Route::post('confirm-password', [ConfirmablePasswordController::class, 'store']);
 
     Route::put('password', [PasswordController::class, 'update'])->name('password.update');
-
-    // We keep the logout route active because your layout files still use it!
-    Route::post('logout', [AuthenticatedSessionController::class, 'destroy'])
-        ->name('logout');
 });
+
+// Logout handles both GET and POST requests safely regardless of session state
+Route::match(['get', 'post'], 'logout', [AuthenticatedSessionController::class, 'destroy'])
+    ->name('logout');

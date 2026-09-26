@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Head, router, useForm } from '@inertiajs/react';
+import useBackgroundRefresh from '@/hooks/useBackgroundRefresh';
 import BPLOLayout from '@/Layouts/BPLOLayout';
 import Swal from 'sweetalert2';
 import {
@@ -47,6 +48,13 @@ export default function StaffManagement({
         email: '',
         password: '',
         is_active: true
+    });
+
+    // Background refresh of the staff list + counts: an account created, disabled or edited from
+    // another session shows up without a manual reload. Paused while either modal is open or
+    // either form is submitting, so it can never swap the list out from under a live edit.
+    useBackgroundRefresh(['users', 'stats'], {
+        paused: addModalOpen || editModalOpen || addForm.processing || editForm.processing,
     });
 
     const ITEMS_PER_PAGE = 10;

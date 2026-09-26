@@ -1,5 +1,6 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Head, Link, router, useForm } from '@inertiajs/react';
+import useBackgroundRefresh from '@/hooks/useBackgroundRefresh';
 import TrivoraLayout from '@/Layouts/TrivoraLayout';
 import Swal from 'sweetalert2';
 import {
@@ -48,12 +49,22 @@ function GpsStatusBadge({ status, lastSeenAt }) {
     );
 }
 
+// Matches TMODashboard/DocumentQueue.jsx's StatusPill exactly (size, weight, not uppercase) so
+// the Status column reads the same across TMO queue pages — the shared StatusBadge component is
+// deliberately not used here since it renders uppercase, which this page's Status column should not.
 function StatusPill({ status }) {
-    if (status === 'Awaiting Final Confirmation' || status === 'awaiting_tmo_confirmation' || status === 'Pending') {
-        return <StatusBadge variant="warning">Pending</StatusBadge>;
-    }
-
-    return <StatusBadge variant="success">Active</StatusBadge>;
+    const isPending = status === 'Awaiting Final Confirmation' || status === 'awaiting_tmo_confirmation' || status === 'Pending';
+    return (
+        <span
+            className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold shadow-2xs transition-colors ${
+                isPending
+                    ? 'border border-amber-200/90 bg-amber-50 text-amber-800'
+                    : 'border border-emerald-200/90 bg-emerald-50 text-emerald-700'
+            }`}
+        >
+            {isPending ? 'Pending' : 'Active'}
+        </span>
+    );
 }
 
 export default function FinalConfirmationQueue({
@@ -63,29 +74,12 @@ export default function FinalConfirmationQueue({
     confirmedTodayCount = 0,
     iotActiveCount = 0,
     mobileActiveCount = 0,
-    todaZones = [],
 }) {
     const [query, setQuery] = useState(searchTerm);
-    // Defaults to only the actionable queue — an application that already finished Final
-    // Confirmation is settled, not something waiting on TMO, so it shouldn't be what a TMO
-    // officer sees by default when opening this page. The "Active" tab (statusFilter='completed')
-    // and "All" option remain, unchanged, for reviewing what was already confirmed.
-    const [statusFilter, setStatusFilter] = useState('awaiting');
-    const [todaFilter, setTodaFilter] = useState('all');
     const [currentPage, setCurrentPage] = useState(1);
 
     const [selectedApp, setSelectedApp] = useState(null);
     const [modalOpen, setModalOpen] = useState(false);
-
-    // Silent background refresh — a BPLO release elsewhere feeds new units into this queue, and a
-    // just-confirmed application moves out of "Pending" here, without a manual reload. Does not
-    // disturb an already-open confirmation modal — selectedApp is a snapshot taken at click time.
-    useEffect(() => {
-        const { stop } = router.poll(15000, {
-            only: ['applications', 'awaitingCount', 'confirmedTodayCount', 'iotActiveCount', 'mobileActiveCount'],
-        });
-        return () => stop();
-    }, []);
 
     const { data, setData, post, processing, reset } = useForm({
         signed_ticket_verified: false,
@@ -93,41 +87,23 @@ export default function FinalConfirmationQueue({
         sticker_possession_confirmed: false,
         tracking_method: 'mobile_gps',
         iot_device_id: '',
-        imei: '',
-        sim_number: '',
         reassign_confirmed: false,
         officer_notes: '',
     });
 
-    // Official TODA list with counts
-    const todaOptions = useMemo(() => {
-        const countMap = {};
-        applications.forEach(a => {
-            const t = a.toda_zone || 'Unassigned';
-            countMap[t] = (countMap[t] || 0) + 1;
-        });
+    // Silent background refresh — a BPLO release elsewhere feeds new units into this queue, and a
+    // just-confirmed application moves out of "Pending" here, without a manual reload. Does not
+    // disturb an already-open confirmation modal — selectedApp is a snapshot taken at click time,
+    // and the refresh pauses outright while that modal or a submission is in progress.
+    useBackgroundRefresh(
+        ['applications', 'awaitingCount', 'confirmedTodayCount', 'iotActiveCount', 'mobileActiveCount'],
+        { paused: modalOpen || processing }
+    );
 
-        const dbNames = (todaZones && todaZones.length > 0)
-            ? todaZones.map(z => z.name)
-            : ['TODA Brgy. 10', 'TODA Brgy. 4', 'TODA Brgy. 8', 'TODA Bucana'];
-
-        const list = dbNames.map(name => ({
-            name,
-            count: countMap[name] || 0,
-        }));
-
-        Object.keys(countMap).forEach(name => {
-            if (!dbNames.includes(name)) {
-                list.push({
-                    name,
-                    count: countMap[name],
-                });
-            }
-        });
-
-        return list.sort((a, b) => a.name.localeCompare(b.name));
-    }, [applications, todaZones]);
-
+    // This queue only ever shows the actionable, pending items — an application that already
+    // finished Final Confirmation is settled, not something waiting on TMO. No status filter/tab
+    // to switch views; the backend still fetches 'completed' rows too (used elsewhere, e.g. the
+    // Active Registry), this list just never displays them.
     const filtered = useMemo(() => {
         const q = query.trim().toLowerCase();
         return applications.filter(a => {
@@ -136,19 +112,11 @@ export default function FinalConfirmationQueue({
                 (a.reference && a.reference.toLowerCase().includes(q)) ||
                 (a.operator_name && a.operator_name.toLowerCase().includes(q)) ||
                 (a.plate_number && a.plate_number.toLowerCase().includes(q)) ||
-                (a.sticker_number && a.sticker_number.toLowerCase().includes(q)) ||
-                (a.toda_zone && a.toda_zone.toLowerCase().includes(q));
+                (a.sticker_number && a.sticker_number.toLowerCase().includes(q));
 
-            const matchesStatus =
-                statusFilter === 'all' ||
-                (statusFilter === 'awaiting' && a.raw_status === 'awaiting_tmo_confirmation') ||
-                (statusFilter === 'completed' && a.raw_status === 'completed');
-
-            const matchesToda = todaFilter === 'all' || a.toda_zone === todaFilter;
-
-            return matchesQuery && matchesStatus && matchesToda;
+            return matchesQuery && a.raw_status === 'awaiting_tmo_confirmation';
         });
-    }, [applications, query, statusFilter, todaFilter]);
+    }, [applications, query]);
 
     const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE) || 1;
     const activePage = Math.min(currentPage, totalPages);
@@ -156,12 +124,10 @@ export default function FinalConfirmationQueue({
     const endIndex = Math.min(startIndex + ITEMS_PER_PAGE, filtered.length);
     const paginated = filtered.slice(startIndex, endIndex);
 
-    const isFiltering = query.trim() !== '' || statusFilter !== 'all' || todaFilter !== 'all';
+    const isFiltering = query.trim() !== '';
 
     const handleClearAll = () => {
         setQuery('');
-        setStatusFilter('all');
-        setTodaFilter('all');
         setCurrentPage(1);
     };
 
@@ -173,9 +139,7 @@ export default function FinalConfirmationQueue({
             bplo_approval_confirmed: isCompleted,
             sticker_possession_confirmed: isCompleted,
             tracking_method: app.tracking_method || 'mobile_gps',
-            iot_device_id: app.iot_device_id || app.suggested_iot_id || '',
-            imei: app.device_imei || '',
-            sim_number: app.device_sim_number || '',
+            iot_device_id: app.iot_device_id || '',
             reassign_confirmed: false,
             officer_notes: '',
         });
@@ -230,10 +194,9 @@ export default function FinalConfirmationQueue({
             title: 'Confirm Franchise Activation',
             html: `Are you sure you want to mark this franchise permit as <b>ACTIVATED &amp; COMPLETED</b>?<br/><br/>
                    <div style="text-align: left; background: #F8FAFC; padding: 14px 16px; border-radius: 8px; font-size: 13px; line-height: 1.6; border: 1px solid #E2E8F0;">
-                     Operator: <b>${selectedApp.operator_name}</b><br/>
-                     TODA Zone: <b>${selectedApp.toda_zone}</b><br/>
+                     Tricycle Owner: <b>${selectedApp.operator_name}</b><br/>
                      Tricycle Unit: <b>${selectedApp.make_model} (${selectedApp.plate_number})</b><br/>
-                     Coding Scheme: <b>#${selectedApp.coding_number || selectedApp.body_number} (${selectedApp.color_scheme} Scheme)</b><br/>
+                     Sticker Number: <b>#${selectedApp.coding_number} (${selectedApp.color_scheme} Scheme)</b><br/>
                      Tracking Mode: ${methodDesc}
                    </div>`,
             icon: 'question',
@@ -325,7 +288,7 @@ export default function FinalConfirmationQueue({
                         Final Confirmation &amp; GPS Setup
                     </h1>
                     <p className="mt-1 text-xs sm:text-sm text-slate-500 max-w-2xl leading-relaxed">
-                        Step 5: Check the driver's payment ticket and coding number, then set up GPS tracking to activate their tricycle franchise.
+                        Verify clearances and Sticker Number, then activate GPS tracking.
                     </p>
                 </div>
             </div>
@@ -459,60 +422,32 @@ export default function FinalConfirmationQueue({
             </div>
 
             {/* ══════════════════════════════════════════════════════════════
-                3. SEARCH & FILTER DECK
+                3. SEARCH DECK — no status filter: this queue only ever shows
+                   Pending (awaiting_tmo_confirmation) applications.
                ══════════════════════════════════════════════════════════════ */}
             <div className={`mb-4 rounded-2xl border border-slate-200/70 bg-white p-3 sm:p-3.5 ${CARD_SHADOW}`}>
-                <div className="flex flex-col lg:flex-row lg:items-center gap-2.5">
-                    <div className="relative flex-1 min-w-[220px]">
-                        <Search
-                            size={16}
-                            strokeWidth={2.2}
-                            className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"
-                        />
-                        <input
-                            type="text"
-                            value={query}
-                            onChange={e => setQuery(e.target.value)}
-                            placeholder="Search by driver, reference number, plate, or TODA…"
-                            className="h-10 w-full rounded-lg border border-slate-200 bg-slate-50/50 pl-10 pr-9 text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 shadow-2xs transition-all focus:border-tmo-primary focus:bg-white focus:outline-none focus:ring-2 focus:ring-tmo-primary/10"
-                        />
-                        {query && (
-                            <button
-                                type="button"
-                                onClick={() => setQuery('')}
-                                className="absolute right-3 top-1/2 flex h-5 w-5 -translate-y-1/2 items-center justify-center rounded-full text-slate-400 hover:bg-slate-200 hover:text-slate-700"
-                            >
-                                <X size={12} strokeWidth={2.5} />
-                            </button>
-                        )}
-                    </div>
-
-                    <div className="flex flex-wrap items-center gap-2">
-                        {/* Status Filter */}
-                        <select
-                            value={statusFilter}
-                            onChange={e => setStatusFilter(e.target.value)}
-                            className="h-10 w-full sm:w-48 rounded-lg border border-slate-200 bg-white px-3 pr-8 text-xs font-semibold text-slate-700 shadow-2xs transition-colors focus:border-tmo-primary focus:outline-none focus:ring-2 focus:ring-tmo-primary/10 cursor-pointer"
+                <div className="relative">
+                    <Search
+                        size={16}
+                        strokeWidth={2.2}
+                        className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"
+                    />
+                    <input
+                        type="text"
+                        value={query}
+                        onChange={e => setQuery(e.target.value)}
+                        placeholder="Search by driver, reference number, or plate…"
+                        className="h-10 w-full rounded-lg border border-slate-200 bg-slate-50/50 pl-10 pr-9 text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 shadow-2xs transition-all focus:border-tmo-primary focus:bg-white focus:outline-none focus:ring-2 focus:ring-tmo-primary/10"
+                    />
+                    {query && (
+                        <button
+                            type="button"
+                            onClick={() => setQuery('')}
+                            className="absolute right-3 top-1/2 flex h-5 w-5 -translate-y-1/2 items-center justify-center rounded-full text-slate-400 hover:bg-slate-200 hover:text-slate-700"
                         >
-                            <option value="all">All Statuses ({applications.length})</option>
-                            <option value="awaiting">Pending ({applications.filter(a => a.raw_status === 'awaiting_tmo_confirmation').length})</option>
-                            <option value="completed">Active ({applications.filter(a => a.raw_status === 'completed').length})</option>
-                        </select>
-
-                        {/* TODA Zone Filter */}
-                        <select
-                            value={todaFilter}
-                            onChange={e => setTodaFilter(e.target.value)}
-                            className="h-10 w-full sm:w-48 rounded-lg border border-slate-200 bg-white px-3 pr-8 text-xs font-semibold text-slate-700 shadow-2xs transition-colors focus:border-tmo-primary focus:outline-none focus:ring-2 focus:ring-tmo-primary/10 cursor-pointer truncate"
-                        >
-                            <option value="all">All TODAs ({applications.length})</option>
-                            {todaOptions.map(opt => (
-                                <option key={opt.name} value={opt.name}>
-                                    {opt.name} ({opt.count})
-                                </option>
-                            ))}
-                        </select>
-                    </div>
+                            <X size={12} strokeWidth={2.5} />
+                        </button>
+                    )}
                 </div>
             </div>
 
@@ -555,13 +490,13 @@ export default function FinalConfirmationQueue({
                                             Reference No.
                                         </th>
                                         <th scope="col" className="py-3 px-4 text-[11px] font-bold uppercase tracking-wider text-slate-500">
-                                            Tricycle Driver
+                                            Tricycle Owner
                                         </th>
                                         <th scope="col" className="py-3 px-4 text-[11px] font-bold uppercase tracking-wider text-slate-500">
                                             Tricycle Unit
                                         </th>
                                         <th scope="col" className="py-3 px-4 text-[11px] font-bold uppercase tracking-wider text-slate-500">
-                                            Coding Scheme
+                                            Sticker Number
                                         </th>
                                         <th scope="col" className="py-3 px-4 text-[11px] font-bold uppercase tracking-wider text-slate-500">
                                             Status
@@ -689,29 +624,13 @@ export default function FinalConfirmationQueue({
                 </>
             )}
 
-            {/* ══════════════════════════════════════════════════════════════
-                5. TMO FIELD PROTOCOL BANNER
-               ══════════════════════════════════════════════════════════════ */}
-            <div className="mt-6 flex items-start gap-4 rounded-2xl bg-slate-50 p-4 sm:p-5">
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-[#1D2542]/[0.10] to-[#1D2542]/[0.02] text-[#1D2542]">
-                    <ShieldCheck size={18} strokeWidth={2} />
-                </div>
-                <div>
-                    <p className="text-xs font-bold uppercase tracking-wide text-slate-800">TMO Final Confirmation &amp; Tracking Protocol</p>
-                    <p className="mt-0.5 text-xs leading-relaxed text-slate-600">
-                        Verify that the driver holds the official BPLO Franchise Sticker, Coding Plate, and validated Municipal Payment Ticket.
-                        Select the designated tracking mode: issue an onboard IoT hardware tracker, or approve Smartphone GPS tracking (the driver will only be authorized to register in the Trivora Driver App once this franchise is officially activated).
-                    </p>
-                </div>
-            </div>
-
             {/* ══════════════ SHOW DETAILS & CONFIGURATION MODAL ══════════════ */}
             {selectedApp && (
                 <Modal
                     show={modalOpen}
                     onClose={handleCloseModal}
                     maxWidth="4xl"
-                    title="Step 5: Final Confirmation & GPS Tracking Setup"
+                    title="Final Confirmation & GPS Tracking Setup"
                     description={
                         <span className="mt-1 flex items-center gap-2">
                             <span className="rounded bg-slate-100 px-2 py-0.5 font-mono text-xs font-extrabold text-slate-800">{selectedApp.reference}</span>
@@ -749,10 +668,17 @@ export default function FinalConfirmationQueue({
                         <StepBox num={1} title="Application & Inspection Details">
                             <div className="mb-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
                                 <InfoPanel title="Applicant Information">
-                                    <InfoRow label="Operator / Driver:" value={selectedApp.operator_name} strong />
+                                    <InfoRow label="Tricycle Owner:" value={selectedApp.owner?.full_name || selectedApp.operator_name} strong />
                                     <InfoRow label="Contact Number:" value={selectedApp.contact_number} />
-                                    <InfoRow label="TODA Zone:" value={selectedApp.toda_zone} accent />
                                     <InfoRow label="Barangay:" value={selectedApp.barangay || 'Nasugbu'} />
+                                    <InfoRow
+                                        label="Tricycle Driver:"
+                                        value={
+                                            selectedApp.ownerIsDriver
+                                                ? 'Same as Tricycle Owner'
+                                                : (selectedApp.tricycleDriver?.full_name || 'Not provided')
+                                        }
+                                    />
                                 </InfoPanel>
                                 <InfoPanel title="Tricycle Unit Specifications">
                                     <InfoRow label="Plate Number:" value={selectedApp.plate_number} mono strong />
@@ -765,7 +691,7 @@ export default function FinalConfirmationQueue({
                             <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-3">
                                 <ApprovalItem title="Document Review" icon={CheckCircle2} value="Approved" sub="Documents verified" />
                                 <ApprovalItem title="Physical Inspection" icon={CheckCircle2} value="Roadworthy" sub={selectedApp.inspection_date || 'Inspection cleared'} />
-                                <ApprovalItem title="Coding Scheme" icon={Tag} value={`#${selectedApp.coding_number || selectedApp.body_number}`} sub={`${selectedApp.color_scheme} Scheme`} />
+                                <ApprovalItem title="Sticker Number" icon={Tag} value={`#${selectedApp.coding_number}`} sub={`${selectedApp.color_scheme} Scheme`} />
                             </div>
                         </StepBox>
 
@@ -773,7 +699,7 @@ export default function FinalConfirmationQueue({
                         <StepBox num={2} title="Verify Clearances & Payment">
                             <div className="mb-3 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
                                 <p className="text-xs text-slate-500">
-                                    Cross-check the driver's payment ticket and assigned coding number before activating the franchise.
+                                    Cross-check the driver's payment ticket and assigned Sticker Number before activating the franchise.
                                 </p>
                                 {!isAlreadyCompleted && (
                                     <button
@@ -800,7 +726,7 @@ export default function FinalConfirmationQueue({
                                 disabled={isAlreadyCompleted}
                                 onClick={() => setData('bplo_approval_confirmed', !data.bplo_approval_confirmed)}
                             >
-                                <strong>BPLO Release:</strong> Confirmed BPLO signed off and released the Franchise Sticker/Body Number for this unit.
+                                <strong>BPLO Release:</strong> Confirmed BPLO signed off and released the Franchise Number for this unit.
                             </CheckRow>
 
                             <CheckRow
@@ -809,7 +735,7 @@ export default function FinalConfirmationQueue({
                                 last
                                 onClick={() => setData('sticker_possession_confirmed', !data.sticker_possession_confirmed)}
                             >
-                                <strong>Coding Scheme:</strong> Confirmed driver has Coding Number <strong>#{selectedApp.coding_number || selectedApp.body_number}</strong> ({selectedApp.color_scheme} Scheme).
+                                <strong>Sticker Number:</strong> Confirmed driver has Sticker Number <strong>#{selectedApp.coding_number}</strong> ({selectedApp.color_scheme} Scheme).
                             </CheckRow>
                         </StepBox>
 
@@ -859,69 +785,18 @@ export default function FinalConfirmationQueue({
                                         type="text"
                                         value={data.iot_device_id}
                                         onChange={(e) => setData('iot_device_id', e.target.value)}
-                                        placeholder="e.g. TRV-GPS-1011"
+                                        placeholder="e.g. 1011 or SinoTrack Tracker ID"
                                         disabled={isAlreadyCompleted}
                                         className="mt-1 font-mono text-sm font-bold text-slate-900"
                                     />
 
-                                    <div className="mt-2.5 flex flex-wrap items-center justify-between gap-2 text-[11.5px]">
-                                        <div className="flex items-center gap-1.5 text-slate-500">
-                                            <span>Suggested ID:</span>
-                                            <code className="rounded border border-amber-200 bg-white px-1.5 py-0.5 font-mono font-bold text-slate-800">
-                                                {selectedApp.suggested_iot_id}
-                                            </code>
-                                        </div>
-                                        {!isAlreadyCompleted && (
-                                            <button
-                                                type="button"
-                                                onClick={() => setData('iot_device_id', selectedApp.suggested_iot_id)}
-                                                className="inline-flex items-center gap-1 font-bold text-[#1D2542] hover:underline"
-                                            >
-                                                <CheckCircle2 size={13} /> Use Suggested ID
-                                            </button>
-                                        )}
-                                    </div>
-
-                                    <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
-                                        <div>
-                                            <label className="mb-1 block text-[10.5px] font-bold uppercase tracking-wide text-slate-500">
-                                                IMEI (Optional):
-                                            </label>
-                                            <Input
-                                                type="text"
-                                                value={data.imei}
-                                                onChange={(e) => setData('imei', e.target.value)}
-                                                placeholder="15-digit device IMEI, if known"
-                                                disabled={isAlreadyCompleted}
-                                                className="font-mono text-xs font-semibold text-slate-900"
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="mb-1 block text-[10.5px] font-bold uppercase tracking-wide text-slate-500">
-                                                SIM Number (Optional):
-                                            </label>
-                                            <Input
-                                                type="text"
-                                                value={data.sim_number}
-                                                onChange={(e) => setData('sim_number', e.target.value)}
-                                                placeholder="SIM used for 4G connectivity"
-                                                disabled={isAlreadyCompleted}
-                                                className="font-mono text-xs font-semibold text-slate-900"
-                                            />
-                                        </div>
-                                    </div>
-
-                                    <div className="mt-3 flex items-center gap-2 rounded-lg border border-slate-200 bg-white p-2.5 text-[11px] text-slate-700">
-                                        <span className="font-semibold">Device Status:</span>
-                                        <GpsStatusBadge status={selectedApp.gps_status || 'awaiting'} lastSeenAt={selectedApp.gps_last_seen_at} />
-                                    </div>
-                                    {!isAlreadyCompleted && (
-                                        <p className="mt-1.5 text-[10.5px] leading-relaxed text-amber-900">
-                                            Pairing only registers this tracker to the tricycle — it will show <strong>Awaiting First Signal</strong> until the physical device is installed and sends its first real GPS transmission.
+                                    {!data.iot_device_id && !isAlreadyCompleted && (
+                                        <p className="mt-2 text-[11px] text-slate-500">
+                                            No tracker ID configured yet. Enter the actual device ID configured for this tricycle.
                                         </p>
                                     )}
 
-                                    <div className="mt-2 rounded-md bg-amber-100/60 px-3 py-2 text-[10.5px] leading-relaxed text-amber-900">
+                                    <div className="mt-3 rounded-md bg-amber-100/60 px-3 py-2 text-[10.5px] leading-relaxed text-amber-900">
                                         <strong>Wiring:</strong> Connect Red wire to battery (+), Black to ground (-), and Yellow to ignition key.
                                     </div>
                                 </div>
@@ -1010,7 +885,7 @@ function DesktopConfirmationRow({ app, onConfirm }) {
                 </div>
             </td>
 
-            {/* Column 2: Tricycle Driver */}
+            {/* Column 2: Tricycle Owner */}
             <td className="py-3.5 px-4 align-middle">
                 <div className="flex items-center gap-2.5">
                     <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-100 text-[11px] font-bold text-slate-700">
@@ -1039,17 +914,15 @@ function DesktopConfirmationRow({ app, onConfirm }) {
                     </div>
                     <div className="mt-0.5 flex items-center gap-2 text-[11px] text-slate-500">
                         <span>Plate: <strong className="text-slate-700 font-semibold">{app.plate_number}</strong></span>
-                        <span className="text-slate-300">·</span>
-                        <span className="truncate font-medium text-slate-600">{app.toda_zone}</span>
                     </div>
                 </div>
             </td>
 
-            {/* Column 4: Coding Scheme */}
+            {/* Column 4: Sticker Number */}
             <td className="py-3.5 px-4 align-middle">
                 <div className="flex flex-col">
                     <span className="font-mono text-xs sm:text-[13px] font-bold tracking-wide text-slate-900">
-                        #{app.coding_number || app.body_number}
+                        #{app.coding_number}
                     </span>
                     <span className="mt-0.5 flex items-center gap-1.5 text-[11px] font-medium text-slate-500">
                         <span
@@ -1095,7 +968,7 @@ function MobileConfirmationCard({ app, onConfirm }) {
                 <StatusPill status={app.raw_status} />
             </div>
 
-            {/* Driver & TODA */}
+            {/* Tricycle Owner */}
             <div className="mt-2.5 flex items-center justify-between gap-2">
                 <div className="flex items-center gap-2 min-w-0">
                     <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-100 text-[10px] font-bold text-slate-700">
@@ -1103,7 +976,6 @@ function MobileConfirmationCard({ app, onConfirm }) {
                     </div>
                     <div className="min-w-0">
                         <p className="truncate text-xs font-semibold text-slate-900">{app.operator_name}</p>
-                        <p className="truncate text-[11px] text-slate-400">{app.toda_zone}</p>
                     </div>
                 </div>
 
@@ -1118,10 +990,10 @@ function MobileConfirmationCard({ app, onConfirm }) {
                 <span className="truncate font-medium">{app.make_model}</span>
             </div>
 
-            {/* Coding Scheme Row */}
+            {/* Sticker Number Row */}
             <div className="mt-2.5 flex items-center justify-between gap-2 border-t border-slate-100 pt-2 text-xs">
                 <span className="font-mono font-bold text-slate-800">
-                    Coding #{app.coding_number || app.body_number}
+                    Sticker #{app.coding_number}
                 </span>
                 <span className="text-[11px] font-medium text-slate-600 flex items-center gap-1.5">
                     <span

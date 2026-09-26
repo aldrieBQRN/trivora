@@ -54,12 +54,15 @@ class ViolationController extends Controller
                     'id'         => 'VIO-2026-' . str_pad($v->id, 4, '0', STR_PAD_LEFT),
                     'db_id'      => $v->id,
                     'type'       => ucwords(str_replace('_', ' ', $v->violation_type)),
-                    'isIot'      => $v->detection_method === 'automated',
+                    'isIot'      => $v->detectionKey() === 'iot_gps',
+                    'detection_method' => $v->detection_method,
+                    'detection_key'    => $v->detectionKey(),
+                    'detection_label'  => $v->detectionLabel(),
                     'date'       => $v->detected_at->format('M d, Y'),
                     'time'       => $v->detected_at->format('h:i A'),
                     'location'   => $location,
                     'notes'      => $v->notes,
-                    'unit'       => $v->tricycle?->body_number ?: 'Pending',
+                    'unit'       => $v->tricycle?->coding_scheme_number ?: 'Pending',
                     'colorCode'  => $v->tricycle?->franchiseScheme?->colorCodingScheme ? $v->tricycle->franchiseScheme->colorCodingScheme->name : 'N/A',
                     'colorHex'   => $v->tricycle?->franchiseScheme?->colorCodingScheme ? $v->tricycle->franchiseScheme->colorCodingScheme->color_hex : '#94A3B8',
                     'fine'       => (float)$v->fine_amount,
@@ -90,7 +93,7 @@ class ViolationController extends Controller
 
         $v = Violation::whereIn('tricycle_id', $triIds)
             ->where('id', $id)
-            ->with(['tricycle.franchiseScheme.colorCodingScheme', 'locationSnapshot', 'confirmedBy', 'appeal'])
+            ->with(['tricycle.franchiseScheme.colorCodingScheme', 'locationSnapshot', 'appeal'])
             ->firstOrFail();
 
         $location = 'Nasugbu Poblacion Area';
@@ -108,7 +111,7 @@ class ViolationController extends Controller
             'id'                      => 'VIO-2026-' . str_pad($v->id, 4, '0', STR_PAD_LEFT),
             'db_id'                   => $v->id,
             'type'                    => ucwords(str_replace('_', ' ', $v->violation_type)),
-            'detectionMethod'         => $v->detection_method === 'automated' ? 'Automated IoT Detection' : 'Manual (TMO Personnel)',
+            'detectionMethod'         => $v->detectionLabel(),
             'date'                    => $v->detected_at->format('M d, Y'),
             'time'                    => $v->detected_at->format('h:i A'),
             'location'                => $location,
@@ -117,15 +120,12 @@ class ViolationController extends Controller
             'driverName'              => $operator->full_name,
             'contactNumber'           => $operator->contact_number,
             'licenseNumber'           => $operator->license_number,
-            'unit'                    => $tricycle?->body_number ?: 'Pending',
+            'unit'                    => $tricycle?->coding_scheme_number ?: 'Pending',
             'plateNumber'             => $tricycle?->plate_number ?: 'N/A',
             'makeModel'               => $tricycle ? trim("{$tricycle->make} {$tricycle->model}") : 'N/A',
             'colorScheme'             => $colorScheme?->name ?: 'N/A',
             'isPaid'                  => $v->is_fine_paid,
-            'officialReceiptNumber'   => $v->official_receipt_number,
-            'amountPaid'              => $v->amount_paid !== null ? (float)$v->amount_paid : null,
             'paidAt'                  => $v->fine_paid_at ? $v->fine_paid_at->format('M d, Y') : null,
-            'confirmedByName'         => $v->confirmedBy?->name,
             'canAppeal'               => !$appeal && !in_array($v->status, ['resolved', 'dismissed'], true),
             'appeal'                  => $appeal ? [
                 'id'           => $appeal->id,

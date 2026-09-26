@@ -31,9 +31,10 @@ class GpsDevicePairingTest extends TestCase
 
     /**
      * Drives a fresh application through the real workflow (registration -> document review ->
-     * physical inspection -> payment verification -> BPLO release) up to
-     * 'awaiting_tmo_confirmation', mirroring FranchiseWorkflowTest's stage progression exactly so
-     * this test exercises the real Final Confirmation entry point, not a shortcut.
+     * physical inspection -> BPLO release) up to 'awaiting_tmo_confirmation', mirroring
+     * FranchiseWorkflowTest's stage progression exactly so this test exercises the real Final
+     * Confirmation entry point, not a shortcut. Payment happens entirely offline and has no
+     * in-system route to drive.
      */
     private function driveApplicationToAwaitingFinalConfirmation(string $plateNumber): Application
     {
@@ -42,19 +43,12 @@ class GpsDevicePairingTest extends TestCase
 
         $this->actingAs($tmo)->post(route('tmo.review.submit', $application), [
             'action'      => 'approve',
-            'docStatuses' => ['orcr' => 'approved', 'license' => 'approved', 'brgy' => 'approved', 'toda' => 'approved'],
+            'docStatuses' => ['orcr_photocopy' => 'approved', 'drivers_license' => 'approved', 'barangay_clearance' => 'approved', 'toda_clearance' => 'approved'],
         ]);
 
         $this->actingAs($tmo)->post(route('tmo.review.physical.submit', $application), [
             'action'             => 'pass',
             'inspectionStatuses' => $this->allInspectionItemsPassed(),
-        ]);
-
-        $this->actingAs($tmo)->post(route('tmo.verify-payment.submit', $application), [
-            'action'                  => 'verify',
-            'official_receipt_number' => 'OR-' . $plateNumber,
-            'amount'                  => 750,
-            'payment_date'            => now()->toDateString(),
         ]);
 
         $bplo = $this->makeBploUser();

@@ -50,11 +50,7 @@ class PublicFranchiseRegistrationTest extends TestCase
         // Operator
         $operator = Operator::where('user_id', $user->id)->firstOrFail();
         $this->assertSame('Juan', $operator->first_name);
-        $this->assertSame('Poblacion', $operator->barangay);
-        // Regression guard: RegistrationController::store() must resolve the exact TodaZone the
-        // dropdown submitted (by name) — not just "some" zone, and not silently null.
-        $this->assertNotNull($operator->toda_id);
-        $this->assertSame('TODA Bucana', $operator->todaZone->name);
+        $this->assertSame('Bucana', $operator->barangay);
 
         // Tricycle
         $tricycle = Tricycle::where('operator_id', $operator->id)->firstOrFail();
@@ -64,7 +60,6 @@ class PublicFranchiseRegistrationTest extends TestCase
         $this->assertSame(2021, $tricycle->year_model);
         $this->assertSame('Red', $tricycle->body_color);
         $this->assertSame('Standard', $tricycle->body_type);
-        $this->assertSame($operator->toda_id, $tricycle->toda_zone_id);
         $this->assertNotNull($tricycle->or_number);
         $this->assertNotNull($tricycle->cr_number);
 
@@ -84,9 +79,12 @@ class PublicFranchiseRegistrationTest extends TestCase
 
         // Documents — one per required category, all pending review.
         $docs = ApplicationDocument::where('application_id', $application->id)->get();
-        $this->assertCount(4, $docs);
+        $this->assertCount(9, $docs);
         $this->assertEqualsCanonicalizing(
-            ['or_cr', 'drivers_license', 'proof_of_residence', 'toda_clearance'],
+            [
+                'police_clearance', 'health_certificate', 'orcr_photocopy', 'drivers_license',
+                'barangay_clearance', 'toda_clearance', 'cedula', 'driver_id', 'tariff_list',
+            ],
             $docs->pluck('document_type')->all()
         );
         $this->assertTrue($docs->every(fn ($d) => $d->review_status === 'pending'));
@@ -106,6 +104,35 @@ class PublicFranchiseRegistrationTest extends TestCase
         $this->assertSame(1, User::where('email', $user->email)->count());
         $this->assertSame(1, Operator::where('user_id', $user->id)->count());
         $this->assertSame(1, Application::where('operator_id', $user->operator->id)->count());
+    }
+
+    /**
+     * Regression test for the UniqueConstraintViolationException on POST /register-mtop.
+     *
+     * Reference numbers used to be built as count()+1 ("APP-2026-" . rows+1), which only
+     * works while the sequence is dense. The seeded demo data has GAPS — 43 rows whose
+     * references already run to APP-2026-00047 — so the next registration regenerated the
+     * already-taken APP-2026-00044 and MySQL rejected the insert on the unique index. The
+     * generator now starts from the HIGHEST existing suffix (+1, then skips any collision),
+     * so gaps can never make two applications claim the same reference.
+     */
+    #[Test]
+    public function registration_generates_a_reference_past_the_highest_existing_suffix_not_the_row_count(): void
+    {
+        // Gapped sequence: a high suffix already exists while the row count is only 2, so
+        // the old count()+1 logic would have proposed APP-2026-00003 — already taken.
+        $this->makeApplicationWithReference('APP-2026-00003');
+        $this->makeApplicationWithReference('APP-2026-00047');
+
+        [, , $application] = $this->registerNewApplication();
+
+        // Highest existing suffix (47) + 1 — not count()+1 (3), which would collide.
+        $this->assertSame('APP-2026-00048', $application->reference_number);
+        $this->assertSame(
+            1,
+            Application::where('reference_number', $application->reference_number)->count(),
+            'The generated reference must be unique across all applications.'
+        );
     }
 
     /**
@@ -164,22 +191,21 @@ class PublicFranchiseRegistrationTest extends TestCase
      * resolves TodaZone by name directly, matching what the dropdown actually sends.
      */
     #[Test]
-    public function the_toda_zone_actually_picked_on_the_form_is_the_one_persisted(): void
+    public function registration_succeeds_without_toda_selection_while_requiring_toda_clearance(): void
     {
-        \App\Models\TodaZone::firstOrCreate(
-            ['name' => 'TODA Brgy. 8'],
-            ['code' => 'TODA-WORKFLOW-TEST-8', 'barangay' => 'Brgy. 8', 'is_active' => true]
-        );
-
         [, , $application] = $this->registerNewApplication([
-            'plate_number' => 'WFL-TODA-CHECK',
-            'toda' => 'TODA Brgy. 8',
+            'plate_number' => 'WFL-TODA-CLEAR',
         ]);
 
-        $operator = $application->operator;
-        $this->assertNotNull($operator->toda_id);
-        $this->assertSame('TODA Brgy. 8', $operator->todaZone->name);
-        $this->assertSame($operator->toda_id, $application->tricycle->toda_zone_id);
+        $this->assertNotNull($application);
+        $docs = $application->documents()->pluck('document_type')->all();
+        $this->assertContains('toda_clearance', $docs);
+
+        // Missing toda_clearance document is rejected by validation
+        $invalidPayload = $this->registrationPayload();
+        unset($invalidPayload['documents']['toda_clearance']);
+        $response = $this->post(route('register.public.submit'), $invalidPayload);
+        $response->assertSessionHasErrors('documents.toda_clearance');
     }
 
     #[Test]
@@ -357,14 +383,15 @@ class PublicFranchiseRegistrationTest extends TestCase
     }
 
     #[Test]
-    public function missing_toda_assignment_is_rejected(): void
+    public function toda_field_is_not_required_in_registration_submission(): void
     {
         $payload = $this->registrationPayload();
         unset($payload['toda']);
 
         $response = $this->post(route('register.public.submit'), $payload);
 
-        $response->assertSessionHasErrors('toda');
+        $response->assertSessionDoesntHaveErrors(['toda']);
+        $this->assertSame(1, Application::count());
     }
 
     #[Test]
@@ -382,11 +409,11 @@ class PublicFranchiseRegistrationTest extends TestCase
     public function a_required_document_category_cannot_be_omitted(): void
     {
         $payload = $this->registrationPayload();
-        unset($payload['documents']['orcr']);
+        unset($payload['documents']['orcr_photocopy']);
 
         $response = $this->post(route('register.public.submit'), $payload);
 
-        $response->assertSessionHasErrors('documents.orcr');
+        $response->assertSessionHasErrors('documents.orcr_photocopy');
         $this->assertSame(0, Application::count());
     }
 
@@ -395,16 +422,21 @@ class PublicFranchiseRegistrationTest extends TestCase
     {
         $payload = $this->registrationPayload([
             'documents' => [
-                'orcr'    => [UploadedFile::fake()->create('orcr.exe', 200, 'application/x-msdownload')],
-                'license' => [$this->fakeDocument('license.pdf')],
-                'brgy'    => [$this->fakeDocument('brgy.pdf')],
-                'toda'    => [$this->fakeDocument('toda.pdf')],
+                'police_clearance'   => [UploadedFile::fake()->create('police.exe', 200, 'application/x-msdownload')],
+                'health_certificate' => [$this->fakeDocument('health_certificate.pdf')],
+                'orcr_photocopy'     => [$this->fakeDocument('orcr_photocopy.pdf')],
+                'drivers_license'    => [$this->fakeDocument('drivers_license.pdf')],
+                'barangay_clearance' => [$this->fakeDocument('barangay_clearance.pdf')],
+                'toda_clearance'     => [$this->fakeDocument('toda_clearance.pdf')],
+                'cedula'             => [$this->fakeDocument('cedula.pdf')],
+                'driver_id'          => [$this->fakeDocument('driver_id.pdf')],
+                'tariff_list'        => [$this->fakeDocument('tariff_list.pdf')],
             ],
         ]);
 
         $response = $this->post(route('register.public.submit'), $payload);
 
-        $response->assertSessionHasErrors('documents.orcr.0');
+        $response->assertSessionHasErrors('documents.police_clearance.0');
     }
 
     #[Test]
@@ -418,5 +450,60 @@ class PublicFranchiseRegistrationTest extends TestCase
         $this->assertSame(0, User::where('name', 'Juan Dela Cruz')->count());
         $this->assertSame(0, Application::count());
         $this->assertGuest();
+    }
+
+    /**
+     * Builds a minimal Application pinned to an exact reference number (plus the operator and
+     * tricycle rows its NOT-NULL foreign keys require). Lets a test reproduce a reference
+     * sequence containing GAPS — the shape the seeded demo data has in the live DB (43 rows
+     * whose references already run to APP-2026-00047) — which is what broke count()+1.
+     */
+    private function makeApplicationWithReference(string $reference): Application
+    {
+        $unique = uniqid();
+
+        $user = User::create([
+            'name'     => 'Gap Fixture',
+            'email'    => "gap.fixture.{$unique}@trivora.test",
+            'password' => bcrypt('password'),
+            'role'     => 'tricycle_driver',
+        ]);
+
+        $operator = Operator::create([
+            'user_id'           => $user->id,
+            'first_name'        => 'Gap',
+            'last_name'         => 'Fixture',
+            'contact_number'    => '09170000000',
+            'address'           => 'Brgy. Bucana, Nasugbu, Batangas',
+            'barangay'          => 'Bucana',
+            'date_of_birth'     => '1990-01-01',
+            'license_number'    => "N16-{$unique}",
+            'license_expiry_date' => now()->addYears(3)->toDateString(),
+        ]);
+
+        $tricycle = Tricycle::create([
+            'operator_id'   => $operator->id,
+            'plate_number'  => "GAP-{$unique}",
+            'engine_number' => "ENG-GAP-{$unique}",
+            'chassis_number' => "CHS-GAP-{$unique}",
+            'make'          => 'Honda',
+            'model'         => 'TMX155',
+            'year_model'    => 2021,
+            'body_color'    => 'Red',
+            'body_type'     => 'Standard',
+            'or_number'     => "OR-GAP-{$unique}",
+            'cr_number'     => "CR-GAP-{$unique}",
+            'status'        => 'unregistered',
+        ]);
+
+        return Application::create([
+            'reference_number' => $reference,
+            'operator_id'      => $operator->id,
+            'tricycle_id'      => $tricycle->id,
+            'application_type' => 'new',
+            'current_step'     => 1,
+            'status'           => 'pending_review',
+            'submitted_at'     => now(),
+        ]);
     }
 }

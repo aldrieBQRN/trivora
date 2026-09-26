@@ -145,7 +145,7 @@ class ViolationAppealTest extends TestCase
         ]);
         $otherViolation = Violation::create([
             'tricycle_id' => $tricycle->id, 'franchise_scheme_id' => $franchise->id, 'color_coding_scheme_id' => $colorScheme->id,
-            'violation_type' => 'route_violation', 'detected_at' => now(), 'day_of_week' => now()->format('l'),
+            'violation_type' => 'color_coding', 'detected_at' => now(), 'day_of_week' => now()->format('l'),
             'detection_method' => 'manual', 'status' => 'open', 'fine_amount' => 300.00,
         ]);
 

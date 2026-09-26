@@ -34,6 +34,8 @@ class Booking extends Model
         'payment_status',
         'cancelled_by',
         'cancellation_reason',
+        'dispatched_driver_id',
+        'dispatched_at',
         'requested_at',
         'accepted_at',
         'arrived_at',
@@ -52,6 +54,7 @@ class Booking extends Model
         'fare_per_passenger' => 'float',
         'distance_km' => 'float',
         'estimated_duration_mins' => 'integer',
+        'dispatched_at' => 'datetime',
         'requested_at' => 'datetime',
         'accepted_at' => 'datetime',
         'arrived_at' => 'datetime',
@@ -59,6 +62,26 @@ class Booking extends Model
         'completed_at' => 'datetime',
         'cancelled_at' => 'datetime',
     ];
+
+    protected $appends = ['dispatch_state'];
+
+    /**
+     * Backend-authoritative summary of where this booking sits in the sequential dispatch cycle,
+     * so the Passenger app can render "Driver Found / Waiting for acceptance" vs "Searching for a
+     * driver..." from server state instead of a local timer. Only meaningful while still 'pending'
+     * — 'driver_found' means a specific driver currently holds an active (non-expired) offer;
+     * 'searching' covers both "between offers" and "no eligible driver right now", since dispatch
+     * re-targets synchronously on every evaluation and there is no separate persisted "idle"
+     * state to distinguish them.
+     */
+    public function getDispatchStateAttribute(): ?string
+    {
+        if ($this->status !== 'pending') {
+            return null;
+        }
+
+        return $this->dispatched_driver_id ? 'driver_found' : 'searching';
+    }
 
     public function passenger(): BelongsTo
     {
@@ -68,6 +91,11 @@ class Booking extends Model
     public function driver(): BelongsTo
     {
         return $this->belongsTo(Driver::class);
+    }
+
+    public function dispatchedDriver(): BelongsTo
+    {
+        return $this->belongsTo(Driver::class, 'dispatched_driver_id');
     }
 
     public function tricycle(): BelongsTo

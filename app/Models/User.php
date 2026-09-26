@@ -163,15 +163,6 @@ class User extends Authenticatable
     }
 
     /**
-     * Violation fine payments confirmed by this user (TMO personnel), after the driver
-     * paid at the Municipal Treasurer's cashier and presented the official receipt.
-     */
-    public function confirmedViolationPayments(): HasMany
-    {
-        return $this->hasMany(Violation::class, 'confirmed_by');
-    }
-
-    /**
      * Audit log entries created by this user.
      */
     public function auditLogs(): HasMany

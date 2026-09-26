@@ -4,8 +4,8 @@ namespace App\Http\Controllers\TMO;
 
 use App\Http\Controllers\Controller;
 use App\Models\Application;
+use App\Models\ApplicationDocument;
 use App\Models\ApplicationStatusHistory;
-use App\Models\TodaZone;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -22,7 +22,7 @@ class ApplicationController extends Controller
     {
         // Fetch applications currently at Phase 1 (Online Document Review)
         // This includes pending_review, under_review, and rejected (awaiting resubmission)
-        $applications = Application::with(['operator.todaZone', 'documents'])
+        $applications = Application::with(['operator', 'documents'])
             ->whereIn('status', ['pending_review', 'under_review', 'rejected'])
             ->orderBy('submitted_at', 'asc')
             ->get()
@@ -33,7 +33,6 @@ class ApplicationController extends Controller
                     'id'             => $app->id,
                     'reference'      => $app->reference_number,
                     'operator'       => $app->operator ? $app->operator->full_name : 'N/A',
-                    'toda'           => ($app->operator && $app->operator->todaZone) ? $app->operator->todaZone->name : 'Unassigned',
                     'submitted_at'   => $app->submitted_at ? $app->submitted_at->diffForHumans() : 'N/A',
                     'submitted_date' => $app->submitted_at ? $app->submitted_at->format('F j, Y · g:i A') : 'N/A',
                     'docs_count'     => $app->documents->count(),
@@ -51,14 +50,8 @@ class ApplicationController extends Controller
             ->distinct('application_id')
             ->count();
 
-        // Fetch all active TODA zones from the database for comprehensive filtering
-        $todaZones = TodaZone::where('is_active', true)
-            ->orderBy('name')
-            ->get(['id', 'name', 'code']);
-
         return Inertia::render('TMODashboard/DocumentQueue', [
             'applications'        => $applications,
-            'todaZones'           => $todaZones,
             'pendingCount'        => $pendingCount,
             'reviewedTodayCount'  => $reviewedTodayCount,
             'resubmissionCount'   => $resubmissionCount,
@@ -70,35 +63,27 @@ class ApplicationController extends Controller
      */
     public function show(Application $application): Response
     {
-        $application->load(['operator.todaZone', 'tricycle.todaZone', 'documents']);
+        $application->load(['operator', 'tricycle', 'tricycleDriver', 'documents' => function ($query) {
+            // Oldest first, so a resubmission (a newer row for the same requirement) is
+            // processed last below and its status/reason wins over the obsolete submission.
+            $query->orderBy('created_at');
+        }]);
 
         $operator = $application->operator;
         $tricycle = $application->tricycle;
-
-        $requirementsMap = [
-            'drivers_license'    => 'license',
-            'or_cr'              => 'orcr',
-            'proof_of_residence' => 'brgy',
-            'toda_clearance'     => 'toda',
-            'photo_id'           => 'driver_id',
-        ];
 
         $docStatuses = [];
         $rejectionReasons = [];
         $mappedDocs = [];
 
         foreach ($application->documents as $doc) {
-            $frontendId = $requirementsMap[$doc->document_type] ?? 'other';
-            if ($frontendId === 'other') {
-                $parts = explode('_', $doc->file_name, 2);
-                if (count($parts) > 1 && in_array($parts[0], ['prangkisa', 'receipt', 'tariff', 'auth'])) {
-                    $frontendId = $parts[0];
-                }
-            }
+            $frontendId = ApplicationDocument::resolveRequirementKey($doc);
 
             $docStatuses[$frontendId] = $doc->review_status;
             if ($doc->review_status === 'rejected') {
                 $rejectionReasons[$frontendId] = $doc->rejection_reason;
+            } else {
+                unset($rejectionReasons[$frontendId]);
             }
             $mappedDocs[] = [
                 'id'            => $doc->id,
@@ -110,17 +95,17 @@ class ApplicationController extends Controller
             ];
         }
 
-        $todaName = $tricycle?->todaZone?->name 
-            ?? $operator?->todaZone?->name 
-            ?? 'Unassigned';
-
         $appData = [
             'id'             => $application->id,
             'reference'      => $application->reference_number,
             'operator'       => $operator ? $operator->full_name : 'N/A',
+            // Tricycle Owner (the applicant) + optional separate Tricycle Driver. Lists keep
+            // showing `operator` as the primary person; the driver only appears in details.
+            'owner'          => $application->ownerDetails(),
+            'ownerIsDriver'  => (bool) $application->owner_is_driver,
+            'tricycleDriver' => $application->driverDetails(),
             'contact'        => $operator ? $operator->contact_number : 'N/A',
             'barangay'       => $operator ? $operator->barangay : 'N/A',
-            'toda'           => $todaName,
             'make'           => $tricycle ? trim("{$tricycle->make} {$tricycle->model}") : 'N/A',
             'make_name'      => $tricycle ? $tricycle->make : 'N/A',
             'model_name'     => $tricycle ? $tricycle->model : 'N/A',
@@ -158,29 +143,15 @@ class ApplicationController extends Controller
         $docStatuses = $request->input('docStatuses');
         $rejectionReasons = $request->input('rejectionReasons', []);
 
-        $requirementsMap = [
-            'license'   => 'drivers_license',
-            'orcr'      => 'or_cr',
-            'brgy'      => 'proof_of_residence',
-            'toda'      => 'toda_clearance',
-            'driver_id' => 'photo_id',
-        ];
-
-        DB::transaction(function () use ($application, $action, $docStatuses, $rejectionReasons, $requirementsMap) {
+        DB::transaction(function () use ($application, $action, $docStatuses, $rejectionReasons) {
             $fromStatus = $application->status;
             $fromStep = $application->current_step;
 
             // 1. Update review status on individual document records
             foreach ($application->documents as $doc) {
-                $frontendKey = array_search($doc->document_type, $requirementsMap, true);
-                if (!$frontendKey && $doc->document_type === 'other') {
-                    $parts = explode('_', $doc->file_name, 2);
-                    if (count($parts) > 1 && in_array($parts[0], ['prangkisa', 'receipt', 'tariff', 'auth'])) {
-                        $frontendKey = $parts[0];
-                    }
-                }
+                $frontendKey = ApplicationDocument::resolveRequirementKey($doc);
 
-                if ($frontendKey && isset($docStatuses[$frontendKey])) {
+                if ($frontendKey !== 'other' && isset($docStatuses[$frontendKey])) {
                     $status = $docStatuses[$frontendKey];
                     $doc->update([
                         'review_status'    => $status,

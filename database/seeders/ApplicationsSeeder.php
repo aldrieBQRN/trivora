@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use App\Models\Application;
 use App\Models\ApplicationDocument;
+use App\Models\ApplicationDriver;
 use App\Models\ApplicationStatusHistory;
 use App\Models\ColorCodingScheme;
 use App\Models\FranchiseScheme;
@@ -20,6 +21,15 @@ class ApplicationsSeeder extends Seeder
 {
     /**
      * Seed sample applications at different stages of the workflow pipeline.
+     *
+     * Owner vs separate tricycle driver: APP-2026-00001 (completed) demonstrates the
+     * separate-driver DETAIL pages (owner_is_driver = 0 + an application_drivers row)
+     * but its franchise '0142' is already claimed by a registered driver account;
+     * APP-2026-00050 (completed + active, unclaimed franchise '0777') is the REGISTERABLE
+     * separate-driver demo for the mobile Driver Registration 3-step flow — verification
+     * checks the driver person (Isko Mercado), never the owner. Every other application
+     * here stays owner-is-driver (column default, no driver row), matching all
+     * pre-existing records.
      */
     public function run(): void
     {
@@ -50,7 +60,7 @@ class ApplicationsSeeder extends Seeder
             ]
         );
         $opBen = Operator::firstOrCreate(
-            ['contact_number' => '091700000003'],
+            ['contact_number' => '09175550003'],
             [
                 'user_id'                  => $userBen->id,
                 'first_name'               => 'Ben',
@@ -79,7 +89,7 @@ class ApplicationsSeeder extends Seeder
             ]
         );
         $opCarla = Operator::firstOrCreate(
-            ['contact_number' => '091700000004'],
+            ['contact_number' => '09175550004'],
             [
                 'user_id'                  => $userCarla->id,
                 'first_name'               => 'Carla',
@@ -108,7 +118,7 @@ class ApplicationsSeeder extends Seeder
             ]
         );
         $opDante = Operator::firstOrCreate(
-            ['contact_number' => '091700000005'],
+            ['contact_number' => '09175550005'],
             [
                 'user_id'                  => $userDante->id,
                 'first_name'               => 'Dante',
@@ -137,7 +147,7 @@ class ApplicationsSeeder extends Seeder
             ]
         );
         $opElena = Operator::firstOrCreate(
-            ['contact_number' => '091700000006'],
+            ['contact_number' => '09175550006'],
             [
                 'user_id'                  => $userElena->id,
                 'first_name'               => 'Elena',
@@ -183,68 +193,97 @@ class ApplicationsSeeder extends Seeder
         $yellowScheme = ColorCodingScheme::where('name', 'Yellow')->first();
         $greenScheme  = ColorCodingScheme::where('name', 'Green')->first();
 
+        // The retired in-system payment workflow's statuses must never appear in ANY
+        // application's append-only trail — they predate the canonical 1-5 step scale and
+        // would corrupt the Application Tracker's status-history-derived step dates. This
+        // also repairs leftover fixtures seeded by older seeder versions (e.g.
+        // APP-2026-00038/00039) that no block below owns.
+        ApplicationStatusHistory::where(function ($query) {
+            $query->whereIn('from_status', ['pending_payment', 'payment_issue', 'payment_verified', 'paid'])
+                ->orWhereIn('to_status', ['pending_payment', 'payment_issue', 'payment_verified', 'paid']);
+        })->delete();
+
         // -----------------------------------------------------------------
         // APPLICATION 1: Pedro Ramos — COMPLETED (franchise issued)
         // -----------------------------------------------------------------
-        if ($op1 && $tri1 && ! Application::where('reference_number', 'APP-2026-00001')->exists()) {
-            $app1 = Application::create([
-                'reference_number' => 'APP-2026-00001',
-                'operator_id'      => $op1->id,
-                'tricycle_id'      => $tri1->id,
-                'application_type' => 'new',
-                'current_step'     => 6,
-                'status'           => 'completed',
-                'sticker_number'   => 'STK-2026-0001',
-                'submitted_at'     => now()->subDays(30),
-                'completed_at'     => now()->subDays(10),
-                'remarks'          => 'All requirements complete. Franchise sticker released.',
-            ]);
+        // Idempotent on purpose: this application IS the demo state (completed + an
+        // expired permit to demonstrate the tracker's/expired-tricycle state), so a re-run
+        // must be able to repair drifted demo data instead of skipping it via an exists()
+        // guard.
+        if ($op1 && $tri1) {
+            $app1 = Application::updateOrCreate(
+                ['reference_number' => 'APP-2026-00001'],
+                [
+                    'operator_id'      => $op1->id,
+                    'tricycle_id'      => $tri1->id,
+                    'application_type' => 'new',
+                    'current_step'     => 5,
+                    'status'           => 'completed',
+                    'sticker_number'   => 'STK-2026-0001',
+                    'submitted_at'     => now()->subDays(30),
+                    'completed_at'     => now()->subDays(10),
+                    'remarks'          => 'All requirements complete. Franchise Number released.',
+                ]
+            );
+
+            // Owner vs separate tricycle driver: this completed application is the demo
+            // case where the driver is a DIFFERENT person than the tricycle owner — the
+            // Active Tricycle Registry / application detail pages show the distinct
+            // Tricycle Driver card, and Pedro's My Tricycles "View Details" flags
+            // same-vs-different. Every other seeded application stays owner-is-driver
+            // (the column default), so both scenarios are represented in demo data.
+            $app1->update(['owner_is_driver' => false]);
+            ApplicationDriver::updateOrCreate(
+                ['application_id' => $app1->id],
+                [
+                    'first_name'     => 'Nemesio',
+                    'last_name'      => 'Ramos',
+                    'date_of_birth'  => '1995-06-12',
+                    'contact_number' => '09171234701',
+                    'barangay'       => $op1->barangay ?: 'Bucana',
+                ]
+            );
+
+            // No Payment row — the system never records or verifies payment under the current
+            // workflow; the applicant pays entirely offline at the Municipal Treasurer's Office.
+            Payment::where('application_id', $app1->id)->delete();
 
             // Documents
             $this->seedDocuments($app1, 'approved', $tmo);
 
-            // Status history
+            // Status history (rebuilds from scratch — see seedStatusHistory())
             $this->seedStatusHistory($app1, $op1->user, $tmo, $bplo, $admin);
 
             // Inspection (passed)
-            Inspection::create([
-                'application_id'    => $app1->id,
-                'inspector_id'      => $tmo?->id,
-                'attempt_number'    => 1,
-                'inspection_date'   => now()->subDays(25)->toDateString(),
-                'inspection_time'   => '09:30:00',
-                'location_address'  => 'TMO Compound, Municipal Hall',
-                'result'            => 'passed',
-                'safety_equipment'  => true,
-                'brakes_steering'   => true,
-                'lights_reflectors' => true,
-                'tires_suspension'  => true,
-                'emissions_test'    => true,
-                'license_toda_docs' => true,
-                'inspector_notes'   => 'Vehicle in excellent condition. All systems operational.',
-            ]);
+            Inspection::updateOrCreate(
+                ['application_id' => $app1->id, 'attempt_number' => 1],
+                [
+                    'inspector_id'      => $tmo?->id,
+                    'inspection_date'   => now()->subDays(25)->toDateString(),
+                    'inspection_time'   => '09:30:00',
+                    'location_address'  => 'TMO Compound, Municipal Hall',
+                    'result'            => 'passed',
+                    'safety_equipment'  => true,
+                    'brakes_steering'   => true,
+                    'lights_reflectors' => true,
+                    'tires_suspension'  => true,
+                    'emissions_test'    => true,
+                    'license_toda_docs' => true,
+                    'inspector_notes'   => 'Vehicle in excellent condition. All systems operational.',
+                ]
+            );
 
-            // Payment (Municipal Cashier payment verified by BPLO)
-            Payment::create([
-                'application_id'          => $app1->id,
-                'processed_by'            => $bplo?->id ?? $admin?->id,
-                'official_receipt_number' => 'OR-2026-000001',
-                'amount'                  => 750.00,
-                'payment_method'          => 'cash',
-                'payment_date'            => now()->subDays(15)->toDateString(),
-                'payment_time'            => '10:45:00',
-                'is_verified'             => true,
-                'verified_at'             => now()->subDays(15),
-                'notes'                   => 'Municipal Cashier Official Receipt verified by BPLO.',
-            ]);
-
-            // Seed expired franchise scheme (FS-2023-00001) for Pedro Ramos to demonstrate expired status
+            // Expired franchise permit for Pedro Ramos to demonstrate the expired state.
+            // Keyed by tricycle_id (one permit row per unit, whatever seed order ran) and
+            // never touching a scheme issued under a different application, so TricyclesSeeder
+            // re-runs can't silently restore a future expiry over this deliberate expiry.
             if ($redScheme && $bplo) {
-                FranchiseScheme::firstOrCreate(
-                    ['franchise_number' => 'FS-2023-00001'],
+                FranchiseScheme::updateOrCreate(
+                    ['tricycle_id' => $tri1->id],
                     [
                         'application_id'         => $app1->id,
-                        'tricycle_id'            => $tri1->id,
+                        'franchise_number'       => $tri1->coding_scheme_number ?: '0142',
+                        'sticker_number'         => $app1->sticker_number,
                         'color_coding_scheme_id' => $redScheme->id,
                         'issued_by'              => $bplo->id,
                         'issue_date'             => now()->subYears(3)->subDays(30)->toDateString(),
@@ -259,22 +298,26 @@ class ApplicationsSeeder extends Seeder
         }
 
         // -----------------------------------------------------------------
-        // APPLICATION 2: Jose Bautista — PENDING PAYMENT
+        // APPLICATION 2: Jose Bautista — PENDING BPLO RELEASE
         // -----------------------------------------------------------------
-        if ($op2 && $tri2 && ! Application::where('reference_number', 'APP-2026-00002')->exists()) {
-            $app2 = Application::create([
-                'reference_number' => 'APP-2026-00002',
-                'operator_id'      => $op2->id,
-                'tricycle_id'      => $tri2->id,
-                'application_type' => 'new',
-                'current_step'     => 4,
-                'status'           => 'pending_payment',
-                'submitted_at'     => now()->subDays(15),
-                'completed_at'     => null,
-                'remarks'          => null,
-            ]);
+        if ($op2 && $tri2) {
+            $app2 = Application::updateOrCreate(
+                ['reference_number' => 'APP-2026-00002'],
+                [
+                    'operator_id'      => $op2->id,
+                    'tricycle_id'      => $tri2->id,
+                    'application_type' => 'new',
+                    'current_step'     => 3,
+                    'status'           => 'pending_bplo_release',
+                    'submitted_at'     => now()->subDays(15),
+                    'completed_at'     => null,
+                    'remarks'          => null,
+                ]
+            );
 
             $this->seedDocuments($app2, 'approved', $tmo);
+
+            $this->resetStatusHistory($app2);
 
             ApplicationStatusHistory::create([
                 'application_id' => $app2->id,
@@ -300,17 +343,17 @@ class ApplicationsSeeder extends Seeder
                 'application_id' => $app2->id,
                 'changed_by'     => $tmo?->id,
                 'from_status'    => 'pending_inspection',
-                'to_status'      => 'pending_payment',
-                'from_step'      => 3,
-                'to_step'        => 4,
-                'notes'          => 'Tricycle passed physical inspection. Payment Ticket issued.',
+                'to_status'      => 'pending_bplo_release',
+                'from_step'      => 2,
+                'to_step'        => 3,
+                'notes'          => "Physical roadworthiness inspection passed — driver instructed to pay at the Municipal Treasurer's Office, then proceed to BPLO for sticker/plate release.",
                 'created_at'     => now()->subDays(8),
             ]);
 
-            Inspection::create([
-                'application_id'    => $app2->id,
+            Inspection::updateOrCreate(
+                ['application_id' => $app2->id, 'attempt_number' => 1],
+                [
                 'inspector_id'      => $tmo?->id,
-                'attempt_number'    => 1,
                 'inspection_date'   => now()->subDays(8)->toDateString(),
                 'inspection_time'   => '14:00:00',
                 'location_address'  => 'TMO Compound, Municipal Hall',
@@ -335,7 +378,7 @@ class ApplicationsSeeder extends Seeder
                     'operator_id'      => $op3->id,
                     'tricycle_id'      => $tri3->id,
                     'application_type' => 'new',
-                    'current_step'     => 3,
+                    'current_step'     => 2,
                     'status'           => 'pending_inspection',
                     'submitted_at'     => now()->subDays(5),
                     'completed_at'     => null,
@@ -347,6 +390,8 @@ class ApplicationsSeeder extends Seeder
             Inspection::where('application_id', $app3->id)->delete();
 
             $this->seedDocuments($app3, 'approved', $tmo);
+
+            $this->resetStatusHistory($app3);
 
             ApplicationStatusHistory::updateOrCreate(
                 ['application_id' => $app3->id, 'to_status' => 'pending_review'],
@@ -375,18 +420,20 @@ class ApplicationsSeeder extends Seeder
         // -----------------------------------------------------------------
         // APPLICATION 4: Maria Clara — REJECTED (document validation failed)
         // -----------------------------------------------------------------
-        if ($op4 && $tri4 && ! Application::where('reference_number', 'APP-2026-00004')->exists()) {
-            $app4 = Application::create([
-                'reference_number' => 'APP-2026-00004',
-                'operator_id'      => $op4->id,
-                'tricycle_id'      => $tri4->id,
-                'application_type' => 'new',
-                'current_step'     => 1,
-                'status'           => 'rejected',
-                'submitted_at'     => now()->subDays(6),
-                'completed_at'     => null,
-                'remarks'          => 'Requirements rejected. Driver\'s license copy is blurry.',
-            ]);
+        if ($op4 && $tri4) {
+            $app4 = Application::updateOrCreate(
+                ['reference_number' => 'APP-2026-00004'],
+                [
+                    'operator_id'      => $op4->id,
+                    'tricycle_id'      => $tri4->id,
+                    'application_type' => 'new',
+                    'current_step'     => 1,
+                    'status'           => 'rejected',
+                    'submitted_at'     => now()->subDays(6),
+                    'completed_at'     => null,
+                    'remarks'          => 'Requirements rejected. Driver\'s license copy is blurry.',
+                ]
+            );
 
             // Seed documents with 1 rejected doc
             $this->seedDocuments($app4, 'approved', $tmo);
@@ -399,6 +446,8 @@ class ApplicationsSeeder extends Seeder
                     'rejection_reason' => 'The uploaded Driver\'s License photo is blurry and illegible. Please upload a clear scan.',
                 ]);
             }
+
+            $this->resetStatusHistory($app4);
 
             ApplicationStatusHistory::create([
                 'application_id' => $app4->id,
@@ -432,7 +481,7 @@ class ApplicationsSeeder extends Seeder
                     'operator_id'      => $op5->id,
                     'tricycle_id'      => $tri5->id,
                     'application_type' => 'new',
-                    'current_step'     => 3,
+                    'current_step'     => 2,
                     'status'           => 'failed_inspection',
                     'submitted_at'     => now()->subDays(10),
                     'completed_at'     => null,
@@ -443,6 +492,8 @@ class ApplicationsSeeder extends Seeder
             Payment::where('application_id', $app5->id)->delete();
 
             $this->seedDocuments($app5, 'approved', $tmo);
+
+            $this->resetStatusHistory($app5);
 
             ApplicationStatusHistory::updateOrCreate(
                 ['application_id' => $app5->id, 'to_status' => 'pending_review'],
@@ -471,8 +522,8 @@ class ApplicationsSeeder extends Seeder
                 [
                     'changed_by'     => $tmo?->id,
                     'from_status'    => 'pending_inspection',
-                    'from_step'      => 3,
-                    'to_step'        => 3,
+                    'from_step'      => 2,
+                    'to_step'        => 2,
                     'notes'          => 'Physical inspection failed: safety equipment and brakes defects.',
                     'created_at'     => now()->subDays(5),
                 ]
@@ -493,22 +544,10 @@ class ApplicationsSeeder extends Seeder
                     'tires_suspension'  => true,
                     'emissions_test'    => true,
                     'license_toda_docs' => true,
-                    'inspector_notes'   => json_encode([
-                        'statuses' => [
-                            'headlights' => 'passed',
-                            'taillights' => 'passed',
-                            'signals'    => 'passed',
-                            'horn'       => 'passed',
-                            'mirrors'    => 'failed',
-                            'brakes'     => 'failed',
-                            'plate'      => 'passed',
-                            'sidecar'    => 'passed',
-                        ],
-                        'defects' => [
-                            'mirrors' => 'Missing right-side mirror.',
-                            'brakes'  => 'Front brake wire loose and unresponsive.',
-                        ]
-                    ]),
+                    // Physical inspection is a single overall decision — inspector_notes is
+                    // always one plain-text overall reason, never a per-item statuses/defects
+                    // structure.
+                    'inspector_notes'   => 'Physical inspection requires reinspection. Missing right-side mirror. Front brake wire loose and unresponsive.',
                 ]
             );
         }
@@ -518,13 +557,17 @@ class ApplicationsSeeder extends Seeder
         // -----------------------------------------------------------------
         $tri6 = Tricycle::where('plate_number', 'FFF-2468')->first();
         if ($op3 && $tri6) {
+            // The application belongs to this operator — keep the unit's ownership in step
+            // with it, so the Application Tracker and My Tricycles can never disagree about
+            // whose unit it is.
+            $tri6->update(['operator_id' => $op3->id]);
             $app6 = Application::updateOrCreate(
                 ['reference_number' => 'APP-2026-00006'],
                 [
                     'operator_id'      => $op3->id,
                     'tricycle_id'      => $tri6->id,
                     'application_type' => 'new',
-                    'current_step'     => 5,
+                    'current_step'     => 4,
                     'status'           => 'awaiting_tmo_confirmation',
                     'sticker_number'   => 'STK-2026-0512',
                     'submitted_at'     => now()->subDays(12),
@@ -534,6 +577,34 @@ class ApplicationsSeeder extends Seeder
             );
 
             $this->seedDocuments($app6, 'approved', $tmo);
+
+            // Demonstrates the resubmission scenario: an earlier attempt at this same
+            // requirement was rejected, then the operator uploaded a corrected copy — a real
+            // second ApplicationDocument row, exactly like RegistrationController/MTOPController's
+            // resubmit flow (::create(), never overwriting the old row). The requirement's
+            // current status must reflect the newer row, not this obsolete rejected one.
+            // Kept exactly once across re-runs — this second ApplicationDocument row is
+            // itself part of the demo fixture, not something to append on every seed.
+            \App\Models\ApplicationDocument::where('application_id', $app6->id)
+                ->where('file_name', 'barangay-clearance-v1-blurry.pdf')
+                ->delete();
+
+            \App\Models\ApplicationDocument::create([
+                'application_id'    => $app6->id,
+                'document_type'     => 'barangay_clearance',
+                'file_name'         => 'barangay-clearance-v1-blurry.pdf',
+                'file_path'         => 'documents/' . $app6->reference_number . '/barangay-clearance-v1.pdf',
+                'file_size_kb'      => 210,
+                'mime_type'         => 'application/pdf',
+                'review_status'     => 'rejected',
+                'reviewed_by'       => $tmo?->id,
+                'reviewed_at'       => now()->subDays(11),
+                'rejection_reason'  => 'Scanned copy is blurry and the barangay seal is not legible.',
+                'created_at'        => now()->subDays(11),
+                'updated_at'        => now()->subDays(11),
+            ]);
+
+            $this->resetStatusHistory($app6);
 
             ApplicationStatusHistory::create([
                 'application_id' => $app6->id,
@@ -559,30 +630,20 @@ class ApplicationsSeeder extends Seeder
                 'application_id' => $app6->id,
                 'changed_by'     => $tmo?->id,
                 'from_status'    => 'pending_inspection',
-                'to_status'      => 'pending_payment',
-                'from_step'      => 3,
-                'to_step'        => 4,
-                'notes'          => 'Tricycle passed physical roadworthiness inspection. Payment Ticket issued.',
+                'to_status'      => 'pending_bplo_release',
+                'from_step'      => 2,
+                'to_step'        => 3,
+                'notes'          => "Physical roadworthiness inspection passed — driver instructed to pay at the Municipal Treasurer's Office, then proceed to BPLO for sticker/plate release.",
                 'created_at'     => now()->subDays(7),
             ]);
             ApplicationStatusHistory::create([
                 'application_id' => $app6->id,
                 'changed_by'     => $bplo?->id,
-                'from_status'    => 'pending_payment',
-                'to_status'      => 'payment_verified',
-                'from_step'      => 4,
-                'to_step'        => 5,
-                'notes'          => 'Municipal Cashier Official Receipt verified by BPLO.',
-                'created_at'     => now()->subDays(4),
-            ]);
-            ApplicationStatusHistory::create([
-                'application_id' => $app6->id,
-                'changed_by'     => $bplo?->id,
-                'from_status'    => 'payment_verified',
+                'from_status'    => 'pending_bplo_release',
                 'to_status'      => 'awaiting_tmo_confirmation',
-                'from_step'      => 5,
-                'to_step'        => 5,
-                'notes'          => 'Franchise sticker STK-2026-0512 released by BPLO. Driver instructed to return to TMO for GPS configuration.',
+                'from_step'      => 3,
+                'to_step'        => 4,
+                'notes'          => 'Franchise Number STK-2026-0512 released by BPLO. Driver instructed to return to TMO for GPS configuration.',
                 'created_at'     => now()->subDays(2),
             ]);
 
@@ -605,20 +666,7 @@ class ApplicationsSeeder extends Seeder
                 ]
             );
 
-            Payment::updateOrCreate(
-                ['application_id' => $app6->id],
-                [
-                    'processed_by'            => $bplo?->id ?? $admin?->id,
-                    'official_receipt_number' => 'OR-2026-000512',
-                    'amount'                  => 750.00,
-                    'payment_method'          => 'cash',
-                    'payment_date'            => now()->subDays(4)->toDateString(),
-                    'payment_time'            => '14:30:00',
-                    'is_verified'             => true,
-                    'verified_at'             => now()->subDays(4),
-                    'notes'                   => 'Municipal Cashier Official Receipt verified by BPLO.',
-                ]
-            );
+            // No Payment row — see APPLICATION 1's note above.
 
             if ($blueScheme && $bplo) {
                 FranchiseScheme::updateOrCreate(
@@ -626,6 +674,7 @@ class ApplicationsSeeder extends Seeder
                     [
                         'application_id'         => $app6->id,
                         'franchise_number'       => $tri6->coding_scheme_number ?: '0512',
+                        'sticker_number'         => $app6->sticker_number,
                         'color_coding_scheme_id' => $blueScheme->id,
                         'issued_by'              => $bplo->id,
                         'issue_date'             => now()->subDays(2)->toDateString(),
@@ -641,20 +690,34 @@ class ApplicationsSeeder extends Seeder
         // APPLICATION 7: Pedro Ramos — PENDING REVIEW (fresh submission, second unit)
         // -----------------------------------------------------------------
         $tri7 = Tricycle::where('plate_number', 'GGG-1357')->first();
-        if ($op1 && $tri7 && ! Application::where('reference_number', 'APP-2026-00007')->exists()) {
-            $app7 = Application::create([
-                'reference_number' => 'APP-2026-00007',
-                'operator_id'      => $op1->id,
-                'tricycle_id'      => $tri7->id,
-                'application_type' => 'new',
-                'current_step'     => 1,
-                'status'           => 'pending_review',
-                'submitted_at'     => now()->subDays(2),
-                'completed_at'     => null,
-                'remarks'          => null,
-            ]);
+        // Repairs ownership even when the application itself already exists — a re-run of
+        // TricyclesSeeder must not be able to leave the unit on a different operator than
+        // the applicant whose tracker shows it.
+        if ($op1 && $tri7 && $tri7->operator_id !== $op1->id) {
+            $tri7->update(['operator_id' => $op1->id]);
+        }
+        // The demo driver's ONE Document Review (requirements) stage application — this
+        // block is the demo fixture for that stage, so a re-run always resets it to
+        // pending_review (documents back to pending, trail rebuilt) instead of skipping
+        // via an exists() guard and leaving a UI-advanced duplicate inspection-stage entry.
+        if ($op1 && $tri7) {
+            $app7 = Application::updateOrCreate(
+                ['reference_number' => 'APP-2026-00007'],
+                [
+                    'operator_id'      => $op1->id,
+                    'tricycle_id'      => $tri7->id,
+                    'application_type' => 'new',
+                    'current_step'     => 1,
+                    'status'           => 'pending_review',
+                    'submitted_at'     => now()->subDays(2),
+                    'completed_at'     => null,
+                    'remarks'          => null,
+                ]
+            );
 
             $this->seedDocuments($app7, 'pending', null);
+
+            $this->resetStatusHistory($app7);
 
             ApplicationStatusHistory::create([
                 'application_id' => $app7->id,
@@ -672,6 +735,9 @@ class ApplicationsSeeder extends Seeder
         // APPLICATION 8: Ricardo Santos — PENDING REVIEW (fresh submission, second unit)
         // -----------------------------------------------------------------
         $tri8 = Tricycle::where('plate_number', 'HHH-9876')->first();
+        if ($op5 && $tri8 && $tri8->operator_id !== $op5->id) {
+            $tri8->update(['operator_id' => $op5->id]);
+        }
         if ($op5 && $tri8 && ! Application::where('reference_number', 'APP-2026-00008')->exists()) {
             $app8 = Application::create([
                 'reference_number' => 'APP-2026-00008',
@@ -704,13 +770,14 @@ class ApplicationsSeeder extends Seeder
         // -----------------------------------------------------------------
         $tri9 = Tricycle::where('plate_number', 'JJJ-5432')->first();
         if ($op2 && $tri9) {
+            $tri9->update(['operator_id' => $op2->id]);
             $app9 = Application::updateOrCreate(
                 ['reference_number' => 'APP-2026-00009'],
                 [
                     'operator_id'      => $op2->id,
                     'tricycle_id'      => $tri9->id,
                     'application_type' => 'new',
-                    'current_step'     => 3,
+                    'current_step'     => 2,
                     'status'           => 'pending_inspection',
                     'submitted_at'     => now()->subDays(3),
                     'completed_at'     => null,
@@ -722,6 +789,8 @@ class ApplicationsSeeder extends Seeder
             Inspection::where('application_id', $app9->id)->delete();
 
             $this->seedDocuments($app9, 'approved', $tmo);
+
+            $this->resetStatusHistory($app9);
 
             ApplicationStatusHistory::updateOrCreate(
                 ['application_id' => $app9->id, 'to_status' => 'pending_review'],
@@ -777,16 +846,6 @@ class ApplicationsSeeder extends Seeder
                 4,
                 2,
                 [
-                    'headlights' => 'passed',
-                    'taillights' => 'failed',
-                    'signals'    => 'passed',
-                    'horn'       => 'passed',
-                    'mirrors'    => 'passed',
-                    'brakes'     => 'passed',
-                    'plate'      => 'failed',
-                    'sidecar'    => 'passed',
-                ],
-                [
                     'taillights' => 'Brake light not responding upon actuation.',
                     'plate'      => 'Plate number loose or hanging.',
                 ],
@@ -815,16 +874,6 @@ class ApplicationsSeeder extends Seeder
                 7,
                 5,
                 3,
-                [
-                    'headlights' => 'passed',
-                    'taillights' => 'passed',
-                    'signals'    => 'failed',
-                    'horn'       => 'failed',
-                    'mirrors'    => 'passed',
-                    'brakes'     => 'passed',
-                    'plate'      => 'passed',
-                    'sidecar'    => 'passed',
-                ],
                 [
                     'horn'    => 'Weak or muffled sound from warning horn.',
                     'signals' => 'Left flasher not blinking on front or rear.',
@@ -863,16 +912,6 @@ class ApplicationsSeeder extends Seeder
                 3,
                 1,
                 [
-                    'headlights' => 'passed',
-                    'taillights' => 'passed',
-                    'signals'    => 'passed',
-                    'horn'       => 'passed',
-                    'mirrors'    => 'failed',
-                    'brakes'     => 'passed',
-                    'plate'      => 'passed',
-                    'sidecar'    => 'failed',
-                ],
-                [
                     'sidecar' => 'Loose passenger canopy/roof structure.',
                     'mirrors' => 'Cracked/shattered rearview mirror glass.',
                 ],
@@ -901,16 +940,6 @@ class ApplicationsSeeder extends Seeder
                 8,
                 5,
                 2,
-                [
-                    'headlights' => 'failed',
-                    'taillights' => 'passed',
-                    'signals'    => 'passed',
-                    'horn'       => 'passed',
-                    'mirrors'    => 'passed',
-                    'brakes'     => 'failed',
-                    'plate'      => 'passed',
-                    'sidecar'    => 'passed',
-                ],
                 [
                     'headlights' => 'Busted headlight bulb on low beam.',
                     'brakes'     => 'Excessively loose drive chain and weak brake tension.',
@@ -996,19 +1025,18 @@ class ApplicationsSeeder extends Seeder
         }
 
         // -----------------------------------------------------------------
-        // BPLO RELEASING QUEUE APPLICATIONS (status = 'payment_verified')
-        // Verified by BPLO, now awaiting body/plate number and sticker releasing
+        // BPLO RELEASING QUEUE APPLICATIONS (status = 'pending_bplo_release')
+        // Cleared physical inspection; now awaiting body/plate number and sticker releasing
         // -----------------------------------------------------------------
 
         // APPLICATION 25: Elena Garcia [TODA Bucana]
         if ($opElena && $tri25) {
             $tri25->update(['operator_id' => $opElena->id]);
-            $this->seedPaymentVerifiedApp(
+            $this->seedPendingBploReleaseApp(
                 'APP-2026-00025',
                 $opElena,
                 $tri25,
                 'new',
-                'OR-2026-081294',
                 5,
                 1,
                 $tmo,
@@ -1035,12 +1063,11 @@ class ApplicationsSeeder extends Seeder
             ]
         );
         if ($opBen && $tri26) {
-            $this->seedPaymentVerifiedApp(
+            $this->seedPendingBploReleaseApp(
                 'APP-2026-00026',
                 $opBen,
                 $tri26,
                 'renewal',
-                'OR-2026-081305',
                 6,
                 3,
                 $tmo,
@@ -1067,12 +1094,11 @@ class ApplicationsSeeder extends Seeder
             ]
         );
         if ($opCarla && $tri27) {
-            $this->seedPaymentVerifiedApp(
+            $this->seedPendingBploReleaseApp(
                 'APP-2026-00027',
                 $opCarla,
                 $tri27,
                 'new',
-                'OR-2026-081318',
                 4,
                 5,
                 $tmo,
@@ -1099,12 +1125,11 @@ class ApplicationsSeeder extends Seeder
             ]
         );
         if ($opDante && $tri28) {
-            $this->seedPaymentVerifiedApp(
+            $this->seedPendingBploReleaseApp(
                 'APP-2026-00028',
                 $opDante,
                 $tri28,
                 'renewal',
-                'OR-2026-081340',
                 7,
                 8,
                 $tmo,
@@ -1131,12 +1156,11 @@ class ApplicationsSeeder extends Seeder
             ]
         );
         if ($op2 && $tri29) {
-            $this->seedPaymentVerifiedApp(
+            $this->seedPendingBploReleaseApp(
                 'APP-2026-00029',
                 $op2,
                 $tri29,
                 'new',
-                'OR-2026-081366',
                 8,
                 16,
                 $tmo,
@@ -1163,12 +1187,11 @@ class ApplicationsSeeder extends Seeder
             ]
         );
         if ($op1 && $tri30) {
-            $this->seedPaymentVerifiedApp(
+            $this->seedPendingBploReleaseApp(
                 'APP-2026-00030',
                 $op1,
                 $tri30,
                 'renewal',
-                'OR-2026-081382',
                 9,
                 24,
                 $tmo,
@@ -1176,12 +1199,144 @@ class ApplicationsSeeder extends Seeder
             );
         }
 
+        // -----------------------------------------------------------------
+        // APPLICATION 50: SEPARATE-DRIVER REGISTRATION DEMO — completed + ACTIVE franchise
+        // -----------------------------------------------------------------
+        // The mobile Driver Registration flow verifies the ACTUAL tricycle driver of a
+        // franchise, never automatically the owner. This is the code-seeded end-to-end
+        // demo of that path: a completed application whose driver is a DIFFERENT person
+        // than the owner (owner_is_driver = 0 + an application_drivers row), carrying an
+        // ACTIVE, unexpired, UNCLAIMED franchise — so all three registration steps can be
+        // run in the driver app:
+        //   Step 1  Franchise '0777' + driver's full name 'Isko Mercado' + DOB 1996-03-08
+        //   Step 2  Isko's existing details shown read-only (never re-typed, never a
+        //           second personal-information record)
+        //   Step 3  password only — creates Isko's own account and leaves the OWNER's
+        //           login (owner.regdemo@trivora.ph) completely untouched.
+        // Unlike APP-2026-00001 / Nemesio Ramos (franchise '0142' is already claimed by a
+        // registered driver account -> 409 ACCOUNT_ALREADY_EXISTS), this block never
+        // creates a Driver row, so franchise '0777' stays registerable across re-seeds.
+        $userRegOwner = User::firstOrCreate(
+            ['email' => 'owner.regdemo@trivora.ph'],
+            [
+                'name'      => 'Rolando Mercado',
+                'password'  => \Illuminate\Support\Facades\Hash::make('Driver@123'),
+                'role'      => 'tricycle_driver',
+                'is_active' => true,
+            ]
+        );
+        $opRegOwner = Operator::firstOrCreate(
+            ['license_number' => 'N01-87-556677'],
+            [
+                'user_id'                  => $userRegOwner->id,
+                'toda_id'                  => $todaBucana?->id,
+                'first_name'               => 'Rolando',
+                'middle_name'              => 'Diaz',
+                'last_name'                => 'Mercado',
+                'contact_number'           => '09175550007',
+                'address'                  => '12 Sultan St., Poblacion, Nasugbu',
+                'barangay'                 => 'Poblacion',
+                'date_of_birth'            => '1987-06-15',
+                'license_number'           => 'N01-87-556677',
+                'license_expiry_date'      => now()->addYears(3)->toDateString(),
+                'license_restriction_code' => '1,2',
+            ]
+        );
+        if (! $opRegOwner->user_id) {
+            $opRegOwner->update(['user_id' => $userRegOwner->id]);
+        }
+
+        $triRegDemo = Tricycle::updateOrCreate(
+            ['plate_number' => 'REG-7788'],
+            [
+                'operator_id'          => $opRegOwner->id,
+                'toda_zone_id'         => $todaBucana?->id,
+                'coding_scheme_number' => '0777',
+                'engine_number'        => 'ENG-REG-7788',
+                'chassis_number'       => 'CHS-REG-7788',
+                'or_number'            => 'OR-2026-07778',
+                'cr_number'            => 'CR-2026-07778',
+                'make'                 => 'Honda',
+                'model'                => 'TMX 125',
+                'year_model'           => 2023,
+                'body_color'           => 'Black/Red',
+                'body_type'            => 'Standard',
+                'status'               => 'active',
+                'tracking_capability'  => 'mobile_only',
+                'active_tracking_mode' => 'mobile_app',
+            ]
+        );
+
+        $appRegDemo = Application::updateOrCreate(
+            ['reference_number' => 'APP-2026-00050'],
+            [
+                'operator_id'      => $opRegOwner->id,
+                'tricycle_id'      => $triRegDemo->id,
+                'owner_is_driver'  => false,
+                'application_type' => 'new',
+                'current_step'     => 5,
+                'status'           => 'completed',
+                'sticker_number'   => 'STK-2026-7788',
+                'submitted_at'     => now()->subDays(30),
+                'completed_at'     => now()->subDays(10),
+                'remarks'          => 'All requirements complete. Franchise issued; driver is a separate person from the owner.',
+            ]
+        );
+
+        // The ACTUAL driver of this franchise — the person Step 1 verifies and whose
+        // details Step 2 shows read-only. Deliberately NOT a users/drivers record until
+        // the mobile flow is completed: this person is franchise-application data only.
+        ApplicationDriver::updateOrCreate(
+            ['application_id' => $appRegDemo->id],
+            [
+                'first_name'     => 'Isko',
+                'last_name'      => 'Mercado',
+                'date_of_birth'  => '1996-03-08',
+                'contact_number' => '09175550008',
+                'barangay'       => 'Poblacion',
+            ]
+        );
+
+        if ($redScheme && $bplo) {
+            FranchiseScheme::updateOrCreate(
+                ['tricycle_id' => $triRegDemo->id],
+                [
+                    'application_id'         => $appRegDemo->id,
+                    'franchise_number'       => '0777',
+                    'sticker_number'         => $appRegDemo->sticker_number,
+                    'color_coding_scheme_id' => $redScheme->id,
+                    'issued_by'              => $bplo->id,
+                    'issue_date'             => now()->subDays(10)->toDateString(),
+                    'expiry_date'            => now()->addYears(3)->toDateString(),
+                    'is_active'              => true,
+                    'notes'                  => 'Registration demo permit: completed + active + unclaimed, separate tricycle driver.',
+                ]
+            );
+
+            $triRegDemo->update(['status' => 'active']);
+        }
+
+        $this->seedDocuments($appRegDemo, 'approved', $tmo);
+        $this->seedStatusHistory($appRegDemo, $userRegOwner, $tmo, $bplo, $admin);
+
         $this->command->info('✔ Applications seeded (30 applications across all workflow stages including active physical inspection, releasing, and final confirmation queues).');
     }
 
     // -------------------------------------------------------------------------
     // Helpers
     // -------------------------------------------------------------------------
+
+    /**
+     * Rebuild an application's append-only status-history trail before seeding the
+     * canonical rows. These helpers are the demo fixture for their application: stale
+     * rows from earlier runs or manual UI testing (legacy payment-step statuses, or a
+     * stray transition contradicting the current status) must never survive to make the
+     * Application Tracker's status-history-derived dates disagree with the real status.
+     */
+    private function resetStatusHistory(Application $app): void
+    {
+        ApplicationStatusHistory::where('application_id', $app->id)->delete();
+    }
 
     private function seedPendingInspectionApp(
         string $refNumber,
@@ -1198,7 +1353,7 @@ class ApplicationsSeeder extends Seeder
                 'operator_id'      => $operator->id,
                 'tricycle_id'      => $tricycle->id,
                 'application_type' => $appType,
-                'current_step'     => 3,
+                'current_step'     => 2,
                 'status'           => 'pending_inspection',
                 'submitted_at'     => now()->subDays($subDaysSubmitted),
                 'completed_at'     => null,
@@ -1210,6 +1365,8 @@ class ApplicationsSeeder extends Seeder
         Inspection::where('application_id', $app->id)->delete();
 
         $this->seedDocuments($app, 'approved', $tmo);
+
+        $this->resetStatusHistory($app);
 
         ApplicationStatusHistory::updateOrCreate(
             ['application_id' => $app->id, 'to_status' => 'pending_review'],
@@ -1246,7 +1403,6 @@ class ApplicationsSeeder extends Seeder
         int $subDaysSubmitted,
         int $subDaysApproved,
         int $subDaysFailed,
-        array $statuses,
         array $defects,
         ?User $tmo
     ): Application {
@@ -1256,7 +1412,7 @@ class ApplicationsSeeder extends Seeder
                 'operator_id'      => $operator->id,
                 'tricycle_id'      => $tricycle->id,
                 'application_type' => $appType,
-                'current_step'     => 3,
+                'current_step'     => 2,
                 'status'           => 'failed_inspection',
                 'submitted_at'     => now()->subDays($subDaysSubmitted),
                 'completed_at'     => null,
@@ -1268,6 +1424,8 @@ class ApplicationsSeeder extends Seeder
 
         $this->seedDocuments($app, 'approved', $tmo);
 
+        $this->resetStatusHistory($app);
+
         ApplicationStatusHistory::updateOrCreate(
             ['application_id' => $app->id, 'to_status' => 'pending_review'],
             [
@@ -1275,8 +1433,8 @@ class ApplicationsSeeder extends Seeder
                 'from_status' => null,
                 'from_step'   => null,
                 'to_step'     => 1,
-                'notes'          => 'Application submitted by operator.',
-                'created_at'     => now()->subDays($subDaysSubmitted),
+                'notes'       => 'Application submitted by operator.',
+                'created_at'  => now()->subDays($subDaysSubmitted),
             ]
         );
 
@@ -1297,8 +1455,8 @@ class ApplicationsSeeder extends Seeder
             [
                 'changed_by'  => $tmo?->id,
                 'from_status' => 'pending_inspection',
-                'from_step'   => 3,
-                'to_step'     => 3,
+                'from_step'   => 2,
+                'to_step'     => 2,
                 'notes'       => 'Physical inspection failed: safety defects detected.',
                 'created_at'  => now()->subDays($subDaysFailed),
             ]
@@ -1318,27 +1476,51 @@ class ApplicationsSeeder extends Seeder
                 'tires_suspension'  => true,
                 'emissions_test'    => true,
                 'license_toda_docs' => !isset($defects['plate']),
-                'inspector_notes'   => json_encode([
-                    'statuses' => $statuses,
-                    'defects'  => $defects,
-                ]),
+                // Physical inspection is a single overall decision — inspector_notes is always
+                // one plain-text overall reason, never a per-item statuses/defects structure.
+                'inspector_notes'   => 'Physical inspection requires reinspection. ' . implode(' ', array_filter($defects)),
             ]
         );
 
         return $app;
     }
 
-    private function seedDocuments(Application $app, string $reviewStatus, ?User $reviewer): void
+    /**
+     * Seeds the 9 mandatory items from the canonical franchise registration requirement list
+     * (App\Models\ApplicationDocument::CANONICAL_REQUIREMENTS) using the SAME document_type
+     * vocabulary the real registration workflow writes — never a separate fake structure. The 2
+     * conditional items (delivery_receipt, authorization_letter) are situational and left
+     * unsubmitted by default, same as a typical applicant who already has an OR/CR and owns
+     * their own unit.
+     *
+     * $statusOverrides lets a caller give individual requirements a different review_status than
+     * the batch default (e.g. a realistic mix of verified/pending/rejected on one application,
+     * rather than every document sharing one uniform status).
+     *
+     * A renewal application (App::application_type === 'renewal') additionally gets Prangkisa
+     * seeded, matching Operator\MTOPController::store()'s real renewal-only requirement.
+     */
+    private function seedDocuments(Application $app, string $reviewStatus, ?User $reviewer, array $statusOverrides = []): void
     {
         $types = [
+            'police_clearance',
+            'health_certificate',
+            'orcr_photocopy',
             'drivers_license',
-            'or_cr',
-            'proof_of_residence',
+            'barangay_clearance',
             'toda_clearance',
-            'photo_id',
+            'cedula',
+            'driver_id',
+            'tariff_list',
         ];
 
+        if ($app->application_type === 'renewal') {
+            $types[] = 'prangkisa';
+        }
+
         foreach ($types as $type) {
+            $status = $statusOverrides[$type] ?? $reviewStatus;
+
             ApplicationDocument::updateOrCreate(
                 [
                     'application_id' => $app->id,
@@ -1349,10 +1531,10 @@ class ApplicationsSeeder extends Seeder
                     'file_path'        => 'documents/' . $app->reference_number . '/' . Str::slug($type) . '.pdf',
                     'file_size_kb'     => rand(80, 500),
                     'mime_type'        => 'application/pdf',
-                    'review_status'    => $reviewStatus,
-                    'reviewed_by'      => $reviewStatus !== 'pending' ? $reviewer?->id : null,
-                    'reviewed_at'      => $reviewStatus !== 'pending' ? now()->subDays(rand(1, 5)) : null,
-                    'rejection_reason' => null,
+                    'review_status'    => $status,
+                    'reviewed_by'      => $status !== 'pending' ? $reviewer?->id : null,
+                    'reviewed_at'      => $status !== 'pending' ? now()->subDays(rand(1, 5)) : null,
+                    'rejection_reason' => $status === 'rejected' ? 'Document image is unclear or invalid; please resubmit a clearer copy.' : null,
                 ]
             );
         }
@@ -1365,6 +1547,12 @@ class ApplicationsSeeder extends Seeder
         ?User $bplo,
         ?User $admin
     ): void {
+        // Rebuild this application's audit trail from scratch: this application IS the demo
+        // fixture, so stale rows recorded by earlier runs or manual UI testing (e.g. statuses
+        // from the retired in-system payment workflow) must never survive to contradict the
+        // application's current status or the tracker's status-history-derived step dates.
+        ApplicationStatusHistory::where('application_id', $app->id)->delete();
+
         $histories = [
             [
                 'changed_by'  => $driver?->id,
@@ -1387,37 +1575,28 @@ class ApplicationsSeeder extends Seeder
             [
                 'changed_by'  => $tmo?->id,
                 'from_status' => 'pending_inspection',
-                'to_status'   => 'pending_payment',
-                'from_step'   => 3,
-                'to_step'     => 4,
-                'notes'       => 'Physical inspection passed. Municipal Payment Ticket issued.',
+                'to_status'   => 'pending_bplo_release',
+                'from_step'   => 2,
+                'to_step'     => 3,
+                'notes'       => "Physical inspection passed. Driver instructed to pay at the Municipal Treasurer's Office, then proceed to BPLO for sticker/plate release.",
                 'offset_days' => 25,
             ],
             [
                 'changed_by'  => $bplo?->id,
-                'from_status' => 'pending_payment',
-                'to_status'   => 'payment_verified',
-                'from_step'   => 4,
-                'to_step'     => 5,
-                'notes'       => 'Physical cashier Official Receipt verified by BPLO.',
-                'offset_days' => 15,
-            ],
-            [
-                'changed_by'  => $bplo?->id,
-                'from_status' => 'payment_verified',
+                'from_status' => 'pending_bplo_release',
                 'to_status'   => 'awaiting_tmo_confirmation',
-                'from_step'   => 5,
-                'to_step'     => 5,
-                'notes'       => 'Franchise sticker and coding plate released by BPLO. Endorsed to TMO for final confirmation.',
+                'from_step'   => 3,
+                'to_step'     => 4,
+                'notes'       => 'Franchise Number and coding plate released by BPLO. Endorsed to TMO for final confirmation.',
                 'offset_days' => 12,
             ],
             [
                 'changed_by'  => $tmo?->id,
                 'from_status' => 'awaiting_tmo_confirmation',
                 'to_status'   => 'completed',
-                'from_step'   => 5,
-                'to_step'     => 6,
-                'notes'       => 'Signed ticket verified by TMO. Mobile GPS configured and franchise permit activated.',
+                'from_step'   => 4,
+                'to_step'     => 5,
+                'notes'       => 'Physical roadworthiness and requirements verified by TMO. Mobile GPS configured and franchise permit activated.',
                 'offset_days' => 10,
             ],
         ];
@@ -1452,17 +1631,19 @@ class ApplicationsSeeder extends Seeder
                 'operator_id'      => $operator->id,
                 'tricycle_id'      => $tricycle->id,
                 'application_type' => $appType,
-                'current_step'     => 5,
+                'current_step'     => 4,
                 'status'           => 'awaiting_tmo_confirmation',
                 'tracking_method'  => null,
                 'iot_device_id'    => null,
                 'submitted_at'     => now()->subDays(12),
                 'completed_at'     => null,
-                'remarks'          => 'Coding scheme cleared by BPLO. Returned to TMO for tracking setup and activation.',
+                'remarks'          => 'Sticker Number cleared by BPLO. Returned to TMO for tracking setup and activation.',
             ]
         );
 
         $this->seedDocuments($app, 'approved', $tmo);
+
+        $this->resetStatusHistory($app);
 
         ApplicationStatusHistory::updateOrCreate(
             ['application_id' => $app->id, 'to_status' => 'pending_review'],
@@ -1489,13 +1670,13 @@ class ApplicationsSeeder extends Seeder
         );
 
         ApplicationStatusHistory::updateOrCreate(
-            ['application_id' => $app->id, 'to_status' => 'pending_payment'],
+            ['application_id' => $app->id, 'to_status' => 'pending_bplo_release'],
             [
                 'changed_by'  => $tmo?->id,
                 'from_status' => 'pending_inspection',
-                'from_step'   => 3,
-                'to_step'     => 4,
-                'notes'       => 'Tricycle passed physical roadworthiness inspection. Municipal Payment Ticket issued.',
+                'from_step'   => 2,
+                'to_step'     => 3,
+                'notes'       => "Tricycle passed physical roadworthiness inspection. Driver instructed to pay at the Municipal Treasurer's Office, then proceed to BPLO for sticker/plate release.",
                 'created_at'  => now()->subDays(7),
             ]
         );
@@ -1504,9 +1685,9 @@ class ApplicationsSeeder extends Seeder
             ['application_id' => $app->id, 'to_status' => 'awaiting_tmo_confirmation'],
             [
                 'changed_by'  => $bplo?->id,
-                'from_status' => 'pending_payment',
-                'from_step'   => 4,
-                'to_step'     => 5,
+                'from_status' => 'pending_bplo_release',
+                'from_step'   => 3,
+                'to_step'     => 4,
                 'notes'       => 'Coding plate verified by BPLO. Driver instructed to proceed to TMO for GPS configuration and final activation.',
                 'created_at'  => now()->subDays(2),
             ]
@@ -1532,6 +1713,16 @@ class ApplicationsSeeder extends Seeder
 
         $codingNumber = $tricycle->coding_scheme_number ?: '0001';
 
+        // Franchise Number (STK-YYYY-NNNN): BPLO release generates it once
+        // (BPLOController::showReleaseForm) and persists it to the application first, then
+        // copies that same serial onto the franchise scheme (release()). An already-issued
+        // serial is reused verbatim, so a re-run can never hand out a different number.
+        $franchiseNumber = $app->sticker_number
+            ?: 'STK-' . now()->format('Y') . '-' . str_pad($codingNumber, 4, '0', STR_PAD_LEFT);
+        if ($app->sticker_number !== $franchiseNumber) {
+            $app->update(['sticker_number' => $franchiseNumber]);
+        }
+
         if ($colorScheme && $bplo) {
             FranchiseScheme::updateOrCreate(
                 ['tricycle_id' => $tricycle->id],
@@ -1539,6 +1730,7 @@ class ApplicationsSeeder extends Seeder
                     'application_id'         => $app->id,
                     'color_coding_scheme_id' => $colorScheme->id,
                     'franchise_number'       => $codingNumber,
+                    'sticker_number'         => $franchiseNumber,
                     'issued_by'              => $bplo->id,
                     'issue_date'             => now()->subDays(2)->toDateString(),
                     'expiry_date'            => now()->addYears(3)->toDateString(),
@@ -1551,14 +1743,13 @@ class ApplicationsSeeder extends Seeder
         return $app;
     }
 
-    private function seedPaymentVerifiedApp(
+    private function seedPendingBploReleaseApp(
         string $refNumber,
         Operator $operator,
         Tricycle $tricycle,
         string $appType,
-        string $orNumber,
         int $subDaysSubmitted,
-        int $subHoursVerified,
+        int $subHoursReleased,
         ?User $tmo,
         ?User $bplo
     ): Application {
@@ -1568,13 +1759,13 @@ class ApplicationsSeeder extends Seeder
                 'operator_id'      => $operator->id,
                 'tricycle_id'      => $tricycle->id,
                 'application_type' => $appType,
-                'current_step'     => 5,
-                'status'           => 'payment_verified',
+                'current_step'     => 3,
+                'status'           => 'pending_bplo_release',
                 'submitted_at'     => now()->subDays($subDaysSubmitted),
                 'completed_at'     => null,
-                'remarks'          => 'Official Receipt verified by BPLO Cashier desk. Ready for plate and sticker releasing.',
+                'remarks'          => "Passed physical inspection. Driver instructed to pay at the Municipal Treasurer's Office, then proceed to BPLO for sticker/plate release.",
                 'created_at'       => now()->subDays($subDaysSubmitted),
-                'updated_at'       => now()->subHours($subHoursVerified),
+                'updated_at'       => now()->subHours($subHoursReleased),
             ]
         );
 
@@ -1601,20 +1792,9 @@ class ApplicationsSeeder extends Seeder
             ]
         );
 
-        Payment::updateOrCreate(
-            ['application_id' => $app->id],
-            [
-                'processed_by'            => $bplo?->id,
-                'official_receipt_number' => $orNumber,
-                'amount'                  => 750.00,
-                'payment_method'          => 'cash',
-                'payment_date'            => now()->subDays(1)->toDateString(),
-                'payment_time'            => '11:15:00',
-                'is_verified'             => true,
-                'verified_at'             => now()->subHours($subHoursVerified),
-                'notes'                   => 'Municipal Cashier Official Receipt inspected and verified by BPLO.',
-            ]
-        );
+        // No Payment row — see APPLICATION 1's note above.
+
+        $this->resetStatusHistory($app);
 
         ApplicationStatusHistory::updateOrCreate(
             ['application_id' => $app->id, 'to_status' => 'pending_review'],
@@ -1641,26 +1821,14 @@ class ApplicationsSeeder extends Seeder
         );
 
         ApplicationStatusHistory::updateOrCreate(
-            ['application_id' => $app->id, 'to_status' => 'pending_payment'],
+            ['application_id' => $app->id, 'to_status' => 'pending_bplo_release'],
             [
                 'changed_by'  => $tmo?->id,
                 'from_status' => 'pending_inspection',
-                'from_step'   => 3,
-                'to_step'     => 4,
-                'notes'       => 'Tricycle passed physical inspection. Order of Payment ticket generated.',
-                'created_at'  => now()->subDays(2),
-            ]
-        );
-
-        ApplicationStatusHistory::updateOrCreate(
-            ['application_id' => $app->id, 'to_status' => 'payment_verified'],
-            [
-                'changed_by'  => $bplo?->id,
-                'from_status' => 'pending_payment',
-                'from_step'   => 4,
-                'to_step'     => 5,
-                'notes'       => "Payment verified with Official Receipt {$orNumber}. Endorsed for sticker and body number release.",
-                'created_at'  => now()->subHours($subHoursVerified),
+                'from_step'   => 2,
+                'to_step'     => 3,
+                'notes'       => "Tricycle passed physical inspection. Driver instructed to pay at the Municipal Treasurer's Office, then proceed to BPLO for sticker/plate release.",
+                'created_at'  => now()->subHours($subHoursReleased),
             ]
         );
 
