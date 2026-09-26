@@ -1,0 +1,7 @@
+# Dev-only overlay for the Laravel API tunnel (merged on top of your personal ngrok config, which
+# holds the authtoken — never commit an authtoken here). Used by scripts/dev-api-tunnel.mjs.
+#
+# Expo's own tunnels (`npx expo start --tunnel`) run separate ngrok agents that take inspector
+# ports 4040, 4041, ... one per app. This tunnel's inspector is pinned well clear of them.
+version: "2"
+web_addr: localhost:4050

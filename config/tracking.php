@@ -9,7 +9,7 @@ return [
     |
     | How often a driver's phone / IoT device is expected to report its location,
     | in seconds. This is the project's fixed reporting cadence (see the GPS/IoT
-    | tracking plan): the driver app transmits on a fixed 15-second schedule while
+    | tracking plan): the driver app transmits on a fixed 5-second schedule while
     | tracking is active, with no movement/distance filter on the sending decision,
     | so a stationary unit reports just as often as a moving one.
     |
@@ -19,7 +19,7 @@ return [
     |
     */
 
-    'gps_interval_seconds' => 15,
+    'gps_interval_seconds' => 5,
 
     /*
     |--------------------------------------------------------------------------
@@ -47,12 +47,12 @@ return [
     | drives the Online/Offline status shown on the TMO Live Fleet Monitoring
     | map — a tighter window since that page is about real-time visibility,
     | not one-time setup verification. Applies only while drivers.is_online is
-    | true (an explicit Offline is shown immediately). 20s = the 15s reporting
+    | true (an explicit Offline is shown immediately). 10s = the 5s reporting
     | interval plus a 5s grace for one network hop.
     |
     */
 
-    'fleet_online_threshold_seconds' => 20,
+    'fleet_online_threshold_seconds' => 10,
 
     /*
     |--------------------------------------------------------------------------
