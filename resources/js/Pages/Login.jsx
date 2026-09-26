@@ -335,7 +335,7 @@ export default function Login() {
         const credentials = {
             tmo: { login_id: 'tmo.jdelacruz@trivora.gov.ph', password: 'TmoUser@123' },
             bplo: { login_id: 'bplo.areyes@trivora.gov.ph', password: 'BploUser@123' },
-            operator: { login_id: 'driver.pramos@trivora.ph', password: 'Driver@123' },
+            operator: { login_id: 'driver.test@trivora.test', password: 'TestDriver123!' },
         };
 
         if (credentials[role]) {
