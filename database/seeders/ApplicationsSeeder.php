@@ -59,10 +59,13 @@ class ApplicationsSeeder extends Seeder
                 'is_active' => true,
             ]
         );
-        $opBen = Operator::firstOrCreate(
-            ['contact_number' => '09175550003'],
-            [
+        $opBen = Operator::where('license_number', 'N01-84-112233')
+            ->orWhere('user_id', $userBen->id)
+            ->first();
+        if (! $opBen) {
+            $opBen = Operator::create([
                 'user_id'                  => $userBen->id,
+                'contact_number'           => '09175550003',
                 'first_name'               => 'Ben',
                 'middle_name'              => 'Santos',
                 'last_name'                => 'Cruz',
@@ -73,8 +76,8 @@ class ApplicationsSeeder extends Seeder
                 'license_expiry_date'      => '2028-04-12',
                 'license_restriction_code' => '1,2',
                 'toda_id'                  => $todaBrgy10?->id,
-            ]
-        );
+            ]);
+        }
         if (! $opBen->user_id) {
             $opBen->update(['user_id' => $userBen->id]);
         }
@@ -88,10 +91,13 @@ class ApplicationsSeeder extends Seeder
                 'is_active' => true,
             ]
         );
-        $opCarla = Operator::firstOrCreate(
-            ['contact_number' => '09175550004'],
-            [
+        $opCarla = Operator::where('license_number', 'N01-92-445566')
+            ->orWhere('user_id', $userCarla->id)
+            ->first();
+        if (! $opCarla) {
+            $opCarla = Operator::create([
                 'user_id'                  => $userCarla->id,
+                'contact_number'           => '09175550004',
                 'first_name'               => 'Carla',
                 'middle_name'              => 'Mae',
                 'last_name'                => 'Santos',
@@ -102,8 +108,8 @@ class ApplicationsSeeder extends Seeder
                 'license_expiry_date'      => '2027-09-18',
                 'license_restriction_code' => '1',
                 'toda_id'                  => $todaBrgy8?->id,
-            ]
-        );
+            ]);
+        }
         if (! $opCarla->user_id) {
             $opCarla->update(['user_id' => $userCarla->id]);
         }
@@ -117,10 +123,13 @@ class ApplicationsSeeder extends Seeder
                 'is_active' => true,
             ]
         );
-        $opDante = Operator::firstOrCreate(
-            ['contact_number' => '09175550005'],
-            [
+        $opDante = Operator::where('license_number', 'N01-80-778899')
+            ->orWhere('user_id', $userDante->id)
+            ->first();
+        if (! $opDante) {
+            $opDante = Operator::create([
                 'user_id'                  => $userDante->id,
+                'contact_number'           => '09175550005',
                 'first_name'               => 'Dante',
                 'middle_name'              => 'Reyes',
                 'last_name'                => 'Lopez',
@@ -131,8 +140,8 @@ class ApplicationsSeeder extends Seeder
                 'license_expiry_date'      => '2026-01-25',
                 'license_restriction_code' => '1,2',
                 'toda_id'                  => $todaBrgy4?->id,
-            ]
-        );
+            ]);
+        }
         if (! $opDante->user_id) {
             $opDante->update(['user_id' => $userDante->id]);
         }
@@ -146,10 +155,13 @@ class ApplicationsSeeder extends Seeder
                 'is_active' => true,
             ]
         );
-        $opElena = Operator::firstOrCreate(
-            ['contact_number' => '09175550006'],
-            [
+        $opElena = Operator::where('license_number', 'N01-89-332211')
+            ->orWhere('user_id', $userElena->id)
+            ->first();
+        if (! $opElena) {
+            $opElena = Operator::create([
                 'user_id'                  => $userElena->id,
+                'contact_number'           => '09175550006',
                 'first_name'               => 'Elena',
                 'middle_name'              => 'Torres',
                 'last_name'                => 'Garcia',
@@ -160,8 +172,8 @@ class ApplicationsSeeder extends Seeder
                 'license_expiry_date'      => '2028-11-30',
                 'license_restriction_code' => '1,2',
                 'toda_id'                  => $todaBucana?->id,
-            ]
-        );
+            ]);
+        }
         if (! $opElena->user_id) {
             $opElena->update(['user_id' => $userElena->id]);
         }
