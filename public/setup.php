@@ -82,6 +82,19 @@ try {
     $kernel->call('optimize:clear');
     echo "<pre>" . htmlspecialchars(\Illuminate\Support\Facades\Artisan::output() ?: 'Caches cleared.') . "</pre><br>";
 
+    // Optional Fresh Reset: Drop all existing tables before re-running base schema & migrations
+    if (isset($_GET['fresh']) && ($_GET['fresh'] === '1' || $_GET['fresh'] === 'true')) {
+        echo "<strong>Wiping database tables for a fresh migration...</strong><br>";
+        \Illuminate\Support\Facades\DB::statement('SET FOREIGN_KEY_CHECKS=0;');
+        $tables = \Illuminate\Support\Facades\DB::select('SHOW FULL TABLES WHERE Table_Type = "BASE TABLE"');
+        foreach ($tables as $table) {
+            $tableName = array_values((array)$table)[0];
+            \Illuminate\Support\Facades\DB::statement("DROP TABLE IF EXISTS `{$tableName}`;");
+        }
+        \Illuminate\Support\Facades\DB::statement('SET FOREIGN_KEY_CHECKS=1;');
+        echo "<span class='success'>✓ All existing tables cleanly dropped.</span><br><br>";
+    }
+
     // 6. Run Migrations (load base schema via PDO first if needed to bypass proc_open)
     echo "<strong>Step 6: Running database migrations...</strong><br>";
     if (!\Illuminate\Support\Facades\Schema::hasTable('migrations')) {
@@ -111,7 +124,7 @@ try {
         echo "<strong style='color:#0f766e;'>✓ Ready Logins on Live Website:</strong><br><br>";
         echo "• <strong>TMO:</strong> <code>tmo.jdelacruz@trivora.gov.ph</code> &mdash; Pass: <code>TmoUser@123</code><br>";
         echo "• <strong>BPLO:</strong> <code>bplo.areyes@trivora.gov.ph</code> &mdash; Pass: <code>BploUser@123</code><br>";
-        echo "• <strong>Driver:</strong> <code>driver.pramos@trivora.ph</code> &mdash; Pass: <code>Driver@123</code><br>";
+        echo "• <strong>Driver (App & Web):</strong> <code>09170001111</code> / <code>driver.test@trivora.test</code> &mdash; Pass: <code>TestDriver123!</code><br>";
         echo "</div>";
     } catch (\Throwable $se) {
         echo "<p class='warn'>⚠️ Seeder notice: " . htmlspecialchars($se->getMessage()) . "</p><br>";

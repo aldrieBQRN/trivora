@@ -20,6 +20,29 @@ chmod -R 777 /var/www/html/storage /var/www/html/bootstrap/cache
 php artisan config:clear || true
 php artisan cache:clear || true
 
+# Check if DB_FRESH is requested to wipe tables cleanly before migration
+if [ "$DB_FRESH" = "true" ] || [ "$DB_FRESH" = "1" ]; then
+    echo "⚠️ DB_FRESH enabled: dropping all tables for a clean slate..."
+    php -r "
+    require 'vendor/autoload.php';
+    \$app = require_once 'bootstrap/app.php';
+    \$kernel = \$app->make(Illuminate\Contracts\Console\Kernel::class);
+    \$kernel->bootstrap();
+    try {
+        \Illuminate\Support\Facades\DB::statement('SET FOREIGN_KEY_CHECKS=0;');
+        \$tables = \Illuminate\Support\Facades\DB::select('SHOW FULL TABLES WHERE Table_Type = \"BASE TABLE\"');
+        foreach (\$tables as \$table) {
+            \$tableName = array_values((array)\$table)[0];
+            \Illuminate\Support\Facades\DB::statement(\"DROP TABLE IF EXISTS \`\$tableName\`;\");
+        }
+        \Illuminate\Support\Facades\DB::statement('SET FOREIGN_KEY_CHECKS=1;');
+        echo 'Cleaned all tables.\n';
+    } catch (\Throwable \$e) {
+        echo 'Table wipe notice: ' . \$e->getMessage() . '\n';
+    }
+    " || true
+fi
+
 # Run base schema if migrations table does not exist yet in TiDB
 echo "🔄 Checking and initializing database schema on TiDB Cloud..."
 php -r "

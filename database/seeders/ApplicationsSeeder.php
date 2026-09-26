@@ -215,6 +215,14 @@ class ApplicationsSeeder extends Seeder
                 ->orWhereIn('to_status', ['pending_payment', 'payment_issue', 'payment_verified', 'paid']);
         })->delete();
 
+        // Remove any retired applications and orphan units from earlier demo versions
+        foreach (['APP-2026-00031', 'APP-2026-00032', 'APP-2026-00033', 'APP-2026-00034', 'APP-2026-00035'] as $retiredRef) {
+            Application::where('reference_number', $retiredRef)->delete();
+        }
+        foreach (['PLT-6001', 'PLT-6002', 'PLT-6003', 'PLT-6004', 'PLT-6005'] as $retiredPlate) {
+            Tricycle::where('plate_number', $retiredPlate)->whereDoesntHave('applications')->delete();
+        }
+
         // -----------------------------------------------------------------
         // APPLICATION 1: Pedro Ramos — COMPLETED (franchise issued)
         // -----------------------------------------------------------------
@@ -699,24 +707,17 @@ class ApplicationsSeeder extends Seeder
         }
 
         // -----------------------------------------------------------------
-        // APPLICATION 7: Pedro Ramos — PENDING REVIEW (fresh submission, second unit)
+        // APPLICATION 7: Elena Garcia — PENDING REVIEW (fresh submission)
         // -----------------------------------------------------------------
         $tri7 = Tricycle::where('plate_number', 'GGG-1357')->first();
-        // Repairs ownership even when the application itself already exists — a re-run of
-        // TricyclesSeeder must not be able to leave the unit on a different operator than
-        // the applicant whose tracker shows it.
-        if ($op1 && $tri7 && $tri7->operator_id !== $op1->id) {
-            $tri7->update(['operator_id' => $op1->id]);
+        if ($opElena && $tri7 && $tri7->operator_id !== $opElena->id) {
+            $tri7->update(['operator_id' => $opElena->id]);
         }
-        // The demo driver's ONE Document Review (requirements) stage application — this
-        // block is the demo fixture for that stage, so a re-run always resets it to
-        // pending_review (documents back to pending, trail rebuilt) instead of skipping
-        // via an exists() guard and leaving a UI-advanced duplicate inspection-stage entry.
-        if ($op1 && $tri7) {
+        if ($opElena && $tri7) {
             $app7 = Application::updateOrCreate(
                 ['reference_number' => 'APP-2026-00007'],
                 [
-                    'operator_id'      => $op1->id,
+                    'operator_id'      => $opElena->id,
                     'tricycle_id'      => $tri7->id,
                     'application_type' => 'new',
                     'current_step'     => 1,
@@ -733,7 +734,7 @@ class ApplicationsSeeder extends Seeder
 
             ApplicationStatusHistory::create([
                 'application_id' => $app7->id,
-                'changed_by'     => $op1->user_id,
+                'changed_by'     => $opElena->user_id,
                 'from_status'    => null,
                 'to_status'      => 'pending_review',
                 'from_step'      => null,
@@ -961,11 +962,11 @@ class ApplicationsSeeder extends Seeder
         }
 
         // -----------------------------------------------------------------
-        // APPLICATION 20: Pedro Ramos — PENDING INSPECTION (Scheduled) [TODA Brgy. 4]
+        // APPLICATION 20: Dante Lopez — PENDING INSPECTION (Scheduled) [TODA Brgy. 4]
         // -----------------------------------------------------------------
-        if ($op1 && $tri20) {
-            $tri20->update(['operator_id' => $op1->id]);
-            $this->seedPendingInspectionApp('APP-2026-00020', $op1, $tri20, 'new', 2, 0, $tmo);
+        if ($opDante && $tri20) {
+            $tri20->update(['operator_id' => $opDante->id]);
+            $this->seedPendingInspectionApp('APP-2026-00020', $opDante, $tri20, 'new', 2, 0, $tmo);
         }
 
         // -----------------------------------------------------------------
@@ -1180,11 +1181,11 @@ class ApplicationsSeeder extends Seeder
             );
         }
 
-        // APPLICATION 30: Pedro Ramos [TODA Bucana]
+        // APPLICATION 30: Carla Santos [TODA Bucana]
         $tri30 = Tricycle::updateOrCreate(
             ['plate_number' => 'PLT-2390'],
             [
-                'operator_id'   => $op1?->id,
+                'operator_id'   => $opCarla?->id,
                 'toda_zone_id'  => $todaBucana?->id,
                 'make'          => 'Suzuki',
                 'model'         => 'GD 110',
@@ -1198,10 +1199,10 @@ class ApplicationsSeeder extends Seeder
                 'status'        => 'unregistered',
             ]
         );
-        if ($op1 && $tri30) {
+        if ($opCarla && $tri30) {
             $this->seedPendingBploReleaseApp(
                 'APP-2026-00030',
-                $op1,
+                $opCarla,
                 $tri30,
                 'renewal',
                 9,

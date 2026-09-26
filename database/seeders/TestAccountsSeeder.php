@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\Application;
 use App\Models\ColorCodingScheme;
 use App\Models\Driver;
 use App\Models\FranchiseScheme;
@@ -159,6 +160,22 @@ class TestAccountsSeeder extends Seeder
             ]
         );
 
+        // Single completed Application for the primary demo driver (so the Application Tracker shows 1 active franchise)
+        $testApp = Application::updateOrCreate(
+            ['reference_number' => 'APP-2026-09999'],
+            [
+                'operator_id'      => $testOperator->id,
+                'tricycle_id'      => $testTricycle->id,
+                'application_type' => 'new',
+                'current_step'     => 5,
+                'status'           => 'completed',
+                'sticker_number'   => 'STK-2026-9999',
+                'submitted_at'     => now()->subMonths(2),
+                'completed_at'     => now()->subMonths(2),
+                'remarks'          => 'All requirements verified. Active franchise 9999 issued.',
+            ]
+        );
+
         // Explicitly create or update the single active FranchiseScheme for the primary Driver App login unit
         $blueScheme = ColorCodingScheme::where('name', 'Blue')->first() ?? ColorCodingScheme::first();
         $adminUser = User::where('email', 'admin@trivora.gov.ph')->first() ?? $driverTestUser;
@@ -166,9 +183,10 @@ class TestAccountsSeeder extends Seeder
         FranchiseScheme::updateOrCreate(
             ['tricycle_id' => $testTricycle->id],
             [
+                'application_id'         => $testApp->id,
                 'color_coding_scheme_id' => $blueScheme?->id,
                 'franchise_number'       => '9999',
-                'sticker_number'         => 'STK-' . now()->format('Y') . '-9999',
+                'sticker_number'         => 'STK-2026-9999',
                 'issued_by'              => $adminUser->id,
                 'issue_date'             => now()->subMonths(2)->toDateString(),
                 'expiry_date'            => now()->addYears(3)->toDateString(),
