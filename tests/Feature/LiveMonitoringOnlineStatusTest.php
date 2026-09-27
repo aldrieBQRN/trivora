@@ -204,6 +204,69 @@ class LiveMonitoringOnlineStatusTest extends TestCase
     }
 
     #[Test]
+    public function last_update_label_is_the_latest_stored_recorded_at_in_the_app_timezone_for_every_status(): void
+    {
+        // Clock frozen at 2026-09-28 10:00:00 (app timezone) in setUp.
+        $cases = [
+            'fresh'       => [5, true, '9:59:55 AM'],
+            'delayed'     => [30, true, '9:59:30 AM'],
+            'signal lost' => [61, true, '9:58:59 AM'],
+            'offline'     => [5, false, '9:59:55 AM'],
+        ];
+        foreach ($cases as $label => [$secondsAgo, $toggledOnline, $expected]) {
+            TricycleLocation::where('tricycle_id', $this->tricycle->id)->delete();
+            $this->driver->update(['is_online' => $toggledOnline]);
+            $this->ping($secondsAgo + 20); // an older record must never be the one shown
+            $this->ping($secondsAgo);
+
+            $unit = $this->unit();
+            $this->assertSame($expected, $unit['last_update_label'], "{$label}: label must be the latest recorded_at");
+            $this->assertSame(
+                now()->subSeconds($secondsAgo)->toIso8601String(),
+                $unit['recorded_at'],
+                "{$label}: label and recorded_at come from the same GPS record"
+            );
+        }
+    }
+
+    #[Test]
+    public function last_update_label_includes_the_date_when_the_latest_fix_is_not_from_today(): void
+    {
+        $this->ping(26 * 3600); // 2026-09-27 08:00:00
+        $this->assertSame('Sep 27, 8:00:00 AM', $this->unit()['last_update_label']);
+    }
+
+    #[Test]
+    public function each_unit_gets_the_label_of_its_own_latest_gps_record(): void
+    {
+        $other = Tricycle::create([
+            'operator_id' => $this->tricycle->operator_id, 'coding_scheme_number' => '0006',
+            'plate_number' => 'LIV-0006', 'engine_number' => 'ENG-LIV-006', 'chassis_number' => 'CHS-LIV-006',
+            'make' => 'Honda', 'model' => 'TMX', 'year_model' => 2021,
+            'body_color' => 'Red', 'body_type' => 'Standard',
+            'or_number' => 'OR-LIV-006', 'cr_number' => 'CR-LIV-006', 'status' => 'active',
+        ]);
+        $this->ping(5);
+        TricycleLocation::create([
+            'tricycle_id' => $other->id, 'latitude' => 14.07, 'longitude' => 120.63,
+            'speed_kmh' => 0, 'heading_deg' => 0, 'accuracy_m' => 5, 'source' => 'mobile_app',
+            'recorded_at' => now()->subSeconds(42),
+        ]);
+
+        $units = null;
+        $this->actingAs($this->tmoUser)->get(route('tmo.live'))->assertOk()
+            ->assertInertia(function ($page) use (&$units) {
+                $page->where('initialTricycles', function ($t) use (&$units) {
+                    $units = collect($t);
+                    return true;
+                });
+            });
+
+        $this->assertSame('9:59:55 AM', $units->firstWhere('plate', 'LIV-0005')['last_update_label']);
+        $this->assertSame('9:59:18 AM', $units->firstWhere('plate', 'LIV-0006')['last_update_label']);
+    }
+
+    #[Test]
     public function online_driver_with_no_gps_history_is_not_shown_as_online(): void
     {
         $this->assertNull($this->unit(), 'A unit with no GPS history is absent from Live Monitoring, never Online.');

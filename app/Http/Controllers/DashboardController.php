@@ -26,6 +26,20 @@ class DashboardController extends Controller
     use ExportsMunicipalExcelReports;
 
     /**
+     * Live Monitoring's single "Last update" format for a GPS record's recorded_at, in the app's
+     * configured timezone (config('app.timezone')) — "10:35:42 AM" for today, "Sep 26, 10:35:42 AM"
+     * for an older fix, so a stale unit never reads as if it reported today.
+     */
+    private static function formatGpsTimestamp(\Carbon\CarbonInterface $recordedAt): string
+    {
+        $local = $recordedAt->copy()->setTimezone(config('app.timezone'));
+
+        return $local->isSameDay(now(config('app.timezone')))
+            ? $local->format('g:i:s A')
+            : $local->format('M j, g:i:s A');
+    }
+
+    /**
      * Display the TMO map command center.
      */
     public function index()
@@ -145,6 +159,10 @@ class DashboardController extends Controller
                 'gps_freshness' => $driverToggledOnline ? $gpsFreshness : null,
                 'hasRealGPS'  => true,
                 'last_seen'   => $latestLoc->recorded_at ? $latestLoc->recorded_at->diffForHumans() : 'Never',
+                // The ONE display value for "Last update" in Live Monitoring (Units tab and map card
+                // both render this): the latest stored GPS record's own recorded_at, formatted once
+                // here in the app timezone — never the browser clock or a request-time "ago".
+                'last_update_label' => $latestLoc->recorded_at ? self::formatGpsTimestamp($latestLoc->recorded_at) : null,
                 'recorded_at' => $latestLoc->recorded_at ? $latestLoc->recorded_at->toIso8601String() : null,
             ];
         })->filter()->values()->toArray();

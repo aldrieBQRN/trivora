@@ -1043,25 +1043,10 @@ export default function PublicApply() {
             {/* ── SPLIT RIGHT: active step content ── */}
             <main className="pa-content">
                 {step < 5 && (
-                    <div className="pa-content-topbar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <Link href="/" className="pa-back-link" onClick={() => clearSavedDraft()}>Cancel &amp; Return Home</Link>
-                        {step > 1 && (
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    clearSavedDraft();
-                                    window.location.href = '/register-mtop';
-                                }}
-                                style={{
-                                    background: 'none', border: 'none', cursor: 'pointer',
-                                    fontFamily: "'DM Sans', sans-serif", fontSize: 11, fontWeight: 700,
-                                    color: '#8A96BC', textTransform: 'uppercase', letterSpacing: '.06em',
-                                    padding: '4px 8px', borderRadius: 6,
-                                }}
-                            >
-                                Reset &amp; Start Over
-                            </button>
-                        )}
+                    <div className="pa-content-topbar">
+                        <Link href="/" className="pa-back-link" onClick={() => clearSavedDraft()}>
+                            Cancel &amp; Return Home
+                        </Link>
                     </div>
                 )}
 

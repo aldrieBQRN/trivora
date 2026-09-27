@@ -379,9 +379,12 @@ export default function TricycleMap({
                                         </div>
 
                                         <div style={{ fontSize: '9.5px', fontWeight: 600, color: '#94A3B8', paddingTop: '4px', borderTop: '1px dashed #F1F5F9' }}>
+                                            {/* last_update_label: the same backend-formatted recorded_at the
+                                                Live Monitoring Units tab shows. Pages that don't send it
+                                                (Operator Live Tracking) keep their existing last_seen. */}
                                             {trike.last_seen === 'Never'
                                                 ? 'No GPS signal received yet'
-                                                : `Last update: ${trike.last_seen || 'just now'}`}
+                                                : `Last update: ${trike.last_update_label || trike.last_seen || 'just now'}`}
                                         </div>
                                     </div>
                                 </div>
