@@ -52,12 +52,28 @@ Route::get('/api/public/verify-plate', function (Request $request) {
         return response()->json(['found' => false, 'error' => 'No plate number provided.'], 400);
     }
 
-    // Try exact match first, then suffix match (e.g. "8812" matches "AAA-8812")
+    // Exact plate first. A partial entry (e.g. "8812" for "AAA-8812") is only accepted when it
+    // identifies exactly ONE unit — several matches are reported as ambiguous rather than showing
+    // an arbitrary unit's record. LIKE wildcards typed by the user are matched literally.
     $tricycle = \App\Models\Tricycle::with(['operator', 'franchiseScheme'])
         ->where('plate_number', $plate)
-        ->orWhere('plate_number', 'LIKE', "%-{$plate}")
-        ->orWhere('plate_number', 'LIKE', "{$plate}%")
         ->first();
+
+    if (!$tricycle) {
+        $like = addcslashes($plate, '%_\\');
+        $matches = \App\Models\Tricycle::with(['operator', 'franchiseScheme'])
+            ->where(function ($q) use ($like) {
+                $q->where('plate_number', 'LIKE', "%-{$like}")
+                  ->orWhere('plate_number', 'LIKE', "{$like}%");
+            })
+            ->limit(2)
+            ->get();
+
+        if ($matches->count() > 1) {
+            return response()->json(['found' => false, 'ambiguous' => true]);
+        }
+        $tricycle = $matches->first();
+    }
 
     if (!$tricycle) {
         return response()->json(['found' => false]);
@@ -65,12 +81,16 @@ Route::get('/api/public/verify-plate', function (Request $request) {
 
     $fs = $tricycle->franchiseScheme;
 
-    // Use tricycle.status as the primary source of truth
-    $franchiseStatus = match(true) {
-        $tricycle->status === 'active'       => 'Active',
-        $tricycle->status === 'unregistered' => 'Unregistered',
-        $fs && $fs->expiry_date && $fs->expiry_date->isPast() => 'Expired',
-        default                              => 'Pending',
+    // Franchise standing, most serious first. The franchise record decides revoked/suspended and
+    // expiry (the same expiry_date the Driver Portal uses to mark a franchise EXPIRED), so an
+    // active tricycle row can never be reported as a valid franchise once its permit has lapsed.
+    $franchiseStatus = match (true) {
+        $fs && $fs->isRevoked()                                  => 'Revoked',
+        ($fs && $fs->isSuspended()) || $tricycle->status === 'suspended' => 'Suspended',
+        $fs && $fs->expiry_date && $fs->expiry_date->isPast()    => 'Expired',
+        $tricycle->status === 'active'                           => 'Active',
+        $tricycle->status === 'unregistered'                     => 'Unregistered',
+        default                                                  => 'Pending',
     };
 
     // Current application status for this unit, in plain public language — never the
@@ -94,7 +114,9 @@ Route::get('/api/public/verify-plate', function (Request $request) {
             in_array($app->status, ['payment_verified', 'paid', 'pending_bplo_release'], true)
                 => 'In Process — Pending Release',
             $app->status === 'awaiting_tmo_confirmation' => 'In Process — Awaiting TMO Confirmation',
-            in_array($app->status, ['completed', 'scheme_issued'], true) => 'Approved',
+            // A completed application behind an expired permit is not a current approval.
+            in_array($app->status, ['completed', 'scheme_issued'], true)
+                => $franchiseStatus === 'Expired' ? 'Renewal Required' : 'Approved',
             $app->status === 'cancelled'      => 'Cancelled',
             default                           => 'In Process',
         };
@@ -108,7 +130,10 @@ Route::get('/api/public/verify-plate', function (Request $request) {
         'status'         => $franchiseStatus,
         'application_status' => $applicationStatus,
         'expiry'         => $fs && $fs->expiry_date ? $fs->expiry_date->format('M d, Y') : null,
-        'coding_scheme_number' => $tricycle->coding_scheme_number ?: null,
+        // Issued by BPLO on the franchise record — never a fallback value (the tricycle's
+        // coding_scheme_number accessor falls back to the franchise number, which is not a sticker).
+        'franchise_number' => $fs?->franchise_number ?: null,
+        'sticker_number'   => $fs?->sticker_number ?: null,
     ]);
 })->name('public.verify-plate');
 

@@ -482,6 +482,17 @@ export default function Welcome() {
             const res = await fetch(`/api/public/verify-plate?plate=${encodeURIComponent(plateQuery.trim())}`);
             const data = await res.json();
 
+            if (!data.found && data.ambiguous) {
+                Swal.fire({
+                    title: 'Enter the Full Plate Number',
+                    text: `More than one unit matches "${plateQuery.trim().toUpperCase()}". Please enter the complete plate number.`,
+                    icon: 'info',
+                    confirmButtonColor: '#1C2340',
+                    customClass: { title: 'font-jakarta', popup: 'font-inter' }
+                });
+                return;
+            }
+
             if (!data.found) {
                 Swal.fire({
                     title: 'Record Not Found',
@@ -499,7 +510,9 @@ export default function Welcome() {
             const isActive = data.status === 'Active';
             const isExpired = data.status === 'Expired';
             const isUnregistered = data.status === 'Unregistered';
-            const hasIssue = /Rejected|Reinspection|Cancelled/i.test(appStatus);
+            const isSuspended = data.status === 'Suspended';
+            const isRevoked = data.status === 'Revoked';
+            const hasIssue = isSuspended || isRevoked || /Rejected|Reinspection|Cancelled/i.test(appStatus);
             const inProcess = /In Process/i.test(appStatus);
 
             const statusColor = isActive ? '#059669'
@@ -515,6 +528,8 @@ export default function Welcome() {
                              : 'info';
 
             const statusLabel = isActive ? '✓ ACTIVE — Valid MTOP Franchise'
+                              : isRevoked ? '⊗ REVOKED — Franchise Revoked'
+                              : isSuspended ? '⊗ SUSPENDED — Not Authorized to Operate'
                               : isExpired ? '⚠ EXPIRED — Renewal Required'
                               : appStatus ? ((hasIssue ? '⊗ ' : '○ ') + appStatus)
                               : isUnregistered ? '○ UNREGISTERED — No Permit Issued'
@@ -528,16 +543,21 @@ export default function Welcome() {
                           : (isExpired || hasIssue) ? '#FEF2F2'
                           : '#EEF2FF';
 
+            // Stored values (plate, operator, make/model — some entered on the public form) are
+            // escaped before they go into the popup's HTML.
+            const esc = (v) => String(v ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
             Swal.fire({
                 title: statusTitle,
                 html: `
                     <div style="text-align:left;padding:12px 10px;background:${panelBg};border-radius:10px;margin-top:8px;font-size:13px;line-height:1.8">
-                        <b>Plate No:</b> ${data.plate}<br/>
-                        ${data.coding_scheme_number ? `<b>Sticker Number:</b> ${data.coding_scheme_number}<br/>` : ''}
-                        <b>Operator:</b> ${data.operator}<br/>
-                        <b>Unit:</b> ${data.make_model}<br/>
-                        ${data.expiry ? `<b>Franchise Expiry:</b> ${data.expiry}<br/>` : ''}
-                        ${appStatus ? `<b>Application Status:</b> ${appStatus}<br/>` : ''}
+                        <b>Plate No:</b> ${esc(data.plate)}<br/>
+                        ${data.franchise_number ? `<b>Franchise Number:</b> ${esc(data.franchise_number)}<br/>` : ''}
+                        ${data.sticker_number ? `<b>Sticker Number:</b> ${esc(data.sticker_number)}<br/>` : ''}
+                        <b>Operator:</b> ${esc(data.operator)}<br/>
+                        <b>Unit:</b> ${esc(data.make_model)}<br/>
+                        ${data.expiry ? `<b>Franchise Expiry:</b> ${esc(data.expiry)}<br/>` : ''}
+                        ${appStatus ? `<b>Application Status:</b> ${esc(appStatus)}<br/>` : ''}
                         <br/><span style="color:${statusColor};font-weight:800;font-size:13px">${statusLabel}</span>
                     </div>
                 `,
