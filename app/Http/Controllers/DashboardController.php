@@ -26,17 +26,39 @@ class DashboardController extends Controller
     use ExportsMunicipalExcelReports;
 
     /**
-     * Live Monitoring's single "Last update" format for a GPS record's recorded_at, in the app's
-     * configured timezone (config('app.timezone')) — "10:35:42 AM" for today, "Sep 26, 10:35:42 AM"
-     * for an older fix, so a stale unit never reads as if it reported today.
+     * Live Monitoring's single relative "Last update" label for a GPS record's real recorded_at,
+     * measured against the server clock at request time and bucketed on the app's configured
+     * timezone (config('app.timezone')): "5 secs ago", "1 min ago", "3 hrs ago", "Yesterday",
+     * "4 days ago", then the date. The Units tab and the map card both render this one value, and
+     * the Live Monitoring background refresh re-requests it every 3 seconds, so it advances by itself.
      */
     private static function formatGpsTimestamp(\Carbon\CarbonInterface $recordedAt): string
     {
-        $local = $recordedAt->copy()->setTimezone(config('app.timezone'));
+        $tz = config('app.timezone');
+        $now = now($tz);
+        $local = $recordedAt->copy()->setTimezone($tz);
+        // A phone clock slightly ahead of the server gives a negative age: that is simply "now".
+        $seconds = max(0, (int) floor($local->diffInSeconds($now)));
+        $plural = fn (int $n, string $unit) => $n . ' ' . $unit . ($n === 1 ? '' : 's') . ' ago';
 
-        return $local->isSameDay(now(config('app.timezone')))
-            ? $local->format('g:i:s A')
-            : $local->format('M j, g:i:s A');
+        if ($seconds < 60) {
+            return $plural($seconds, 'sec');
+        }
+        if ($seconds < 3600) {
+            return $plural(intdiv($seconds, 60), 'min');
+        }
+        if ($local->isSameDay($now)) {
+            return $plural(intdiv($seconds, 3600), 'hr');
+        }
+        if ($local->isSameDay($now->copy()->subDay())) {
+            return 'Yesterday';
+        }
+        $days = (int) $local->copy()->startOfDay()->diffInDays($now->copy()->startOfDay());
+        if ($days < 7) {
+            return $days . ' days ago';
+        }
+
+        return $local->format($local->year === $now->year ? 'M j' : 'M j, Y');
     }
 
     /**
@@ -71,18 +93,17 @@ class DashboardController extends Controller
                 })->count();
         }
 
-        $onlineThresholdSeconds = config('tracking.fleet_online_threshold_seconds', 10);
         $signalLostSeconds = config('tracking.fleet_signal_lost_seconds', 60);
 
-        // The driver's explicit Online/Offline toggle (drivers.is_online) outranks GPS freshness:
-        // a driver who went Offline is Offline immediately, never after the freshness window.
-        // Units with no Driver row (nothing to toggle) fall back to GPS freshness alone.
+        // The driver's explicit Online/Offline toggle (drivers.is_online) outranks GPS age: a
+        // driver who went Offline (toggle or logout) is Offline immediately, whatever the GPS.
+        // Units with no Driver row (nothing to toggle) are judged by their GPS age alone.
         $driverOnlineByTricycleId = Driver::whereIn('tricycle_id', $activeTricycles->pluck('id'))
             ->pluck('is_online', 'tricycle_id');
 
         // Map tricycles for the enforcement map. Only tricycles with real coordinate records
         // are included in the live fleet monitoring dataset.
-        $tricyclesData = $activeTricycles->map(function ($tri) use ($restrictedEndings, $onlineThresholdSeconds, $signalLostSeconds, $driverOnlineByTricycleId) {
+        $tricyclesData = $activeTricycles->map(function ($tri) use ($restrictedEndings, $signalLostSeconds, $driverOnlineByTricycleId) {
             $latestLoc = $tri->locations()
                 ->whereNotNull('latitude')
                 ->whereNotNull('longitude')
@@ -94,10 +115,11 @@ class DashboardController extends Controller
             }
 
             // Server-side source of truth for connectivity — never inferred from frontend polling
-            // or browser activity. Explicit Offline (toggle/logout) wins immediately; otherwise the
-            // driver stays Online through short GPS/network delays and only drops to Offline once
-            // no coordinate has arrived within the signal-lost window. GPS freshness is reported
-            // separately so a late coordinate reads as "Delayed", not as the driver going Offline.
+            // or browser activity:
+            //   drivers.is_online = false                  -> 'offline'   (immediately)
+            //   drivers.is_online = true, GPS <= 60s old   -> 'online'
+            //   drivers.is_online = true, GPS  > 60s old   -> 'no_signal'
+            // Units that never sent GPS are not in this list at all (see the query above).
             $driverToggledOnline = $driverOnlineByTricycleId->has($tri->id)
                 ? (bool) $driverOnlineByTricycleId->get($tri->id)
                 : true;
@@ -106,13 +128,12 @@ class DashboardController extends Controller
             $gpsAgeSeconds = $latestLoc->recorded_at
                 ? max(0, $latestLoc->recorded_at->diffInSeconds(now()))
                 : null;
-            $gpsFreshness = match (true) {
-                $gpsAgeSeconds === null => 'stale',
-                $gpsAgeSeconds <= $onlineThresholdSeconds => 'fresh',
-                $gpsAgeSeconds <= $signalLostSeconds => 'delayed',
-                default => 'stale',
+            $connectionStatus = match (true) {
+                !$driverToggledOnline => 'offline',
+                $gpsAgeSeconds !== null && $gpsAgeSeconds <= $signalLostSeconds => 'online',
+                default => 'no_signal',
             };
-            $isOnline = $driverToggledOnline && $gpsFreshness !== 'stale';
+            $isOnline = $connectionStatus === 'online';
 
             // Check if there is an active violation detected today
             $hasUnresolvedViolation = $tri->violations()
@@ -153,15 +174,13 @@ class DashboardController extends Controller
                 'lng'         => (float)$latestLoc->longitude,
                 'status'      => $status,
                 'is_online'   => $isOnline,
-                // 'fresh' | 'delayed' | 'stale' — GPS signal quality, separate from is_online.
-                // null for an explicit Offline (toggle/logout): that is plain Offline, not a
-                // signal problem, whatever the age of the last coordinate.
-                'gps_freshness' => $driverToggledOnline ? $gpsFreshness : null,
+                // 'online' | 'no_signal' | 'offline' — the Live Monitoring status badge.
+                'connection_status' => $connectionStatus,
                 'hasRealGPS'  => true,
                 'last_seen'   => $latestLoc->recorded_at ? $latestLoc->recorded_at->diffForHumans() : 'Never',
                 // The ONE display value for "Last update" in Live Monitoring (Units tab and map card
                 // both render this): the latest stored GPS record's own recorded_at, formatted once
-                // here in the app timezone — never the browser clock or a request-time "ago".
+                // here (relative, server clock) — never computed separately by the browser.
                 'last_update_label' => $latestLoc->recorded_at ? self::formatGpsTimestamp($latestLoc->recorded_at) : null,
                 'recorded_at' => $latestLoc->recorded_at ? $latestLoc->recorded_at->toIso8601String() : null,
             ];

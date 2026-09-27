@@ -368,7 +368,9 @@ export default function TricycleMap({
                                                             ? '#D97706'
                                                             : '#059669'
                                             }}>
-                                                {!trike.is_online || trike.status === 'offline'
+                                                {trike.connection_status === 'no_signal'
+                                                    ? 'No Signal'
+                                                    : !trike.is_online || trike.status === 'offline'
                                                     ? 'Offline'
                                                     : trike.status === 'violator'
                                                         ? 'Coding Violator'
