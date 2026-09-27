@@ -25,8 +25,9 @@ import { router } from '@inertiajs/react';
  *      navigation): prevents overlapping requests and prevents a refresh racing the user's
  *      own action mid-submission,
  *   2. the page passed `paused: true` (open modal, `processing` form, running upload),
- *   3. the user is engaged: focused in an input/textarea/select/contenteditable, an open
- *      dialog (headless-ui Modal / SweetAlert2), or the tab is hidden.
+ *   3. the user is engaged: focused in an input/textarea/select/contenteditable (unless the page
+ *      opts out with `pauseOnInputFocus: false`), an open dialog (headless-ui Modal /
+ *      SweetAlert2), or the tab is hidden.
  *
  * Failures are swallowed: a background poll must never turn into a page-breaking error, and
  * the next tick simply tries again.
@@ -40,14 +41,14 @@ const OPEN_DIALOG_SELECTOR = '[role="dialog"],[aria-modal="true"],.swal2-contain
 // counter as stalled and resume refreshing rather than going stale forever.
 const VISIT_STALL_TIMEOUT_MS = 30000;
 
-function isUserEngaged() {
+function isUserEngaged(pauseOnInputFocus) {
     if (typeof document === 'undefined') return false;
     // Hidden tab: don't queue up requests nobody is looking at. The next tick after the tab
     // becomes visible again resumes normally.
     if (document.hidden) return true;
 
     const el = document.activeElement;
-    if (el && el !== document.body) {
+    if (pauseOnInputFocus && el && el !== document.body) {
         const tag = el.tagName;
         if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || el.isContentEditable) {
             return true;
@@ -62,16 +63,22 @@ function isUserEngaged() {
  * Refresh `only` props from the current URL every `interval` ms without disturbing the user.
  *
  * @param {string[]} only   Inertia props this page actually renders that can change server-side.
- * @param {{ interval?: number, enabled?: boolean, paused?: boolean }} options
+ * @param {{ interval?: number, enabled?: boolean, paused?: boolean, pauseOnInputFocus?: boolean }} options
+ *   pauseOnInputFocus (default true): skip ticks while an input/textarea/select has focus. A page
+ *   whose only inputs are client-side filters (kept in React state, which the partial reload
+ *   preserves) can pass false — otherwise one search or dropdown pick leaves focus there and the
+ *   page stops refreshing until the user happens to click elsewhere.
  */
 export default function useBackgroundRefresh(only, options = {}) {
-    const { interval = BACKGROUND_REFRESH_INTERVAL_MS, enabled = true, paused = false } = options;
+    const { interval = BACKGROUND_REFRESH_INTERVAL_MS, enabled = true, paused = false, pauseOnInputFocus = true } = options;
 
     // Held in refs so a new array literal / boolean on every render doesn't restart the timer.
     const onlyRef = useRef(only);
     const pausedRef = useRef(paused);
+    const pauseOnInputFocusRef = useRef(pauseOnInputFocus);
     onlyRef.current = only;
     pausedRef.current = paused;
+    pauseOnInputFocusRef.current = pauseOnInputFocus;
 
     useEffect(() => {
         if (!enabled) return undefined;
@@ -100,7 +107,7 @@ export default function useBackgroundRefresh(only, options = {}) {
             }
 
             if (pausedRef.current) return;
-            if (isUserEngaged()) return;
+            if (isUserEngaged(pauseOnInputFocusRef.current)) return;
 
             try {
                 router.reload({ only: onlyRef.current, replace: true });

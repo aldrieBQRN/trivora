@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Head, Link } from '@inertiajs/react';
 import useBackgroundRefresh from '@/hooks/useBackgroundRefresh';
 import TrivoraLayout from '@/Layouts/TrivoraLayout';
@@ -25,30 +25,11 @@ const WEEKDAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', '
 // Shared soft, layered shadow token — same elevation language used across TMO dashboards.
 const CARD_SHADOW = 'shadow-[0_1px_2px_0_rgba(15,23,42,0.04),0_8px_24px_-8px_rgba(15,23,42,0.10)]';
 
-/** "8 seconds ago" / "3 minutes ago", ticking off the real backend recorded_at timestamp and the
- * page's own live clock — no extra network request needed between polls. */
-const formatElapsed = (isoTimestamp, now) => {
-    if (!isoTimestamp) return null;
-    const seconds = Math.max(0, Math.floor((now.getTime() - new Date(isoTimestamp).getTime()) / 1000));
-    if (seconds < 5) return 'Just now';
-    if (seconds < 60) return `${seconds} seconds ago`;
-    const minutes = Math.floor(seconds / 60);
-    if (minutes < 60) return `${minutes} minute${minutes === 1 ? '' : 's'} ago`;
-    const hours = Math.floor(minutes / 60);
-    return `${hours} hour${hours === 1 ? '' : 's'} ago`;
-};
-
 export default function LiveMonitoring({ initialTricycles = [], stats = {} }) {
-    const [currentTime, setCurrentTime] = useState(new Date());
     const [activeTab, setActiveTab] = useState('units'); // 'units' | 'alerts'
     const [selectedUnitId, setSelectedUnitId] = useState(null);
     const [unitSearch, setUnitSearch] = useState('');
     const [unitStatusFilter, setUnitStatusFilter] = useState('all'); // 'all' | 'online' | 'offline'
-
-    useEffect(() => {
-        const clockTimer = setInterval(() => setCurrentTime(new Date()), 1000);
-        return () => clearInterval(clockTimer);
-    }, []);
 
     // ── REAL: sourced exclusively from the backend (DashboardController::index() -> tricycle_locations) ──
     const realTricycles = useMemo(
@@ -62,7 +43,11 @@ export default function LiveMonitoring({ initialTricycles = [], stats = {} }) {
     // in-flight guard skips a tick while the previous reload is still running, so a slow response
     // never stacks requests. Refreshing faster than GPS arrives (every 5s) just re-reads the latest
     // stored coordinate — it never creates one.
-    useBackgroundRefresh(['initialTricycles', 'stats'], { interval: LIVE_MONITORING_REFRESH_MS });
+    // pauseOnInputFocus: false — the unit search box and Online/Offline filter keep focus after use,
+    // and they're client-side state the partial reload preserves, so refreshing underneath them is
+    // safe. With the default pause, one search/filter pick froze Live Monitoring until the page
+    // was reloaded. Open dialogs and a hidden tab still pause as before.
+    useBackgroundRefresh(['initialTricycles', 'stats'], { interval: LIVE_MONITORING_REFRESH_MS, pauseOnInputFocus: false });
 
     // Regulatory numbers (breach counts, compliance) are computed from real coordinate data only.
     const realViolations = useMemo(() => realTricycles.filter(t => t.status === 'violator'), [realTricycles]);
@@ -411,7 +396,7 @@ export default function LiveMonitoring({ initialTricycles = [], stats = {} }) {
                                             const isOffline = !unit.is_online;
                                             const lastUpdateLabel = !unit.recorded_at
                                                 ? 'No Signal'
-                                                : (formatElapsed(unit.recorded_at, currentTime) || unit.last_seen || 'Unknown');
+                                                : (unit.last_update_label || 'Unknown');
 
                                             return (
                                                 <div
