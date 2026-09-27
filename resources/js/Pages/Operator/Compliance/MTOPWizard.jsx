@@ -1,36 +1,32 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { createPortal } from 'react-dom';
+import React, { useState } from 'react';
 import { Head, Link, useForm, router, usePage } from '@inertiajs/react';
+import Swal from 'sweetalert2';
 import OperatorLayout from '@/Layouts/OperatorLayout';
-import { PageHeader, BackLink, Button, Label, Input, Select } from '@/Components/TMO';
+import { PageHeader, BackLink, Button } from '@/Components/TMO';
 import {
-    ChevronRight,
     CheckCircle2,
-    FileText,
     Bike,
     Check,
     Loader2,
-    ShieldCheck,
-    ArrowLeft,
     ArrowRight,
     Info,
     Upload,
-    Eye,
-    X,
-    Camera,
     User,
-    Users,
     Phone,
     CalendarDays,
-    MapPin
+    MapPin,
+    Mail
 } from 'lucide-react';
 import { VEHICLE_DETAIL_FIELDS, getApplicableDocuments } from '@/data/registrationRequirements';
 import { NASUGBU_BARANGAYS } from '@/data/nasugbuBarangays';
+// Same form design, upload tiles and validation as Public Registration (PublicApply.jsx).
+import {
+    REGISTRATION_CSS, Field, FileUpload, todayIso, validateVehicleInfo, validateDriverInfo,
+} from '@/Components/Registration/RegistrationUI';
 
 // Shared soft, layered shadow token — same elevation language used across the redesigned TMO
 // and Operator panels, so this page reads as one consistent product rather than a different template.
 const CARD_SHADOW = 'shadow-[0_1px_2px_0_rgba(15,23,42,0.04),0_8px_24px_-8px_rgba(15,23,42,0.10)]';
-const BRAND_ICON_CHIP = 'bg-gradient-to-br from-[#1D2542]/[0.10] to-[#1D2542]/[0.02] text-[#1D2542]';
 
 export default function MTOPWizard({ applicationType = 'new', tricycleUnit = null, owner = null }) {
     const { auth } = usePage().props;
@@ -102,6 +98,17 @@ export default function MTOPWizard({ applicationType = 'new', tricycleUnit = nul
     const back = () => { window.scrollTo({ top: 0, behavior: 'smooth' }); setStep(s => s - 1); };
 
     const handleFinalSubmit = () => {
+        const missingRequiredDocs = requiredDocs.filter(d => !(Array.isArray(data.documents[d.id]) && data.documents[d.id].length > 0));
+        if (missingRequiredDocs.length > 0) {
+            Swal.fire({
+                title: 'Missing Requirements',
+                html: 'Pakisumite ang lahat ng required na dokumento bago magpatuloy:<br/><br/>'
+                    + missingRequiredDocs.map(d => `&bull; ${d.label}`).join('<br/>'),
+                icon: 'warning',
+                confirmButtonColor: '#1C2340'
+            });
+            return;
+        }
         setIsSubmitting(true);
 
         const formData = new FormData();
@@ -136,32 +143,32 @@ export default function MTOPWizard({ applicationType = 'new', tricycleUnit = nul
         router.post(route('operator.mtop.store'), formData, {
             preserveScroll: true,
             onFinish: () => setIsSubmitting(false),
+            onError: (errs) => {
+                const firstErr = Object.values(errs)[0];
+                Swal.fire({
+                    title: 'Submission Failed',
+                    text: firstErr || 'Please check your inputs and try again.',
+                    icon: 'error',
+                    confirmButtonColor: '#1C2340'
+                });
+            },
         });
     };
 
-    // Separate Tricycle Driver — only required when the owner is NOT the driver (same rule as
-    // Public Registration's validateApplicantInfo()).
-    const isDriverInfoValid = data.owner_is_driver || (
-        String(data.driver_first_name).trim() !== '' &&
-        String(data.driver_last_name).trim() !== '' &&
-        String(data.driver_birthday).trim() !== '' &&
-        data.driver_birthday <= new Date().toISOString().slice(0, 10) &&
-        String(data.driver_contact).trim() !== '' &&
-        String(data.driver_barangay).trim() !== ''
-    );
-
-    const isStep1Valid = VEHICLE_DETAIL_FIELDS.every(f => String(data[f.id] || '').trim() !== '') && isDriverInfoValid;
-    const requiredDocsIds = requiredDocs.map(d => d.id);
-    const isStep2Valid = requiredDocsIds.every(id => {
-        const files = data.documents[id];
-        return Array.isArray(files) && files.length > 0;
-    });
+    // Same rules and messages as Public Registration (shared validateVehicleInfo / validateDriverInfo);
+    // the separate Tricycle Driver is only required when the owner is NOT the driver.
+    const [touched, setTouched] = useState({});
+    const markTouched = (field) => setTouched(t => (t[field] ? t : { ...t, [field]: true }));
+    const step1Errors = { ...validateVehicleInfo(data), ...validateDriverInfo(data) };
+    const fieldError = (field) => (touched[field] ? step1Errors[field] : undefined);
+    const isStep1Valid = Object.keys(step1Errors).length === 0;
 
     return (
         <OperatorLayout title={isRenewal ? "Franchise Renewal" : "New Unit Registration"} operatorName={operatorName}>
             <Head title={`${isRenewal ? "Franchise Renewal" : "New Unit Registration"} | TRIVORA`} />
 
-            <div className="mx-auto max-w-[1100px] pb-10">
+            <style dangerouslySetInnerHTML={{ __html: REGISTRATION_CSS }} />
+            <div className="pa-embed mx-auto max-w-[1100px] pb-10">
 
                 {step < 3 && (
                     <>
@@ -174,238 +181,217 @@ export default function MTOPWizard({ applicationType = 'new', tricycleUnit = nul
                             backLink={<BackLink href={route('operator.mtop')}>{`Cancel ${isRenewal ? 'Renewal' : 'Registration'}`}</BackLink>}
                         />
 
-                        {/* Stepper */}
-                        <div className="mb-8 flex items-center gap-4">
-                            <StepNode num={1} label="Vehicle Details" active={step === 1} done={step > 1} />
-                            <div className={`h-0.5 w-10 shrink-0 rounded-full ${step > 1 ? 'bg-emerald-500' : 'bg-slate-200'}`} />
-                            <StepNode num={2} label="Requirements" active={step === 2} done={step > 2} />
+                        {/* Stepper — Public Registration's step style, light version */}
+                        <div className="pa-hstep-list">
+                            <StepNode num={1} label="Vehicle" active={step === 1} done={step > 1} />
+                            <span className={`pa-hstep-line${step > 1 ? ' done' : ''}`} />
+                            <StepNode num={2} label="Documents" active={step === 2} done={step > 2} />
                         </div>
                     </>
                 )}
 
-                {/* ── STEP 1: VEHICLE ── */}
+                {/* ── STEP 1: VEHICLE (+ owner/driver) ── */}
                 {step === 1 && (
-                    <div className={`rounded-2xl border border-slate-200/70 bg-white p-6 sm:p-8 ${CARD_SHADOW}`}>
-                        <div className="mb-7 flex items-center gap-3">
-                            <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${BRAND_ICON_CHIP}`}>
-                                <Bike size={22} />
-                            </div>
-                            <h2 className="text-lg font-bold text-slate-900 sm:text-xl">
-                                {isRenewal ? 'Verified Tricycle Specs (Renewal)' : 'Tricycle Specifications'}
-                            </h2>
-                        </div>
-
-                        {isRenewal && (
-                            <div className="mb-6 flex items-center gap-3 rounded-xl border border-[#1D2542]/20 bg-[#1D2542]/[0.06] p-4">
-                                <Info size={20} className="shrink-0 text-[#1D2542]" />
-                                <div>
-                                    <p className="text-[13px] font-bold text-slate-900">
-                                        Pre-Filled Municipal Record {tricycleUnit?.plate_number ? `(${tricycleUnit.plate_number})` : ''}
-                                    </p>
-                                    <p className="mt-0.5 text-xs text-slate-500">
-                                        Vehicle specs are pre-loaded from your registered unit archives for fast-track franchise renewal.
-                                    </p>
-                                </div>
-                            </div>
-                        )}
-
-                        {/* Same 9 fields, labels, and order as Public Registration
-                            (resources/js/data/registrationRequirements.js). */}
-                        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-                            {VEHICLE_DETAIL_FIELDS.map(f => (
-                                <div key={f.id} className={f.id === 'make_model' ? 'sm:col-span-2' : undefined}>
-                                    <Label>{f.label}</Label>
-                                    <Input
-                                        placeholder={f.placeholder}
-                                        value={data[f.id]}
-                                        onChange={e => setData(f.id, e.target.value)}
-                                    />
-                                </div>
-                            ))}
-                        </div>
-
-                        {/* ── Owner / Driver — same structure, wording, and backend data model
-                            (owner_is_driver + ApplicationDriver) as Public Registration ── */}
-                        <div className="mt-8 border-t border-slate-200 pt-6">
-                            <div className="mb-4">
-                                <h3 className="text-sm font-bold text-slate-900">Tricycle Owner &amp; Driver</h3>
-                                <p className="mt-0.5 text-[11px] text-slate-400">
-                                    Same owner/driver split as Public Registration — persisted with this application.
-                                </p>
-                            </div>
-
-                            {/* Tricycle Owner — this portal account (the applicant) */}
-                            <div className="flex items-center gap-3.5 rounded-xl border border-slate-200/70 bg-slate-50 p-4">
-                                <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-lg ${BRAND_ICON_CHIP}`}>
-                                    <User size={19} strokeWidth={2} />
-                                </div>
-                                <div className="min-w-0">
-                                    <p className="text-[10px] font-bold uppercase tracking-wide text-slate-500">Tricycle Owner</p>
-                                    <p className="mt-1 truncate text-[13.5px] font-semibold text-slate-900">
-                                        {owner?.full_name || operatorName}
-                                    </p>
-                                    {owner?.contact_number && (
-                                        <p className="mt-0.5 flex items-center gap-1.5 text-xs text-slate-500">
-                                            <Phone size={11} className="shrink-0" /> {owner.contact_number}
-                                        </p>
-                                    )}
-                                    {owner?.barangay && (
-                                        <p className="mt-0.5 flex items-center gap-1.5 text-xs text-slate-500">
-                                            <MapPin size={11} className="shrink-0" /> Brgy. {owner.barangay}, Nasugbu
-                                        </p>
-                                    )}
-                                </div>
-                            </div>
-
-                            {/* Owner vs driver — persisted with the application (owner_is_driver),
-                                never frontend-only state. Defaults to Yes (owner drives). */}
-                            <div className="mt-4 flex items-center justify-between gap-4 rounded-xl border border-slate-200/70 bg-white p-4">
-                                <div className="min-w-0">
-                                    <p className="text-[13px] font-bold text-slate-900">Is the owner also the tricycle driver?</p>
-                                    <p className="mt-0.5 text-[11.5px] leading-relaxed text-slate-500">
-                                        Choose <strong>No</strong> if someone else will drive this tricycle unit —
-                                        you will provide that driver's details below.
-                                    </p>
-                                </div>
-                                <button
-                                    type="button"
-                                    role="switch"
-                                    aria-checked={data.owner_is_driver ? 'true' : 'false'}
-                                    aria-label="Is the owner also the tricycle driver?"
-                                    onClick={() => setData('owner_is_driver', !data.owner_is_driver)}
-                                    className="flex shrink-0 items-center gap-2.5"
-                                >
-                                    <span className={`relative inline-block h-6 w-11 rounded-full transition-colors ${data.owner_is_driver ? 'bg-[#1D2542]' : 'bg-slate-300'}`}>
-                                        <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-all ${data.owner_is_driver ? 'left-[22px]' : 'left-0.5'}`} />
-                                    </span>
-                                    <span className={`w-8 text-right text-[13px] font-bold ${data.owner_is_driver ? 'text-[#1D2542]' : 'text-slate-500'}`}>
-                                        {data.owner_is_driver ? 'Yes' : 'No'}
-                                    </span>
-                                </button>
-                            </div>
-
-                            {/* Separate Tricycle Driver — hidden entirely while the owner is the driver */}
-                            {!data.owner_is_driver && (
-                                <div className="mt-4 rounded-xl border border-[#1D2542]/20 bg-[#1D2542]/[0.04] p-4 sm:p-5">
-                                    <div className="mb-4 flex items-center gap-2.5">
-                                        <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${BRAND_ICON_CHIP}`}>
-                                            <Users size={17} />
-                                        </div>
+                    <div className="pa-panel">
+                        <div className="pa-panel-inner">
+                            <div className="pa-card">
+                                <div className="pa-card-top">
+                                    <div className="pa-card-top-text">
+                                        <div className="pa-card-icon"><Bike size={20} strokeWidth={1.8} /></div>
                                         <div>
-                                            <h4 className="text-[13px] font-bold text-slate-900">Tricycle Driver</h4>
-                                            <p className="text-[11px] text-slate-500">
-                                                The person who will actually drive this unit, when different from the Tricycle Owner above.
+                                            <h2 className="pa-card-title">{isRenewal ? 'Verified Vehicle Specs' : 'Vehicle Specs'}</h2>
+                                            <p className="pa-card-sub">Tricycle Registration & Unit Details</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {isRenewal && (
+                                    <div className="pa-notice" style={{ marginTop: 0, marginBottom: 24 }}>
+                                        <Info size={17} className="pa-notice-icon" />
+                                        <p className="pa-notice-text">
+                                            Pre-filled from your registered unit {tricycleUnit?.plate_number ? `(${tricycleUnit.plate_number})` : ''} for
+                                            a fast-track franchise renewal. Update any detail that has changed.
+                                        </p>
+                                    </div>
+                                )}
+
+                                {/* Same 9 fields, labels, and order as Public Registration
+                                    (resources/js/data/registrationRequirements.js). */}
+                                <div className="pa-fields">
+                                    {VEHICLE_DETAIL_FIELDS.map(f => (
+                                        <Field key={f.id} label={f.label} error={fieldError(f.id)}>
+                                            <input className={`pa-input${fieldError(f.id) ? ' pa-input-error' : ''}`}
+                                                placeholder={f.placeholder} autoComplete="off"
+                                                value={data[f.id] || ''} onChange={e => setData(f.id, e.target.value)}
+                                                onBlur={() => markTouched(f.id)} />
+                                        </Field>
+                                    ))}
+                                </div>
+
+                                {/* ── Owner / Driver — same structure, wording, and backend data model
+                                    (owner_is_driver + ApplicationDriver) as Public Registration ── */}
+                                <div className="pa-owner-card">
+                                    <div className="pa-card-icon" style={{ width: 42, height: 42, borderRadius: 12 }}>
+                                        <User size={18} strokeWidth={1.8} />
+                                    </div>
+                                    <div style={{ minWidth: 0 }}>
+                                        <p className="pa-owner-eyebrow">Tricycle Owner</p>
+                                        <p className="pa-owner-name">{owner?.full_name || operatorName}</p>
+                                        {owner?.contact_number && (
+                                            <p className="pa-owner-meta"><Phone size={11} /> {owner.contact_number}</p>
+                                        )}
+                                        {owner?.birthday && (
+                                            <p className="pa-owner-meta"><CalendarDays size={11} /> {owner.birthday}</p>
+                                        )}
+                                        {owner?.email && (
+                                            <p className="pa-owner-meta"><Mail size={11} /> {owner.email}</p>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* Owner vs driver — persisted with the application (owner_is_driver),
+                                    never frontend-only state. Defaults to Yes (owner drives). */}
+                                <div className="pa-toggle-row">
+                                    <div>
+                                        <p className="pa-toggle-label">Is the owner also the tricycle driver?</p>
+                                        <p className="pa-toggle-hint">
+                                            Choose <strong>No</strong> if someone else will drive this tricycle unit —
+                                            you will provide that driver's details below.
+                                        </p>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        role="switch"
+                                        aria-checked={data.owner_is_driver ? 'true' : 'false'}
+                                        aria-label="Is the owner also the tricycle driver?"
+                                        className={`pa-toggle${data.owner_is_driver ? ' on' : ''}`}
+                                        onClick={() => setData('owner_is_driver', !data.owner_is_driver)}
+                                    >
+                                        <span className="pa-toggle-track"><span className="pa-toggle-knob" /></span>
+                                        <span className="pa-toggle-answer">{data.owner_is_driver ? 'Yes' : 'No'}</span>
+                                    </button>
+                                </div>
+
+                                {/* Separate Tricycle Driver — hidden entirely while the owner is the driver */}
+                                {!data.owner_is_driver && (
+                                    <div className="pa-subsection">
+                                        <div className="pa-subsection-head">
+                                            <h3 className="pa-subsection-title">Tricycle Driver</h3>
+                                            <p className="pa-subsection-sub">
+                                                The person who will actually drive this unit, when different from the
+                                                Tricycle Owner above.
                                             </p>
                                         </div>
+                                        <div className="pa-fields">
+                                            <Field label="First Name" error={fieldError('driver_first_name')}>
+                                                <div className="pa-input-wrap">
+                                                    <span className="pa-input-wrap-icon"><User size={15} strokeWidth={2} /></span>
+                                                    <input className={`pa-input${fieldError('driver_first_name') ? ' pa-input-error' : ''}`}
+                                                        placeholder="e.g. Pedro" autoComplete="off"
+                                                        value={data.driver_first_name || ''} onChange={e => setData('driver_first_name', e.target.value)}
+                                                        onBlur={() => markTouched('driver_first_name')} />
+                                                </div>
+                                            </Field>
+                                            <Field label="Last Name" error={fieldError('driver_last_name')}>
+                                                <div className="pa-input-wrap">
+                                                    <span className="pa-input-wrap-icon"><User size={15} strokeWidth={2} /></span>
+                                                    <input className={`pa-input${fieldError('driver_last_name') ? ' pa-input-error' : ''}`}
+                                                        placeholder="e.g. Santos" autoComplete="off"
+                                                        value={data.driver_last_name || ''} onChange={e => setData('driver_last_name', e.target.value)}
+                                                        onBlur={() => markTouched('driver_last_name')} />
+                                                </div>
+                                            </Field>
+                                            <Field label="Birthday" error={fieldError('driver_birthday')}>
+                                                <div className="pa-input-wrap">
+                                                    <span className="pa-input-wrap-icon"><CalendarDays size={15} strokeWidth={2} /></span>
+                                                    <input className={`pa-input${fieldError('driver_birthday') ? ' pa-input-error' : ''}`}
+                                                        type="date" max={todayIso()} autoComplete="off"
+                                                        value={data.driver_birthday || ''} onChange={e => setData('driver_birthday', e.target.value)}
+                                                        onBlur={() => markTouched('driver_birthday')} />
+                                                </div>
+                                            </Field>
+                                            <Field label="Mobile Number" error={fieldError('driver_contact')}>
+                                                <div className="pa-input-wrap">
+                                                    <span className="pa-input-wrap-icon"><Phone size={15} strokeWidth={2} /></span>
+                                                    <input className={`pa-input${fieldError('driver_contact') ? ' pa-input-error' : ''}`}
+                                                        placeholder="e.g. 0917 123 4567" autoComplete="off"
+                                                        value={data.driver_contact || ''} onChange={e => setData('driver_contact', e.target.value)}
+                                                        onBlur={() => markTouched('driver_contact')} />
+                                                </div>
+                                            </Field>
+                                            <Field label="Barangay (Nasugbu)" error={fieldError('driver_barangay')}>
+                                                <div className="pa-select-wrap">
+                                                    <select className={`pa-select${fieldError('driver_barangay') ? ' pa-input-error' : ''}`}
+                                                        value={data.driver_barangay || ''}
+                                                        onChange={e => setData('driver_barangay', e.target.value)}
+                                                        onBlur={() => markTouched('driver_barangay')}>
+                                                        <option value="">Select Barangay</option>
+                                                        {NASUGBU_BARANGAYS.map(b => <option key={b.value} value={b.value}>{b.label}</option>)}
+                                                    </select>
+                                                    <MapPin size={15} strokeWidth={2} />
+                                                </div>
+                                            </Field>
+                                        </div>
                                     </div>
-                                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                                        <div>
-                                            <Label>Driver First Name</Label>
-                                            <Input
-                                                placeholder="e.g. Pedro"
-                                                value={data.driver_first_name}
-                                                onChange={e => setData('driver_first_name', e.target.value)}
-                                            />
-                                        </div>
-                                        <div>
-                                            <Label>Driver Last Name</Label>
-                                            <Input
-                                                placeholder="e.g. Santos"
-                                                value={data.driver_last_name}
-                                                onChange={e => setData('driver_last_name', e.target.value)}
-                                            />
-                                        </div>
-                                        <div>
-                                            <Label>Driver Birthday</Label>
-                                            <Input
-                                                type="date"
-                                                max={new Date().toISOString().slice(0, 10)}
-                                                value={data.driver_birthday}
-                                                onChange={e => setData('driver_birthday', e.target.value)}
-                                            />
-                                        </div>
-                                        <div>
-                                            <Label>Driver Mobile Number</Label>
-                                            <Input
-                                                placeholder="e.g. 0917 123 4567"
-                                                value={data.driver_contact}
-                                                onChange={e => setData('driver_contact', e.target.value)}
-                                            />
-                                        </div>
-                                        <div className="sm:col-span-2">
-                                            <Label>Driver Barangay (Nasugbu)</Label>
-                                            <Select
-                                                value={data.driver_barangay}
-                                                onChange={e => setData('driver_barangay', e.target.value)}
-                                            >
-                                                <option value="">Select Barangay</option>
-                                                {NASUGBU_BARANGAYS.map(b => (
-                                                    <option key={b.value} value={b.value}>{b.label}</option>
-                                                ))}
-                                            </Select>
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
+                                )}
 
-                        <div className="mt-8 flex items-center justify-end border-t border-slate-200 pt-6">
-                            <Button variant="primary" size="lg" disabled={!isStep1Valid} onClick={next} icon={ChevronRight} iconPosition="right">
-                                Continue to Documents
-                            </Button>
+                                <div className="pa-actions">
+                                    <Link href={route('operator.mtop')} className="pa-btn-ghost" style={{ textDecoration: 'none' }}>
+                                        Cancel
+                                    </Link>
+                                    <button
+                                        type="button"
+                                        className="pa-btn-primary"
+                                        onClick={() => {
+                                            if (!isStep1Valid) {
+                                                // Reveal every blocking field, exactly like Public Registration.
+                                                setTouched(t => ({
+                                                    ...t,
+                                                    ...Object.fromEntries(Object.keys(step1Errors).map(k => [k, true])),
+                                                }));
+                                                return;
+                                            }
+                                            next();
+                                        }}
+                                        style={{ opacity: isStep1Valid ? 1 : 0.55, cursor: 'pointer' }}
+                                    >
+                                        Continue
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 )}
 
-                {/* ── STEP 2: DOCUMENTS ── */}
+                {/* ── STEP 2: DOCUMENTS & SUBMIT ── */}
                 {step === 2 && (
-                    <div className={`rounded-2xl border border-slate-200/70 bg-white p-6 sm:p-8 ${CARD_SHADOW}`}>
-                        <div className="mb-3 flex items-center gap-3">
-                            <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${BRAND_ICON_CHIP}`}>
-                                <FileText size={22} />
-                            </div>
-                            <h2 className="text-lg font-bold text-slate-900 sm:text-xl">Required Documents</h2>
-                        </div>
-                        <p className="mb-6 text-sm text-slate-500">Please upload a clear scan or photo of the following municipal requirements.</p>
+                    <div className="pa-panel">
+                        <div className="pa-panel-inner">
+                            <div className="pa-card">
+                                <div className="pa-card-top">
+                                    <div className="pa-card-top-text">
+                                        <div className="pa-card-icon"><Upload size={20} strokeWidth={1.8} /></div>
+                                        <div>
+                                            <h2 className="pa-card-title">Requirements</h2>
+                                            <p className="pa-card-sub">Take a clear photo or upload scanned copies of each document</p>
+                                        </div>
+                                    </div>
+                                </div>
 
-                        {/* Live progress instead of only finding out what's missing on Submit —
-                            mirrors Public Registration's Requirements step. */}
-                        <div className="mb-6 flex items-center gap-3">
-                            <div className="h-2 flex-1 overflow-hidden rounded-full bg-slate-100">
-                                <div
-                                    className="h-full rounded-full bg-emerald-500 transition-all"
-                                    style={{ width: `${requiredDocs.length > 0 ? (uploadedRequiredCount / requiredDocs.length) * 100 : 100}%` }}
-                                />
-                            </div>
-                            <span className="shrink-0 text-[11px] font-bold text-slate-500">
-                                {uploadedRequiredCount} of {requiredDocs.length} required uploaded
-                            </span>
-                        </div>
+                                {/* Live progress instead of only finding out what's missing on Submit. */}
+                                <div className="pa-req-progress">
+                                    <div className="pa-req-progress-bar">
+                                        <div
+                                            className="pa-req-progress-fill"
+                                            style={{ width: `${requiredDocs.length > 0 ? (uploadedRequiredCount / requiredDocs.length) * 100 : 100}%` }}
+                                        />
+                                    </div>
+                                    <span className="pa-req-progress-text">{uploadedRequiredCount} of {requiredDocs.length} required uploaded</span>
+                                </div>
 
-                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                            {requiredDocs.map(doc => (
-                                <FileUploadTile
-                                    key={doc.id}
-                                    id={doc.id}
-                                    label={doc.label}
-                                    hint={doc.hint}
-                                    required={doc.required}
-                                    conditional={!doc.required}
-                                    files={data.documents[doc.id] || []}
-                                    onUpload={files => handleFileUpload(doc.id, files)}
-                                    onRemove={index => handleRemoveFile(doc.id, index)}
-                                />
-                            ))}
-                        </div>
-
-                        {conditionalDocs.length > 0 && (
-                            <>
-                                <p className="mb-3 mt-7 text-[11px] font-bold uppercase tracking-wide text-slate-400">
-                                    You may also need to attach
-                                </p>
-                                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                                    {conditionalDocs.map(doc => (
-                                        <FileUploadTile
+                                <div className="pa-docs-grid">
+                                    {requiredDocs.map(doc => (
+                                        <FileUpload
                                             key={doc.id}
                                             id={doc.id}
                                             label={doc.label}
@@ -414,26 +400,56 @@ export default function MTOPWizard({ applicationType = 'new', tricycleUnit = nul
                                             conditional={!doc.required}
                                             files={data.documents[doc.id] || []}
                                             onUpload={files => handleFileUpload(doc.id, files)}
-                                            onRemove={index => handleRemoveFile(doc.id, index)}
+                                            onRemove={idx => handleRemoveFile(doc.id, idx)}
                                         />
                                     ))}
                                 </div>
-                            </>
-                        )}
-                        <div className="flex items-center justify-between border-t border-slate-200 pt-6">
-                            <Button variant="secondary" size="lg" onClick={back} disabled={isSubmitting} icon={ArrowLeft}>
-                                Back
-                            </Button>
-                            <Button
-                                variant="success"
-                                size="lg"
-                                disabled={!isStep2Valid || isSubmitting}
-                                loading={isSubmitting}
-                                onClick={handleFinalSubmit}
-                                icon={ShieldCheck}
-                            >
-                                {isSubmitting ? 'Submitting...' : 'Submit Application'}
-                            </Button>
+
+                                {conditionalDocs.length > 0 && (
+                                    <>
+                                        <p className="pa-docs-subhead">You may also need to attach</p>
+                                        <div className="pa-docs-grid">
+                                            {conditionalDocs.map(doc => (
+                                                <FileUpload
+                                                    key={doc.id}
+                                                    id={doc.id}
+                                                    label={doc.label}
+                                                    hint={doc.hint}
+                                                    required={doc.required}
+                                                    conditional={!doc.required}
+                                                    files={data.documents[doc.id] || []}
+                                                    onUpload={files => handleFileUpload(doc.id, files)}
+                                                    onRemove={idx => handleRemoveFile(doc.id, idx)}
+                                                />
+                                            ))}
+                                        </div>
+                                    </>
+                                )}
+
+                                <div className="pa-notice">
+                                    <Info size={17} className="pa-notice-icon" />
+                                    <p className="pa-notice-text">
+                                        Bago isumite ang mga dokumento, siguraduhing maayos ang ilaw, busina,
+                                        side mirrors, baterya, at plaka (LTO/GSO) para sa physical inspection ng TMO.
+                                    </p>
+                                </div>
+
+                                <div className="pa-actions">
+                                    <button type="button" className="pa-btn-ghost" onClick={back} disabled={isSubmitting}>
+                                        Back
+                                    </button>
+                                    <button
+                                        type="button"
+                                        className="pa-btn-success"
+                                        onClick={handleFinalSubmit}
+                                        disabled={isSubmitting}
+                                        style={{ opacity: isSubmitting ? .75 : 1, cursor: isSubmitting ? 'not-allowed' : 'pointer' }}
+                                    >
+                                        {isSubmitting ? <Loader2 size={15} strokeWidth={2.5} style={{ animation: 'paSpin .8s linear infinite' }} /> : null}
+                                        {isSubmitting ? 'Submitting...' : 'Submit'}
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 )}
@@ -486,414 +502,11 @@ export default function MTOPWizard({ applicationType = 'new', tricycleUnit = nul
 
 function StepNode({ num, label, active, done }) {
     return (
-        <div className="flex shrink-0 items-center gap-3">
-            <div className={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-bold transition-colors ${
-                done ? 'bg-emerald-600 text-white' :
-                active ? 'border-2 border-[#1D2542] bg-white text-[#1D2542] ring-4 ring-[#1D2542]/10' :
-                'bg-slate-50 text-slate-400'
-            }`}>
-                {done ? <Check size={16} strokeWidth={3} /> : num}
-            </div>
-            <span className={`text-[11px] font-bold uppercase tracking-wide ${active ? 'text-slate-900' : done ? 'text-emerald-600' : 'text-slate-400'}`}>{label}</span>
-        </div>
-    );
-}
-
-function FileUploadTile({ id, label, hint, required, conditional, files, onUpload, onRemove }) {
-    const [previewUrls, setPreviewUrls] = useState([]);
-    const [showGallery, setShowGallery] = useState(false);
-    const [activePreviewUrl, setActivePreviewUrl] = useState(null);
-    const [showChoiceModal, setShowChoiceModal] = useState(false);
-    const [showCameraModal, setShowCameraModal] = useState(false);
-    const [cameraError, setCameraError] = useState(null);
-
-    const fileInputRef = useRef(null);
-    const videoRef = useRef(null);
-    const streamRef = useRef(null);
-
-    useEffect(() => {
-        if (!files || files.length === 0) {
-            setPreviewUrls([]);
-            return;
-        }
-
-        const urls = files.map(file => {
-            if (file instanceof File || file instanceof Blob) {
-                return URL.createObjectURL(file);
-            }
-            return file;
-        });
-
-        setPreviewUrls(urls);
-
-        return () => {
-            urls.forEach(url => {
-                if (url && url.startsWith('blob:')) {
-                    URL.revokeObjectURL(url);
-                }
-            });
-        };
-    }, [files]);
-
-    useEffect(() => {
-        if (showGallery || activePreviewUrl !== null || showChoiceModal || showCameraModal) {
-            document.body.style.overflow = 'hidden';
-        } else {
-            document.body.style.overflow = '';
-        }
-        return () => {
-            document.body.style.overflow = '';
-        };
-    }, [showGallery, activePreviewUrl, showChoiceModal, showCameraModal]);
-
-    const startCamera = async () => {
-        setCameraError(null);
-        setShowChoiceModal(false);
-        setShowCameraModal(true);
-
-        try {
-            const stream = await navigator.mediaDevices.getUserMedia({
-                video: { facingMode: { ideal: 'environment' } }
-            });
-            streamRef.current = stream;
-            if (videoRef.current) {
-                videoRef.current.srcObject = stream;
-            }
-        } catch (err) {
-            console.error("Camera access error:", err);
-            setCameraError("Camera access permission denied or camera not available on this device.");
-        }
-    };
-
-    const stopCamera = () => {
-        if (streamRef.current) {
-            streamRef.current.getTracks().forEach(track => track.stop());
-            streamRef.current = null;
-        }
-        setShowCameraModal(false);
-        setCameraError(null);
-    };
-
-    const capturePhoto = () => {
-        if (!videoRef.current) return;
-
-        const video = videoRef.current;
-        const canvas = document.createElement('canvas');
-        canvas.width = video.videoWidth || 640;
-        canvas.height = video.videoHeight || 480;
-
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-        canvas.toBlob((blob) => {
-            if (blob) {
-                const capturedFile = new File([blob], `captured_doc_${Date.now()}.jpg`, { type: 'image/jpeg' });
-                onUpload([capturedFile]);
-                stopCamera();
-            }
-        }, 'image/jpeg', 0.9);
-    };
-
-    const isUploaded = files.length > 0;
-
-    return (
-        <div className={`flex min-h-[96px] flex-col items-start gap-2 rounded-xl border-[1.5px] border-dashed p-4 transition-colors ${isUploaded ? 'border-emerald-300 bg-emerald-50/40' : 'border-slate-300 bg-slate-50 hover:border-[#1D2542]/40 hover:bg-white'}`}>
-            <div className="flex w-full items-center justify-between gap-2">
-                <div className="min-w-0">
-                    <p className="truncate text-[13px] font-bold leading-snug text-slate-900" title={label}>{label}</p>
-                    {hint && conditional && (
-                        <p className="mt-0.5 text-[11px] leading-snug text-slate-400">{hint}</p>
-                    )}
-                </div>
-                <div className="flex shrink-0 gap-1.5">
-                    {isUploaded
-                        ? <span className="rounded-md bg-emerald-100 px-2.5 py-1 text-[9px] font-extrabold uppercase text-emerald-700">✓ {files.length} File(s)</span>
-                        : required
-                            ? <span className="rounded-md bg-red-50 px-2.5 py-1 text-[9px] font-extrabold uppercase text-red-600">Required</span>
-                            : conditional
-                                ? <span className="text-[9px] font-extrabold uppercase text-slate-400">Optional</span>
-                                : null
-                    }
-                </div>
-            </div>
-
-            <div className="mt-1 flex w-full items-center justify-between">
-                <div>
-                    <input
-                        ref={fileInputRef}
-                        type="file"
-                        id={id}
-                        accept="image/*,.pdf"
-                        multiple
-                        className="hidden"
-                        onChange={e => {
-                            if (e.target.files && e.target.files.length > 0) {
-                                onUpload(e.target.files);
-                                e.target.value = '';
-                            }
-                        }}
-                    />
-                    <button
-                        type="button"
-                        onClick={() => setShowChoiceModal(true)}
-                        className="inline-flex items-center gap-1.5 rounded-md border border-[#1D2542]/20 bg-[#1D2542]/[0.06] px-3 py-1.5 text-[10px] font-bold uppercase tracking-wide text-[#1D2542] transition-colors hover:bg-[#1D2542]/10"
-                    >
-                        <Upload size={11} strokeWidth={2.5} />
-                        Add Photo / PDF
-                    </button>
-                </div>
-
-                {isUploaded && (
-                    <button
-                        type="button"
-                        className="inline-flex items-center justify-center rounded-md p-1.5 text-[#1D2542] transition-colors hover:bg-[#1D2542]/[0.06]"
-                        onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            setShowGallery(true);
-                        }}
-                        title="View Uploaded Photos"
-                    >
-                        <Eye size={18} strokeWidth={2} />
-                    </button>
-                )}
-            </div>
-
-            {/* Choice Modal (Upload vs Take Picture) */}
-            {showChoiceModal && createPortal(
-                <div
-                    className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 p-4"
-                    onClick={() => setShowChoiceModal(false)}
-                >
-                    <div
-                        className="flex w-full max-w-[380px] flex-col gap-4 rounded-2xl bg-white p-6 shadow-2xl"
-                        onClick={e => e.stopPropagation()}
-                    >
-                        <div className="flex items-center justify-between">
-                            <h4 className="text-[15px] font-bold text-slate-900">Select Attachment Method</h4>
-                            <button type="button" onClick={() => setShowChoiceModal(false)} className="text-slate-400 hover:text-slate-900">
-                                <X size={18} />
-                            </button>
-                        </div>
-
-                        <p className="text-[12.5px] text-slate-500">
-                            Choose how you would like to attach <strong className="text-slate-900">{label}</strong>:
-                        </p>
-
-                        <div className="mt-1 flex flex-col gap-2.5">
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    setShowChoiceModal(false);
-                                    if (fileInputRef.current) fileInputRef.current.click();
-                                }}
-                                className="flex items-center gap-3 rounded-xl border-[1.5px] border-slate-200 bg-slate-50 p-3.5 text-left transition-colors hover:bg-[#1D2542]/[0.04]"
-                            >
-                                <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${BRAND_ICON_CHIP}`}>
-                                    <Upload size={18} />
-                                </span>
-                                <span>
-                                    <span className="block text-[13px] font-bold text-slate-900">Upload File / Document</span>
-                                    <span className="mt-0.5 block text-[11px] font-medium text-slate-400">Browse photo or PDF from device</span>
-                                </span>
-                            </button>
-
-                            <button
-                                type="button"
-                                onClick={startCamera}
-                                className="flex items-center gap-3 rounded-xl border-[1.5px] border-slate-200 bg-slate-50 p-3.5 text-left transition-colors hover:bg-emerald-50"
-                            >
-                                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-500/[0.14] to-emerald-500/[0.02] text-emerald-600">
-                                    <Camera size={18} />
-                                </span>
-                                <span>
-                                    <span className="block text-[13px] font-bold text-slate-900">Take a Picture</span>
-                                    <span className="mt-0.5 block text-[11px] font-medium text-slate-400">Snap photo directly using camera</span>
-                                </span>
-                            </button>
-                        </div>
-                    </div>
-                </div>,
-                document.body
-            )}
-
-            {/* Live Camera Modal */}
-            {showCameraModal && createPortal(
-                <div
-                    className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/85 p-4"
-                    onClick={stopCamera}
-                >
-                    <div
-                        className="flex w-full max-w-[520px] flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
-                        onClick={e => e.stopPropagation()}
-                    >
-                        <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
-                            <span className="flex items-center gap-2 text-sm font-bold text-slate-900">
-                                <Camera size={18} className="text-emerald-600" /> Capture Photo ({label})
-                            </span>
-                            <button type="button" onClick={stopCamera} className="text-slate-400 hover:text-slate-900">
-                                <X size={20} />
-                            </button>
-                        </div>
-
-                        <div className="relative flex min-h-[300px] w-full items-center justify-center bg-black">
-                            {cameraError ? (
-                                <div className="p-8 text-center text-red-400">
-                                    <p className="mb-4 text-sm font-semibold">{cameraError}</p>
-                                    <label
-                                        htmlFor={`cam_fallback_${id}`}
-                                        className="inline-block cursor-pointer rounded-lg bg-red-600 px-5 py-2.5 text-xs font-bold text-white"
-                                    >
-                                        Open Device Camera App
-                                    </label>
-                                    <input
-                                        type="file"
-                                        id={`cam_fallback_${id}`}
-                                        accept="image/*"
-                                        capture="environment"
-                                        className="hidden"
-                                        onChange={e => {
-                                            if (e.target.files && e.target.files.length > 0) {
-                                                onUpload(e.target.files);
-                                                stopCamera();
-                                            }
-                                        }}
-                                    />
-                                </div>
-                            ) : (
-                                <video
-                                    ref={videoRef}
-                                    autoPlay
-                                    playsInline
-                                    className="max-h-[420px] w-full object-cover"
-                                />
-                            )}
-                        </div>
-
-                        {!cameraError && (
-                            <div className="flex items-center justify-between bg-slate-50 px-5 py-4">
-                                <button
-                                    type="button"
-                                    onClick={stopCamera}
-                                    className="rounded-lg bg-slate-200 px-5 py-2.5 text-xs font-bold text-slate-500"
-                                >
-                                    Cancel
-                                </button>
-
-                                <button
-                                    type="button"
-                                    onClick={capturePhoto}
-                                    className="flex items-center gap-2 rounded-lg bg-emerald-600 px-7 py-3 text-[13px] font-extrabold text-white shadow-sm"
-                                >
-                                    <Camera size={16} /> Snap Photo
-                                </button>
-                            </div>
-                        )}
-                    </div>
-                </div>,
-                document.body
-            )}
-
-            {/* Gallery Modal overlay */}
-            {showGallery && createPortal(
-                <div
-                    className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 p-6"
-                    onClick={() => setShowGallery(false)}
-                >
-                    <div
-                        className="flex max-h-[80vh] w-full max-w-[500px] flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
-                        onClick={e => e.stopPropagation()}
-                    >
-                        <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
-                            <span className="text-[13px] font-bold text-slate-900">Uploaded Documents ({files.length})</span>
-                            <button className="flex items-center text-slate-400 hover:text-slate-900" onClick={() => setShowGallery(false)}>
-                                <X size={18} />
-                            </button>
-                        </div>
-                        <div className="flex flex-1 flex-col gap-3 overflow-y-auto bg-slate-50 p-5">
-                            {files.map((file, idx) => {
-                                const isImg = file.type?.startsWith('image/');
-                                const thumb = previewUrls[idx];
-
-                                return (
-                                    <div key={idx} className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white p-3">
-                                        <div className="flex min-w-0 flex-1 items-center gap-2.5">
-                                            {isImg && thumb ? (
-                                                <img src={thumb} alt="Preview" className="h-9 w-9 rounded-md border border-black/10 object-cover" />
-                                            ) : (
-                                                <div className="flex h-9 w-9 items-center justify-center rounded-md border border-slate-200 bg-slate-50 text-slate-400">
-                                                    <FileText size={16} />
-                                                </div>
-                                            )}
-                                            <span className="truncate text-xs font-medium text-slate-500">{file.name}</span>
-                                        </div>
-                                        <div className="flex items-center gap-2">
-                                            <button
-                                                type="button"
-                                                className="p-1 text-[#1D2542] hover:text-[#2A3454]"
-                                                onClick={() => setActivePreviewUrl(thumb || previewUrls[idx])}
-                                                title="View file"
-                                            >
-                                                <Eye size={16} />
-                                            </button>
-                                            <button
-                                                type="button"
-                                                className="p-1 text-red-600 hover:text-red-700"
-                                                onClick={() => {
-                                                    onRemove(idx);
-                                                    if (files.length <= 1) {
-                                                        setShowGallery(false);
-                                                    }
-                                                }}
-                                                title="Remove file"
-                                            >
-                                                <X size={16} />
-                                            </button>
-                                        </div>
-                                    </div>
-                                );
-                            })}
-                        </div>
-                    </div>
-                </div>,
-                document.body
-            )}
-
-            {/* Fullscreen Document Preview Modal */}
-            {activePreviewUrl !== null && createPortal(
-                <div
-                    className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/80 p-6"
-                    onClick={() => setActivePreviewUrl(null)}
-                >
-                    <div
-                        className="flex max-h-[90vh] w-full max-w-[800px] flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
-                        onClick={e => e.stopPropagation()}
-                    >
-                        <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
-                            <span className="text-[13px] font-bold text-slate-900">Document Preview</span>
-                            <button className="flex items-center text-slate-400 hover:text-slate-900" onClick={() => setActivePreviewUrl(null)}>
-                                <X size={20} />
-                            </button>
-                        </div>
-                        <div className="flex flex-1 items-center justify-center overflow-y-auto bg-slate-50 p-5">
-                            {activePreviewUrl.includes('application/pdf') || files.find(f => previewUrls.indexOf(activePreviewUrl) !== -1)?.type === 'application/pdf' ? (
-                                <iframe
-                                    src={activePreviewUrl}
-                                    className="h-[70vh] w-full rounded-lg border border-slate-200"
-                                    title="PDF Preview"
-                                />
-                            ) : (
-                                <img
-                                    src={activePreviewUrl}
-                                    alt="Preview"
-                                    className="max-h-[70vh] max-w-full rounded-lg border border-slate-200 object-contain"
-                                />
-                            )}
-                        </div>
-                    </div>
-                </div>,
-                document.body
-            )}
+        <div className="pa-hstep">
+            <span className={`pa-hstep-dot${active ? ' active' : done ? ' done' : ''}`}>
+                {done ? <Check size={14} strokeWidth={3} /> : num}
+            </span>
+            <span className={`pa-hstep-label${active ? ' active' : done ? ' done' : ''}`}>{label}</span>
         </div>
     );
 }

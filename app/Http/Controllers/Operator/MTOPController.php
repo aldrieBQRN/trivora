@@ -54,8 +54,9 @@ class MTOPController extends Controller
             'applicationType' => $type,
             'tricycleUnit'    => $tricycleData,
             // The Tricycle Owner (this portal account) — same person Public Registration's
-            // applicant block collects, rendered read-only in the wizard's owner/driver split.
-            'owner'           => $operator ? $operator->personDetails() : null,
+            // applicant block collects, rendered read-only in the wizard's owner/driver split
+            // (with the account email, which the wizard shows as the owner's contact line).
+            'owner'           => $operator ? array_merge($operator->personDetails(), ['email' => $user->email]) : null,
         ]);
     }
 
