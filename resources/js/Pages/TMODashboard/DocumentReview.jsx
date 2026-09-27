@@ -9,7 +9,7 @@ import {
     ChevronLeft, FileText, Loader2, ShieldCheck, Copy, Pencil, CalendarDays,
 } from 'lucide-react';
 import { Modal, Button, Textarea } from '@/Components/TMO';
-import { REGISTRATION_DOCUMENTS } from '@/data/registrationRequirements';
+import { REGISTRATION_DOCUMENTS, getApplicableDocuments } from '@/data/registrationRequirements';
 
 // Shared soft, layered shadow token — same elevation language used across the TMO panel (Dashboard.jsx,
 // Index.jsx, DocumentQueue.jsx), so this page reads as one consistent product.
@@ -66,11 +66,17 @@ export default function DocumentReview({ application }) {
         cr_number: appData?.cr_number || '—',
     };
 
-    // Same canonical list Public Registration and the Driver Portal wizard use — including
-    // Prangkisa, so a renewal application's Prangkisa upload is visible here too (as a
-    // conditional/"Additional" document; TMO document review isn't application_type-aware, and
-    // Prangkisa is never uploaded for a 'new' unit registration in the first place).
-    const requirements = REGISTRATION_DOCUMENTS.map(d => ({ id: d.id, label: d.label, mandatory: d.required }));
+    // In Driver Portal renewal, Xerox Prangkisa is a mandatory requirement (never an "additional" or optional file).
+    // Document Review respects this distinction: for a renewal application, Prangkisa is treated as a Required Document.
+    const isRenewal = (appData.application_type || '').toLowerCase() === 'renewal'
+        || (appData.documents || []).some(d => d.category === 'prangkisa');
+
+    const applicableDocs = getApplicableDocuments(isRenewal ? 'renewal' : 'new');
+    const requirements = applicableDocs.map(d => ({
+        id: d.id,
+        label: d.label,
+        mandatory: d.required,
+    }));
 
     const handleApprove = (id) => {
         setDocStatuses(prev => {
@@ -295,9 +301,18 @@ export default function DocumentReview({ application }) {
                 <div className="text-xs font-bold uppercase tracking-wider text-slate-400">
                     <span>Document Review</span>
                 </div>
-                <h1 className="mt-1 text-2xl sm:text-[28px] font-extrabold tracking-tight text-slate-900 leading-tight">
-                    {appData.reference || appData.id}
-                </h1>
+                <div className="mt-1 flex flex-wrap items-center gap-2.5">
+                    <h1 className="text-2xl sm:text-[28px] font-extrabold tracking-tight text-slate-900 leading-tight">
+                        {appData.reference || appData.id}
+                    </h1>
+                    <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-bold border ${
+                        isRenewal
+                            ? 'bg-amber-50 text-amber-800 border-amber-200'
+                            : 'bg-blue-50 text-blue-800 border-blue-200'
+                    }`}>
+                        {isRenewal ? 'Franchise Renewal' : 'New Franchise'}
+                    </span>
+                </div>
                 <p className="mt-1 text-xs sm:text-sm text-slate-500 leading-relaxed">
                     Submitted by <strong className="font-semibold text-slate-700">{appData.operator}</strong>{appData.barangay ? ` · ${appData.barangay}` : ''}
                 </p>
@@ -320,7 +335,9 @@ export default function DocumentReview({ application }) {
                                 </div>
                                 <div>
                                     <h2 className="text-sm font-bold text-slate-900">Required Documents</h2>
-                                    <p className="text-[11px] text-slate-500">Must all be approved before scheduling physical inspection</p>
+                                    <p className="text-[11px] text-slate-500">
+                                        Must all be approved before scheduling physical inspection{isRenewal ? ' (includes Xerox Prangkisa for Renewal)' : ''}
+                                    </p>
                                 </div>
                             </div>
                             <span className="text-xs font-semibold text-slate-500">

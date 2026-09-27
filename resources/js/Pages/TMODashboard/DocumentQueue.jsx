@@ -461,7 +461,7 @@ function DesktopQueueRow({ app }) {
                         {app.reference}
                     </span>
                     <span className="mt-0.5 text-[11px] text-slate-400">
-                        Franchise Application
+                        {app.application_type === 'renewal' ? 'Franchise Renewal' : 'New Franchise Application'}
                     </span>
                 </div>
             </td>
@@ -527,9 +527,14 @@ function MobileQueueCard({ app }) {
         <div className={`rounded-2xl border border-slate-200/70 bg-white p-3.5 transition-all hover:border-slate-300 ${CARD_SHADOW}`}>
             {/* Top Row: Reference & Status */}
             <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-2">
-                <span className="font-mono text-sm font-bold tracking-wide text-slate-900">
-                    {app.reference}
-                </span>
+                <div>
+                    <span className="font-mono text-sm font-bold tracking-wide text-slate-900">
+                        {app.reference}
+                    </span>
+                    <span className="block text-[10.5px] text-slate-400">
+                        {app.application_type === 'renewal' ? 'Franchise Renewal' : 'New Franchise Application'}
+                    </span>
+                </div>
                 <StatusPill status={app.status} />
             </div>
 

@@ -30,13 +30,14 @@ class ApplicationController extends Controller
                 $statusLabel = in_array($app->status, ['pending_review', 'under_review']) ? 'Pending' : 'Re-submission';
 
                 return [
-                    'id'             => $app->id,
-                    'reference'      => $app->reference_number,
-                    'operator'       => $app->operator ? $app->operator->full_name : 'N/A',
-                    'submitted_at'   => $app->submitted_at ? $app->submitted_at->diffForHumans() : 'N/A',
-                    'submitted_date' => $app->submitted_at ? $app->submitted_at->format('F j, Y · g:i A') : 'N/A',
-                    'docs_count'     => $app->documents->count(),
-                    'status'         => $statusLabel,
+                    'id'               => $app->id,
+                    'reference'        => $app->reference_number,
+                    'application_type' => $app->application_type,
+                    'operator'         => $app->operator ? $app->operator->full_name : 'N/A',
+                    'submitted_at'     => $app->submitted_at ? $app->submitted_at->diffForHumans() : 'N/A',
+                    'submitted_date'   => $app->submitted_at ? $app->submitted_at->format('F j, Y · g:i A') : 'N/A',
+                    'docs_count'       => $app->documents->count(),
+                    'status'           => $statusLabel,
                 ];
             });
 
@@ -96,9 +97,10 @@ class ApplicationController extends Controller
         }
 
         $appData = [
-            'id'             => $application->id,
-            'reference'      => $application->reference_number,
-            'operator'       => $operator ? $operator->full_name : 'N/A',
+            'id'               => $application->id,
+            'reference'        => $application->reference_number,
+            'application_type' => $application->application_type,
+            'operator'         => $operator ? $operator->full_name : 'N/A',
             // Tricycle Owner (the applicant) + optional separate Tricycle Driver. Lists keep
             // showing `operator` as the primary person; the driver only appears in details.
             'owner'          => $application->ownerDetails(),

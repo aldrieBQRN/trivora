@@ -5,7 +5,7 @@ import {
     FileText, LogIn, ShieldCheck,
     Search, Cpu, Satellite,
     Phone, Wallet,
-    ClipboardCheck, Award, ArrowRight, Calendar
+    ClipboardCheck, Award, ArrowRight, Calendar, Menu, X
 } from 'lucide-react';
 
 const FADE = 'wl-fade';
@@ -65,7 +65,7 @@ html { scroll-behavior: smooth; }
   transition: background .25s ease, border-color .25s ease;
 }
 .wl-navbar--solid {
-  background: rgba(20, 26, 51, .68);
+  background: rgba(20, 26, 51, .94);
   backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
   border-bottom: 1px solid rgba(255,255,255,.08);
 }
@@ -122,13 +122,87 @@ html { scroll-behavior: smooth; }
 @media (min-width: 561px) { .wl-nav-apply { display: inline-flex; } }
 .wl-nav-apply:hover { transform: translateY(-1px); box-shadow: 0 5px 16px rgba(0,0,0,.24); }
 
+/* In-page links land below the sticky header instead of under it. */
+#verify, #how-it-works, #technology { scroll-margin-top: 84px; }
+
+/* ── Mobile / tablet menu (the inline nav is hidden below 860px) ── */
+.wl-menu-btn {
+  display: none;
+  width: 38px; height: 38px; border-radius: 9px;
+  align-items: center; justify-content: center;
+  border: 1.5px solid rgba(255,255,255,.28); background: transparent; color: #FFFFFF;
+  cursor: pointer; transition: border-color .18s, background .18s;
+}
+.wl-menu-btn:hover { border-color: #FFFFFF; background: rgba(255,255,255,.08); }
+@media (max-width: 860px) { .wl-menu-btn { display: inline-flex; } }
+.wl-drawer-overlay {
+  position: fixed; inset: 0; z-index: 90;
+  background: rgba(10, 14, 30, .55);
+  opacity: 0; visibility: hidden;
+  transition: opacity .25s ease, visibility .25s ease;
+}
+.wl-drawer {
+  position: fixed; top: 0; right: 0; bottom: 0; z-index: 100;
+  width: min(300px, 84vw);
+  display: flex; flex-direction: column;
+  background: #141A33;
+  border-left: 1px solid rgba(255,255,255,.08);
+  box-shadow: -18px 0 40px rgba(0,0,0,.35);
+  transform: translateX(100%); visibility: hidden;
+  transition: transform .28s cubic-bezier(.4,0,.2,1), visibility .28s;
+}
+.wl-drawer.is-open { transform: translateX(0); visibility: visible; }
+.wl-drawer-overlay.is-open { opacity: 1; visibility: visible; }
+@media (min-width: 861px) { .wl-drawer, .wl-drawer-overlay { display: none; } }
+.wl-drawer-head {
+  height: 76px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 18px;
+  border-bottom: 1px solid rgba(255,255,255,.08);
+}
+.wl-drawer-head .wl-menu-btn { display: inline-flex; }
+.wl-drawer nav { display: flex; flex-direction: column; padding: 10px 18px; flex: 1; overflow-y: auto; }
+.wl-drawer-label {
+  padding: 10px 2px 6px;
+  font-family: 'DM Sans', sans-serif; font-size: 10px; font-weight: 700;
+  letter-spacing: .14em; text-transform: uppercase; color: rgba(255,255,255,.45);
+}
+.wl-mobile-link {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 15px 2px;
+  border-bottom: 1px solid rgba(255,255,255,.07);
+  color: rgba(255,255,255,.88); text-decoration: none;
+  font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 700;
+  letter-spacing: .1em; text-transform: uppercase;
+}
+.wl-mobile-link:hover { color: #FFFFFF; }
+.wl-drawer-foot {
+  flex-shrink: 0; padding: 16px 18px 22px;
+  display: flex; flex-direction: column; gap: 10px;
+  border-top: 1px solid rgba(255,255,255,.08);
+}
+.wl-mobile-apply, .wl-mobile-login {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  height: 46px; border-radius: 11px; text-decoration: none;
+  font-family: 'DM Sans', sans-serif; font-size: 10.5px; font-weight: 800;
+  letter-spacing: .12em; text-transform: uppercase;
+}
+.wl-mobile-apply { background: #FFFFFF; color: #1C2340; }
+.wl-mobile-login { border: 1.5px solid rgba(255,255,255,.28); color: #FFFFFF; }
+.wl-mobile-login:hover { border-color: #FFFFFF; background: rgba(255,255,255,.08); }
+@media (max-width: 400px) {
+  .wl-nav-login { padding: 0 12px; }
+  .wl-logo-img-wrap { height: 38px; padding: 4px 8px; }
+  .wl-logo-img { height: 25px; }
+}
+
 /* ── Hero Backdrop (PHOTO BACKGROUND) ────────────────────────────────── */
 /* Full-screen hero — fills the viewport below the sticky navbar (76px)
    so the first thing a visitor sees is one uninterrupted, immersive scene
    instead of a short banner strip. */
 .wl-hero-backdrop {
   position: absolute; top: 0; left: 0; width: 100%;
-  height: calc(100vh - 76px); min-height: 560px;
+  height: calc(100vh - 76px); height: calc(100svh - 76px); min-height: 560px;
   background-image:
     linear-gradient(160deg, rgba(20, 26, 51, 0.82) 0%, rgba(20, 26, 51, 0.96) 100%),
     url('/images/nasugbu-bg.jpg');
@@ -178,7 +252,11 @@ html { scroll-behavior: smooth; }
   padding-top: 48px;
   padding-bottom: 64px;
 }
-@media (max-width: 640px) { .wl-hero { padding-top: 32px; padding-bottom: 48px; min-height: calc(100vh - 76px); } }
+@media (max-width: 640px) {
+  .wl-hero { padding-top: 32px; padding-bottom: 48px; min-height: calc(100vh - 76px); min-height: calc(100svh - 76px); }
+  .wl-hero-cta { flex-direction: column; align-items: stretch; width: 100%; max-width: 360px; margin-left: auto; margin-right: auto; }
+  .wl-hero-btn-primary, .wl-hero-btn-outline { justify-content: center; width: 100%; }
+}
 
 .wl-hero-badge {
   display: inline-flex; align-items: center; gap: 7px;
@@ -305,7 +383,8 @@ html { scroll-behavior: smooth; }
   .wl-verify { flex-direction: column; align-items: stretch; padding: 24px; }
   .wl-verify-right { justify-content: stretch; }
   .wl-verify-input { width: 100%; min-width: 0; flex: 1 1 auto; }
-  .wl-verify-btn { flex: 0 0 auto; }
+  .wl-verify-btn { flex: 1 1 100%; height: 46px; }
+  .wl-verify-left { align-items: flex-start; }
 }
 
 /* ── How It Works — real 4-step applicant journey, not decorative
@@ -358,6 +437,9 @@ html { scroll-behavior: smooth; }
 .wl-bento { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
 .wl-feature--lg { grid-column: 1 / -1; }
 @media (max-width: 1024px) { .wl-bento { grid-template-columns: repeat(2, 1fr); } }
+@media (min-width: 641px) and (max-width: 1024px) {
+  .wl-bento > .wl-feature:last-child:nth-child(even) { grid-column: 1 / -1; }
+}
 @media (max-width: 640px) {
   .wl-bento { grid-template-columns: 1fr; }
   .wl-feature--lg { flex-direction: column; }
@@ -426,6 +508,11 @@ html { scroll-behavior: smooth; }
   transition: border-color .18s, background .18s, transform .18s;
 }
 .wl-cta-btn-ghost:hover { border-color: #FFFFFF; background: rgba(255,255,255,.08); transform: translateY(-2px); }
+@media (max-width: 640px) {
+  .wl-cta-band { padding: 56px 0; }
+  .wl-cta-actions { flex-direction: column; align-items: stretch; max-width: 360px; margin: 0 auto; }
+  .wl-cta-btn, .wl-cta-btn-ghost { justify-content: center; width: 100%; }
+}
 
 /* ── Footer ──────────────────────────────────────────────────────────── */
 .wl-footer { background: #FFFFFF; border-top: 1px solid rgba(28,35,64,.07); margin-top: auto; }
@@ -448,6 +535,24 @@ const STEPS = [
 export default function Welcome() {
     const [plateQuery, setPlateQuery] = useState('');
     const [scrolled, setScrolled] = useState(false);
+    const [menuOpen, setMenuOpen] = useState(false);
+
+    // Mobile sidebar: closes on Escape and when the window grows back to the desktop nav.
+    useEffect(() => {
+        if (!menuOpen) return undefined;
+        const onKey = (e) => { if (e.key === 'Escape') setMenuOpen(false); };
+        const onResize = () => { if (window.innerWidth > 860) setMenuOpen(false); };
+        window.addEventListener('keydown', onKey);
+        window.addEventListener('resize', onResize);
+        // Keep the page behind the sidebar from scrolling.
+        const prevOverflow = document.body.style.overflow;
+        document.body.style.overflow = 'hidden';
+        return () => {
+            document.body.style.overflow = prevOverflow;
+            window.removeEventListener('keydown', onKey);
+            window.removeEventListener('resize', onResize);
+        };
+    }, [menuOpen]);
 
     // Navbar goes from transparent (over the hero photo) to a solid blurred
     // panel once the page has scrolled past the top of the hero.
@@ -608,10 +713,58 @@ export default function Welcome() {
                             <Link href="/register-mtop" className="wl-nav-apply">
                                 Apply Now
                             </Link>
+                            <button
+                                type="button"
+                                className="wl-menu-btn"
+                                aria-label="Open menu"
+                                aria-expanded={menuOpen}
+                                aria-controls="wl-mobile-menu"
+                                onClick={() => setMenuOpen(true)}
+                            >
+                                <Menu size={18} strokeWidth={2.2} />
+                            </button>
                         </div>
                     </div>
                 </div>
+
             </div>
+
+            {/* Phone / tablet sidebar — same destinations as the desktop nav. Rendered outside
+                the navbar: its backdrop-filter would otherwise trap position: fixed. */}
+            <div className={`wl-drawer-overlay ${menuOpen ? 'is-open' : ''}`} onClick={() => setMenuOpen(false)} aria-hidden="true" />
+            <aside
+                id="wl-mobile-menu"
+                className={`wl-drawer ${menuOpen ? 'is-open' : ''}`}
+                aria-label="Menu"
+                aria-hidden={!menuOpen}
+            >
+                <div className="wl-drawer-head">
+                    <Link href="/" className="wl-logo" onClick={() => setMenuOpen(false)}>
+                        <div className="wl-logo-img-wrap">
+                            <img src="/images/logo.png" alt="TRIVORA" className="wl-logo-img" />
+                        </div>
+                    </Link>
+                    <button type="button" className="wl-menu-btn" aria-label="Close menu" onClick={() => setMenuOpen(false)}>
+                        <X size={18} strokeWidth={2.2} />
+                    </button>
+                </div>
+                <nav aria-label="Mobile">
+                    <span className="wl-drawer-label">Menu</span>
+                    {[['#verify', 'Verify Permit'], ['#how-it-works', 'How It Works'], ['#technology', 'Technology']].map(([href, label]) => (
+                        <a key={href} href={href} className="wl-mobile-link" tabIndex={menuOpen ? 0 : -1} onClick={() => setMenuOpen(false)}>
+                            {label} <ArrowRight size={14} strokeWidth={2.2} />
+                        </a>
+                    ))}
+                </nav>
+                <div className="wl-drawer-foot">
+                    <Link href="/register-mtop" className="wl-mobile-apply" tabIndex={menuOpen ? 0 : -1} onClick={() => setMenuOpen(false)}>
+                        Apply for a Permit <ArrowRight size={14} strokeWidth={2.4} />
+                    </Link>
+                    <Link href={route('login')} className="wl-mobile-login" tabIndex={menuOpen ? 0 : -1} onClick={() => setMenuOpen(false)}>
+                        <LogIn size={13} strokeWidth={2.2} /> Log In
+                    </Link>
+                </div>
+            </aside>
 
             {/* ── Dark hero backdrop with photo — decorative, same info already in text. ── */}
             <div className="wl-hero-backdrop" aria-hidden="true">
