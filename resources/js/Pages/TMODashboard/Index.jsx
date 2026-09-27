@@ -22,6 +22,13 @@ const LIVE_MONITORING_REFRESH_MS = 3000;
 
 const WEEKDAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
+// Live Monitoring status badge per DashboardController connection_status.
+const CONNECTION_META = {
+    online:    { label: 'Online',    badge: 'bg-emerald-50 text-emerald-700 border border-emerald-200/60' },
+    no_signal: { label: 'No Signal', badge: 'bg-amber-50 text-amber-700 border border-amber-200/60' },
+    offline:   { label: 'Offline',   badge: 'bg-slate-100 text-slate-600 border border-slate-200' },
+};
+
 // Shared soft, layered shadow token — same elevation language used across TMO dashboards.
 const CARD_SHADOW = 'shadow-[0_1px_2px_0_rgba(15,23,42,0.04),0_8px_24px_-8px_rgba(15,23,42,0.10)]';
 
@@ -29,7 +36,7 @@ export default function LiveMonitoring({ initialTricycles = [], stats = {} }) {
     const [activeTab, setActiveTab] = useState('units'); // 'units' | 'alerts'
     const [selectedUnitId, setSelectedUnitId] = useState(null);
     const [unitSearch, setUnitSearch] = useState('');
-    const [unitStatusFilter, setUnitStatusFilter] = useState('all'); // 'all' | 'online' | 'offline'
+    const [unitStatusFilter, setUnitStatusFilter] = useState('all'); // 'all' | 'online' | 'no_signal' | 'offline'
 
     // ── REAL: sourced exclusively from the backend (DashboardController::index() -> tricycle_locations) ──
     const realTricycles = useMemo(
@@ -39,7 +46,7 @@ export default function LiveMonitoring({ initialTricycles = [], stats = {} }) {
 
     // Poll the SAME Laravel route this page already renders from, requesting only the props that
     // change (initialTricycles, stats) — no separate API, no client-side coordinate fabrication.
-    // Live Monitoring only: 3s refresh (every other page keeps the shared 5s default). The hook's
+    // Live Monitoring only: 3s silent refresh (every other page keeps the shared 5s default). The hook's
     // in-flight guard skips a tick while the previous reload is still running, so a slow response
     // never stacks requests. Refreshing faster than GPS arrives (every 5s) just re-reads the latest
     // stored coordinate — it never creates one.
@@ -74,17 +81,15 @@ export default function LiveMonitoring({ initialTricycles = [], stats = {} }) {
         return Object.keys(STATUS_META).map((key) => ({ key, count: counts[key], ...STATUS_META[key] }));
     }, [realTricycles]);
 
-    // Fleet connectivity for the KPI progress bar — straight from DashboardController's is_online +
-    // gps_freshness (the same values the Units tab shows), refreshed by the 3s background reload.
+    // Fleet connectivity for the KPI progress bar — straight from DashboardController's
+    // connection_status (the same value the Units tab badge shows), refreshed by the background reload.
     const connectivity = useMemo(() => {
-        const c = { fresh: 0, delayed: 0, offline: 0, total: realTricycles.length };
+        const c = { online: 0, no_signal: 0, offline: 0, total: realTricycles.length };
         realTricycles.forEach((t) => {
-            if (!t.is_online) c.offline += 1;
-            else if (t.gps_freshness === 'delayed') c.delayed += 1;
-            else c.fresh += 1;
+            if (c[t.connection_status] !== undefined) c[t.connection_status] += 1;
         });
         const pct = (n) => (c.total > 0 ? Math.round((n / c.total) * 100) : 0);
-        return { ...c, freshPct: pct(c.fresh), delayedPct: pct(c.delayed), onlinePct: pct(c.fresh + c.delayed) };
+        return { ...c, onlinePct: pct(c.online), noSignalPct: pct(c.no_signal) };
     }, [realTricycles]);
 
     // Filter units for the sidebar list by search term
@@ -98,19 +103,18 @@ export default function LiveMonitoring({ initialTricycles = [], stats = {} }) {
         );
     }, [realTricycles, unitSearch]);
 
-    // All / Online / Offline status filter — derives from the same server-side flag
-    // (is_online, computed in DashboardController::index(): drivers.is_online first, then the
-    // 60s signal-lost window from config/tracking.fleet_signal_lost_seconds) that the roster's Online/Offline badges
-    // and the map already display. No separate client-side timing logic.
+    // All / Online / No Signal / Offline status filter — the same server-side connection_status
+    // (DashboardController::index(): drivers.is_online first, then the 60s No Signal window from
+    // config/tracking.fleet_signal_lost_seconds) the badges and the map display. No client-side timing.
     const statusCounts = useMemo(() => ({
-        all:    searchFilteredUnits.length,
-        online: searchFilteredUnits.filter(t => t.is_online).length,
-        offline: searchFilteredUnits.filter(t => !t.is_online).length,
+        all:       searchFilteredUnits.length,
+        online:    searchFilteredUnits.filter(t => t.connection_status === 'online').length,
+        no_signal: searchFilteredUnits.filter(t => t.connection_status === 'no_signal').length,
+        offline:   searchFilteredUnits.filter(t => t.connection_status === 'offline').length,
     }), [searchFilteredUnits]);
 
     const filteredUnits = useMemo(() => {
-        if (unitStatusFilter === 'online') return searchFilteredUnits.filter(t => t.is_online);
-        if (unitStatusFilter === 'offline') return searchFilteredUnits.filter(t => !t.is_online);
+        if (unitStatusFilter !== 'all') return searchFilteredUnits.filter(t => t.connection_status === unitStatusFilter);
         return searchFilteredUnits;
     }, [searchFilteredUnits, unitStatusFilter]);
 
@@ -160,36 +164,35 @@ export default function LiveMonitoring({ initialTricycles = [], stats = {} }) {
                             </div>
                         </div>
 
-                        <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-0.5 text-xs font-bold text-emerald-700">
-                            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                        <span className="inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-0.5 text-xs font-bold text-emerald-700">
                             {connectivity.onlinePct}% Online
                         </span>
                     </div>
 
-                    {/* Proportional Segmented Meter: Online (fresh GPS) / Online (GPS delayed) / Offline */}
+                    {/* Proportional Segmented Meter: Online / No Signal / Offline */}
                     <div className="pt-3">
                         <div className="flex h-2 w-full overflow-hidden rounded-full bg-slate-100 p-0.5 ring-1 ring-slate-200/60">
                             <div
                                 className="h-full rounded-full bg-emerald-500 transition-all duration-500"
-                                style={{ width: `${connectivity.freshPct}%` }}
+                                style={{ width: `${connectivity.onlinePct}%` }}
                             />
                             <div
                                 className="h-full rounded-full bg-amber-500 transition-all duration-500 ml-0.5"
-                                style={{ width: `${connectivity.delayedPct}%` }}
+                                style={{ width: `${connectivity.noSignalPct}%` }}
                             />
                         </div>
 
                         <div className="mt-2.5 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-xs">
                             <div className="flex items-center gap-1.5">
                                 <span className="h-2 w-2 rounded-full bg-emerald-500 shrink-0" />
-                                <span className="font-bold text-slate-900 tabular-nums">{connectivity.fresh}</span>
+                                <span className="font-bold text-slate-900 tabular-nums">{connectivity.online}</span>
                                 <span className="text-slate-600">Online</span>
                             </div>
 
                             <div className="flex items-center gap-1.5">
                                 <span className="h-2 w-2 rounded-full bg-amber-500 shrink-0" />
-                                <span className="font-bold text-slate-900 tabular-nums">{connectivity.delayed}</span>
-                                <span className="text-slate-600">GPS Delayed</span>
+                                <span className="font-bold text-slate-900 tabular-nums">{connectivity.no_signal}</span>
+                                <span className="text-slate-600">No Signal</span>
                             </div>
 
                             <div className="flex items-center gap-1.5">
@@ -373,8 +376,8 @@ export default function LiveMonitoring({ initialTricycles = [], stats = {} }) {
                                             )}
                                         </div>
 
-                                        {/* All / Online / Offline dropdown — same is_online freshness
-                                            flag as the badges and map, with live counts. pl/pr reserves
+                                        {/* All / Online / No Signal / Offline dropdown — same connection_status
+                                            as the badges and map, with live counts. pl/pr reserves
                                             room so the label never runs under the dropdown arrow icon. */}
                                         <select
                                             value={unitStatusFilter}
@@ -384,6 +387,7 @@ export default function LiveMonitoring({ initialTricycles = [], stats = {} }) {
                                         >
                                             <option value="all">All ({statusCounts.all})</option>
                                             <option value="online">Online ({statusCounts.online})</option>
+                                            <option value="no_signal">No Signal ({statusCounts.no_signal})</option>
                                             <option value="offline">Offline ({statusCounts.offline})</option>
                                         </select>
                                     </div>
@@ -395,9 +399,9 @@ export default function LiveMonitoring({ initialTricycles = [], stats = {} }) {
                                         filteredUnits.map((unit) => {
                                             const isSelected = selectedUnitId === unit.db_id;
                                             const isOffline = !unit.is_online;
-                                            const lastUpdateLabel = !unit.recorded_at
-                                                ? 'No Signal'
-                                                : (unit.last_update_label || 'Unknown');
+                                            const connection = CONNECTION_META[unit.connection_status] || CONNECTION_META.offline;
+                                            // Every listed unit has real GPS history (units without any are excluded server-side).
+                                            const lastUpdateLabel = unit.last_update_label || '—';
 
                                             return (
                                                 <div
@@ -423,13 +427,8 @@ export default function LiveMonitoring({ initialTricycles = [], stats = {} }) {
                                                                 </span>
                                                             )}
                                                         </div>
-                                                        <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold ${
-                                                            unit.is_online
-                                                                ? 'bg-emerald-50 text-emerald-700 border border-emerald-200/60'
-                                                                : 'bg-slate-100 text-slate-600 border border-slate-200'
-                                                        }`}>
-                                                            <span className={`h-1.5 w-1.5 rounded-full ${unit.is_online ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'}`} />
-                                                            {unit.is_online ? 'Online' : 'Offline'}
+                                                        <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold ${connection.badge}`}>
+                                                            {connection.label}
                                                         </span>
                                                     </div>
 
@@ -437,19 +436,8 @@ export default function LiveMonitoring({ initialTricycles = [], stats = {} }) {
                                                         <span className="truncate max-w-[170px] font-medium text-slate-700">
                                                             {unit.operator}
                                                         </span>
-                                                        {/* GPS freshness (DashboardController gps_freshness) — separate
-                                                            from Online/Offline: a delayed coordinate is flagged here
-                                                            while the driver stays Online. */}
-                                                        <span className={`text-[10px] font-mono ${
-                                                            unit.gps_freshness === 'delayed'
-                                                                ? 'font-bold text-amber-600'
-                                                                : 'font-medium text-slate-400'
-                                                        }`}>
-                                                            {unit.gps_freshness === 'delayed'
-                                                                ? 'GPS Delayed'
-                                                                : unit.gps_freshness === 'stale'
-                                                                    ? 'Signal Lost'
-                                                                    : 'GPS Acquired'}
+                                                        <span className="text-[10px] font-medium text-slate-400 font-mono">
+                                                            GPS Acquired
                                                         </span>
                                                     </div>
 
@@ -465,7 +453,7 @@ export default function LiveMonitoring({ initialTricycles = [], stats = {} }) {
                                                                             : 'bg-emerald-500'
                                                             }`} />
                                                             {isOffline
-                                                                ? (unit.gps_freshness === 'stale' ? 'Offline · Signal Lost' : 'Offline')
+                                                                ? connection.label
                                                                 : unit.status === 'violator'
                                                                     ? 'Coding Violation'
                                                                     : unit.status === 'coding_no_operation'

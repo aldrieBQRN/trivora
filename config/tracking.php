@@ -39,28 +39,19 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Live Fleet Monitoring GPS freshness / signal-lost thresholds
+    | Live Fleet Monitoring "No Signal" threshold
     |--------------------------------------------------------------------------
     |
     | Separate from `staleness_seconds` above (which drives the Final
-    | Confirmation & GPS Setup "Connected"/"Stale" badge). Both apply ONLY
-    | while drivers.is_online is true — an explicit Offline (toggle or logout)
-    | is shown immediately and never waits for either threshold.
-    |
-    | GPS freshness is kept separate from the operational Online/Offline
-    | status, so one late coordinate never flips a driver who is intentionally
-    | Online to Offline:
-    |   age <= fleet_online_threshold_seconds   -> Online + GPS Fresh
-    |   age <= fleet_signal_lost_seconds        -> Online + GPS Delayed
-    |   older                                   -> Offline / Signal Lost
-    |
-    | 10s = the 5s reporting interval plus a 5s grace for one network hop.
-    | 60s = long enough to ride out GPS/network hiccups, short enough that a
-    | killed app, dead phone or lost connection still shows as Offline.
+    | Confirmation & GPS Setup "Connected"/"Stale" badge). Live Monitoring
+    | status is:
+    |   drivers.is_online = false                    -> Offline (immediately,
+    |                                                   toggle or logout)
+    |   drivers.is_online = true, GPS <= this value  -> Online
+    |   drivers.is_online = true, GPS  > this value  -> No Signal
+    | Units that have never sent GPS are not listed in Live Monitoring.
     |
     */
-
-    'fleet_online_threshold_seconds' => 10,
 
     'fleet_signal_lost_seconds' => 60,
 
