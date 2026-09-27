@@ -26,6 +26,10 @@ class ProfileUpdateRequest extends FormRequest
                 'max:255',
                 Rule::unique(User::class)->ignore($this->user()->id),
             ],
+            // Staff accounts only (ignored for other roles in ProfileController::update()).
+            'contact_number' => ['nullable', 'string', 'max:20', 'regex:/^[0-9+\-\s()]*$/'],
+            'address' => ['nullable', 'string', 'max:255'],
+            'birthday' => ['nullable', 'date', 'before:today', 'after:1900-01-01'],
         ];
     }
 }

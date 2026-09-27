@@ -169,6 +169,8 @@ class InspectionController extends Controller
             }
         }
 
+        $statusBeforeInspection = $application->status;
+
         DB::transaction(function () use ($application, $isApprove, $rejectionReason) {
             $fromStatus = $application->status;
             $fromStep = $application->current_step;
@@ -238,6 +240,10 @@ class InspectionController extends Controller
                 'created_at'     => now(),
             ]);
         });
+
+        // BPLO: a passed inspection is ready for sticker & plate release (a failed one waits on the
+        // driver's fixes, so it notifies no staff).
+        \App\Services\StaffNotifier::applicationStatusChanged($application->refresh(), $statusBeforeInspection, $application->status, $request->user()->id);
 
         if ($isApprove) {
             return redirect()->route('tmo.physical')

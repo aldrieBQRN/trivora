@@ -47,6 +47,8 @@ class BPLOUserController extends Controller
                 'role_label'         => 'BPLO Staff',
                 'employee_id'        => $u->employee_id,
                 'position'           => $u->position,
+                'birthday'           => $u->birthday?->format('Y-m-d'),
+                'birthday_label'     => $u->birthday?->format('M d, Y'),
                 'contact_number'     => $u->contact_number,
                 'address'            => $u->address,
                 'is_active'          => (bool)$u->is_active,
@@ -89,6 +91,7 @@ class BPLOUserController extends Controller
             'password'       => ['required', 'string', Password::defaults()],
             'is_active'      => 'boolean',
             'position'       => 'nullable|string|max:100',
+            'birthday'       => 'nullable|date|before:today|after:1900-01-01',
             'contact_number' => 'nullable|string|max:30',
             'address'        => 'nullable|string|max:255',
         ]);
@@ -100,6 +103,7 @@ class BPLOUserController extends Controller
             'role'           => 'bplo_staff',
             'is_active'      => $validated['is_active'] ?? true,
             'position'       => $validated['position'] ?? null,
+            'birthday'       => $validated['birthday'] ?? null,
             'contact_number' => $validated['contact_number'] ?? null,
             'address'        => $validated['address'] ?? null,
         ]);
@@ -127,6 +131,7 @@ class BPLOUserController extends Controller
             'password'       => ['nullable', 'string', Password::defaults()],
             'is_active'      => 'boolean',
             'position'       => 'nullable|string|max:100',
+            'birthday'       => 'nullable|date|before:today|after:1900-01-01',
             'contact_number' => 'nullable|string|max:30',
             'address'        => 'nullable|string|max:255',
         ]);
@@ -136,6 +141,7 @@ class BPLOUserController extends Controller
             'name'           => trim($validated['name']),
             'email'          => strtolower(trim($validated['email'])),
             'position'       => $validated['position'] ?? null,
+            'birthday'       => $validated['birthday'] ?? null,
             'contact_number' => $validated['contact_number'] ?? null,
             'address'        => $validated['address'] ?? null,
         ];

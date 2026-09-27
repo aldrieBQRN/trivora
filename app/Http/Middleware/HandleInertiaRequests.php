@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Http\Controllers\NotificationController;
 use App\Models\Operator;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
@@ -75,6 +76,10 @@ class HandleInertiaRequests extends Middleware
                 ] : null,
                 'operator' => $operator,
             ],
+
+            // Header notification bell (unread count + latest items) — lazy, so a partial reload
+            // only computes it when asked for (useBackgroundRefresh includes it on every refresh).
+            'notifications' => fn () => NotificationController::sharedFor($user),
 
             // Flash messages available as toast notifications in React
             'flash' => [

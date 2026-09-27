@@ -111,7 +111,7 @@ class RegistrationController extends Controller
 
         $request->validate($rules);
 
-        [$user, $reference] = DB::transaction(function () use ($request, $ownerIsDriver) {
+        [$user, $reference, $application] = DB::transaction(function () use ($request, $ownerIsDriver) {
             // 1. Create User
             $user = \App\Models\User::create([
                 'name'     => $request->input('first_name') . ' ' . $request->input('last_name'),
@@ -237,8 +237,11 @@ class RegistrationController extends Controller
                 'created_at'     => now(),
             ]);
 
-            return [$user, $refNo];
+            return [$user, $refNo, $application];
         });
+
+        // TMO: a new application is waiting for Document Review (after commit).
+        \App\Services\StaffNotifier::applicationStatusChanged($application, 'draft', 'pending_review', $user->id);
 
         // Automatically authenticate user session
         auth()->login($user);

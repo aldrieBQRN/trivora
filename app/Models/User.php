@@ -30,6 +30,7 @@ class User extends Authenticatable
         'profile_photo_path',
         'employee_id',
         'position',
+        'birthday',
         'contact_number',
         'address',
     ];
@@ -66,6 +67,7 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password'          => 'hashed',
             'is_active'         => 'boolean',
+            'birthday'          => 'date',
         ];
     }
 

@@ -515,19 +515,21 @@ export default function Welcome() {
             const hasIssue = isSuspended || isRevoked || /Rejected|Reinspection|Cancelled/i.test(appStatus);
             const inProcess = /In Process/i.test(appStatus);
 
-            const statusColor = isActive ? '#059669'
+            // A unit whose application is still in progress or has a blocking issue cannot be presented as an active franchise.
+            const isTrulyActive = isActive && !inProcess && !hasIssue;
+
+            const statusColor = isTrulyActive ? '#059669'
                               : isExpired ? '#D97706'
                               : hasIssue ? '#DC2626'
-                              : (isUnregistered && !appStatus) ? '#6B7280'
                               : inProcess ? '#4F5BCB'
-                              : '#DC2626';
+                              : (isUnregistered && !appStatus) ? '#6B7280'
+                              : '#6B7280';
 
-            const statusIcon = isActive ? 'success'
+            const statusIcon = isTrulyActive ? 'success'
                              : (isExpired || hasIssue) ? 'warning'
-                             : (isUnregistered && !appStatus) ? 'info'
                              : 'info';
 
-            const statusLabel = isActive ? '✓ ACTIVE — Valid MTOP Franchise'
+            const statusLabel = isTrulyActive ? '✓ ACTIVE — Valid MTOP Franchise'
                               : isRevoked ? '⊗ REVOKED — Franchise Revoked'
                               : isSuspended ? '⊗ SUSPENDED — Not Authorized to Operate'
                               : isExpired ? '⚠ EXPIRED — Renewal Required'
@@ -535,11 +537,12 @@ export default function Welcome() {
                               : isUnregistered ? '○ UNREGISTERED — No Permit Issued'
                               : '○ Pending';
 
-            const statusTitle = isActive ? 'Valid Franchise Found'
+            const statusTitle = isTrulyActive ? 'Valid Franchise Found'
                               : (isExpired || hasIssue) ? 'Franchise Issue Detected'
+                              : inProcess ? 'Application In Progress'
                               : 'Franchise Record Found';
 
-            const panelBg = isActive ? '#F0FDF4'
+            const panelBg = isTrulyActive ? '#F0FDF4'
                           : (isExpired || hasIssue) ? '#FEF2F2'
                           : '#EEF2FF';
 
@@ -552,8 +555,8 @@ export default function Welcome() {
                 html: `
                     <div style="text-align:left;padding:12px 10px;background:${panelBg};border-radius:10px;margin-top:8px;font-size:13px;line-height:1.8">
                         <b>Plate No:</b> ${esc(data.plate)}<br/>
-                        ${data.franchise_number ? `<b>Franchise Number:</b> ${esc(data.franchise_number)}<br/>` : ''}
-                        ${data.sticker_number ? `<b>Sticker Number:</b> ${esc(data.sticker_number)}<br/>` : ''}
+                        ${!inProcess && data.franchise_number ? `<b>Franchise Number:</b> ${esc(data.franchise_number)}<br/>` : ''}
+                        ${!inProcess && data.sticker_number ? `<b>Sticker Number:</b> ${esc(data.sticker_number)}<br/>` : ''}
                         <b>Operator:</b> ${esc(data.operator)}<br/>
                         <b>Unit:</b> ${esc(data.make_model)}<br/>
                         ${data.expiry ? `<b>Franchise Expiry:</b> ${esc(data.expiry)}<br/>` : ''}
@@ -562,7 +565,7 @@ export default function Welcome() {
                     </div>
                 `,
                 icon: statusIcon,
-                confirmButtonColor: isActive ? '#059669' : '#1C2340',
+                confirmButtonColor: isTrulyActive ? '#059669' : '#1C2340',
                 customClass: { title: 'font-jakarta', popup: 'font-inter' }
             });
         } catch {

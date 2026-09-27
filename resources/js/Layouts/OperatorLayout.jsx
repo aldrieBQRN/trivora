@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { Link, usePage, router } from '@inertiajs/react';
+import NotificationBell from '@/Components/NotificationBell';
 import {
     Bell, Menu, Settings, LogOut,
     ChevronDown, ChevronRight,
@@ -344,11 +345,7 @@ export default function OperatorLayout({
 
                     {/* Right: Notifications & Profile Menu */}
                     <div className="flex items-center gap-2 shrink-0">
-                        {/* Notification Bell */}
-                        <button className="relative flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-800">
-                            <Bell size={18} strokeWidth={1.8} />
-                            <span className="absolute right-2 top-2 h-1.5 w-1.5 rounded-full border border-white bg-[#1D2542]" />
-                        </button>
+                        <NotificationBell />
 
                         <div className="mx-1 h-7 w-px bg-slate-200" />
 

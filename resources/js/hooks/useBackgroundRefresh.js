@@ -110,7 +110,9 @@ export default function useBackgroundRefresh(only, options = {}) {
             if (isUserEngaged(pauseOnInputFocusRef.current)) return;
 
             try {
-                router.reload({ only: onlyRef.current, replace: true });
+                // The header notification bell's shared prop rides along on the same request, so
+                // it stays current without a polling loop of its own.
+                router.reload({ only: [...onlyRef.current, 'notifications'], replace: true });
             } catch (err) {
                 // Background refresh is best-effort: swallow and retry on the next tick.
             }
