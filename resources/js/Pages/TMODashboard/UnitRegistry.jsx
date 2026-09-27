@@ -4,7 +4,7 @@ import useBackgroundRefresh from '@/hooks/useBackgroundRefresh';
 import TrivoraLayout from '@/Layouts/TrivoraLayout';
 import {
     Bike, Phone, Search, X, ChevronRight, ChevronLeft,
-    MapPin, Calendar, RotateCcw, ShieldAlert, SlidersHorizontal,
+    MapPin, Calendar, RotateCcw, ShieldAlert, ShieldCheck, SlidersHorizontal,
     FileSpreadsheet
 } from 'lucide-react';
 
@@ -156,91 +156,116 @@ export default function TricycleRegistry({ initialUnits = [] }) {
             {/* ══════════════════════════════════════════════════════════════
                 2. COMPACT OPERATIONAL KPI DECK
                ══════════════════════════════════════════════════════════════ */}
-            <div className="mb-5 grid grid-cols-1 gap-3 sm:gap-4 md:grid-cols-12">
-                {/* ─ Primary Anchor: Fleet Volume & Operational Breakdown ─ */}
-                <div className={`flex flex-col justify-between rounded-2xl border border-slate-200/70 bg-white p-4 sm:p-5 ${CARD_SHADOW} md:col-span-12 xl:col-span-6`}>
-                    <div className="flex items-center justify-between gap-3 pb-3 border-b border-slate-100">
-                        <div className="flex items-center gap-3">
-                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#1D2542]/[0.10] to-[#1D2542]/[0.02] text-[#1D2542]">
-                                <Bike size={20} strokeWidth={2.2} />
-                            </div>
-                            <div>
-                                <div className="flex items-baseline gap-2">
-                                    <span className="text-2xl sm:text-3xl font-extrabold tracking-tight tabular-nums text-slate-900">
-                                        {totalCount}
-                                    </span>
-                                    <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                                        Total Units
-                                    </span>
-                                </div>
-                                <p className="text-[11px] font-medium text-slate-500">
-                                    Franchised Fleet
-                                </p>
-                            </div>
-                        </div>
+            <div className="mb-5 grid grid-cols-1 gap-3 sm:gap-4 sm:grid-cols-2 xl:grid-cols-4">
 
-                        <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-0.5 text-xs font-bold text-emerald-700">
-                            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                            {activePct}% Road-Ready
-                        </span>
-                    </div>
-
-                    {/* Proportional Segmented Meter */}
-                    <div className="pt-3">
-                        <div className="flex h-2 w-full overflow-hidden rounded-full bg-slate-100 p-0.5 ring-1 ring-slate-200/60">
-                            <div
-                                className="h-full rounded-full bg-emerald-500 transition-all duration-500"
-                                style={{ width: `${activePct}%` }}
-                            />
-                            <div
-                                className="h-full rounded-full bg-amber-500 transition-all duration-500 ml-0.5"
-                                style={{ width: `${suspendedPct}%` }}
-                            />
-                        </div>
-
-                        <div className="mt-2.5 flex items-center justify-between text-xs">
-                            <div className="flex items-center gap-1.5">
-                                <span className="h-2 w-2 rounded-full bg-emerald-500 shrink-0" />
-                                <span className="font-bold text-slate-900 tabular-nums">{activeCount}</span>
-                                <span className="text-slate-600">Active</span>
-                            </div>
-
-                            <div className="flex items-center gap-1.5">
-                                <span className="h-2 w-2 rounded-full bg-amber-500 shrink-0" />
-                                <span className="font-bold text-slate-900 tabular-nums">{suspendedCount}</span>
-                                <span className="text-slate-600">Suspended</span>
-                            </div>
-
-                            <span className="text-[11px] text-slate-400 font-medium">
-                                Compliance: <strong className="text-slate-700">{activePct}%</strong>
-                            </span>
-                        </div>
-                    </div>
-                </div>
-
-                {/* ─ Secondary Metric: Today's Color Coding Compliance ─ */}
-                <div className={`flex flex-col justify-between rounded-2xl border border-slate-200/70 bg-white p-4 sm:p-5 ${CARD_SHADOW} md:col-span-6 xl:col-span-3`}>
+                {/* ─ Total Units (Franchised Fleet) ─ */}
+                <div className={`flex flex-col justify-between rounded-2xl border border-slate-200/70 bg-white p-4 sm:p-5 ${CARD_SHADOW}`}>
                     <div>
                         <div className="flex items-center justify-between">
                             <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                                Ordinance Enforcement
+                                Total Units
+                            </span>
+                            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-[#1D2542]/[0.10] to-[#1D2542]/[0.02] text-[#1D2542]">
+                                <Bike size={14} />
+                            </span>
+                        </div>
+                        <div className="mt-2 flex items-baseline gap-2">
+                            <span className="text-2xl sm:text-3xl font-extrabold tracking-tight tabular-nums text-slate-900">
+                                {totalCount}
+                            </span>
+                            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                                Units
+                            </span>
+                        </div>
+                        <p className="mt-1 text-[11px] text-slate-500">
+                            Franchised fleet in the registry
+                        </p>
+                    </div>
+
+                    <div className="mt-3 rounded-xl bg-slate-50 p-2.5 flex items-center justify-between text-xs">
+                        <span className="text-[11px] font-medium text-slate-500">Road-Ready:</span>
+                        <span className="font-bold text-slate-900 tabular-nums">{activePct}%</span>
+                    </div>
+                </div>
+
+                {/* ─ Active ─ */}
+                <div className={`flex flex-col justify-between rounded-2xl border border-slate-200/70 bg-white p-4 sm:p-5 ${CARD_SHADOW}`}>
+                    <div>
+                        <div className="flex items-center justify-between">
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                                Active
+                            </span>
+                            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-[#1D2542]/[0.10] to-[#1D2542]/[0.02] text-[#1D2542]">
+                                <ShieldCheck size={14} />
+                            </span>
+                        </div>
+                        <div className="mt-2 flex items-baseline gap-2">
+                            <span className="text-2xl sm:text-3xl font-extrabold tracking-tight tabular-nums text-emerald-600">
+                                {activeCount}
+                            </span>
+                            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                                Active
+                            </span>
+                        </div>
+                        <p className="mt-1 text-[11px] text-slate-500">
+                            {activeCount} of {totalCount} units cleared to operate
+                        </p>
+                    </div>
+
+                    <div className="mt-3 rounded-xl bg-slate-50 p-2.5 flex items-center justify-between text-xs">
+                        <span className="text-[11px] font-medium text-slate-500">Share of Fleet:</span>
+                        <span className="font-bold text-slate-900 tabular-nums">{activePct}%</span>
+                    </div>
+                </div>
+
+                {/* ─ Suspended ─ */}
+                <div className={`flex flex-col justify-between rounded-2xl border border-slate-200/70 bg-white p-4 sm:p-5 ${CARD_SHADOW}`}>
+                    <div>
+                        <div className="flex items-center justify-between">
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                                Suspended
+                            </span>
+                            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-[#1D2542]/[0.10] to-[#1D2542]/[0.02] text-[#1D2542]">
+                                <ShieldAlert size={14} />
+                            </span>
+                        </div>
+                        <div className="mt-2 flex items-baseline gap-2">
+                            <span className="text-2xl sm:text-3xl font-extrabold tracking-tight tabular-nums text-amber-600">
+                                {suspendedCount}
+                            </span>
+                            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                                Suspended
+                            </span>
+                        </div>
+                        <p className="mt-1 text-[11px] text-slate-500">
+                            Not cleared to operate
+                        </p>
+                    </div>
+
+                    <div className="mt-3 rounded-xl bg-slate-50 p-2.5 flex items-center justify-between text-xs">
+                        <span className="text-[11px] font-medium text-slate-500">Share of Fleet:</span>
+                        <span className="font-bold text-slate-900 tabular-nums">{suspendedPct}%</span>
+                    </div>
+                </div>
+
+                {/* ─ Restricted Today (Ordinance Enforcement: today's color coding) ─ */}
+                <div className={`flex flex-col justify-between rounded-2xl border border-slate-200/70 bg-white p-4 sm:p-5 ${CARD_SHADOW}`}>
+                    <div>
+                        <div className="flex items-center justify-between">
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                                Restricted Today
                             </span>
                             <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-[#1D2542]/[0.10] to-[#1D2542]/[0.02] text-[#1D2542]">
                                 <Calendar size={14} />
                             </span>
                         </div>
-
-                        <div className="mt-2 flex items-center gap-2">
-                            <span className="text-base sm:text-lg font-extrabold text-slate-900">{todayName}</span>
-                            {!isWeekend && todayCodingRule && (
-                                <span
-                                    className="inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[11px] font-bold text-slate-800"
-                                    style={{ backgroundColor: todayCodingRule.bg, borderColor: todayCodingRule.border, borderWidth: 1 }}
-                                >
-                                    <span className="h-2 w-2 rounded-full" style={{ backgroundColor: todayCodingRule.hex }} />
-                                    {todayCodingRule.color}
-                                </span>
-                            )}
+                        <div className="mt-2 flex items-baseline gap-2">
+                            <span className="text-2xl sm:text-3xl font-extrabold tracking-tight tabular-nums text-slate-900">
+                                {codedTodayCount}
+                            </span>
+                            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                                Units
+                            </span>
                         </div>
                         <p className="mt-1 text-[11px] text-slate-500">
                             {!isWeekend && todayCodingRule ? (
@@ -252,43 +277,18 @@ export default function TricycleRegistry({ initialUnits = [] }) {
                     </div>
 
                     <div className="mt-3 rounded-xl bg-slate-50 p-2.5 flex items-center justify-between text-xs">
-                        <span className="text-[11px] font-medium text-slate-500">Restricted Today:</span>
-                        <span className="font-bold text-slate-900 tabular-nums">
-                            {codedTodayCount} units
-                            <span className="text-[10px] text-slate-400 font-normal ml-1">
-                                ({totalCount > 0 ? Math.round((codedTodayCount / totalCount) * 100) : 0}%)
+                        <span className="text-[11px] font-medium text-slate-500">{todayName}:</span>
+                        {!isWeekend && todayCodingRule ? (
+                            <span
+                                className="inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[11px] font-bold text-slate-800"
+                                style={{ backgroundColor: todayCodingRule.bg, borderColor: todayCodingRule.border, borderWidth: 1 }}
+                            >
+                                <span className="h-2 w-2 rounded-full" style={{ backgroundColor: todayCodingRule.hex }} />
+                                {todayCodingRule.color}
                             </span>
-                        </span>
-                    </div>
-                </div>
-
-                {/* ─ Tertiary Metric: Operational Status ─ */}
-                <div className={`flex flex-col justify-between rounded-2xl border border-slate-200/70 bg-white p-4 sm:p-5 ${CARD_SHADOW} md:col-span-6 xl:col-span-3`}>
-                    <div>
-                        <div className="flex items-center justify-between">
-                            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                                Operational Status
-                            </span>
-                            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-[#1D2542]/[0.10] to-[#1D2542]/[0.02] text-[#1D2542]">
-                                <Bike size={14} />
-                            </span>
-                        </div>
-                        <div className="mt-2 flex items-baseline gap-2">
-                            <span className="text-2xl sm:text-3xl font-extrabold tracking-tight tabular-nums text-slate-900">
-                                {activePct}%
-                            </span>
-                            <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-600">
-                                Active Rate
-                            </span>
-                        </div>
-                        <p className="mt-1 text-[11px] text-slate-500">
-                            {activeCount} of {totalCount} units active
-                        </p>
-                    </div>
-
-                    <div className="mt-3 rounded-xl bg-slate-50 p-2.5 flex items-center justify-between text-xs">
-                        <span className="text-[11px] font-medium text-slate-500">LGU District:</span>
-                        <span className="text-xs font-bold text-slate-800">Nasugbu Central</span>
+                        ) : (
+                            <span className="text-xs font-bold text-slate-800">No coding</span>
+                        )}
                     </div>
                 </div>
             </div>

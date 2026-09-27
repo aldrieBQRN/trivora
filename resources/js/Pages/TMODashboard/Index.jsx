@@ -52,11 +52,6 @@ export default function LiveMonitoring({ initialTricycles = [], stats = {} }) {
     // Regulatory numbers (breach counts, compliance) are computed from real coordinate data only.
     const realViolations = useMemo(() => realTricycles.filter(t => t.status === 'violator'), [realTricycles]);
 
-    // Units reporting GPS (recorded_at is set).
-    const reportingTricycles = useMemo(() => realTricycles.filter(t => t.recorded_at), [realTricycles]);
-    const realComplianceRate = reportingTricycles.length > 0
-        ? Math.round(((reportingTricycles.length - realViolations.length) / reportingTricycles.length) * 100)
-        : 100;
 
     const todayName = WEEKDAY_NAMES[new Date().getDay()] || 'Monday';
     const isWeekend = todayName === 'Saturday' || todayName === 'Sunday';
@@ -77,6 +72,19 @@ export default function LiveMonitoring({ initialTricycles = [], stats = {} }) {
             if (counts[t.status] !== undefined) counts[t.status] += 1;
         });
         return Object.keys(STATUS_META).map((key) => ({ key, count: counts[key], ...STATUS_META[key] }));
+    }, [realTricycles]);
+
+    // Fleet connectivity for the KPI progress bar — straight from DashboardController's is_online +
+    // gps_freshness (the same values the Units tab shows), refreshed by the 3s background reload.
+    const connectivity = useMemo(() => {
+        const c = { fresh: 0, delayed: 0, offline: 0, total: realTricycles.length };
+        realTricycles.forEach((t) => {
+            if (!t.is_online) c.offline += 1;
+            else if (t.gps_freshness === 'delayed') c.delayed += 1;
+            else c.fresh += 1;
+        });
+        const pct = (n) => (c.total > 0 ? Math.round((n / c.total) * 100) : 0);
+        return { ...c, freshPct: pct(c.fresh), delayedPct: pct(c.delayed), onlinePct: pct(c.fresh + c.delayed) };
     }, [realTricycles]);
 
     // Filter units for the sidebar list by search term
@@ -128,50 +136,73 @@ export default function LiveMonitoring({ initialTricycles = [], stats = {} }) {
                 2. COMPACT OPERATIONAL KPI DECK (Matching Registry Design)
                ══════════════════════════════════════════════════════════════ */}
 
-            <div className="mb-6 grid grid-cols-1 gap-3.5 sm:gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <div className="mb-6 grid grid-cols-1 gap-3 sm:gap-4 md:grid-cols-12">
 
-                {/* ─ Card 1: Active Tricycles (Units on Road) ─ */}
-                <div className={`flex flex-col justify-between rounded-2xl border border-slate-200/70 bg-white p-4 sm:p-5 ${CARD_SHADOW}`}>
-                    <div>
-                        <div className="flex items-center justify-between">
-                            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                                Active Tricycles
-                            </span>
-                            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-[#1D2542]/[0.10] to-[#1D2542]/[0.02] text-[#1D2542]">
-                                <Bike size={14} />
-                            </span>
+                {/* ─ Primary Anchor: Fleet Connectivity (same layout as the Registry's progress-bar card) ─ */}
+                <div className={`flex flex-col justify-between rounded-2xl border border-slate-200/70 bg-white p-4 sm:p-5 ${CARD_SHADOW} md:col-span-12 xl:col-span-6`}>
+                    <div className="flex items-center justify-between gap-3 pb-3 border-b border-slate-100">
+                        <div className="flex items-center gap-3">
+                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#1D2542]/[0.10] to-[#1D2542]/[0.02] text-[#1D2542]">
+                                <Bike size={20} strokeWidth={2.2} />
+                            </div>
+                            <div>
+                                <div className="flex items-baseline gap-2">
+                                    <span className="text-2xl sm:text-3xl font-extrabold tracking-tight tabular-nums text-slate-900">
+                                        {connectivity.total}
+                                    </span>
+                                    <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                                        Reporting GPS
+                                    </span>
+                                </div>
+                                <p className="text-[11px] font-medium text-slate-500">
+                                    Fleet Connectivity
+                                </p>
+                            </div>
                         </div>
-                        <div className="mt-2 flex items-baseline gap-2">
-                            <span className="text-2xl sm:text-3xl font-extrabold tracking-tight tabular-nums text-[#1D2542]">
-                                {reportingTricycles.length}
-                            </span>
-                            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                                Reporting GPS
-                            </span>
-                        </div>
-                        <p className="mt-1 text-[11px] text-slate-500">
-                            {realComplianceRate}% coding compliance
-                        </p>
+
+                        <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-0.5 text-xs font-bold text-emerald-700">
+                            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                            {connectivity.onlinePct}% Online
+                        </span>
                     </div>
 
-                    <div className="mt-3 rounded-xl bg-slate-50 p-2.5 flex items-center justify-between text-xs">
-                        <span className="text-[11px] font-medium text-slate-500">GPS Signal:</span>
-                        {reportingTricycles.length > 0 ? (
-                            <span className="inline-flex items-center gap-1.5 font-bold text-slate-800 text-xs">
-                                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                                Active &amp; Connected
-                            </span>
-                        ) : (
-                            <span className="inline-flex items-center gap-1.5 font-bold text-slate-500 text-xs">
-                                <span className="h-1.5 w-1.5 rounded-full bg-slate-300" />
-                                No Real GPS Yet
-                            </span>
-                        )}
+                    {/* Proportional Segmented Meter: Online (fresh GPS) / Online (GPS delayed) / Offline */}
+                    <div className="pt-3">
+                        <div className="flex h-2 w-full overflow-hidden rounded-full bg-slate-100 p-0.5 ring-1 ring-slate-200/60">
+                            <div
+                                className="h-full rounded-full bg-emerald-500 transition-all duration-500"
+                                style={{ width: `${connectivity.freshPct}%` }}
+                            />
+                            <div
+                                className="h-full rounded-full bg-amber-500 transition-all duration-500 ml-0.5"
+                                style={{ width: `${connectivity.delayedPct}%` }}
+                            />
+                        </div>
+
+                        <div className="mt-2.5 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-xs">
+                            <div className="flex items-center gap-1.5">
+                                <span className="h-2 w-2 rounded-full bg-emerald-500 shrink-0" />
+                                <span className="font-bold text-slate-900 tabular-nums">{connectivity.fresh}</span>
+                                <span className="text-slate-600">Online</span>
+                            </div>
+
+                            <div className="flex items-center gap-1.5">
+                                <span className="h-2 w-2 rounded-full bg-amber-500 shrink-0" />
+                                <span className="font-bold text-slate-900 tabular-nums">{connectivity.delayed}</span>
+                                <span className="text-slate-600">GPS Delayed</span>
+                            </div>
+
+                            <div className="flex items-center gap-1.5">
+                                <span className="h-2 w-2 rounded-full bg-slate-300 shrink-0" />
+                                <span className="font-bold text-slate-900 tabular-nums">{connectivity.offline}</span>
+                                <span className="text-slate-600">Offline</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
-                {/* ─ Card 2: Ordinance Enforcement (Today's Color Coding Compliance) ─ */}
-                <div className={`flex flex-col justify-between rounded-2xl border border-slate-200/70 bg-white p-4 sm:p-5 ${CARD_SHADOW}`}>
+                {/* ─ Ordinance Enforcement (Today's Color Coding Compliance) ─ */}
+                <div className={`flex flex-col justify-between rounded-2xl border border-slate-200/70 bg-white p-4 sm:p-5 ${CARD_SHADOW} md:col-span-6 xl:col-span-3`}>
                     <div>
                         <div className="flex items-center justify-between">
                             <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
@@ -215,38 +246,8 @@ export default function LiveMonitoring({ initialTricycles = [], stats = {} }) {
                     </div>
                 </div>
 
-                {/* ─ Card 3: Franchise Validity (Permit Standing) ─ */}
-                <div className={`flex flex-col justify-between rounded-2xl border border-slate-200/70 bg-white p-4 sm:p-5 ${CARD_SHADOW}`}>
-                    <div>
-                        <div className="flex items-center justify-between">
-                            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                                Franchise Standing
-                            </span>
-                            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-[#1D2542]/[0.10] to-[#1D2542]/[0.02] text-[#1D2542]">
-                                <ShieldCheck size={14} />
-                            </span>
-                        </div>
-                        <div className="mt-2 flex items-baseline gap-2">
-                            <span className="text-2xl sm:text-3xl font-extrabold tracking-tight tabular-nums text-[#1D2542]">
-                                Active
-                            </span>
-                            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                                MTOP Standing
-                            </span>
-                        </div>
-                        <p className="mt-1 text-[11px] text-slate-500">
-                            Zero expired or suspended permits
-                        </p>
-                    </div>
-
-                    <div className="mt-3 rounded-xl bg-slate-50 p-2.5 flex items-center justify-between text-xs">
-                        <span className="text-[11px] font-medium text-slate-500">Regulatory Oversight:</span>
-                        <span className="text-xs font-bold text-[#1D2542]">TMO &amp; BPLO</span>
-                    </div>
-                </div>
-
-                {/* ─ Card 4: Coding Enforcement (Active Breaches — REAL data only) ─ */}
-                <div className={`flex flex-col justify-between rounded-2xl border border-slate-200/70 bg-white p-4 sm:p-5 ${CARD_SHADOW}`}>
+                {/* ─ Coding Enforcement (Active Breaches — REAL data only) ─ */}
+                <div className={`flex flex-col justify-between rounded-2xl border border-slate-200/70 bg-white p-4 sm:p-5 ${CARD_SHADOW} md:col-span-6 xl:col-span-3`}>
                     <div>
                         <div className="flex items-center justify-between">
                             <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
