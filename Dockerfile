@@ -59,8 +59,13 @@ COPY --from=node_builder /app/public/build ./public/build
 # Install PHP production dependencies
 RUN composer install --no-dev --optimize-autoloader --no-progress --prefer-dist --ignore-platform-reqs
 
-# Copy Nginx and entrypoint configs
+# Copy Nginx, PHP upload limits and entrypoint configs
 COPY docker/nginx.conf /etc/nginx/nginx.conf
+COPY docker/php-uploads.ini /usr/local/etc/php/conf.d/uploads.ini
+# nginx workers run as www-data (docker/nginx.conf): give them the body/fastcgi temp folders,
+# or every file upload fails with an nginx 500.
+RUN mkdir -p /var/lib/nginx/tmp/client_body /var/lib/nginx/tmp/fastcgi \
+    && chown -R www-data:www-data /var/lib/nginx
 COPY docker/entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh
 

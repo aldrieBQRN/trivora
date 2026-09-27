@@ -93,6 +93,10 @@ chmod -R 777 /var/www/html/storage /var/www/html/bootstrap/cache
 echo "🔌 Starting PHP-FPM..."
 php-fpm -D
 
+# nginx temp folders must stay writable by its www-data workers (file uploads buffer there).
+mkdir -p /var/lib/nginx/tmp/client_body /var/lib/nginx/tmp/fastcgi
+chown -R www-data:www-data /var/lib/nginx
+
 # Start Nginx in foreground
 echo "🌐 Starting Nginx Web Server on port 80..."
 exec nginx -g "daemon off;"
