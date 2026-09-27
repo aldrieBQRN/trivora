@@ -105,6 +105,16 @@ export default function IssueStickerNumber({ application }) {
     const handleFinalize = (e) => {
         if (e) e.preventDefault();
 
+        if (!data.coding_scheme_number || !data.coding_scheme_number.trim()) {
+            Swal.fire({
+                title: 'Sticker Number Required',
+                text: 'Please provide the 4-digit Sticker / Coding Scheme Number to be released.',
+                icon: 'warning',
+                confirmButtonColor: '#1D2542'
+            });
+            return;
+        }
+
         if (!data.sticker_number || !data.sticker_number.trim()) {
             Swal.fire({
                 title: 'Franchise Number Required',
@@ -157,6 +167,15 @@ export default function IssueStickerNumber({ application }) {
                             confirmButtonColor: '#059669',
                             timer: 2500,
                             showConfirmButton: false
+                        });
+                    },
+                    onError: (errs) => {
+                        const messages = Object.values(errs || {}).flat().join('<br>');
+                        Swal.fire({
+                            title: 'Release Failed',
+                            html: messages || 'Failed to release franchise. Please check the sticker number or try again.',
+                            icon: 'error',
+                            confirmButtonColor: '#1D2542'
                         });
                     }
                 });
@@ -367,12 +386,51 @@ export default function IssueStickerNumber({ application }) {
                                     </span>
                                 </div>
 
+                                {/* ── STICKER / CODING NUMBER INPUT ── */}
+                                <div className="space-y-1.5 pt-1">
+                                    <label htmlFor="coding_scheme_number" className="flex items-center justify-between text-xs font-bold text-slate-700">
+                                        <span className="flex items-center gap-1.5">
+                                            <Hash size={14} className="text-[#1D2542]" />
+                                            <span>Sticker Number (Municipal Coding Scheme)</span>
+                                        </span>
+                                        <span className="text-[11px] font-semibold text-slate-500">
+                                            {application.is_renewal ? 'Preserved from Existing Unit' : '4-Digit Municipal Sequence'}
+                                        </span>
+                                    </label>
+                                    <div className="relative">
+                                        <input
+                                            type="text"
+                                            id="coding_scheme_number"
+                                            value={data.coding_scheme_number}
+                                            onChange={(e) => {
+                                                const val = e.target.value.replace(/\D/g, '').slice(0, 4);
+                                                setData('coding_scheme_number', val);
+                                            }}
+                                            maxLength={4}
+                                            placeholder="e.g. 0842"
+                                            className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 font-mono text-base font-bold text-[#1D2542] shadow-2xs focus:border-[#1D2542] focus:ring-1 focus:ring-[#1D2542]"
+                                        />
+                                        <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs font-mono text-slate-400">
+                                            4-DIGIT
+                                        </span>
+                                    </div>
+                                    <p className="text-[11px] text-slate-400">
+                                        The official 4-digit municipal sticker tag assigned to this tricycle. Updates the plate display in real-time.
+                                    </p>
+                                    {(errors.coding_scheme_number || errors.body_number) && (
+                                        <p className="text-[11px] font-medium text-rose-600 flex items-center gap-1 mt-1">
+                                            <AlertCircle size={12} />
+                                            {errors.coding_scheme_number || errors.body_number}
+                                        </p>
+                                    )}
+                                </div>
+
                                 {/* ── AUTHENTIC MUNICIPAL PLATE SHOWCASE BOX ── */}
                                 <div className="space-y-2">
                                     <div className="flex items-center justify-between text-xs">
                                         <span className="font-bold text-slate-700 flex items-center gap-1.5">
                                             <Lock size={12} className="text-slate-400" />
-                                            Assigned Sticker Number Plate
+                                            Official Municipal Plate Preview
                                         </span>
                                         <span className="text-[11px] text-slate-400 font-medium">
                                             Sequence Guaranteed Non-collision
@@ -395,7 +453,7 @@ export default function IssueStickerNumber({ application }) {
                                         {/* Stamped Number */}
                                         <div className="my-2.5 sm:my-3">
                                             <span className="text-5xl sm:text-6xl font-black font-mono tracking-widest text-slate-900 select-all drop-shadow-2xs">
-                                                {data.coding_scheme_number}
+                                                {data.coding_scheme_number || '----'}
                                             </span>
                                         </div>
 
@@ -411,7 +469,7 @@ export default function IssueStickerNumber({ application }) {
                                     </div>
 
                                     <p className="text-[11px] text-slate-400 text-center leading-relaxed pt-1">
-                                        This Sticker Number is automatically assigned from the municipal sequence to prevent duplication in the municipal registry.
+                                        Color coding day and scheme are automatically calculated from the last digit of the Sticker Number.
                                     </p>
                                 </div>
 
