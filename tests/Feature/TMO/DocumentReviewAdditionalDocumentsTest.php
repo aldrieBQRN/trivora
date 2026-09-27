@@ -112,4 +112,53 @@ class DocumentReviewAdditionalDocumentsTest extends TestCase
         ]);
         $this->assertSame(2, $application->documents()->where('document_type', 'drivers_license')->count());
     }
+
+    #[Test]
+    public function document_review_and_queue_expose_application_type_correctly(): void
+    {
+        [, , $application] = $this->registerNewApplication(['plate_number' => 'DOCREV-TYPE-0001']);
+        $tmo = $this->makeTmoUser();
+
+        // 1. Verify show endpoint exposes application_type = 'new'
+        $response = $this->actingAs($tmo)->get(route('tmo.review.docs', $application));
+        $response->assertOk();
+        $response->assertInertia(fn ($page) => $page
+            ->where('application.application_type', 'new')
+        );
+
+        // 2. Turn the application into a renewal and attach prangkisa
+        $application->update(['application_type' => 'renewal']);
+        ApplicationDocument::create([
+            'application_id' => $application->id,
+            'document_type'  => 'prangkisa',
+            'file_name'      => 'prangkisa.pdf',
+            'file_path'      => 'applications/documents/prangkisa.pdf',
+            'file_size_kb'   => 150,
+            'mime_type'      => 'application/pdf',
+            'review_status'  => 'pending',
+        ]);
+
+        $responseRenewal = $this->actingAs($tmo)->get(route('tmo.review.docs', $application));
+        $responseRenewal->assertOk();
+        $responseRenewal->assertInertia(fn ($page) => $page
+            ->where('application.application_type', 'renewal')
+            ->where('application.documents', function ($docs) {
+                $categories = collect($docs)->pluck('category')->all();
+                \PHPUnit\Framework\Assert::assertContains('prangkisa', $categories);
+                return true;
+            })
+        );
+
+        // 3. Verify queue endpoint exposes application_type
+        $queueResponse = $this->actingAs($tmo)->get(route('tmo.docs'));
+        $queueResponse->assertOk();
+        $queueResponse->assertInertia(fn ($page) => $page
+            ->where('applications', function ($apps) use ($application) {
+                $item = collect($apps)->firstWhere('id', $application->id);
+                \PHPUnit\Framework\Assert::assertNotNull($item);
+                \PHPUnit\Framework\Assert::assertSame('renewal', $item['application_type']);
+                return true;
+            })
+        );
+    }
 }
