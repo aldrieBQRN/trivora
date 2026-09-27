@@ -58,6 +58,7 @@ class DashboardController extends Controller
         }
 
         $onlineThresholdSeconds = config('tracking.fleet_online_threshold_seconds', 10);
+        $signalLostSeconds = config('tracking.fleet_signal_lost_seconds', 60);
 
         // The driver's explicit Online/Offline toggle (drivers.is_online) outranks GPS freshness:
         // a driver who went Offline is Offline immediately, never after the freshness window.
@@ -67,7 +68,7 @@ class DashboardController extends Controller
 
         // Map tricycles for the enforcement map. Only tricycles with real coordinate records
         // are included in the live fleet monitoring dataset.
-        $tricyclesData = $activeTricycles->map(function ($tri) use ($restrictedEndings, $onlineThresholdSeconds, $driverOnlineByTricycleId) {
+        $tricyclesData = $activeTricycles->map(function ($tri) use ($restrictedEndings, $onlineThresholdSeconds, $signalLostSeconds, $driverOnlineByTricycleId) {
             $latestLoc = $tri->locations()
                 ->whereNotNull('latitude')
                 ->whereNotNull('longitude')
@@ -79,13 +80,25 @@ class DashboardController extends Controller
             }
 
             // Server-side source of truth for connectivity — never inferred from frontend polling
-            // or browser activity. Explicit Offline first, then GPS freshness (<= threshold).
+            // or browser activity. Explicit Offline (toggle/logout) wins immediately; otherwise the
+            // driver stays Online through short GPS/network delays and only drops to Offline once
+            // no coordinate has arrived within the signal-lost window. GPS freshness is reported
+            // separately so a late coordinate reads as "Delayed", not as the driver going Offline.
             $driverToggledOnline = $driverOnlineByTricycleId->has($tri->id)
                 ? (bool) $driverOnlineByTricycleId->get($tri->id)
                 : true;
-            $isOnline = $driverToggledOnline
-                && $latestLoc->recorded_at
-                && $latestLoc->recorded_at->diffInSeconds(now()) <= $onlineThresholdSeconds;
+            // Real recorded_at only (never reset/fabricated). A phone clock slightly ahead of the
+            // server yields a negative diff, which is simply "just now".
+            $gpsAgeSeconds = $latestLoc->recorded_at
+                ? max(0, $latestLoc->recorded_at->diffInSeconds(now()))
+                : null;
+            $gpsFreshness = match (true) {
+                $gpsAgeSeconds === null => 'stale',
+                $gpsAgeSeconds <= $onlineThresholdSeconds => 'fresh',
+                $gpsAgeSeconds <= $signalLostSeconds => 'delayed',
+                default => 'stale',
+            };
+            $isOnline = $driverToggledOnline && $gpsFreshness !== 'stale';
 
             // Check if there is an active violation detected today
             $hasUnresolvedViolation = $tri->violations()
@@ -126,6 +139,10 @@ class DashboardController extends Controller
                 'lng'         => (float)$latestLoc->longitude,
                 'status'      => $status,
                 'is_online'   => $isOnline,
+                // 'fresh' | 'delayed' | 'stale' — GPS signal quality, separate from is_online.
+                // null for an explicit Offline (toggle/logout): that is plain Offline, not a
+                // signal problem, whatever the age of the last coordinate.
+                'gps_freshness' => $driverToggledOnline ? $gpsFreshness : null,
                 'hasRealGPS'  => true,
                 'last_seen'   => $latestLoc->recorded_at ? $latestLoc->recorded_at->diffForHumans() : 'Never',
                 'recorded_at' => $latestLoc->recorded_at ? $latestLoc->recorded_at->toIso8601String() : null,
