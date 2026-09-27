@@ -13,8 +13,10 @@ use Illuminate\Support\Facades\Notification;
  * notification bell). Called from the controller actions that perform the transition — never
  * from model events, so seeders and data fixes never generate notifications.
  *
- * Recipients are every active user of that portal's role, except the person who performed the
- * action. A notification failure never breaks the workflow action itself.
+ * Recipients are every active user of that portal's role — including the person who performed the
+ * action when they belong to that portal (e.g. the TMO officer who approves documents also gets the
+ * "Vehicle inspection pending" task, so it shows up right away in their own bell). A notification
+ * failure never breaks the workflow action itself.
  */
 class StaffNotifier
 {
@@ -97,7 +99,6 @@ class StaffNotifier
         try {
             $recipients = User::where('role', self::PORTAL_ROLES[$portal])
                 ->where('is_active', true)
-                ->when($actorId, fn ($q) => $q->where('id', '!=', $actorId))
                 ->get();
 
             if ($recipients->isNotEmpty()) {

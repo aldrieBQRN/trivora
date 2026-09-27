@@ -55,13 +55,13 @@ class HeaderNotificationsTest extends TestCase
         $submitted = $tmoA->fresh()->notifications->firstWhere('data.event', 'application_submitted');
         $this->assertSame(route('tmo.review.docs', $application->id, false), $submitted->data['url']);
 
-        // 2. TMO A approves documents -> the OTHER TMO staff get "inspection pending" (not the actor).
+        // 2. TMO A approves documents -> every TMO account, A included, gets "inspection pending".
         $this->actingAs($tmoA)->post(route('tmo.review.submit', $application), [
             'action' => 'approve',
             'docStatuses' => ['orcr_photocopy' => 'approved', 'drivers_license' => 'approved', 'barangay_clearance' => 'approved', 'toda_clearance' => 'approved'],
         ])->assertRedirect(route('tmo.docs'));
         $this->assertContains('inspection_pending', $this->eventsFor($tmoB));
-        $this->assertNotContains('inspection_pending', $this->eventsFor($tmoA));
+        $this->assertContains('inspection_pending', $this->eventsFor($tmoA), 'the acting officer sees it immediately too');
 
         // 3. Inspection passes -> BPLO release (TMO gets nothing for this step).
         $this->actingAs($tmoA)->post(route('tmo.review.physical.submit', $application), [
