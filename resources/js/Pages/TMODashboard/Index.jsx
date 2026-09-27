@@ -105,9 +105,9 @@ export default function LiveMonitoring({ initialTricycles = [], stats = {} }) {
         );
     }, [realTricycles, unitSearch]);
 
-    // All / Online / Offline status filter — derives from the same server-side freshness flag
+    // All / Online / Offline status filter — derives from the same server-side flag
     // (is_online, computed in DashboardController::index(): drivers.is_online first, then the
-    // 10s GPS threshold from config/tracking.fleet_online_threshold_seconds) that the roster's Online/Offline badges
+    // 60s signal-lost window from config/tracking.fleet_signal_lost_seconds) that the roster's Online/Offline badges
     // and the map already display. No separate client-side timing logic.
     const statusCounts = useMemo(() => ({
         all:    searchFilteredUnits.length,
@@ -451,8 +451,19 @@ export default function LiveMonitoring({ initialTricycles = [], stats = {} }) {
                                                         <span className="truncate max-w-[170px] font-medium text-slate-700">
                                                             {unit.operator}
                                                         </span>
-                                                        <span className="text-[10px] font-medium text-slate-400 font-mono">
-                                                            GPS Acquired
+                                                        {/* GPS freshness (DashboardController gps_freshness) — separate
+                                                            from Online/Offline: a delayed coordinate is flagged here
+                                                            while the driver stays Online. */}
+                                                        <span className={`text-[10px] font-mono ${
+                                                            unit.gps_freshness === 'delayed'
+                                                                ? 'font-bold text-amber-600'
+                                                                : 'font-medium text-slate-400'
+                                                        }`}>
+                                                            {unit.gps_freshness === 'delayed'
+                                                                ? 'GPS Delayed'
+                                                                : unit.gps_freshness === 'stale'
+                                                                    ? 'Signal Lost'
+                                                                    : 'GPS Acquired'}
                                                         </span>
                                                     </div>
 
@@ -468,7 +479,7 @@ export default function LiveMonitoring({ initialTricycles = [], stats = {} }) {
                                                                             : 'bg-emerald-500'
                                                             }`} />
                                                             {isOffline
-                                                                ? 'Offline'
+                                                                ? (unit.gps_freshness === 'stale' ? 'Offline · Signal Lost' : 'Offline')
                                                                 : unit.status === 'violator'
                                                                     ? 'Coding Violation'
                                                                     : unit.status === 'coding_no_operation'

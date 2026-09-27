@@ -860,6 +860,18 @@ class DriverAuthController extends Controller
      */
     public function logout(Request $request)
     {
+        // Logging out is an explicit Offline: Live Monitoring and dispatch must see it
+        // immediately, not after the GPS signal-lost window. Same fields as going Offline via
+        // updateStatus() (ends the online_since movement session, unavailable for dispatch).
+        $driver = \App\Models\Driver::where('user_id', $request->user()->id)->first();
+        if ($driver && $driver->is_online) {
+            $driver->update([
+                'is_online'    => false,
+                'online_since' => null,
+                'is_available' => false,
+            ]);
+        }
+
         $request->user()->currentAccessToken()->delete();
 
         return response()->json([
