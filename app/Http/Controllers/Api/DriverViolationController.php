@@ -195,6 +195,9 @@ class DriverViolationController extends Controller
         $violation->refresh();
         $violation->setRelation('appeal', $appeal);
 
+        // TMO: a new violation appeal is waiting for review.
+        \App\Services\StaffNotifier::violationAppealSubmitted($violation, $request->user()->id);
+
         return response()->json([
             'message' => 'Appeal submitted successfully.',
             'violation' => $this->serializeViolation($violation),

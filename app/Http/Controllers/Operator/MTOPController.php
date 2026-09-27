@@ -298,6 +298,9 @@ class MTOPController extends Controller
                 'created_at'     => now(),
             ]);
 
+            // TMO: a new unit / renewal application is waiting for Document Review.
+            \App\Services\StaffNotifier::applicationStatusChanged($application, 'draft', 'pending_review', $user->id);
+
             return redirect()->route('operator.mtop.details', ['id' => $application->id]);
         });
     }
@@ -776,6 +779,8 @@ class MTOPController extends Controller
 
         $isPhysFix = in_array($app->status, ['failed_inspection']);
 
+        $statusBeforeFix = $app->status;
+
         \Illuminate\Support\Facades\DB::transaction(function () use ($request, $app, $isPhysFix, $user) {
             $fromStatus = $app->status;
 
@@ -851,6 +856,9 @@ class MTOPController extends Controller
                 ]);
             }
         });
+
+        // TMO: resubmitted documents need re-review, or the unit is ready for reinspection.
+        \App\Services\StaffNotifier::applicationStatusChanged($app->refresh(), $statusBeforeFix, $app->status, $user->id);
 
         return redirect()->route('operator.mtop.details', ['id' => $app->id]);
     }

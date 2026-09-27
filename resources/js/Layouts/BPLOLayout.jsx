@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { Link, usePage, router } from '@inertiajs/react';
+import NotificationBell from '@/Components/NotificationBell';
 import {
     Bell, Menu, Settings, LogOut,
     ChevronDown, ChevronRight,
@@ -17,6 +18,11 @@ export default function BPLOLayout({ children, title, role = "BPLO Officer", bre
     const isAdmin = props?.auth?.user?.role === 'admin';
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [profileOpen, setProfileOpen] = useState(false);
+    // Signed-in account for the header menu (shared auth prop — never a hardcoded placeholder).
+    const authUser = props?.auth?.user;
+    const accountName = authUser?.name || role;
+    const accountInitials = (authUser?.name || role)
+        .split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join('').toUpperCase();
     const [isExiting,   setIsExiting]   = useState(false);
 
     const navigation = [
@@ -298,11 +304,7 @@ export default function BPLOLayout({ children, title, role = "BPLO Officer", bre
 
                     {/* Right: Notifications & Profile Menu */}
                     <div className="flex items-center gap-2 shrink-0">
-                        {/* Bell */}
-                        <button className="relative flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-800">
-                            <Bell size={18} strokeWidth={1.8} />
-                            <span className="absolute right-2 top-2 h-1.5 w-1.5 rounded-full border border-white bg-[#1D2542]" />
-                        </button>
+                        <NotificationBell />
 
                         <div className="mx-1 h-7 w-px bg-slate-200" />
 
@@ -313,12 +315,12 @@ export default function BPLOLayout({ children, title, role = "BPLO Officer", bre
                                 onClick={() => setProfileOpen(p => !p)}
                             >
                                 <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#1D2542] text-[11px] font-bold tracking-wide text-white">
-                                    BP
+                                    {accountInitials}
                                 </div>
 
                                 <div className="hidden text-left leading-tight md:block">
-                                    <p className="text-[12.5px] font-bold text-slate-900">{role}</p>
-                                    <p className="text-[9.5px] font-semibold uppercase tracking-wide text-slate-400">Licensing Office</p>
+                                    <p className="max-w-[160px] truncate text-[12.5px] font-bold text-slate-900">{accountName}</p>
+                                    <p className="text-[9.5px] font-semibold uppercase tracking-wide text-slate-400">{role}</p>
                                 </div>
 
                                 <ChevronDown
@@ -331,11 +333,12 @@ export default function BPLOLayout({ children, title, role = "BPLO Officer", bre
                             {profileOpen && (
                                 <div className="absolute right-0 top-[calc(100%+8px)] z-50 w-56 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg">
                                     <div className="border-b border-slate-100 px-4 py-3">
-                                        <p className="text-[9px] font-bold uppercase tracking-wide text-slate-400">Account</p>
-                                        <p className="text-sm font-bold text-slate-900">{role}</p>
+                                        <p className="text-[9px] font-bold uppercase tracking-wide text-slate-400">{role}</p>
+                                        <p className="truncate text-sm font-bold text-slate-900">{accountName}</p>
+                                        {authUser?.email && <p className="truncate text-[11px] text-slate-400">{authUser.email}</p>}
                                     </div>
                                     <div className="p-1.5">
-                                        <Link href="#" className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900">
+                                        <Link href={route('profile.edit')} className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900">
                                             <Settings size={14} strokeWidth={1.8} />
                                             Account Settings
                                         </Link>

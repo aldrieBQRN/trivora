@@ -229,6 +229,8 @@ class BPLOController extends Controller
             $franchiseNumber = 'STK-' . $year . '-' . str_pad($codingNumber, 4, '0', STR_PAD_LEFT);
         }
 
+        $statusBeforeRelease = $application->status;
+
         DB::transaction(function () use ($application, $codingNumber, $franchiseNumber, $tricycle, $isRenewal) {
             $fromStatus = $application->status;
             $fromStep = $application->current_step;
@@ -296,6 +298,9 @@ class BPLOController extends Controller
                 'created_at'     => now(),
             ]);
         });
+
+        // TMO: released by BPLO -> Final Confirmation & GPS setup pending.
+        \App\Services\StaffNotifier::applicationStatusChanged($application->refresh(), $statusBeforeRelease, $application->status, $request->user()->id);
 
         return redirect()->route('bplo.releasing')->with('success', "Franchise Number #{$franchiseNumber} released! Driver instructed to return to TMO for Final Confirmation & GPS Setup.");
     }

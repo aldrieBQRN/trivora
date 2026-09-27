@@ -143,6 +143,8 @@ class ApplicationController extends Controller
         $docStatuses = $request->input('docStatuses');
         $rejectionReasons = $request->input('rejectionReasons', []);
 
+        $statusBeforeReview = $application->status;
+
         DB::transaction(function () use ($application, $action, $docStatuses, $rejectionReasons) {
             $fromStatus = $application->status;
             $fromStep = $application->current_step;
@@ -191,6 +193,10 @@ class ApplicationController extends Controller
                 'created_at'     => now(),
             ]);
         });
+
+        // TMO inspection team: documents approved -> vehicle inspection pending (a rejection waits
+        // on the driver, so it notifies no staff).
+        \App\Services\StaffNotifier::applicationStatusChanged($application->refresh(), $statusBeforeReview, $application->status, $request->user()->id);
 
         $message = $action === 'approve'
             ? 'Application requirements approved. Unit scheduled for Physical Tricycle Inspection.'

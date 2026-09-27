@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { Link, usePage, router } from '@inertiajs/react';
+import NotificationBell from '@/Components/NotificationBell';
 import {
     Bell, Menu, Settings, LogOut,
     ChevronDown, ChevronRight,
@@ -18,6 +19,11 @@ export default function TrivoraLayout({ children, title, role = "TMO Personnel",
     const isAdmin = props?.auth?.user?.role === 'admin';
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [profileOpen, setProfileOpen] = useState(false);
+    // Signed-in account for the header menu (shared auth prop — never a hardcoded placeholder).
+    const authUser = props?.auth?.user;
+    const accountName = authUser?.name || role;
+    const accountInitials = (authUser?.name || role)
+        .split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join('').toUpperCase();
     const [isExiting,   setIsExiting]   = useState(false);
 
     const navigation = [
@@ -346,11 +352,7 @@ export default function TrivoraLayout({ children, title, role = "TMO Personnel",
 
                     {/* Right: Notifications & Profile Menu */}
                     <div className="flex items-center gap-2 shrink-0">
-                        {/* Bell */}
-                        <button className="relative flex h-9 w-9 items-center justify-center rounded-lg text-tmo-muted hover:bg-tmo-bg hover:text-tmo-ink">
-                            <Bell size={18} strokeWidth={1.8} />
-                            <span className="absolute right-2 top-2 h-1.5 w-1.5 rounded-full border border-white bg-tmo-primary" />
-                        </button>
+                        <NotificationBell />
 
                         <div className="mx-1 h-7 w-px bg-tmo-border" />
 
@@ -361,12 +363,12 @@ export default function TrivoraLayout({ children, title, role = "TMO Personnel",
                                 onClick={() => setProfileOpen(p => !p)}
                             >
                                 <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-tmo-primary text-[11px] font-bold tracking-wide text-white">
-                                    TM
+                                    {accountInitials}
                                 </div>
 
                                 <div className="hidden text-left leading-tight md:block">
-                                    <p className="text-[12.5px] font-bold text-tmo-ink">{role}</p>
-                                    <p className="text-[9.5px] font-semibold uppercase tracking-wide text-tmo-subtle">Authorized</p>
+                                    <p className="max-w-[160px] truncate text-[12.5px] font-bold text-tmo-ink">{accountName}</p>
+                                    <p className="text-[9.5px] font-semibold uppercase tracking-wide text-tmo-subtle">{role}</p>
                                 </div>
 
                                 <ChevronDown
@@ -379,11 +381,12 @@ export default function TrivoraLayout({ children, title, role = "TMO Personnel",
                             {profileOpen && (
                                 <div className="absolute right-0 top-[calc(100%+8px)] z-50 w-56 overflow-hidden rounded-xl border border-tmo-border bg-white shadow-lg">
                                     <div className="border-b border-tmo-border px-4 py-3">
-                                        <p className="text-[9px] font-bold uppercase tracking-wide text-tmo-subtle">Management</p>
-                                        <p className="text-sm font-bold text-tmo-ink">Administrator</p>
+                                        <p className="text-[9px] font-bold uppercase tracking-wide text-tmo-subtle">{role}</p>
+                                        <p className="truncate text-sm font-bold text-tmo-ink">{accountName}</p>
+                                        {authUser?.email && <p className="truncate text-[11px] text-tmo-subtle">{authUser.email}</p>}
                                     </div>
                                     <div className="p-1.5">
-                                        <Link href="#" className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium text-tmo-muted hover:bg-tmo-bg hover:text-tmo-ink">
+                                        <Link href={route('profile.edit')} className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium text-tmo-muted hover:bg-tmo-bg hover:text-tmo-ink">
                                             <Settings size={14} strokeWidth={1.8} />
                                             Account Settings
                                         </Link>

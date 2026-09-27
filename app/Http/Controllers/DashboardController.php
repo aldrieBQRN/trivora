@@ -34,31 +34,8 @@ class DashboardController extends Controller
      */
     private static function formatGpsTimestamp(\Carbon\CarbonInterface $recordedAt): string
     {
-        $tz = config('app.timezone');
-        $now = now($tz);
-        $local = $recordedAt->copy()->setTimezone($tz);
-        // A phone clock slightly ahead of the server gives a negative age: that is simply "now".
-        $seconds = max(0, (int) floor($local->diffInSeconds($now)));
-        $plural = fn (int $n, string $unit) => $n . ' ' . $unit . ($n === 1 ? '' : 's') . ' ago';
-
-        if ($seconds < 60) {
-            return $plural($seconds, 'sec');
-        }
-        if ($seconds < 3600) {
-            return $plural(intdiv($seconds, 60), 'min');
-        }
-        if ($local->isSameDay($now)) {
-            return $plural(intdiv($seconds, 3600), 'hr');
-        }
-        if ($local->isSameDay($now->copy()->subDay())) {
-            return 'Yesterday';
-        }
-        $days = (int) $local->copy()->startOfDay()->diffInDays($now->copy()->startOfDay());
-        if ($days < 7) {
-            return $days . ' days ago';
-        }
-
-        return $local->format($local->year === $now->year ? 'M j' : 'M j, Y');
+        // Same wording as the header notification bell — one shared implementation.
+        return \App\Support\RelativeTime::label($recordedAt);
     }
 
     /**

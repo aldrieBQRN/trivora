@@ -32,6 +32,7 @@ export default function StaffManagement({
     const addForm = useForm({
         name: '',
         position: '',
+        birthday: '',
         contact_number: '',
         address: '',
         email: '',
@@ -43,6 +44,7 @@ export default function StaffManagement({
     const editForm = useForm({
         name: '',
         position: '',
+        birthday: '',
         contact_number: '',
         address: '',
         email: '',
@@ -98,6 +100,7 @@ export default function StaffManagement({
         editForm.setData({
             name: user.name,
             position: user.position || '',
+            birthday: user.birthday || '',
             contact_number: user.contact_number || '',
             address: user.address || '',
             email: user.email,
@@ -555,6 +558,17 @@ export default function StaffManagement({
                         />
                         <ErrorText>{addForm.errors.contact_number}</ErrorText>
                     </div>
+                    <div>
+                        <Label>Birthday</Label>
+                        <Input
+                            type="date"
+                            max={new Date(Date.now() - 86400000).toISOString().slice(0, 10)}
+                            value={addForm.data.birthday}
+                            error={addForm.errors.birthday}
+                            onChange={(e) => addForm.setData('birthday', e.target.value)}
+                        />
+                        <ErrorText>{addForm.errors.birthday}</ErrorText>
+                    </div>
 
                     <div>
                         <Label>Address</Label>
@@ -675,6 +689,17 @@ export default function StaffManagement({
                             />
                             <ErrorText>{editForm.errors.contact_number}</ErrorText>
                         </div>
+                    <div>
+                        <Label>Birthday</Label>
+                        <Input
+                            type="date"
+                            max={new Date(Date.now() - 86400000).toISOString().slice(0, 10)}
+                            value={editForm.data.birthday}
+                            error={editForm.errors.birthday}
+                            onChange={(e) => editForm.setData('birthday', e.target.value)}
+                        />
+                        <ErrorText>{editForm.errors.birthday}</ErrorText>
+                    </div>
 
                         <div>
                             <Label>Address</Label>
@@ -815,6 +840,9 @@ function DesktopStaffRow({ u, user: userProp, onEdit, onToggleStatus, onDelete }
                     <span className="mt-0.5 truncate text-[11px] text-slate-400 max-w-[160px]">
                         {user.address || 'No address on file'}
                     </span>
+                    {user.birthday_label && (
+                        <span className="mt-0.5 text-[11px] text-slate-400">Birthday: {user.birthday_label}</span>
+                    )}
                 </div>
             </td>
 
@@ -905,6 +933,9 @@ function MobileStaffCard({ u, user: userProp, onEdit, onToggleStatus, onDelete }
                     <span className="font-mono text-[10.5px] text-slate-400">ID: {user.employee_id}</span>
                 )}
             </div>
+            {user.birthday_label && (
+                <p className="mt-1 text-[11px] text-slate-400">Birthday: {user.birthday_label}</p>
+            )}
 
             {/* Joined Row */}
             <div className="mt-2.5 flex items-center justify-between gap-2 border-t border-slate-100 pt-2 text-xs">

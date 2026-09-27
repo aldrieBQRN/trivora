@@ -204,6 +204,9 @@ class ViolationController extends Controller
             $violation->update(['status' => 'contested']);
         });
 
+        // TMO: a new violation appeal is waiting for review.
+        \App\Services\StaffNotifier::violationAppealSubmitted($violation, $request->user()->id);
+
         return redirect()->route('operator.violations.ticket', $violation->id)
             ->with('success', 'Appeal submitted successfully. TMO will review it shortly.');
     }

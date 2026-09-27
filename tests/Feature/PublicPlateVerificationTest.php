@@ -150,6 +150,52 @@ class PublicPlateVerificationTest extends TestCase
     }
 
     #[Test]
+    public function unit_with_in_progress_application_does_not_display_as_active_or_show_sticker_number(): void
+    {
+        $tri = $this->tricycle('PVP-1007', 'active');
+        $this->franchise($tri);
+
+        \App\Models\Application::create([
+            'reference_number' => 'APP-TEST-' . uniqid(),
+            'operator_id'      => $this->operator->id,
+            'tricycle_id'      => $tri->id,
+            'application_type' => 'new',
+            'current_step'     => 2,
+            'status'           => 'pending_inspection',
+        ]);
+
+        $r = $this->verify('PVP-1007');
+        $this->assertTrue($r['found']);
+        $this->assertSame('Pending', $r['status']);
+        $this->assertSame('In Process — Pending Inspection', $r['application_status']);
+        $this->assertNull($r['sticker_number']);
+        $this->assertNull($r['franchise_number']);
+        $this->assertNull($r['expiry']);
+    }
+
+    #[Test]
+    public function unit_with_awaiting_confirmation_application_does_not_display_as_active_or_show_sticker_number(): void
+    {
+        $tri = $this->tricycle('PVP-1008', 'unregistered');
+        \App\Models\Application::create([
+            'reference_number' => 'APP-TEST-' . uniqid(),
+            'operator_id'      => $this->operator->id,
+            'tricycle_id'      => $tri->id,
+            'application_type' => 'new',
+            'current_step'     => 4,
+            'status'           => 'awaiting_tmo_confirmation',
+            'sticker_number'   => 'STK-2026-9999',
+        ]);
+
+        $r = $this->verify('PVP-1008');
+        $this->assertTrue($r['found']);
+        $this->assertSame('Pending', $r['status']);
+        $this->assertSame('In Process — Awaiting TMO Confirmation', $r['application_status']);
+        $this->assertNull($r['sticker_number']);
+        $this->assertNull($r['franchise_number']);
+    }
+
+    #[Test]
     public function like_wildcards_in_the_query_are_matched_literally(): void
     {
         $this->tricycle('PVW-4001');

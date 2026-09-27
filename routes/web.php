@@ -5,6 +5,7 @@ use App\Http\Controllers\TMO\DashboardController as TMODashboardController;
 use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\OperatorAuthController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\RegistrationController;
 use App\Http\Controllers\TMO\UserManagementController;
 use Illuminate\Support\Facades\Route;
@@ -80,24 +81,39 @@ Route::get('/api/public/verify-plate', function (Request $request) {
     }
 
     $fs = $tricycle->franchiseScheme;
+    $app = $tricycle->applications()->with('statusHistories')->latest()->first();
+    $isAppCompleted = $app && in_array($app->status, ['completed', 'scheme_issued'], true);
+    $isAppInProgress = $app && !$isAppCompleted && $app->status !== 'cancelled';
 
-    // Franchise standing, most serious first. The franchise record decides revoked/suspended and
-    // expiry (the same expiry_date the Driver Portal uses to mark a franchise EXPIRED), so an
-    // active tricycle row can never be reported as a valid franchise once its permit has lapsed.
-    $franchiseStatus = match (true) {
-        $fs && $fs->isRevoked()                                  => 'Revoked',
-        ($fs && $fs->isSuspended()) || $tricycle->status === 'suspended' => 'Suspended',
-        $fs && $fs->expiry_date && $fs->expiry_date->isPast()    => 'Expired',
-        $tricycle->status === 'active'                           => 'Active',
-        $tricycle->status === 'unregistered'                     => 'Unregistered',
-        default                                                  => 'Pending',
-    };
+    // Franchise standing, most serious first. An application in progress cannot be reported
+    // as an active franchise — sticker release and permit activation are only valid after
+    // final confirmation.
+    if ($isAppInProgress) {
+        $franchiseStatus = match (true) {
+            $fs && $fs->isRevoked()                                  => 'Revoked',
+            ($fs && $fs->isSuspended()) || $tricycle->status === 'suspended' => 'Suspended',
+            $app->status === 'rejected'                              => 'Rejected',
+            $app->status === 'failed_inspection'                     => 'Reinspection Required',
+            $app->application_type === 'renewal' && $fs && $fs->expiry_date && $fs->expiry_date->isPast() => 'Expired',
+            $app->application_type === 'renewal' && $fs && $fs->is_active && $fs->expiry_date && $fs->expiry_date->isFuture() => 'Active',
+            default                                                  => 'Pending',
+        };
+    } else {
+        $franchiseStatus = match (true) {
+            $fs && $fs->isRevoked()                                  => 'Revoked',
+            ($fs && $fs->isSuspended()) || $tricycle->status === 'suspended' => 'Suspended',
+            $fs && $fs->expiry_date && $fs->expiry_date->isPast()    => 'Expired',
+            $fs && $fs->is_active && $tricycle->status === 'active'  => 'Active',
+            $tricycle->status === 'active' && (!$app || $isAppCompleted) => 'Active',
+            $tricycle->status === 'unregistered'                     => 'Unregistered',
+            default                                                  => 'Pending',
+        };
+    }
 
     // Current application status for this unit, in plain public language — never the
     // internal status codes (pending_review, failed_inspection, …). A resubmission is
     // distinguished from a first pass by the unit's own status history: rejected at least
     // once, then back under review, really means "resubmission in process".
-    $app = $tricycle->applications()->with('statusHistories')->latest()->first();
     $applicationStatus = null;
     if ($app) {
         $wasRejectedBefore = $app->statusHistories->contains('to_status', 'rejected');
@@ -123,17 +139,16 @@ Route::get('/api/public/verify-plate', function (Request $request) {
     }
 
     return response()->json([
-        'found'          => true,
-        'plate'          => $tricycle->plate_number,
-        'operator'       => $tricycle->operator ? $tricycle->operator->full_name : 'N/A',
-        'make_model'     => trim("{$tricycle->make} {$tricycle->model}"),
-        'status'         => $franchiseStatus,
+        'found'              => true,
+        'plate'              => $tricycle->plate_number,
+        'operator'           => $tricycle->operator ? $tricycle->operator->full_name : 'N/A',
+        'make_model'         => trim("{$tricycle->make} {$tricycle->model}"),
+        'status'             => $franchiseStatus,
         'application_status' => $applicationStatus,
-        'expiry'         => $fs && $fs->expiry_date ? $fs->expiry_date->format('M d, Y') : null,
-        // Issued by BPLO on the franchise record — never a fallback value (the tricycle's
-        // coding_scheme_number accessor falls back to the franchise number, which is not a sticker).
-        'franchise_number' => $fs?->franchise_number ?: null,
-        'sticker_number'   => $fs?->sticker_number ?: null,
+        'expiry'             => ($isAppInProgress && $app->application_type !== 'renewal') ? null : ($fs && $fs->expiry_date ? $fs->expiry_date->format('M d, Y') : null),
+        // Sticker and franchise numbers are only displayed for completed, valid permits — never while an application is in progress.
+        'franchise_number'   => $isAppInProgress ? null : ($fs?->franchise_number ?: null),
+        'sticker_number'     => $isAppInProgress ? null : ($fs?->sticker_number ?: null),
     ]);
 })->name('public.verify-plate');
 
@@ -530,6 +545,11 @@ Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+
+    // Header notification bell — always the signed-in user's own notifications.
+    Route::get('/notifications/{id}/open', [NotificationController::class, 'open'])->name('notifications.open');
+    Route::post('/notifications/{id}/read', [NotificationController::class, 'markRead'])->name('notifications.read');
+    Route::post('/notifications/read-all', [NotificationController::class, 'markAllRead'])->name('notifications.read-all');
 });
 
 require __DIR__ . '/auth.php';
