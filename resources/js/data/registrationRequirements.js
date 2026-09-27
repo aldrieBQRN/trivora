@@ -15,15 +15,15 @@
  */
 
 export const VEHICLE_DETAIL_FIELDS = [
-    { id: 'plate_number', label: 'LTO Plate Number', placeholder: 'LTO Plate Number' },
-    { id: 'make_model', label: 'Motorcycle Make & Model', placeholder: 'Make & Model' },
-    { id: 'year_model', label: 'Year Model', placeholder: 'Year Model' },
-    { id: 'body_color', label: 'Body Color', placeholder: 'Body Color' },
-    { id: 'body_type', label: 'Body Type', placeholder: 'Body Type' },
-    { id: 'engine_number', label: 'Engine Number', placeholder: 'Engine Number' },
-    { id: 'chassis_number', label: 'Chassis Number', placeholder: 'Chassis Number' },
-    { id: 'or_number', label: 'LTO OR Number', placeholder: 'LTO OR Number' },
-    { id: 'cr_number', label: 'LTO CR Number', placeholder: 'LTO CR Number' },
+    { id: 'plate_number', label: 'LTO Plate Number', placeholder: 'e.g. AAA-1234' },
+    { id: 'make_model', label: 'Motorcycle Make & Model', placeholder: 'e.g. Honda TMX 125' },
+    { id: 'year_model', label: 'Year Model', placeholder: 'e.g. 2024' },
+    { id: 'body_color', label: 'Body Color', placeholder: 'e.g. Black / Red' },
+    { id: 'body_type', label: 'Body Type', placeholder: 'e.g. Standard Sidecar' },
+    { id: 'engine_number', label: 'Engine Number', placeholder: 'e.g. ENG-123456' },
+    { id: 'chassis_number', label: 'Chassis Number', placeholder: 'e.g. CHS-123456' },
+    { id: 'or_number', label: 'LTO OR Number', placeholder: 'e.g. OR-12345678' },
+    { id: 'cr_number', label: 'LTO CR Number', placeholder: 'e.g. CR-12345678' },
 ];
 
 // required: always required. conditional (required: false): situational, never blocks submission.

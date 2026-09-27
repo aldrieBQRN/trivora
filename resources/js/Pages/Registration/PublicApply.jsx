@@ -742,11 +742,49 @@ function validateVehicleInfo(data) {
     return errors;
 }
 
+const DRAFT_STORAGE_KEY = 'trivora_public_apply_draft';
+const DRAFT_MAX_AGE_MS = 24 * 60 * 60 * 1000; // 24 hours
+
+const loadSavedDraft = () => {
+    if (typeof window === 'undefined') return null;
+    try {
+        const raw = localStorage.getItem(DRAFT_STORAGE_KEY);
+        if (!raw) return null;
+        const parsed = JSON.parse(raw);
+        if (parsed?.savedAt && (Date.now() - parsed.savedAt > DRAFT_MAX_AGE_MS)) {
+            localStorage.removeItem(DRAFT_STORAGE_KEY);
+            return null;
+        }
+        return parsed;
+    } catch {
+        return null;
+    }
+};
+
+const clearSavedDraft = () => {
+    if (typeof window === 'undefined') return;
+    try {
+        localStorage.removeItem(DRAFT_STORAGE_KEY);
+    } catch {}
+};
+
 export default function PublicApply() {
     const { url } = usePage();
-    const [step, setStep] = useState(1);
-    const [agreed, setAgreed] = useState(false);
-    const [scrolledTerms, setScrolledTerms] = useState(false);
+    const savedDraftRef = useRef(loadSavedDraft());
+    const initialDraft = savedDraftRef.current;
+
+    const [step, setStep] = useState(() => {
+        if (initialDraft?.step && initialDraft.step >= 1 && initialDraft.step <= 4) {
+            return initialDraft.step;
+        }
+        return 1;
+    });
+    const [agreed, setAgreed] = useState(() => {
+        return initialDraft ? Boolean(initialDraft.agreed) : false;
+    });
+    const [scrolledTerms, setScrolledTerms] = useState(() => {
+        return initialDraft ? Boolean(initialDraft.scrolledTerms) : false;
+    });
     const [isSubmitting, setIsSubmitting] = useState(false);
     // Field-level errors only render once a field has been touched (blurred), so an empty step
     // doesn't greet the user with a wall of red text before they've typed anything.
@@ -763,32 +801,77 @@ export default function PublicApply() {
     const requiredDocs = documentList.filter(d => d.required);
     const applicableConditionalDocs = documentList.filter(d => !d.required);
 
+    const initialFormData = initialDraft?.formData || {};
+
     const { data, setData, post, processing, errors } = useForm({
         // Applicant (tricycle OWNER) info — first/last/birthday/mobile/barangay, plus the
         // owner's login credentials. owner_is_driver defaults to Yes: the owner drives
         // their own unit unless they explicitly say otherwise (the separate Tricycle
         // Driver block below is then filled and persisted with the application).
-        first_name: '', last_name: '', birthday: '', contact: '', barangay: '',
-        owner_is_driver: true,
-        driver_first_name: '', driver_last_name: '', driver_birthday: '',
-        driver_contact: '', driver_barangay: '',
-        email: '', password: '',
-        plate_number: '', make_model: '', year_model: '', body_color: '', body_type: '',
-        engine_number: '', chassis_number: '', or_number: '', cr_number: '',
-        terms_accepted: false, privacy_policy_accepted: false,
+        first_name: initialFormData.first_name || '',
+        last_name: initialFormData.last_name || '',
+        birthday: initialFormData.birthday || '',
+        contact: initialFormData.contact || '',
+        barangay: initialFormData.barangay || '',
+        owner_is_driver: initialFormData.owner_is_driver !== undefined ? initialFormData.owner_is_driver : true,
+        driver_first_name: initialFormData.driver_first_name || '',
+        driver_last_name: initialFormData.driver_last_name || '',
+        driver_birthday: initialFormData.driver_birthday || '',
+        driver_contact: initialFormData.driver_contact || '',
+        driver_barangay: initialFormData.driver_barangay || '',
+        email: initialFormData.email || '',
+        password: initialFormData.password || '',
+        plate_number: initialFormData.plate_number || '',
+        make_model: initialFormData.make_model || '',
+        year_model: initialFormData.year_model || '',
+        body_color: initialFormData.body_color || '',
+        body_type: initialFormData.body_type || '',
+        engine_number: initialFormData.engine_number || '',
+        chassis_number: initialFormData.chassis_number || '',
+        or_number: initialFormData.or_number || '',
+        cr_number: initialFormData.cr_number || '',
+        terms_accepted: initialDraft?.agreed ?? false,
+        privacy_policy_accepted: initialDraft?.agreed ?? false,
         documents: {},
     });
 
+    const [submittedReference, setSubmittedReference] = useState('');
+
+    // Persist draft on every step or field change so a browser refresh preserves progress
+    useEffect(() => {
+        if (step >= 5) {
+            clearSavedDraft();
+            return;
+        }
+
+        try {
+            const { documents, ...serializableData } = data;
+            localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify({
+                step,
+                agreed,
+                scrolledTerms,
+                formData: serializableData,
+                savedAt: Date.now(),
+            }));
+        } catch {}
+    }, [step, agreed, scrolledTerms, data]);
+
     useEffect(() => {
         const params = new URLSearchParams(window.location.search);
-        if (params.get('success') === '1' && params.get('reference')) {
+        const ref = params.get('reference');
+        if (params.get('success') === '1' && ref) {
+            clearSavedDraft();
+            setSubmittedReference(ref);
             setStep(5);
+            // Clear query parameters from URL
+            if (typeof window !== 'undefined' && window.history && window.history.replaceState) {
+                window.history.replaceState({}, document.title, window.location.pathname);
+            }
         }
     }, [url]);
 
     const getReferenceNo = () => {
-        const params = new URLSearchParams(window.location.search);
-        return params.get('reference') || 'NSB-26-8812';
+        return submittedReference || (new URLSearchParams(window.location.search)).get('reference') || 'NSB-26-8812';
     };
 
     const applicantInfoErrors = validateApplicantInfo(data);
@@ -960,8 +1043,25 @@ export default function PublicApply() {
             {/* ── SPLIT RIGHT: active step content ── */}
             <main className="pa-content">
                 {step < 5 && (
-                    <div className="pa-content-topbar">
-                        <Link href="/" className="pa-back-link">Cancel &amp; Return Home</Link>
+                    <div className="pa-content-topbar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <Link href="/" className="pa-back-link" onClick={() => clearSavedDraft()}>Cancel &amp; Return Home</Link>
+                        {step > 1 && (
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    clearSavedDraft();
+                                    window.location.href = '/register-mtop';
+                                }}
+                                style={{
+                                    background: 'none', border: 'none', cursor: 'pointer',
+                                    fontFamily: "'DM Sans', sans-serif", fontSize: 11, fontWeight: 700,
+                                    color: '#8A96BC', textTransform: 'uppercase', letterSpacing: '.06em',
+                                    padding: '4px 8px', borderRadius: 6,
+                                }}
+                            >
+                                Reset &amp; Start Over
+                            </button>
+                        )}
                     </div>
                 )}
 
@@ -1085,7 +1185,7 @@ export default function PublicApply() {
                                     <div className="pa-input-wrap">
                                         <span className="pa-input-wrap-icon"><User size={15} strokeWidth={2} /></span>
                                         <input className={`pa-input${fieldError('first_name', applicantInfoErrors) ? ' pa-input-error' : ''}`}
-                                            placeholder="First Name" autoComplete="off"
+                                            placeholder="e.g. Juan" autoComplete="off"
                                             value={data.first_name || ''} onChange={e => setData('first_name', e.target.value)}
                                             onBlur={() => markTouched('first_name')} />
                                     </div>
@@ -1094,7 +1194,7 @@ export default function PublicApply() {
                                     <div className="pa-input-wrap">
                                         <span className="pa-input-wrap-icon"><User size={15} strokeWidth={2} /></span>
                                         <input className={`pa-input${fieldError('last_name', applicantInfoErrors) ? ' pa-input-error' : ''}`}
-                                            placeholder="Last Name" autoComplete="off"
+                                            placeholder="e.g. Dela Cruz" autoComplete="off"
                                             value={data.last_name || ''} onChange={e => setData('last_name', e.target.value)}
                                             onBlur={() => markTouched('last_name')} />
                                     </div>
@@ -1112,7 +1212,7 @@ export default function PublicApply() {
                                     <div className="pa-input-wrap">
                                         <span className="pa-input-wrap-icon"><Phone size={15} strokeWidth={2} /></span>
                                         <input className={`pa-input${fieldError('contact', applicantInfoErrors) ? ' pa-input-error' : ''}`}
-                                            placeholder="0917 123 4567" autoComplete="off"
+                                            placeholder="e.g. 0917 123 4567" autoComplete="off"
                                             value={data.contact || ''} onChange={e => setData('contact', e.target.value)}
                                             onBlur={() => markTouched('contact')} />
                                     </div>
@@ -1133,7 +1233,7 @@ export default function PublicApply() {
                                     <div className="pa-input-wrap">
                                         <span className="pa-input-wrap-icon"><Mail size={15} strokeWidth={2} /></span>
                                         <input className={`pa-input${fieldError('email', applicantInfoErrors) ? ' pa-input-error' : ''}`}
-                                            type="email" placeholder="name@example.com" autoComplete="off"
+                                            type="email" placeholder="e.g. juan@example.com" autoComplete="off"
                                             value={data.email || ''} onChange={e => setData('email', e.target.value)}
                                             onBlur={() => markTouched('email')} />
                                     </div>
@@ -1187,7 +1287,7 @@ export default function PublicApply() {
                                             <div className="pa-input-wrap">
                                                 <span className="pa-input-wrap-icon"><User size={15} strokeWidth={2} /></span>
                                                 <input className={`pa-input${fieldError('driver_first_name', applicantInfoErrors) ? ' pa-input-error' : ''}`}
-                                                    placeholder="First Name" autoComplete="off"
+                                                    placeholder="e.g. Pedro" autoComplete="off"
                                                     value={data.driver_first_name || ''} onChange={e => setData('driver_first_name', e.target.value)}
                                                     onBlur={() => markTouched('driver_first_name')} />
                                             </div>
@@ -1196,7 +1296,7 @@ export default function PublicApply() {
                                             <div className="pa-input-wrap">
                                                 <span className="pa-input-wrap-icon"><User size={15} strokeWidth={2} /></span>
                                                 <input className={`pa-input${fieldError('driver_last_name', applicantInfoErrors) ? ' pa-input-error' : ''}`}
-                                                    placeholder="Last Name" autoComplete="off"
+                                                    placeholder="e.g. Santos" autoComplete="off"
                                                     value={data.driver_last_name || ''} onChange={e => setData('driver_last_name', e.target.value)}
                                                     onBlur={() => markTouched('driver_last_name')} />
                                             </div>
@@ -1214,7 +1314,7 @@ export default function PublicApply() {
                                             <div className="pa-input-wrap">
                                                 <span className="pa-input-wrap-icon"><Phone size={15} strokeWidth={2} /></span>
                                                 <input className={`pa-input${fieldError('driver_contact', applicantInfoErrors) ? ' pa-input-error' : ''}`}
-                                                    placeholder="0917 123 4567" autoComplete="off"
+                                                    placeholder="e.g. 0917 123 4567" autoComplete="off"
                                                     value={data.driver_contact || ''} onChange={e => setData('driver_contact', e.target.value)}
                                                     onBlur={() => markTouched('driver_contact')} />
                                             </div>
@@ -1410,18 +1510,36 @@ export default function PublicApply() {
                                 can monitor the progress of your application through the <span>Driver Portal.</span>
                             </p>
 
-                                                        <Link href="/operator/dashboard"
-                                style={{
-                                    display: 'inline-flex', alignItems: 'center', gap: 9,
-                                    height: 52, padding: '0 36px', borderRadius: 12,
-                                    background: '#1C2340', color: '#FFFFFF', textDecoration: 'none',
-                                    fontFamily: "'DM Sans', sans-serif", fontSize: 10, fontWeight: 700,
-                                    letterSpacing: '.15em', textTransform: 'uppercase',
-                                    boxShadow: '0 4px 14px rgba(28,35,64,.25)',
-                                }}
-                            >
-                                Go to Driver Portal
-                            </Link>
+                            <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap', alignItems: 'center' }}>
+                                <Link href="/operator/dashboard"
+                                    style={{
+                                        display: 'inline-flex', alignItems: 'center', gap: 9,
+                                        height: 52, padding: '0 36px', borderRadius: 12,
+                                        background: '#1C2340', color: '#FFFFFF', textDecoration: 'none',
+                                        fontFamily: "'DM Sans', sans-serif", fontSize: 10, fontWeight: 700,
+                                        letterSpacing: '.15em', textTransform: 'uppercase',
+                                        boxShadow: '0 4px 14px rgba(28,35,64,.25)',
+                                    }}
+                                >
+                                    Go to Driver Portal
+                                </Link>
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        clearSavedDraft();
+                                        window.location.href = '/register-mtop';
+                                    }}
+                                    style={{
+                                        display: 'inline-flex', alignItems: 'center', gap: 9,
+                                        height: 52, padding: '0 28px', borderRadius: 12,
+                                        background: '#F1F3F9', color: '#1C2340', border: '1px solid #D5DAE7',
+                                        fontFamily: "'DM Sans', sans-serif", fontSize: 10, fontWeight: 700,
+                                        letterSpacing: '.15em', textTransform: 'uppercase', cursor: 'pointer',
+                                    }}
+                                >
+                                    Start New Application
+                                </button>
+                            </div>
                         </div>
                     )}
 

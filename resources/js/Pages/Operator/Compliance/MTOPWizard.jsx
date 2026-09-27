@@ -302,7 +302,7 @@ export default function MTOPWizard({ applicationType = 'new', tricycleUnit = nul
                                         <div>
                                             <Label>Driver First Name</Label>
                                             <Input
-                                                placeholder="First Name"
+                                                placeholder="e.g. Pedro"
                                                 value={data.driver_first_name}
                                                 onChange={e => setData('driver_first_name', e.target.value)}
                                             />
@@ -310,7 +310,7 @@ export default function MTOPWizard({ applicationType = 'new', tricycleUnit = nul
                                         <div>
                                             <Label>Driver Last Name</Label>
                                             <Input
-                                                placeholder="Last Name"
+                                                placeholder="e.g. Santos"
                                                 value={data.driver_last_name}
                                                 onChange={e => setData('driver_last_name', e.target.value)}
                                             />
@@ -327,7 +327,7 @@ export default function MTOPWizard({ applicationType = 'new', tricycleUnit = nul
                                         <div>
                                             <Label>Driver Mobile Number</Label>
                                             <Input
-                                                placeholder="0917 123 4567"
+                                                placeholder="e.g. 0917 123 4567"
                                                 value={data.driver_contact}
                                                 onChange={e => setData('driver_contact', e.target.value)}
                                             />

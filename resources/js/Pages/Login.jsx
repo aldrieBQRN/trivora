@@ -181,6 +181,16 @@ const CSS = `
 }
 .ol-input::placeholder { color: #9AA3CC; font-weight: 400; }
 .ol-input--password { padding-right: 46px; }
+.ol-input--password::-ms-reveal,
+.ol-input--password::-ms-clear,
+.ol-input::-ms-reveal,
+.ol-input::-ms-clear,
+input[type="password"]::-ms-reveal,
+input[type="password"]::-ms-clear {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
 .ol-input-toggle {
   position: absolute; right: 6px; top: 50%; transform: translateY(-50%);
   width: 34px; height: 34px; border-radius: 8px;

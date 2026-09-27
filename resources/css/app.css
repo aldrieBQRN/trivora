@@ -12,3 +12,11 @@
 .leaflet-marker-icon {
     overflow: visible !important;
 }
+
+/* Remove default browser reveal password eye icon (Edge / Chromium) */
+input[type="password"]::-ms-reveal,
+input[type="password"]::-ms-clear {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+}
