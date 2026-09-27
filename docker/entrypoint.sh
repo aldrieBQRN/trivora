@@ -72,9 +72,30 @@ try {
 echo "🔄 Checking and running database migrations..."
 php artisan migrate --force || true
 
-# Seed database with all demo accounts (TMO, BPLO, Driver, Passenger, TODA zones, tricycles)
-echo "🌱 Seeding database..."
-php artisan db:seed --force || true
+# Seed database if requested or if database is empty (avoids 60s+ boot freeze on restarts)
+if [ "$DB_SEED" = "true" ] || [ "$DB_SEED" = "1" ]; then
+    echo "🌱 DB_SEED requested: seeding database..."
+    php artisan db:seed --force || true
+else
+    echo "🌱 Checking if initial seed is needed..."
+    php -r "
+    require 'vendor/autoload.php';
+    \$app = require_once 'bootstrap/app.php';
+    \$kernel = \$app->make(Illuminate\Contracts\Console\Kernel::class);
+    \$kernel->bootstrap();
+    try {
+        if (\Illuminate\Support\Facades\Schema::hasTable('users') && \App\Models\User::count() === 0) {
+            echo 'Empty database detected. Seeding...\n';
+            \Illuminate\Support\Facades\Artisan::call('db:seed', ['--force' => true]);
+            echo 'Initial seeding complete.\n';
+        } else {
+            echo 'Database already seeded. Skipping seed to boot immediately.\n';
+        }
+    } catch (\Throwable \$e) {
+        echo 'Seed check note: ' . \$e->getMessage() . '\n';
+    }
+    " || true
+fi
 
 # Cache configurations and routes
 echo "⚡ Optimizing application..."
@@ -92,6 +113,15 @@ chmod -R 777 /var/www/html/storage /var/www/html/bootstrap/cache
 # Start PHP-FPM in background
 echo "🔌 Starting PHP-FPM..."
 php-fpm -D
+
+# Wait briefly for PHP-FPM to be ready before starting Nginx to prevent 502 Bad Gateway
+for i in 1 2 3 4 5 6 7 8 9 10; do
+    if nc -z 127.0.0.1 9000 2>/dev/null; then
+        echo "✅ PHP-FPM is ready on port 9000."
+        break
+    fi
+    sleep 0.5
+done
 
 # nginx temp folders must stay writable by its www-data workers (file uploads buffer there).
 mkdir -p /var/lib/nginx/tmp/client_body /var/lib/nginx/tmp/fastcgi
