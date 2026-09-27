@@ -106,25 +106,65 @@ class BPLOController extends Controller
     {
         $application->load(['operator.todaZone', 'tricycle', 'tricycleDriver']);
 
-        // Auto-suggest next sticker number
-        $maxFranchise = FranchiseScheme::where('franchise_number', 'not like', '%-%')->max('franchise_number');
-        $maxCodingNo = 0;
-        if ($maxFranchise) {
-            preg_match('/\d+$/', $maxFranchise, $matches);
-            $maxCodingNo = isset($matches[0]) ? (int)$matches[0] : 0;
-        }
-        if ($maxCodingNo === 0) {
-            $maxCodingNo = 841;
-        }
-        $suggestedCodingNo = str_pad($maxCodingNo + 1, 4, '0', STR_PAD_LEFT);
+        $isRenewal = $application->application_type === 'renewal';
+        $suggestedCodingNo = null;
 
-        // Auto-generate the unique Franchise Number (STK-YYYY-NNNN) if not yet persisted
-        if (!empty($application->sticker_number)) {
-            $franchiseNumber = $application->sticker_number;
+        // 1. If Renewal, preserve the tricycle's existing 4-digit municipal coding number
+        if ($isRenewal && $application->tricycle && !empty($application->tricycle->coding_scheme_number)) {
+            $suggestedCodingNo = str_pad($application->tricycle->coding_scheme_number, 4, '0', STR_PAD_LEFT);
+        } elseif ($isRenewal && $application->tricycle_id) {
+            $prevSchemeNo = FranchiseScheme::where('tricycle_id', $application->tricycle_id)
+                ->latest()
+                ->value('franchise_number');
+            if (!empty($prevSchemeNo) && preg_match('/^\d+$/', (string)$prevSchemeNo)) {
+                $suggestedCodingNo = str_pad($prevSchemeNo, 4, '0', STR_PAD_LEFT);
+            }
+        }
+
+        // 2. For new units (or if no existing number found), auto-suggest next sequential 4-digit number (< 9000 to exclude test fixtures)
+        if (!$suggestedCodingNo) {
+            $schemeNumbers = FranchiseScheme::where('franchise_number', 'not like', '%-%')
+                ->pluck('franchise_number')
+                ->filter(fn ($n) => preg_match('/^\d+$/', (string)$n) && (int)$n < 9000)
+                ->map(fn ($n) => (int)$n);
+
+            $tricycleNumbers = Tricycle::whereNotNull('coding_scheme_number')
+                ->pluck('coding_scheme_number')
+                ->filter(fn ($n) => preg_match('/^\d+$/', (string)$n) && (int)$n < 9000)
+                ->map(fn ($n) => (int)$n);
+
+            $allNumbers = $schemeNumbers->merge($tricycleNumbers);
+            $maxNum = $allNumbers->max() ?: 841;
+
+            $candidate = $maxNum + 1;
+            do {
+                $candidatePadded = str_pad($candidate, 4, '0', STR_PAD_LEFT);
+                $taken = FranchiseScheme::where('franchise_number', $candidatePadded)
+                    ->where('is_active', true)
+                    ->exists()
+                    || Tricycle::where('coding_scheme_number', $candidatePadded)
+                    ->where('status', 'active')
+                    ->exists();
+                if ($taken) {
+                    $candidate++;
+                }
+            } while ($taken);
+
+            $suggestedCodingNo = str_pad($candidate, 4, '0', STR_PAD_LEFT);
+        }
+
+        // Auto-generate the unique Franchise Number (STK-YYYY-NNNN) if not yet persisted or if collision exists
+        $year = date('Y');
+        $prefix = "STK-{$year}-";
+
+        $currentFranchise = $application->sticker_number;
+        $isCurrentValid = !empty($currentFranchise)
+            && !Application::where('sticker_number', $currentFranchise)->where('id', '!=', $application->id)->exists()
+            && !FranchiseScheme::where('sticker_number', $currentFranchise)->where('application_id', '!=', $application->id)->exists();
+
+        if ($isCurrentValid) {
+            $franchiseNumber = $currentFranchise;
         } else {
-            $year = date('Y');
-            $prefix = "STK-{$year}-";
-
             $maxAppSeq = 0;
             $appStickers = Application::where('sticker_number', 'like', "{$prefix}%")->pluck('sticker_number');
             foreach ($appStickers as $sn) {
@@ -146,31 +186,35 @@ class BPLOController extends Controller
 
             $nextSeq = max($maxAppSeq, (int)$suggestedCodingNo) + 1;
             do {
-                $franchiseNumber = sprintf('%s%04d', $prefix, $nextSeq);
-                $exists = Application::where('sticker_number', $franchiseNumber)->where('id', '!=', $application->id)->exists()
-                    || FranchiseScheme::where('sticker_number', $franchiseNumber)->exists();
+                $candidateFranchise = sprintf('%s%04d', $prefix, $nextSeq);
+                $exists = Application::where('sticker_number', $candidateFranchise)->where('id', '!=', $application->id)->exists()
+                    || FranchiseScheme::where('sticker_number', $candidateFranchise)->where('application_id', '!=', $application->id)->exists();
                 if ($exists) {
                     $nextSeq++;
                 }
             } while ($exists);
 
+            $franchiseNumber = $candidateFranchise;
             $application->update(['sticker_number' => $franchiseNumber]);
         }
 
         $appData = [
-            'id'                => $application->id,
-            'reference'         => $application->reference_number,
-            'operator'          => $application->operator ? $application->operator->full_name : 'N/A',
-            'owner'             => $application->ownerDetails(),
-            'ownerIsDriver'     => (bool) $application->owner_is_driver,
-            'tricycleDriver'    => $application->driverDetails(),
-            'toda'              => ($application->operator && $application->operator->todaZone) ? $application->operator->todaZone->name : 'Unassigned',
-            'make'              => $application->tricycle ? "{$application->tricycle->make} {$application->tricycle->model}" : 'N/A',
-            'engine_number'     => $application->tricycle ? $application->tricycle->engine_number : 'N/A',
-            'chassis_number'    => $application->tricycle ? $application->tricycle->chassis_number : 'N/A',
+            'id'                      => $application->id,
+            'reference'               => $application->reference_number,
+            'application_type'        => $application->application_type,
+            'is_renewal'              => $isRenewal,
+            'operator'                => $application->operator ? $application->operator->full_name : 'N/A',
+            'owner'                   => $application->ownerDetails(),
+            'ownerIsDriver'           => (bool) $application->owner_is_driver,
+            'tricycleDriver'          => $application->driverDetails(),
+            'toda'                    => ($application->operator && $application->operator->todaZone) ? $application->operator->todaZone->name : 'Unassigned',
+            'make'                    => $application->tricycle ? "{$application->tricycle->make} {$application->tricycle->model}" : 'N/A',
+            'plate_number'            => $application->tricycle ? $application->tricycle->plate_number : 'N/A',
+            'engine_number'           => $application->tricycle ? $application->tricycle->engine_number : 'N/A',
+            'chassis_number'          => $application->tricycle ? $application->tricycle->chassis_number : 'N/A',
             'suggested_coding_number' => $suggestedCodingNo,
-            'suggested_sticker' => $franchiseNumber,
-            'sticker_number'    => $franchiseNumber,
+            'suggested_sticker'       => $franchiseNumber,
+            'sticker_number'          => $franchiseNumber,
         ];
 
         return Inertia::render('BPLODashboard/IssueStickerNumber', [
@@ -187,46 +231,55 @@ class BPLOController extends Controller
         $tricycle = $application->tricycle;
         $isRenewal = $application->application_type === 'renewal';
 
-        // ── Identifier terminology map (terminology audit) ──────────────────────────
-        //   "Sticker Number"   = tricycles.coding_scheme_number — the 4-digit municipal
-        //                         number. Stored in the legacy-named column
-        //                         franchise_schemes.franchise_number, carried below as
-        //                         $codingNumber.
-        //   "Franchise Number" = the STK-YYYY-NNNN serial held in applications.sticker_number
-        //                         and franchise_schemes.sticker_number, carried below as
-        //                         $franchiseNumber.
-        //   franchise_schemes.franchise_number therefore holds the Sticker Number — that
-        //   column name predates the terminology decision. Never read it as the Franchise
-        //   Number, and never invent one when no serial has been issued.
-        //
-        // franchise_schemes.franchise_number identifies the ONE currently-operating unit
-        // holding that Sticker Number municipality-wide, so only currently-ACTIVE schemes
-        // must stay unique (enforced at the DB level too — see the active_franchise_number
-        // generated column/index). A genuine renewal is explicitly allowed to reuse the SAME
-        // number this tricycle's own (about to be deactivated) active scheme already holds;
-        // any other still-active use of that number — this tricycle's for a non-renewal, or
-        // any other tricycle's — is still rejected.
+        // Uniqueness check for sticker / coding number:
+        // Only OTHER currently-active tricycles should block this assignment.
+        // If this tricycle already holds that number (e.g. renewal or re-processing), it is permitted.
         $franchiseNumberRule = Rule::unique('franchise_schemes', 'franchise_number')->where('is_active', true);
-        if ($isRenewal && $tricycle) {
+        if ($tricycle) {
             $franchiseNumberRule->where(fn ($query) => $query->where('tricycle_id', '!=', $tricycle->id));
         }
 
-        // `coding_scheme_number` is the canonical key for the Sticker Number; `body_number`
-        // is its legacy alias, still accepted through the deprecation cycle. Validate
-        // whichever key the client actually sent, so the error bag matches that key.
         $numberKey = $request->has('coding_scheme_number') ? 'coding_scheme_number' : 'body_number';
 
         $request->validate([
             $numberKey       => ['required', 'string', 'max:20', $franchiseNumberRule],
             'sticker_number' => 'nullable|string|max:50',
+        ], [
+            "{$numberKey}.required" => 'The Sticker / Coding Scheme Number is required.',
+            "{$numberKey}.unique"   => 'This Sticker / Coding Scheme Number is already actively assigned to another tricycle.',
         ]);
 
-        $codingNumber = $request->input($numberKey);
-        $franchiseNumber = $application->sticker_number ?: $request->input('sticker_number');
+        $codingNumber = str_pad(trim($request->input($numberKey)), 4, '0', STR_PAD_LEFT);
+        $franchiseNumber = trim($request->input('sticker_number') ?: ($application->sticker_number ?: ''));
 
-        if (empty($franchiseNumber)) {
-            $year = date('Y');
-            $franchiseNumber = 'STK-' . $year . '-' . str_pad($codingNumber, 4, '0', STR_PAD_LEFT);
+        $year = date('Y');
+        $prefix = "STK-{$year}-";
+
+        // Validate or resolve Franchise Number (STK-YYYY-NNNN) to ensure it is unique across applications/schemes
+        $hasConflict = empty($franchiseNumber)
+            || Application::where('sticker_number', $franchiseNumber)->where('id', '!=', $application->id)->exists()
+            || FranchiseScheme::where('sticker_number', $franchiseNumber)->where('application_id', '!=', $application->id)->exists();
+
+        if ($hasConflict) {
+            $maxAppSeq = 0;
+            foreach (Application::where('sticker_number', 'like', "{$prefix}%")->pluck('sticker_number') as $sn) {
+                $p = explode('-', (string)$sn);
+                $maxAppSeq = max($maxAppSeq, (int)end($p));
+            }
+            foreach (FranchiseScheme::where('sticker_number', 'like', "{$prefix}%")->pluck('sticker_number') as $sn) {
+                $p = explode('-', (string)$sn);
+                $maxAppSeq = max($maxAppSeq, (int)end($p));
+            }
+            $nextSeq = max($maxAppSeq, (int)$codingNumber) + 1;
+            do {
+                $candidate = sprintf('%s%04d', $prefix, $nextSeq);
+                $exists = Application::where('sticker_number', $candidate)->where('id', '!=', $application->id)->exists()
+                    || FranchiseScheme::where('sticker_number', $candidate)->where('application_id', '!=', $application->id)->exists();
+                if ($exists) {
+                    $nextSeq++;
+                }
+            } while ($exists);
+            $franchiseNumber = $candidate;
         }
 
         $statusBeforeRelease = $application->status;
@@ -238,18 +291,16 @@ class BPLOController extends Controller
             if ($tricycle) {
                 // 1. Assign the Sticker Number to the Tricycle
                 $tricycle->update([
-                    'coding_scheme_number' => str_pad($codingNumber, 4, '0', STR_PAD_LEFT),
+                    'coding_scheme_number' => $codingNumber,
                 ]);
 
                 // 2. Setup Franchise Scheme with Color Coding Scheme based on last digit of the Sticker Number
                 $lastDigit = (int)substr(trim($codingNumber), -1);
                 $codingDay = $this->getCodingDay($lastDigit);
                 $scheme = ColorCodingScheme::whereJsonContains('restricted_days', $codingDay)->first();
-                $schemeId = $scheme ? $scheme->id : ColorCodingScheme::first()->id;
+                $schemeId = $scheme ? $scheme->id : (ColorCodingScheme::first()?->id ?? 1);
 
-                // Only a genuine renewal supersedes the tricycle's existing active franchise. A
-                // "new" application must never deactivate an active scheme just because the
-                // tricycle happens to have one.
+                // If renewal, deactivate prior active franchise scheme for this tricycle
                 if ($isRenewal) {
                     FranchiseScheme::where('tricycle_id', $tricycle->id)
                         ->where('is_active', true)
@@ -259,19 +310,21 @@ class BPLOController extends Controller
                         ]);
                 }
 
-                // Create pending permit record (activated during TMO Final Confirmation)
-                FranchiseScheme::create([
-                    'application_id'         => $application->id,
-                    'tricycle_id'            => $tricycle->id,
-                    'color_coding_scheme_id' => $schemeId,
-                    'issued_by'              => Auth::id() ?: 1,
-                    'franchise_number'       => str_pad($codingNumber, 4, '0', STR_PAD_LEFT),
-                    'sticker_number'         => $franchiseNumber,
-                    'issue_date'             => now()->toDateString(),
-                    'expiry_date'            => now()->addYears(3)->toDateString(),
-                    'is_active'              => false, // Will become active upon TMO Final Confirmation
-                    'notes'                  => "Franchise Number #{$franchiseNumber} released by BPLO. Awaiting TMO Final Confirmation.",
-                ]);
+                // Create or update pending permit record (activated during TMO Final Confirmation)
+                FranchiseScheme::updateOrCreate(
+                    ['application_id' => $application->id],
+                    [
+                        'tricycle_id'            => $tricycle->id,
+                        'color_coding_scheme_id' => $schemeId,
+                        'issued_by'              => Auth::id() ?: 1,
+                        'franchise_number'       => $codingNumber,
+                        'sticker_number'         => $franchiseNumber,
+                        'issue_date'             => now()->toDateString(),
+                        'expiry_date'            => now()->addYears(3)->toDateString(),
+                        'is_active'              => false, // Will become active upon TMO Final Confirmation
+                        'notes'                  => "Franchise Number #{$franchiseNumber} released by BPLO. Awaiting TMO Final Confirmation.",
+                    ]
+                );
             }
 
             // 3. Update Application status to awaiting_tmo_confirmation
@@ -300,7 +353,11 @@ class BPLOController extends Controller
         });
 
         // TMO: released by BPLO -> Final Confirmation & GPS setup pending.
-        \App\Services\StaffNotifier::applicationStatusChanged($application->refresh(), $statusBeforeRelease, $application->status, $request->user()->id);
+        try {
+            \App\Services\StaffNotifier::applicationStatusChanged($application->refresh(), $statusBeforeRelease, $application->status, $request->user()?->id);
+        } catch (\Throwable $e) {
+            report($e);
+        }
 
         return redirect()->route('bplo.releasing')->with('success', "Franchise Number #{$franchiseNumber} released! Driver instructed to return to TMO for Final Confirmation & GPS Setup.");
     }
