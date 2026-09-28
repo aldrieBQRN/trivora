@@ -128,84 +128,197 @@ Route::get('/seed-database', function (\Illuminate\Http\Request $request) {
             </div>
         </div>
 
-        <!-- Ready Credentials Table -->
-        <div class="bg-slate-900/90 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-xl">
-            <h2 class="text-lg font-bold text-white mb-1">Populated Accounts &amp; Login Credentials</h2>
-            <p class="text-xs text-slate-400 mb-6">Use any of these pre-seeded accounts to test municipal operations, mobile driver app, or passenger flows.</p>
-            
-            <div class="overflow-x-auto">
-                <table class="w-full text-left text-xs sm:text-sm">
-                    <thead>
-                        <tr class="border-b border-slate-800 text-slate-400 uppercase text-[11px] font-bold tracking-wider">
-                            <th class="pb-3 px-3">Role / Stage</th>
-                            <th class="pb-3 px-3">Email</th>
-                            <th class="pb-3 px-3">Password</th>
-                            <th class="pb-3 px-3 text-right">Action</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-slate-800/60">
-                        <tr class="hover:bg-slate-800/30">
-                            <td class="py-3 px-3 font-semibold text-emerald-400">Admin</td>
-                            <td class="py-3 px-3 font-mono text-slate-200">admin@trivora.gov.ph</td>
-                            <td class="py-3 px-3 font-mono text-slate-300">Admin@123</td>
-                            <td class="py-3 px-3 text-right"><a href="/login" class="text-emerald-400 hover:underline font-bold text-xs">Login</a></td>
-                        </tr>
-                        <tr class="hover:bg-slate-800/30">
-                            <td class="py-3 px-3 font-semibold text-sky-400">TMO Personnel</td>
-                            <td class="py-3 px-3 font-mono text-slate-200">tmo.jdelacruz@trivora.gov.ph</td>
-                            <td class="py-3 px-3 font-mono text-slate-300">TmoUser@123</td>
-                            <td class="py-3 px-3 text-right"><a href="/login" class="text-sky-400 hover:underline font-bold text-xs">Login</a></td>
-                        </tr>
-                        <tr class="hover:bg-slate-800/30">
-                            <td class="py-3 px-3 font-semibold text-sky-400">TMO Personnel (2)</td>
-                            <td class="py-3 px-3 font-mono text-slate-200">tmo.msantos@trivora.gov.ph</td>
-                            <td class="py-3 px-3 font-mono text-slate-300">TmoUser@123</td>
-                            <td class="py-3 px-3 text-right"><a href="/login" class="text-sky-400 hover:underline font-bold text-xs">Login</a></td>
-                        </tr>
-                        <tr class="hover:bg-slate-800/30">
-                            <td class="py-3 px-3 font-semibold text-amber-400">BPLO Staff</td>
-                            <td class="py-3 px-3 font-mono text-slate-200">bplo.areyes@trivora.gov.ph</td>
-                            <td class="py-3 px-3 font-mono text-slate-300">BploUser@123</td>
-                            <td class="py-3 px-3 text-right"><a href="/login" class="text-amber-400 hover:underline font-bold text-xs">Login</a></td>
-                        </tr>
-                        <tr class="hover:bg-slate-800/30">
-                            <td class="py-3 px-3 font-semibold text-amber-400">BPLO Staff (2)</td>
-                            <td class="py-3 px-3 font-mono text-slate-200">bplo.cmendoza@trivora.gov.ph</td>
-                            <td class="py-3 px-3 font-mono text-slate-300">BploUser@123</td>
-                            <td class="py-3 px-3 text-right"><a href="/login" class="text-amber-400 hover:underline font-bold text-xs">Login</a></td>
-                        </tr>
-                        <tr class="hover:bg-slate-800/30">
-                            <td class="py-3 px-3 font-semibold text-indigo-400">Driver (QA / Active)</td>
-                            <td class="py-3 px-3 font-mono text-slate-200">driver.test@trivora.test</td>
-                            <td class="py-3 px-3 font-mono text-slate-300">TestDriver123!</td>
-                            <td class="py-3 px-3 text-right"><a href="/login" class="text-indigo-400 hover:underline font-bold text-xs">Login</a></td>
-                        </tr>
-                        <tr class="hover:bg-slate-800/30">
-                            <td class="py-3 px-3 font-semibold text-indigo-400">Driver (BPLO Release Stage)</td>
-                            <td class="py-3 px-3 font-mono text-slate-200">driver.bplo@trivora.ph</td>
-                            <td class="py-3 px-3 font-mono text-slate-300">Driver@123</td>
-                            <td class="py-3 px-3 text-right"><a href="/login" class="text-indigo-400 hover:underline font-bold text-xs">Login</a></td>
-                        </tr>
-                        <tr class="hover:bg-slate-800/30">
-                            <td class="py-3 px-3 font-semibold text-indigo-400">Driver (TMO Final Confirmation)</td>
-                            <td class="py-3 px-3 font-mono text-slate-200">driver.confirm@trivora.ph</td>
-                            <td class="py-3 px-3 font-mono text-slate-300">Driver@123</td>
-                            <td class="py-3 px-3 text-right"><a href="/login" class="text-indigo-400 hover:underline font-bold text-xs">Login</a></td>
-                        </tr>
-                        <tr class="hover:bg-slate-800/30">
-                            <td class="py-3 px-3 font-semibold text-rose-400">Passenger (Mobile)</td>
-                            <td class="py-3 px-3 font-mono text-slate-200">passenger@trivora.ph</td>
-                            <td class="py-3 px-3 font-mono text-slate-300">Passenger@123</td>
-                            <td class="py-3 px-3 text-right"><span class="text-slate-500 text-xs">App Login</span></td>
-                        </tr>
-                        <tr class="hover:bg-slate-800/30">
-                            <td class="py-3 px-3 font-semibold text-rose-400">Passenger (QA Test)</td>
-                            <td class="py-3 px-3 font-mono text-slate-200">passenger.test@trivora.test</td>
-                            <td class="py-3 px-3 font-mono text-slate-300">TestPassenger123!</td>
-                            <td class="py-3 px-3 text-right"><span class="text-slate-500 text-xs">App Login</span></td>
-                        </tr>
-                    </tbody>
-                </table>
+        <!-- Ready Credentials Tables -->
+        <div class="space-y-6">
+            <!-- 1. Driver Mobile App Accounts -->
+            <div class="bg-slate-900/90 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-xl">
+                <div class="flex items-center gap-2 mb-1">
+                    <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">Mobile App</span>
+                    <h2 class="text-base sm:text-lg font-bold text-white">Driver App Sign-In (Login by Mobile Number)</h2>
+                </div>
+                <p class="text-xs text-slate-400 mb-4">The Driver App takes <strong>Mobile Number + Password</strong>. Drivers 1–5 are standard test units, and Drivers 6–10 each have active violation records for testing (all are <strong>active and not restricted today</strong>).</p>
+                
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs sm:text-sm">
+                        <thead>
+                            <tr class="border-b border-slate-800 text-slate-400 uppercase text-[11px] font-bold tracking-wider">
+                                <th class="pb-2.5 px-3">Driver Name</th>
+                                <th class="pb-2.5 px-3">Mobile Number (Login)</th>
+                                <th class="pb-2.5 px-3">Password</th>
+                                <th class="pb-2.5 px-3">Plate / Unit</th>
+                                <th class="pb-2.5 px-3">TODA Zone</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-800/60 font-mono text-xs">
+                            <tr class="hover:bg-slate-800/30">
+                                <td class="py-2.5 px-3 font-sans font-bold text-indigo-400">Test Driver (Primary QA)</td>
+                                <td class="py-2.5 px-3 text-white font-bold bg-indigo-500/10 rounded">09170001111</td>
+                                <td class="py-2.5 px-3 text-slate-300">TestDriver123!</td>
+                                <td class="py-2.5 px-3 text-slate-400">TEST-0001 (Unit 9999)</td>
+                                <td class="py-2.5 px-3 text-slate-400">TODA-BRGY10</td>
+                            </tr>
+                            <tr class="hover:bg-slate-800/30">
+                                <td class="py-2.5 px-3 font-sans font-semibold text-slate-200">Pedro Gomez</td>
+                                <td class="py-2.5 px-3 text-white font-bold bg-indigo-500/10 rounded">09170002222</td>
+                                <td class="py-2.5 px-3 text-slate-300">TestDriver123!</td>
+                                <td class="py-2.5 px-3 text-slate-400">TEST-0002 (Unit 9992)</td>
+                                <td class="py-2.5 px-3 text-slate-400">TODA-BUCANA</td>
+                            </tr>
+                            <tr class="hover:bg-slate-800/30">
+                                <td class="py-2.5 px-3 font-sans font-semibold text-slate-200">Ramon Bautista</td>
+                                <td class="py-2.5 px-3 text-white font-bold bg-indigo-500/10 rounded">09170003333</td>
+                                <td class="py-2.5 px-3 text-slate-300">TestDriver123!</td>
+                                <td class="py-2.5 px-3 text-slate-400">TEST-0003 (Unit 9993)</td>
+                                <td class="py-2.5 px-3 text-slate-400">TODA-BRGY8</td>
+                            </tr>
+                            <tr class="hover:bg-slate-800/30">
+                                <td class="py-2.5 px-3 font-sans font-semibold text-slate-200">Arnel Mendoza</td>
+                                <td class="py-2.5 px-3 text-white font-bold bg-indigo-500/10 rounded">09170004444</td>
+                                <td class="py-2.5 px-3 text-slate-300">TestDriver123!</td>
+                                <td class="py-2.5 px-3 text-slate-400">TEST-0004 (Unit 9994)</td>
+                                <td class="py-2.5 px-3 text-slate-400">TODA-BRGY4</td>
+                            </tr>
+                            <tr class="hover:bg-slate-800/30">
+                                <td class="py-2.5 px-3 font-sans font-semibold text-slate-200">Eduardo Tolentino</td>
+                                <td class="py-2.5 px-3 text-white font-bold bg-indigo-500/10 rounded">09170005555</td>
+                                <td class="py-2.5 px-3 text-slate-300">TestDriver123!</td>
+                                <td class="py-2.5 px-3 text-slate-400">TEST-0005 (Unit 9995)</td>
+                                <td class="py-2.5 px-3 text-slate-400">TODA-BRGY1</td>
+                            </tr>
+                            <tr class="hover:bg-slate-800/30 border-t border-slate-700/60 bg-indigo-950/20">
+                                <td class="py-2.5 px-3 font-sans font-bold text-amber-300">Danilo Reyes <span class="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30 ml-1">Open Violation</span></td>
+                                <td class="py-2.5 px-3 text-white font-bold bg-indigo-500/10 rounded">09170006666</td>
+                                <td class="py-2.5 px-3 text-slate-300">TestDriver123!</td>
+                                <td class="py-2.5 px-3 text-slate-300">TEST-0006 (Unit 998x)</td>
+                                <td class="py-2.5 px-3 text-emerald-400 font-semibold">TODA-BUCANA &middot; Active (Not Restricted Today)</td>
+                            </tr>
+                            <tr class="hover:bg-slate-800/30 bg-indigo-950/20">
+                                <td class="py-2.5 px-3 font-sans font-bold text-amber-300">Fernando Garcia <span class="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30 ml-1">Speed Violation</span></td>
+                                <td class="py-2.5 px-3 text-white font-bold bg-indigo-500/10 rounded">09170007777</td>
+                                <td class="py-2.5 px-3 text-slate-300">TestDriver123!</td>
+                                <td class="py-2.5 px-3 text-slate-300">TEST-0007 (Unit 998x)</td>
+                                <td class="py-2.5 px-3 text-emerald-400 font-semibold">TODA-BRGY10 &middot; Active (Not Restricted Today)</td>
+                            </tr>
+                            <tr class="hover:bg-slate-800/30 bg-indigo-950/20">
+                                <td class="py-2.5 px-3 font-sans font-bold text-sky-300">Rolando Bautista <span class="text-[10px] px-1.5 py-0.5 rounded bg-sky-500/20 text-sky-300 border border-sky-500/30 ml-1">Appeal Under Review</span></td>
+                                <td class="py-2.5 px-3 text-white font-bold bg-indigo-500/10 rounded">09170008888</td>
+                                <td class="py-2.5 px-3 text-slate-300">TestDriver123!</td>
+                                <td class="py-2.5 px-3 text-slate-300">TEST-0008 (Unit 998x)</td>
+                                <td class="py-2.5 px-3 text-emerald-400 font-semibold">TODA-BRGY8 &middot; Active (Not Restricted Today)</td>
+                            </tr>
+                            <tr class="hover:bg-slate-800/30 bg-indigo-950/20">
+                                <td class="py-2.5 px-3 font-sans font-bold text-rose-300">Vicente Cruz <span class="text-[10px] px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-300 border border-rose-500/30 ml-1">Fine Required</span></td>
+                                <td class="py-2.5 px-3 text-white font-bold bg-indigo-500/10 rounded">09170009999</td>
+                                <td class="py-2.5 px-3 text-slate-300">TestDriver123!</td>
+                                <td class="py-2.5 px-3 text-slate-300">TEST-0009 (Unit 998x)</td>
+                                <td class="py-2.5 px-3 text-emerald-400 font-semibold">TODA-BRGY4 &middot; Active (Not Restricted Today)</td>
+                            </tr>
+                            <tr class="hover:bg-slate-800/30 bg-indigo-950/20">
+                                <td class="py-2.5 px-3 font-sans font-bold text-purple-300">Manuel Soriano <span class="text-[10px] px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-300 border border-purple-500/30 ml-1">Dual Violations</span></td>
+                                <td class="py-2.5 px-3 text-white font-bold bg-indigo-500/10 rounded">09170001010</td>
+                                <td class="py-2.5 px-3 text-slate-300">TestDriver123!</td>
+                                <td class="py-2.5 px-3 text-slate-300">TEST-0010 (Unit 998x)</td>
+                                <td class="py-2.5 px-3 text-emerald-400 font-semibold">TODA-BRGY1 &middot; Active (Not Restricted Today)</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- 2. Passenger Mobile App Accounts -->
+            <div class="bg-slate-900/90 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-xl">
+                <div class="flex items-center gap-2 mb-1">
+                    <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-rose-500/10 text-rose-400 border border-rose-500/20">Mobile App</span>
+                    <h2 class="text-base sm:text-lg font-bold text-white">Passenger App Sign-In (Login by Email)</h2>
+                </div>
+                <p class="text-xs text-slate-400 mb-4">The Passenger App takes <strong>Email + Password</strong>.</p>
+                
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs sm:text-sm">
+                        <thead>
+                            <tr class="border-b border-slate-800 text-slate-400 uppercase text-[11px] font-bold tracking-wider">
+                                <th class="pb-2.5 px-3">Passenger Name</th>
+                                <th class="pb-2.5 px-3">Login Email</th>
+                                <th class="pb-2.5 px-3">Password</th>
+                                <th class="pb-2.5 px-3">Mobile on File</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-800/60 font-mono text-xs">
+                            <tr class="hover:bg-slate-800/30">
+                                <td class="py-2.5 px-3 font-sans font-bold text-rose-400">Test Passenger 1 (Primary QA)</td>
+                                <td class="py-2.5 px-3 text-white font-bold bg-rose-500/10 rounded">passenger.test@trivora.test</td>
+                                <td class="py-2.5 px-3 text-slate-300">TestPassenger123!</td>
+                                <td class="py-2.5 px-3 text-slate-400">+63 900 111 2221</td>
+                            </tr>
+                            <tr class="hover:bg-slate-800/30">
+                                <td class="py-2.5 px-3 font-sans font-semibold text-slate-200">Maria Santos</td>
+                                <td class="py-2.5 px-3 text-white font-bold bg-rose-500/10 rounded">passenger2@trivora.test</td>
+                                <td class="py-2.5 px-3 text-slate-300">TestPassenger123!</td>
+                                <td class="py-2.5 px-3 text-slate-400">+63 900 111 2222</td>
+                            </tr>
+                            <tr class="hover:bg-slate-800/30">
+                                <td class="py-2.5 px-3 font-sans font-semibold text-slate-200">Carlo Reyes</td>
+                                <td class="py-2.5 px-3 text-white font-bold bg-rose-500/10 rounded">passenger3@trivora.test</td>
+                                <td class="py-2.5 px-3 text-slate-300">TestPassenger123!</td>
+                                <td class="py-2.5 px-3 text-slate-400">+63 900 111 2223</td>
+                            </tr>
+                            <tr class="hover:bg-slate-800/30">
+                                <td class="py-2.5 px-3 font-sans font-semibold text-slate-200">Elena Dizon</td>
+                                <td class="py-2.5 px-3 text-white font-bold bg-rose-500/10 rounded">passenger4@trivora.test</td>
+                                <td class="py-2.5 px-3 text-slate-300">TestPassenger123!</td>
+                                <td class="py-2.5 px-3 text-slate-400">+63 900 111 2224</td>
+                            </tr>
+                            <tr class="hover:bg-slate-800/30">
+                                <td class="py-2.5 px-3 font-sans font-semibold text-slate-200">Rico Ramos</td>
+                                <td class="py-2.5 px-3 text-white font-bold bg-rose-500/10 rounded">passenger5@trivora.test</td>
+                                <td class="py-2.5 px-3 text-slate-300">TestPassenger123!</td>
+                                <td class="py-2.5 px-3 text-slate-400">+63 900 111 2225</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- 3. Web Municipal Admin & Staff Accounts -->
+            <div class="bg-slate-900/90 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-xl">
+                <div class="flex items-center gap-2 mb-1">
+                    <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">Web Portal</span>
+                    <h2 class="text-base sm:text-lg font-bold text-white">Staff &amp; Municipal Portals</h2>
+                </div>
+                <p class="text-xs text-slate-400 mb-4">Sign in at <a href="/login" class="text-emerald-400 hover:underline">/login</a> for Admin, TMO, and BPLO portals.</p>
+                
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs sm:text-sm">
+                        <thead>
+                            <tr class="border-b border-slate-800 text-slate-400 uppercase text-[11px] font-bold tracking-wider">
+                                <th class="pb-2.5 px-3">Portal Role</th>
+                                <th class="pb-2.5 px-3">Login Email</th>
+                                <th class="pb-2.5 px-3">Password</th>
+                                <th class="pb-2.5 px-3 text-right">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-800/60 font-mono text-xs">
+                            <tr class="hover:bg-slate-800/30">
+                                <td class="py-2.5 px-3 font-sans font-bold text-emerald-400">Admin</td>
+                                <td class="py-2.5 px-3 text-slate-200">admin@trivora.gov.ph</td>
+                                <td class="py-2.5 px-3 text-slate-300">Admin@123</td>
+                                <td class="py-2.5 px-3 text-right font-sans"><a href="/login" class="text-emerald-400 font-bold hover:underline">Login &rarr;</a></td>
+                            </tr>
+                            <tr class="hover:bg-slate-800/30">
+                                <td class="py-2.5 px-3 font-sans font-bold text-sky-400">TMO Personnel</td>
+                                <td class="py-2.5 px-3 text-slate-200">tmo.jdelacruz@trivora.gov.ph</td>
+                                <td class="py-2.5 px-3 text-slate-300">TmoUser@123</td>
+                                <td class="py-2.5 px-3 text-right font-sans"><a href="/login" class="text-sky-400 font-bold hover:underline">Login &rarr;</a></td>
+                            </tr>
+                            <tr class="hover:bg-slate-800/30">
+                                <td class="py-2.5 px-3 font-sans font-bold text-amber-400">BPLO Staff</td>
+                                <td class="py-2.5 px-3 text-slate-200">bplo.areyes@trivora.gov.ph</td>
+                                <td class="py-2.5 px-3 text-slate-300">BploUser@123</td>
+                                <td class="py-2.5 px-3 text-right font-sans"><a href="/login" class="text-amber-400 font-bold hover:underline">Login &rarr;</a></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
 
