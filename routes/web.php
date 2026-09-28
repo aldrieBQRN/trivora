@@ -27,21 +27,208 @@ Route::get('/', function () {
 Route::get('/register-mtop', [RegistrationController::class, 'publicWizard'])->name('register.public');
 Route::post('/register-mtop', [RegistrationController::class, 'store'])->name('register.public.submit');
 
-// Cloud Database Seeder Route (for initial cloud setup and verification)
-Route::get('/seed-database', function () {
-    @set_time_limit(300);
+// Cloud Database Seeder Route (for initial cloud setup, fresh wipe, and verification)
+Route::get('/seed-database', function (\Illuminate\Http\Request $request) {
+    @set_time_limit(600);
+    @ini_set('memory_limit', '512M');
+
+    $isFresh = $request->query('fresh', '1') !== '0';
+    $outputLog = [];
+
     try {
-        // 1. Run any pending migrations first
+        // Step 1: Wipe tables cleanly if fresh is requested (safe for TiDB Cloud)
+        if ($isFresh) {
+            \Illuminate\Support\Facades\DB::statement('SET FOREIGN_KEY_CHECKS=0;');
+            $tables = \Illuminate\Support\Facades\DB::select('SHOW FULL TABLES WHERE Table_Type = "BASE TABLE"');
+            foreach ($tables as $table) {
+                $tableName = array_values((array)$table)[0];
+                \Illuminate\Support\Facades\DB::statement("DROP TABLE IF EXISTS `{$tableName}`;");
+            }
+            \Illuminate\Support\Facades\DB::statement('SET FOREIGN_KEY_CHECKS=1;');
+            $outputLog[] = "Cleaned and dropped all existing tables.\n";
+        }
+
+        // Step 2: Run all database migrations
         \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
-        $migrateOutput = \Illuminate\Support\Facades\Artisan::output();
+        $outputLog[] = "=== Migrations ===\n" . \Illuminate\Support\Facades\Artisan::output();
 
-        // 2. Seed database
+        // Step 3: Run DatabaseSeeder (Color coding, TODA, Users, Tricycles, Applications, Violations, Demo Drivers, etc.)
         \Illuminate\Support\Facades\Artisan::call('db:seed', ['--force' => true]);
-        $seedOutput = \Illuminate\Support\Facades\Artisan::output();
+        $outputLog[] = "=== Database Seeder ===\n" . \Illuminate\Support\Facades\Artisan::output();
 
-        return response("<pre style='font-family:monospace;background:#1e293b;color:#10b981;padding:24px;border-radius:8px;font-size:14px;line-height:1.6;'>✅ Migrations & Database Seeded Successfully!\n\n--- Migrations ---\n" . htmlspecialchars($migrateOutput) . "\n--- Seeder ---\n" . htmlspecialchars($seedOutput) . "\n\n👉 <a href='/login' style='color:#38bdf8;font-weight:bold;'>Click Here to Login</a></pre>");
+        // Step 4: Clear and re-cache framework configs
+        \Illuminate\Support\Facades\Artisan::call('config:clear');
+        \Illuminate\Support\Facades\Artisan::call('cache:clear');
+
+        // Gather real database statistics for verification display
+        $stats = [
+            'color_schemes' => \App\Models\ColorCodingScheme::count(),
+            'toda_zones'    => \App\Models\TodaZone::count(),
+            'users'         => \App\Models\User::count(),
+            'tricycles'     => \App\Models\Tricycle::count(),
+            'applications'  => \App\Models\Application::count(),
+            'violations'    => \App\Models\Violation::count(),
+            'passengers'    => \App\Models\Passenger::count(),
+        ];
+
+        $fullLog = implode("\n\n", $outputLog);
+
+        $html = <<<HTML
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Database Seeded | TRIVORA Cloud</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Plus Jakarta Sans', sans-serif; }
+        code, pre { font-family: 'JetBrains Mono', monospace; }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen py-10 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-4xl mx-auto space-y-8">
+        
+        <!-- Header -->
+        <div class="bg-slate-900/90 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl relative overflow-hidden backdrop-blur-md">
+            <div class="absolute -right-16 -top-16 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none"></div>
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                    <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-bold uppercase tracking-wider mb-2">
+                        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                        Database Setup &amp; Seeder Complete
+                    </div>
+                    <h1 class="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">TRIVORA Cloud Database</h1>
+                    <p class="text-sm text-slate-400 mt-1">Fresh migrations and all municipal &amp; demo test datasets populated successfully.</p>
+                </div>
+                <a href="/login" class="inline-flex items-center justify-center px-6 py-3 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-sm shadow-lg shadow-emerald-500/25 transition-all active:scale-95 shrink-0">
+                    Go to Login Portal &rarr;
+                </a>
+            </div>
+        </div>
+
+        <!-- Seeded Stats Grid -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+            <div class="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-4 text-center">
+                <span class="block text-2xl sm:text-3xl font-black text-emerald-400 font-mono">{$stats['users']}</span>
+                <span class="text-xs font-semibold text-slate-400 mt-1 block">Staff &amp; Users</span>
+            </div>
+            <div class="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-4 text-center">
+                <span class="block text-2xl sm:text-3xl font-black text-sky-400 font-mono">{$stats['tricycles']}</span>
+                <span class="text-xs font-semibold text-slate-400 mt-1 block">Tricycle Units</span>
+            </div>
+            <div class="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-4 text-center">
+                <span class="block text-2xl sm:text-3xl font-black text-indigo-400 font-mono">{$stats['applications']}</span>
+                <span class="text-xs font-semibold text-slate-400 mt-1 block">MTOP Applications</span>
+            </div>
+            <div class="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-4 text-center">
+                <span class="block text-2xl sm:text-3xl font-black text-amber-400 font-mono">{$stats['toda_zones']}</span>
+                <span class="text-xs font-semibold text-slate-400 mt-1 block">TODA Zones</span>
+            </div>
+        </div>
+
+        <!-- Ready Credentials Table -->
+        <div class="bg-slate-900/90 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-xl">
+            <h2 class="text-lg font-bold text-white mb-1">Populated Accounts &amp; Login Credentials</h2>
+            <p class="text-xs text-slate-400 mb-6">Use any of these pre-seeded accounts to test municipal operations, mobile driver app, or passenger flows.</p>
+            
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs sm:text-sm">
+                    <thead>
+                        <tr class="border-b border-slate-800 text-slate-400 uppercase text-[11px] font-bold tracking-wider">
+                            <th class="pb-3 px-3">Role / Stage</th>
+                            <th class="pb-3 px-3">Email</th>
+                            <th class="pb-3 px-3">Password</th>
+                            <th class="pb-3 px-3 text-right">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-800/60">
+                        <tr class="hover:bg-slate-800/30">
+                            <td class="py-3 px-3 font-semibold text-emerald-400">Admin</td>
+                            <td class="py-3 px-3 font-mono text-slate-200">admin@trivora.gov.ph</td>
+                            <td class="py-3 px-3 font-mono text-slate-300">Admin@123</td>
+                            <td class="py-3 px-3 text-right"><a href="/login" class="text-emerald-400 hover:underline font-bold text-xs">Login</a></td>
+                        </tr>
+                        <tr class="hover:bg-slate-800/30">
+                            <td class="py-3 px-3 font-semibold text-sky-400">TMO Personnel</td>
+                            <td class="py-3 px-3 font-mono text-slate-200">tmo.jdelacruz@trivora.gov.ph</td>
+                            <td class="py-3 px-3 font-mono text-slate-300">TmoUser@123</td>
+                            <td class="py-3 px-3 text-right"><a href="/login" class="text-sky-400 hover:underline font-bold text-xs">Login</a></td>
+                        </tr>
+                        <tr class="hover:bg-slate-800/30">
+                            <td class="py-3 px-3 font-semibold text-sky-400">TMO Personnel (2)</td>
+                            <td class="py-3 px-3 font-mono text-slate-200">tmo.msantos@trivora.gov.ph</td>
+                            <td class="py-3 px-3 font-mono text-slate-300">TmoUser@123</td>
+                            <td class="py-3 px-3 text-right"><a href="/login" class="text-sky-400 hover:underline font-bold text-xs">Login</a></td>
+                        </tr>
+                        <tr class="hover:bg-slate-800/30">
+                            <td class="py-3 px-3 font-semibold text-amber-400">BPLO Staff</td>
+                            <td class="py-3 px-3 font-mono text-slate-200">bplo.areyes@trivora.gov.ph</td>
+                            <td class="py-3 px-3 font-mono text-slate-300">BploUser@123</td>
+                            <td class="py-3 px-3 text-right"><a href="/login" class="text-amber-400 hover:underline font-bold text-xs">Login</a></td>
+                        </tr>
+                        <tr class="hover:bg-slate-800/30">
+                            <td class="py-3 px-3 font-semibold text-amber-400">BPLO Staff (2)</td>
+                            <td class="py-3 px-3 font-mono text-slate-200">bplo.cmendoza@trivora.gov.ph</td>
+                            <td class="py-3 px-3 font-mono text-slate-300">BploUser@123</td>
+                            <td class="py-3 px-3 text-right"><a href="/login" class="text-amber-400 hover:underline font-bold text-xs">Login</a></td>
+                        </tr>
+                        <tr class="hover:bg-slate-800/30">
+                            <td class="py-3 px-3 font-semibold text-indigo-400">Driver (QA / Active)</td>
+                            <td class="py-3 px-3 font-mono text-slate-200">driver.test@trivora.test</td>
+                            <td class="py-3 px-3 font-mono text-slate-300">TestDriver123!</td>
+                            <td class="py-3 px-3 text-right"><a href="/login" class="text-indigo-400 hover:underline font-bold text-xs">Login</a></td>
+                        </tr>
+                        <tr class="hover:bg-slate-800/30">
+                            <td class="py-3 px-3 font-semibold text-indigo-400">Driver (BPLO Release Stage)</td>
+                            <td class="py-3 px-3 font-mono text-slate-200">driver.bplo@trivora.ph</td>
+                            <td class="py-3 px-3 font-mono text-slate-300">Driver@123</td>
+                            <td class="py-3 px-3 text-right"><a href="/login" class="text-indigo-400 hover:underline font-bold text-xs">Login</a></td>
+                        </tr>
+                        <tr class="hover:bg-slate-800/30">
+                            <td class="py-3 px-3 font-semibold text-indigo-400">Driver (TMO Final Confirmation)</td>
+                            <td class="py-3 px-3 font-mono text-slate-200">driver.confirm@trivora.ph</td>
+                            <td class="py-3 px-3 font-mono text-slate-300">Driver@123</td>
+                            <td class="py-3 px-3 text-right"><a href="/login" class="text-indigo-400 hover:underline font-bold text-xs">Login</a></td>
+                        </tr>
+                        <tr class="hover:bg-slate-800/30">
+                            <td class="py-3 px-3 font-semibold text-rose-400">Passenger (Mobile)</td>
+                            <td class="py-3 px-3 font-mono text-slate-200">passenger@trivora.ph</td>
+                            <td class="py-3 px-3 font-mono text-slate-300">Passenger@123</td>
+                            <td class="py-3 px-3 text-right"><span class="text-slate-500 text-xs">App Login</span></td>
+                        </tr>
+                        <tr class="hover:bg-slate-800/30">
+                            <td class="py-3 px-3 font-semibold text-rose-400">Passenger (QA Test)</td>
+                            <td class="py-3 px-3 font-mono text-slate-200">passenger.test@trivora.test</td>
+                            <td class="py-3 px-3 font-mono text-slate-300">TestPassenger123!</td>
+                            <td class="py-3 px-3 text-right"><span class="text-slate-500 text-xs">App Login</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Terminal Logs (Collapsible) -->
+        <details class="bg-slate-900/60 border border-slate-800 rounded-3xl p-5 shadow-lg group">
+            <summary class="cursor-pointer font-bold text-xs uppercase tracking-wider text-slate-400 hover:text-slate-200 select-none flex items-center justify-between">
+                <span>View Raw Artisan Migration &amp; Seeder Output Logs</span>
+                <span class="group-open:rotate-180 transition-transform">&darr;</span>
+            </summary>
+            <pre class="mt-4 p-4 rounded-2xl bg-black/60 text-emerald-400 text-xs overflow-x-auto max-h-96 leading-relaxed border border-slate-800 font-mono">
+HTML . htmlspecialchars($fullLog) . <<<HTML
+            </pre>
+        </details>
+
+    </div>
+</body>
+</html>
+HTML;
+
+        return response($html);
     } catch (\Throwable $e) {
-        return response("<pre style='font-family:monospace;background:#1e293b;color:#ef4444;padding:24px;border-radius:8px;font-size:14px;line-height:1.6;'>❌ Setup Error:\n\n" . htmlspecialchars($e->getMessage() . "\n\n" . $e->getTraceAsString()) . "</pre>", 500);
+        $err = htmlspecialchars($e->getMessage() . "\n\n" . $e->getTraceAsString());
+        return response("<!DOCTYPE html><html><body style='background:#0f172a;color:#ef4444;font-family:monospace;padding:32px;'><h2>❌ Migration & Seeder Error</h2><pre style='background:#1e293b;padding:20px;border-radius:12px;overflow:auto;color:#fca5a5;'>{$err}</pre><br><a href='/seed-database' style='color:#38bdf8;'>Retry /seed-database</a></body></html>", 500);
     }
 });
 
