@@ -16,10 +16,15 @@ RUN npm run build
 # --------------------------------------------------------
 FROM php:8.3-fpm-alpine
 
+# Set Composer environment variables to prevent memory exhaustion and root execution warnings
+ENV COMPOSER_ALLOW_SUPERUSER=1 \
+    COMPOSER_MEMORY_LIMIT=-1
+
 # Install system dependencies & Nginx
 RUN apk add --no-cache \
     nginx \
     curl \
+    git \
     mysql-client \
     libpng-dev \
     libjpeg-turbo-dev \
@@ -50,14 +55,14 @@ COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
 WORKDIR /var/www/html
 
-# Copy project files
+# Copy project files (excluded by .dockerignore: vendor, node_modules, .git, etc.)
 COPY . .
 
 # Copy compiled frontend assets from Stage 1
 COPY --from=node_builder /app/public/build ./public/build
 
-# Install PHP production dependencies
-RUN composer install --no-dev --optimize-autoloader --no-progress --prefer-dist --ignore-platform-reqs
+# Install PHP production dependencies without running artisan discovery scripts during build
+RUN composer install --no-dev --no-scripts --optimize-autoloader --no-progress --prefer-dist --ignore-platform-reqs
 
 # Copy Nginx, PHP upload limits and entrypoint configs
 COPY docker/nginx.conf /etc/nginx/nginx.conf
