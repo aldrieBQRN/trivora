@@ -16,9 +16,10 @@ touch /var/www/html/storage/logs/laravel.log
 chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
 chmod -R 777 /var/www/html/storage /var/www/html/bootstrap/cache
 
-# Clear stale caches
+# Clear stale caches and discover packages with runtime environment
 php artisan config:clear || true
 php artisan cache:clear || true
+php artisan package:discover --ansi || true
 
 # Check if DB_FRESH is requested to wipe tables cleanly before migration
 if [ "$DB_FRESH" = "true" ] || [ "$DB_FRESH" = "1" ]; then
