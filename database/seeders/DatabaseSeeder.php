@@ -44,6 +44,9 @@ class DatabaseSeeder extends Seeder
             MobileAppDataSeeder::class,
             TestAccountsSeeder::class,
             DemoStageDriversSeeder::class,
+            DemoDriverMTOPApplicationsSeeder::class,
+            DemoDriverViolationsSeeder::class,
+            TestDriverViolationsSeeder::class,
         ]);
 
         $this->command->info('');
