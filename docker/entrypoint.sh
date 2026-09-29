@@ -119,11 +119,9 @@ chown -R www-data:www-data /var/lib/nginx
         " || true
     fi
 
-    # 4e. Optimize (re-cache with DB now ready)
-    echo "⚡ Optimizing application..."
-    php artisan config:cache || true
-    php artisan route:cache || true
-    php artisan view:cache || true
+    # 4e. Clean state (avoid route:cache or config:cache locks if DB is still syncing)
+    echo "⚡ Clearing temporary caches..."
+    php artisan optimize:clear || true
 
     # Final permission fix
     chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
