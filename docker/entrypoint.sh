@@ -38,10 +38,7 @@ done
 mkdir -p /var/lib/nginx/tmp/client_body /var/lib/nginx/tmp/fastcgi
 chown -R www-data:www-data /var/lib/nginx
 
-echo "🌐 Starting Nginx Web Server on port 80..."
-nginx   # start as daemon (NOT exec), so the script can continue
-
-# ─── 4. DATABASE INIT (background — port is already open) ─────────────
+# ─── 4. DATABASE INIT (background — runs WHILE nginx is starting) ─────
 (
     echo "🔄 Running database initialisation in background..."
 
@@ -135,6 +132,7 @@ nginx   # start as daemon (NOT exec), so the script can continue
     echo "✅ Background database initialisation complete."
 ) &
 
-# ─── 5. Keep container alive ──────────────────────────────────────────
-# Wait on nginx (PID 1-ish), so the container stays running.
-wait
+# ─── 5. Start Nginx in FOREGROUND (PID 1 — keeps container alive) ─────
+echo "🌐 Starting Nginx Web Server on port 80..."
+exec nginx -g "daemon off;"
+
