@@ -23,6 +23,12 @@ Route::get('/', function () {
     return Inertia::render('Welcome');
 })->name('home');
 
+// QR Ride — the public page a printed tricycle QR opens (/ride/q/{token}). Shows safe unit
+// details and whether it is taking walk-in passengers; joining happens in the Passenger app.
+Route::get('/ride/q/{token}', [\App\Http\Controllers\PublicQrRideController::class, 'show'])
+    ->middleware('throttle:60,1')
+    ->name('qr-ride.landing');
+
 // Public MTOP Registration Wizard (Account Creation + First Application)
 Route::get('/register-mtop', [RegistrationController::class, 'publicWizard'])->name('register.public');
 Route::post('/register-mtop', [RegistrationController::class, 'store'])->name('register.public.submit');
@@ -506,6 +512,12 @@ Route::middleware(['auth', 'role:tmo_personnel,admin'])->group(function () {
     Route::post('/tmo/tricycles/{tricycle}/franchise/suspend', [\App\Http\Controllers\TMO\FranchiseStatusController::class, 'suspend'])->name('tmo.franchise.suspend');
     Route::post('/tmo/tricycles/{tricycle}/franchise/revoke', [\App\Http\Controllers\TMO\FranchiseStatusController::class, 'revoke'])->name('tmo.franchise.revoke');
     Route::post('/tmo/tricycles/{tricycle}/franchise/reinstate', [\App\Http\Controllers\TMO\FranchiseStatusController::class, 'reinstate'])->name('tmo.franchise.reinstate');
+
+    // QR Ride configuration (Tricycle Details page) — passenger capacity, QR regeneration and
+    // the printable "Scan to Ride" sheet. See TMO\QrRideController / QrRideService::tmoSummary().
+    Route::post('/tmo/tricycles/{tricycle}/qr-ride/capacity', [\App\Http\Controllers\TMO\QrRideController::class, 'updateCapacity'])->name('tmo.qr-ride.capacity');
+    Route::post('/tmo/tricycles/{tricycle}/qr-ride/regenerate', [\App\Http\Controllers\TMO\QrRideController::class, 'regenerate'])->name('tmo.qr-ride.regenerate');
+    Route::get('/tmo/tricycles/{tricycle}/qr-ride/print', [\App\Http\Controllers\TMO\QrRideController::class, 'print'])->name('tmo.qr-ride.print');
 
     // Violation Records
     Route::get('/violations', [DashboardController::class, 'violations'])->name('tmo.violations');

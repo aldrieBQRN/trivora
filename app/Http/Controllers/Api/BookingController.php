@@ -10,6 +10,8 @@ use App\Models\Passenger;
 use App\Models\RideRating;
 use App\Services\BookingDispatchService;
 use App\Services\FareService;
+use App\Services\ManualRideService;
+use App\Services\QrRideService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -48,6 +50,14 @@ class BookingController extends Controller
             ['user_id' => $request->user()->id],
             ['mobile_number' => $request->input('mobile_number', '+63 900 000 0000'), 'rating' => 5.00]
         );
+
+        // A passenger already waiting in / riding a QR walk-in ride can't also book a tricycle.
+        if (QrRideService::passengerHasActiveQrRide($passenger)) {
+            return response()->json([
+                'message' => 'You are currently in a walk-in (QR) ride. Finish or leave it before booking a tricycle.',
+                'code' => 'passenger_has_active_ride',
+            ], 409);
+        }
 
         // Cancel any existing pending bookings for this passenger
         Booking::where('passenger_id', $passenger->id)
@@ -128,6 +138,7 @@ class BookingController extends Controller
         $declinedBookingIds = BookingDriverDecline::where('driver_id', $driver->id)->pluck('booking_id');
 
         $pendingBookings = Booking::with(['passenger.user', 'tricycle'])
+            ->where('booking_type', Booking::TYPE_BOOKING)
             ->where('status', 'pending')
             ->where('requested_at', '>=', now()->subMinutes(15))
             ->whereNotIn('id', $declinedBookingIds)
@@ -168,13 +179,15 @@ class BookingController extends Controller
         $stale = false;
 
         DB::transaction(function () use ($id, $driver, &$booking, &$conflict, &$stale) {
-            $locked = Booking::where('id', $id)->lockForUpdate()->first();
+            $locked = Booking::where('id', $id)->where('booking_type', Booking::TYPE_BOOKING)->lockForUpdate()->first();
 
             if (!$locked) {
                 return;
             }
 
-            if ($locked->status !== 'pending') {
+            // A driver running a QR walk-in session or a Manual Ride can't take a booked ride too.
+            if ($locked->status !== 'pending' || QrRideService::driverHasOpenSession($driver)
+                || ManualRideService::driverHasActiveManualRide($driver)) {
                 $conflict = true;
                 return;
             }
@@ -313,11 +326,20 @@ class BookingController extends Controller
         $invalidTransitionFrom = null;
         $forbidden = false;
         $driverCancelWindowClosed = false;
+        $qrBooking = false;
 
-        DB::transaction(function () use ($id, $newStatus, $validated, $driver, $passenger, &$booking, &$invalidTransitionFrom, &$forbidden, &$driverCancelWindowClosed) {
+        DB::transaction(function () use ($id, $newStatus, $validated, $driver, $passenger, &$booking, &$invalidTransitionFrom, &$forbidden, &$driverCancelWindowClosed, &$qrBooking) {
             $locked = Booking::where('id', $id)->lockForUpdate()->first();
 
             if (! $locked) {
+                return;
+            }
+
+            // QR walk-in trips and Manual Rides move only through their own endpoints
+            // (QrRideService / ManualRideService), which keep sessions, seats and earnings
+            // consistent — never through this passenger-booking status flow.
+            if ($locked->booking_type !== Booking::TYPE_BOOKING) {
+                $qrBooking = $locked->booking_type;
                 return;
             }
 
@@ -372,6 +394,19 @@ class BookingController extends Controller
             $booking = $locked;
         });
 
+        if ($qrBooking === Booking::TYPE_MANUAL) {
+            return response()->json([
+                'message' => 'Manual Rides are updated through the Manual Ride actions.',
+                'code' => 'manual_ride_booking',
+            ], 409);
+        }
+        if ($qrBooking) {
+            return response()->json([
+                'message' => 'Walk-in (QR) rides are updated through the QR Ride actions.',
+                'code' => 'qr_ride_booking',
+            ], 409);
+        }
+
         if ($forbidden) {
             return response()->json(['message' => 'You are not authorized to update this booking.'], 403);
         }
@@ -417,8 +452,11 @@ class BookingController extends Controller
         $passenger = $isPassengerRoute ? Passenger::where('user_id', $user->id)->first() : null;
         $driver = $isPassengerRoute ? null : Driver::where('user_id', $user->id)->first();
 
+        // QR walk-in trips are never the "active booking" of the normal flow — they have their own
+        // endpoints (/passenger/qr-rides/active, /driver/qr-session/active).
         if ($bookingId) {
             $booking = Booking::with(['passenger.user', 'driver.user', 'tricycle'])
+                ->where('booking_type', Booking::TYPE_BOOKING)
                 ->find($bookingId);
 
             $owns = $booking && (
@@ -433,7 +471,8 @@ class BookingController extends Controller
             return response()->json(['booking' => $owns ? $booking : null]);
         }
 
-        $query = Booking::with(['passenger.user', 'driver.user', 'tricycle']);
+        $query = Booking::with(['passenger.user', 'driver.user', 'tricycle'])
+            ->where('booking_type', Booking::TYPE_BOOKING);
 
         if ($isPassengerRoute) {
             $query->whereIn('status', ['pending', 'accepted', 'arrived', 'in_transit']);

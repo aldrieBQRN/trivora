@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Support\Str;
 
 class Tricycle extends Model
 {
@@ -14,6 +15,7 @@ class Tricycle extends Model
         'toda_zone_id',
         'coding_scheme_number',
         'plate_number',
+        'qr_token',
         'engine_number',
         'chassis_number',
         'make',
@@ -21,6 +23,7 @@ class Tricycle extends Model
         'year_model',
         'body_color',
         'body_type',
+        'passenger_capacity',
         'or_number',
         'cr_number',
         'status',
@@ -35,11 +38,43 @@ class Tricycle extends Model
         'tricycle_number',
     ];
 
+    /**
+     * The QR token is only ever read by the QR Ride flow — never serialized with the tricycle
+     * into booking / dashboard payloads.
+     */
+    protected $hidden = [
+        'qr_token',
+    ];
+
     protected function casts(): array
     {
         return [
             'year_model' => 'integer',
+            'passenger_capacity' => 'integer',
         ];
+    }
+
+    /**
+     * Every new tricycle gets its public QR token at creation (existing rows were backfilled by
+     * the add_qr_token migration). An explicitly supplied token is kept.
+     */
+    protected static function booted(): void
+    {
+        static::creating(function (Tricycle $tricycle) {
+            if (empty($tricycle->qr_token)) {
+                $tricycle->qr_token = self::generateQrToken();
+            }
+        });
+    }
+
+    /** A new random, unused QR token (40 chars, CSPRNG) — never derived from the id. */
+    public static function generateQrToken(): string
+    {
+        do {
+            $token = Str::random(40);
+        } while (static::where('qr_token', $token)->exists());
+
+        return $token;
     }
 
     /**
@@ -171,6 +206,14 @@ class Tricycle extends Model
     public function latestLocation(): HasOne
     {
         return $this->hasOne(TricycleLocation::class)->latestOfMany('recorded_at');
+    }
+
+    /**
+     * QR Ride / Walk-in physical rides taken on this tricycle.
+     */
+    public function rideSessions(): HasMany
+    {
+        return $this->hasMany(RideSession::class);
     }
 
     /**

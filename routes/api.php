@@ -2,9 +2,12 @@
 
 use App\Http\Controllers\Api\BookingController;
 use App\Http\Controllers\Api\DriverAuthController;
+use App\Http\Controllers\Api\DriverManualRideController;
+use App\Http\Controllers\Api\DriverQrSessionController;
 use App\Http\Controllers\Api\DriverTelematicsController;
 use App\Http\Controllers\Api\DriverViolationController;
 use App\Http\Controllers\Api\PassengerAuthController;
+use App\Http\Controllers\Api\PassengerQrRideController;
 use App\Http\Controllers\Api\ProfilePhotoController;
 use App\Http\Controllers\Api\SavedPlaceController;
 use Illuminate\Support\Facades\Route;
@@ -81,6 +84,28 @@ Route::prefix('v1/driver')->group(function () {
         Route::get('/violations', [DriverViolationController::class, 'index']);
         Route::post('/violations/{id}/appeal', [DriverViolationController::class, 'storeAppeal']);
 
+        // QR Ride / Walk-in Ride — the driver's own session only (see QrRideService). Only Start
+        // Ride is an "operate" action gated by franchise.operational: removing waiting passengers,
+        // dropping off passengers already aboard, and ending an empty session stay available after
+        // a suspension/revocation so nobody is stranded mid-ride. {booking} is the booking_code.
+        Route::get('/qr-session/active', [DriverQrSessionController::class, 'active']);
+        Route::post('/qr-session/start', [DriverQrSessionController::class, 'start'])->middleware('franchise.operational');
+        Route::post('/qr-session/passengers/{booking}/drop-off', [DriverQrSessionController::class, 'dropOff']);
+        Route::post('/qr-session/passengers/{booking}/remove', [DriverQrSessionController::class, 'remove']);
+        Route::post('/qr-session/end', [DriverQrSessionController::class, 'end']);
+
+        // Manual Ride — the driver adds a walk-in passenger with no app to the tricycle's one open
+        // ride session (see ManualRideService); from there the qr-session routes above run the
+        // ride for QR and walk-in passengers alike. Quote/add are "operate" actions gated by
+        // franchise.operational; complete/cancel only close a legacy stand-alone ride.
+        // {booking} is the booking_code.
+        Route::post('/manual-ride/quote', [DriverManualRideController::class, 'quote'])->middleware('franchise.operational');
+        Route::post('/manual-ride/add', [DriverManualRideController::class, 'add'])->middleware('franchise.operational');
+        Route::post('/manual-ride/start', [DriverManualRideController::class, 'add'])->middleware('franchise.operational');
+        Route::get('/manual-ride/active', [DriverManualRideController::class, 'active']);
+        Route::post('/manual-ride/{booking}/complete', [DriverManualRideController::class, 'complete']);
+        Route::post('/manual-ride/{booking}/cancel', [DriverManualRideController::class, 'cancel']);
+
         // Profile photo — shared controller, see ProfilePhotoController (acts on
         // $request->user() only, no cross-app duplication needed).
         Route::post('/profile-photo', [ProfilePhotoController::class, 'update']);
@@ -122,6 +147,15 @@ Route::prefix('v1/passenger')->group(function () {
         Route::post('/saved-places', [SavedPlaceController::class, 'store']);
         Route::put('/saved-places/{id}', [SavedPlaceController::class, 'update']);
         Route::delete('/saved-places/{id}', [SavedPlaceController::class, 'destroy']);
+
+        // QR Ride / Walk-in Ride — scan a tricycle's QR, get a server-computed quote, join, follow
+        // the ride, or leave before it starts (see QrRideService). Scan and quote are throttled:
+        // they resolve public tokens and make outbound routing calls. {booking} is the booking_code.
+        Route::get('/qr-rides/tricycle/{token}', [PassengerQrRideController::class, 'tricycle'])->middleware('throttle:30,1');
+        Route::post('/qr-rides/quote', [PassengerQrRideController::class, 'quote'])->middleware('throttle:30,1');
+        Route::post('/qr-rides/join', [PassengerQrRideController::class, 'join']);
+        Route::get('/qr-rides/active', [PassengerQrRideController::class, 'active']);
+        Route::post('/qr-rides/{booking}/leave', [PassengerQrRideController::class, 'leave']);
 
         // Profile photo — shared controller, see ProfilePhotoController.
         Route::post('/profile-photo', [ProfilePhotoController::class, 'update']);

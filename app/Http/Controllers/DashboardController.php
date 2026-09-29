@@ -469,6 +469,10 @@ class DashboardController extends Controller
             'status_changed_at'  => $franchiseScheme->status_changed_at?->format('M d, Y h:i A'),
         ] : null;
 
+        // QR Ride configuration (passenger capacity, QR code, readiness) — TMO-only page, so the
+        // QR's public URL is included here and nowhere in the mobile/booking payloads.
+        $tricycleData['qr_ride'] = \App\Services\QrRideService::tmoSummary($tri);
+
         $mappedDocs = [];
         if ($app) {
             $latestPerRequirement = [];

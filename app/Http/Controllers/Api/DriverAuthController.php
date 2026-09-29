@@ -846,6 +846,14 @@ class DriverAuthController extends Controller
             $updateData['is_available'] = false;
         }
 
+        // While a QR walk-in ride session is open the driver stays unavailable for normal
+        // dispatch, whatever availability the app sends (e.g. when going back Online mid-ride).
+        if (\App\Services\QrRideService::driverHasOpenSession($driver)
+            || \App\Services\ManualRideService::driverHasActiveManualRide($driver)) {
+            // Same for a Manual Ride in progress.
+            $updateData['is_available'] = false;
+        }
+
         $driver->update($updateData);
 
         return response()->json([
