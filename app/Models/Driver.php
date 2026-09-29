@@ -60,6 +60,12 @@ class Driver extends Model
         return $this->hasMany(Booking::class);
     }
 
+    /** QR Ride / Walk-in physical rides this driver operated. */
+    public function rideSessions(): HasMany
+    {
+        return $this->hasMany(RideSession::class);
+    }
+
     /**
      * The driver's latest stored GPS heading (tricycle_locations.heading_deg, degrees 0-360) —
      * the raw device heading the Driver App uploaded, never a computed bearing. Null when the

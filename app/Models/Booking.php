@@ -11,11 +11,22 @@ class Booking extends Model
 {
     use HasFactory;
 
+    /** A normal requested booking (dispatch flow) — every pre-QR row is this type. */
+    public const TYPE_BOOKING = 'booking';
+
+    /** A QR Ride / Walk-in passenger trip, grouped under a RideSession. */
+    public const TYPE_QR_WALKIN = 'qr_walkin';
+
+    /** A Manual Ride: recorded by the driver for a walk-in passenger with no account (passenger_id NULL). */
+    public const TYPE_MANUAL = 'manual';
+
     protected $fillable = [
         'booking_code',
+        'booking_type',
         'passenger_id',
         'driver_id',
         'tricycle_id',
+        'ride_session_id',
         'toda_zone_id',
         'pickup_name',
         'pickup_lat',
@@ -23,10 +34,13 @@ class Booking extends Model
         'dropoff_name',
         'dropoff_lat',
         'dropoff_lng',
+        'dropped_off_lat',
+        'dropped_off_lng',
         'fare_amount',
         'passenger_count',
         'fare_per_passenger',
         'distance_km',
+        'distance_source',
         'estimated_duration_mins',
         'passenger_notes',
         'status',
@@ -49,6 +63,8 @@ class Booking extends Model
         'pickup_lng' => 'float',
         'dropoff_lat' => 'float',
         'dropoff_lng' => 'float',
+        'dropped_off_lat' => 'float',
+        'dropped_off_lng' => 'float',
         'fare_amount' => 'float',
         'passenger_count' => 'integer',
         'fare_per_passenger' => 'float',
@@ -101,6 +117,12 @@ class Booking extends Model
     public function tricycle(): BelongsTo
     {
         return $this->belongsTo(Tricycle::class);
+    }
+
+    /** The physical ride this QR walk-in trip belongs to (null for normal bookings). */
+    public function rideSession(): BelongsTo
+    {
+        return $this->belongsTo(RideSession::class);
     }
 
     public function todaZone(): BelongsTo

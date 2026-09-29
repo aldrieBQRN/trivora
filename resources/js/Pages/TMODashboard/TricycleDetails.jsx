@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Head, Link, router } from '@inertiajs/react';
 import Swal from 'sweetalert2';
 import useBackgroundRefresh from '@/hooks/useBackgroundRefresh';
@@ -8,9 +8,10 @@ import {
     CheckSquare, FileText, Award, Cpu,
     ChevronLeft, Phone, Hash, Calendar, Radio, Check, ExternalLink,
     Download, Eye, Map, ShieldAlert, Filter, Sparkles, XCircle,
-    ShieldOff, Ban, ShieldCheck,
+    ShieldOff, Ban, ShieldCheck, QrCode, Printer, RefreshCw,
 } from 'lucide-react';
 import { PHYSICAL_INSPECTION_ITEMS } from '@/data/physicalInspectionItems';
+import QrCodeImage, { downloadQrPng } from '@/Components/QrCodeImage';
 
 // Semantic status treatment for a franchise's operational authorization status —
 // success/warning/danger, the same restrained palette used everywhere else in the panel, no
@@ -653,6 +654,8 @@ export default function TricycleDetails({
                                 </div>
                             </div>
                         </div>
+
+                        {tricycle.qr_ride && <QrRideCard tricycle={tricycle} />}
                     </div>
                 </div>
             )}
@@ -776,6 +779,179 @@ export default function TricycleDetails({
                 </div>
             )}
         </TrivoraLayout>
+    );
+}
+
+const QR_RIDE_STATUS_META = {
+    ready:             { label: 'Ready',             badge: 'bg-emerald-50 text-emerald-700 border-emerald-200', dot: 'bg-emerald-500' },
+    capacity_required: { label: 'Capacity Required', badge: 'bg-amber-50 text-amber-800 border-amber-200',       dot: 'bg-amber-500' },
+    not_ready:         { label: 'Not Ready',         badge: 'bg-slate-100 text-slate-600 border-slate-200',      dot: 'bg-slate-400' },
+};
+
+const toast = (icon, title) => Swal.fire({ toast: true, position: 'top-end', icon, title, showConfirmButton: false, timer: 2600, timerProgressBar: true });
+
+/**
+ * QR Ride configuration for this unit: readiness, passenger capacity (explicitly set by TMO —
+ * never defaulted), and the unit's QR code (view / print / download / regenerate). The QR is
+ * shown dimmed and labelled inactive until the unit is actually Ready.
+ */
+function QrRideCard({ tricycle }) {
+    const qr = tricycle.qr_ride;
+    const meta = QR_RIDE_STATUS_META[qr.status] || QR_RIDE_STATUS_META.not_ready;
+    const [capacity, setCapacity] = useState(qr.passenger_capacity ?? '');
+    const [capacityError, setCapacityError] = useState(null);
+    const [saving, setSaving] = useState(false);
+    const [viewing, setViewing] = useState(false);
+
+    // Keep the field in sync when a background refresh brings a newer saved value.
+    useEffect(() => { setCapacity(qr.passenger_capacity ?? ''); }, [qr.passenger_capacity]);
+
+    const dirty = String(capacity) !== String(qr.passenger_capacity ?? '');
+    const printName = tricycle.unit_code || `unit-${tricycle.id}`;
+
+    const saveCapacity = (e) => {
+        e.preventDefault();
+        setSaving(true);
+        setCapacityError(null);
+        router.post(route('tmo.qr-ride.capacity', tricycle.id), { passenger_capacity: capacity === '' ? null : Number(capacity) }, {
+            preserveScroll: true,
+            onSuccess: () => toast('success', capacity === '' ? 'Passenger capacity cleared' : `Passenger capacity set to ${capacity}`),
+            onError: (errors) => setCapacityError(errors.passenger_capacity || 'Could not save the capacity.'),
+            onFinish: () => setSaving(false),
+        });
+    };
+
+    const regenerate = () => {
+        Swal.fire({
+            title: 'Regenerate QR code?',
+            html: 'The current QR on this tricycle stops working immediately. You will need to print and attach the new one. Ride history is not affected.',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Yes, Regenerate',
+            confirmButtonColor: '#1D2542',
+            cancelButtonColor: '#64748B',
+        }).then((result) => {
+            if (!result.isConfirmed) return;
+            router.post(route('tmo.qr-ride.regenerate', tricycle.id), {}, {
+                preserveScroll: true,
+                onSuccess: () => toast('success', 'New QR code issued'),
+            });
+        });
+    };
+
+    return (
+        <div className={`rounded-2xl border border-slate-200/70 bg-white p-4 sm:p-5 ${CARD_SHADOW}`}>
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                <div className="flex items-center gap-2">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-[#1D2542]/[0.10] to-[#1D2542]/[0.02] text-[#1D2542]">
+                        <QrCode size={16} />
+                    </div>
+                    <h3 className="text-sm font-bold text-slate-900">QR Ride</h3>
+                </div>
+                <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold border ${meta.badge}`}>
+                    <span className={`h-1.5 w-1.5 rounded-full ${meta.dot}`}></span>
+                    {meta.label}
+                </span>
+            </div>
+
+            <div className="mt-3 sm:mt-4 flex items-start gap-3.5">
+                {qr.has_qr ? (
+                    <button
+                        type="button"
+                        onClick={() => setViewing(true)}
+                        className="relative shrink-0 rounded-lg border border-slate-200 bg-white p-1.5 transition-colors hover:border-slate-300"
+                        title="View QR code"
+                    >
+                        <QrCodeImage value={qr.qr_url} size={84} className={qr.status === 'ready' ? '' : 'opacity-35'} title={`QR code for ${printName}`} />
+                        {qr.status !== 'ready' && (
+                            <span className="absolute inset-x-1.5 bottom-1.5 rounded bg-white/90 py-0.5 text-center text-[9px] font-bold uppercase tracking-wider text-slate-500">
+                                Inactive
+                            </span>
+                        )}
+                    </button>
+                ) : (
+                    <div className="flex h-[98px] w-[98px] shrink-0 items-center justify-center rounded-lg border border-dashed border-slate-300 text-center text-[10px] font-semibold text-slate-400">
+                        No QR
+                    </div>
+                )}
+
+                <form onSubmit={saveCapacity} className="min-w-0 flex-1">
+                    <label htmlFor="qr-passenger-capacity" className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                        Passenger Capacity
+                    </label>
+                    <div className="mt-1 flex items-center gap-1.5">
+                        <input
+                            id="qr-passenger-capacity"
+                            type="number"
+                            inputMode="numeric"
+                            min={1}
+                            max={20}
+                            step={1}
+                            value={capacity}
+                            placeholder="Not set"
+                            onChange={(e) => { setCapacity(e.target.value); setCapacityError(null); }}
+                            className={`h-8 w-20 rounded-lg border px-2 text-sm font-semibold text-slate-900 placeholder:font-normal placeholder:text-slate-400 focus:border-[#1D2542] focus:ring-1 focus:ring-[#1D2542] ${capacityError ? 'border-red-300' : 'border-slate-300'}`}
+                        />
+                        <button
+                            type="submit"
+                            disabled={!dirty || saving}
+                            className="h-8 rounded-lg bg-[#1D2542] px-3 text-xs font-bold text-white transition-opacity hover:opacity-90 disabled:opacity-40"
+                        >
+                            {saving ? 'Saving…' : 'Save'}
+                        </button>
+                    </div>
+                    {capacityError ? (
+                        <p className="mt-1 text-[11px] font-medium text-red-600">{capacityError}</p>
+                    ) : (
+                        <p className="mt-1 text-[11px] leading-snug text-slate-500">
+                            {qr.passenger_capacity === null
+                                ? 'Not configured. Seats are counted per passenger in each party.'
+                                : 'Seats counted per passenger in each party.'}
+                        </p>
+                    )}
+                </form>
+            </div>
+
+            <p className="mt-3 text-[11px] leading-relaxed text-slate-600">{qr.note}</p>
+
+            <div className="mt-3 grid grid-cols-2 gap-1.5 pt-3 border-t border-slate-100">
+                <button type="button" onClick={() => setViewing(true)} disabled={!qr.has_qr}
+                    className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-slate-200 px-2.5 py-2 text-[11px] font-bold text-slate-700 transition-colors hover:bg-slate-50 disabled:opacity-40">
+                    <Eye size={13} /> View QR
+                </button>
+                <a href={qr.has_qr ? route('tmo.qr-ride.print', tricycle.id) : undefined} target="_blank" rel="noopener noreferrer"
+                    aria-disabled={!qr.has_qr}
+                    className={`inline-flex items-center justify-center gap-1.5 rounded-lg border border-slate-200 px-2.5 py-2 text-[11px] font-bold text-slate-700 transition-colors hover:bg-slate-50 ${qr.has_qr ? '' : 'pointer-events-none opacity-40'}`}>
+                    <Printer size={13} /> Print QR
+                </a>
+                <button type="button" disabled={!qr.has_qr}
+                    onClick={() => downloadQrPng(qr.qr_url, `trivora-scan-to-ride-${printName}.png`)}
+                    className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-slate-200 px-2.5 py-2 text-[11px] font-bold text-slate-700 transition-colors hover:bg-slate-50 disabled:opacity-40">
+                    <Download size={13} /> Download
+                </button>
+                <button type="button" onClick={regenerate}
+                    className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-slate-200 px-2.5 py-2 text-[11px] font-bold text-slate-700 transition-colors hover:bg-slate-50">
+                    <RefreshCw size={13} /> Regenerate
+                </button>
+            </div>
+
+            {viewing && qr.has_qr && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4" onClick={() => setViewing(false)} role="dialog" aria-modal="true" aria-label="QR code">
+                    <div className="w-full max-w-xs rounded-2xl bg-white p-5 text-center shadow-xl" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex items-center justify-between">
+                            <p className="font-mono text-sm font-black text-slate-900">{printName}</p>
+                            <button type="button" onClick={() => setViewing(false)} className="rounded-md p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700" aria-label="Close">
+                                <XCircle size={18} />
+                            </button>
+                        </div>
+                        <QrCodeImage value={qr.qr_url} size={232} className={`mx-auto mt-3 ${qr.status === 'ready' ? '' : 'opacity-35'}`} title={`QR code for ${printName}`} />
+                        <p className={`mt-3 text-xs font-semibold ${qr.status === 'ready' ? 'text-emerald-700' : 'text-slate-500'}`}>
+                            {qr.status === 'ready' ? 'Active — passengers can scan this code' : `Inactive — ${meta.label}`}
+                        </p>
+                    </div>
+                </div>
+            )}
+        </div>
     );
 }
 

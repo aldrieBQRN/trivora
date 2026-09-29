@@ -42,6 +42,11 @@ class BookingDispatchService
             // dispatch candidate pool must never include a driver whose franchise isn't currently
             // authorized to operate, regardless of how is_online/is_available got set.
             ->whereHas('tricycle.franchiseScheme', fn ($q) => $q->where('status', FranchiseScheme::STATUS_ACTIVE))
+            // A driver running a QR walk-in ride session is never offered a booked ride too
+            // (they are already marked unavailable; this holds even if is_available drifts).
+            ->whereDoesntHave('rideSessions', fn ($q) => $q->open())
+            // ...and neither is a driver in the middle of a Manual Ride (walk-in, no app).
+            ->whereDoesntHave('bookings', fn ($q) => $q->where('booking_type', Booking::TYPE_MANUAL)->where('status', 'in_transit'))
             ->whereNotNull('current_lat')
             ->whereNotNull('current_lng')
             ->whereNotIn('id', $declinedDriverIds)
