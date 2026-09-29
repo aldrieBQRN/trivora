@@ -8,6 +8,12 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (Schema::hasTable('violation_appeals')) {
+            return;
+        }
+
+        \Illuminate\Support\Facades\DB::statement('SET FOREIGN_KEY_CHECKS=0');
+
         Schema::create('violation_appeals', function (Blueprint $table) {
             $table->id();
             $table->foreignId('violation_id')->constrained()->cascadeOnDelete();
@@ -25,6 +31,8 @@ return new class extends Migration
             // no re-appeal after a decision, so this also doubles as duplicate-appeal prevention.
             $table->unique('violation_id');
         });
+
+        \Illuminate\Support\Facades\DB::statement('SET FOREIGN_KEY_CHECKS=1');
     }
 
     public function down(): void

@@ -8,6 +8,12 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (Schema::hasTable('reports')) {
+            return;
+        }
+
+        \Illuminate\Support\Facades\DB::statement('SET FOREIGN_KEY_CHECKS=0');
+
         Schema::create('reports', function (Blueprint $table) {
             $table->id();
             $table->foreignId('passenger_id')->constrained()->cascadeOnDelete();
@@ -19,6 +25,8 @@ return new class extends Migration
 
             $table->index(['passenger_id', 'created_at']);
         });
+
+        \Illuminate\Support\Facades\DB::statement('SET FOREIGN_KEY_CHECKS=1');
     }
 
     public function down(): void

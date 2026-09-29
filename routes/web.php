@@ -43,6 +43,9 @@ Route::get('/seed-database', function (\Illuminate\Http\Request $request) {
 
     try {
         // Step 1: Wipe tables cleanly if fresh is requested (safe for TiDB Cloud)
+        // Keep FK checks disabled until migrations + seeders are done — TiDB doesn't
+        // reliably honour the /*!40014 ... */ conditional comments in the schema dump,
+        // so incremental migrations that create foreign keys would fail with error 1824.
         if ($isFresh) {
             \Illuminate\Support\Facades\DB::statement('SET FOREIGN_KEY_CHECKS=0;');
             $tables = \Illuminate\Support\Facades\DB::select('SHOW FULL TABLES WHERE Table_Type = "BASE TABLE"');
@@ -50,7 +53,6 @@ Route::get('/seed-database', function (\Illuminate\Http\Request $request) {
                 $tableName = array_values((array)$table)[0];
                 \Illuminate\Support\Facades\DB::statement("DROP TABLE IF EXISTS `{$tableName}`;");
             }
-            \Illuminate\Support\Facades\DB::statement('SET FOREIGN_KEY_CHECKS=1;');
             $outputLog[] = "Cleaned and dropped all existing tables.\n";
         }
 
@@ -61,6 +63,11 @@ Route::get('/seed-database', function (\Illuminate\Http\Request $request) {
         // Step 3: Run DatabaseSeeder (Color coding, TODA, Users, Tricycles, Applications, Violations, Demo Drivers, etc.)
         \Illuminate\Support\Facades\Artisan::call('db:seed', ['--force' => true]);
         $outputLog[] = "=== Database Seeder ===\n" . \Illuminate\Support\Facades\Artisan::output();
+
+        // Re-enable FK checks now that all tables and data are in place.
+        if ($isFresh) {
+            \Illuminate\Support\Facades\DB::statement('SET FOREIGN_KEY_CHECKS=1;');
+        }
 
         // Step 4: Clear and re-cache framework configs
         \Illuminate\Support\Facades\Artisan::call('config:clear');
@@ -940,6 +947,11 @@ Route::get('/artisan-migrate', function (\Illuminate\Http\Request $request) {
         $seedParams = ['--force' => true, '--class' => $seedClass];
 
         if ($request->boolean('fresh')) {
+            // TiDB doesn't reliably honour the /*!40014 FOREIGN_KEY_CHECKS=0 */ conditional
+            // comments embedded in the schema dump, so incremental migrations that create
+            // foreign keys fail with error 1824. Disable FK checks for the entire run.
+            \Illuminate\Support\Facades\DB::statement('SET FOREIGN_KEY_CHECKS=0');
+
             $params = ['--force' => true];
             if ($request->boolean('seed') && !$seedClass) {
                 $params['--seed'] = true;
@@ -951,6 +963,8 @@ Route::get('/artisan-migrate', function (\Illuminate\Http\Request $request) {
                 \Illuminate\Support\Facades\Artisan::call('db:seed', $seedParams);
                 $output[] = "=== DB Seed ({$seedClass}) ===\n" . \Illuminate\Support\Facades\Artisan::output();
             }
+
+            \Illuminate\Support\Facades\DB::statement('SET FOREIGN_KEY_CHECKS=1');
         } else {
             \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
             $output[] = "=== Database Migration ===\n" . \Illuminate\Support\Facades\Artisan::output();
