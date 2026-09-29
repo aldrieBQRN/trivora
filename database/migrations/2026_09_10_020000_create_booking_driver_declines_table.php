@@ -15,6 +15,14 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (Schema::hasTable('booking_driver_declines')) {
+            return;
+        }
+
+        // TiDB may not honour the conditional FOREIGN_KEY_CHECKS=0 from the schema dump,
+        // so disable explicitly for this table's FK creation.
+        \Illuminate\Support\Facades\DB::statement('SET FOREIGN_KEY_CHECKS=0');
+
         Schema::create('booking_driver_declines', function (Blueprint $table) {
             $table->id();
             $table->foreignId('booking_id')->constrained()->cascadeOnDelete();
@@ -22,6 +30,8 @@ return new class extends Migration
             $table->timestamps();
             $table->unique(['booking_id', 'driver_id']);
         });
+
+        \Illuminate\Support\Facades\DB::statement('SET FOREIGN_KEY_CHECKS=1');
     }
 
     public function down(): void

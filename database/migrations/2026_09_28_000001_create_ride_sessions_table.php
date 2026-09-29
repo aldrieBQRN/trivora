@@ -24,6 +24,8 @@ return new class extends Migration
             return;
         }
 
+        \Illuminate\Support\Facades\DB::statement('SET FOREIGN_KEY_CHECKS=0');
+
         Schema::create('ride_sessions', function (Blueprint $table) {
             $table->id();
             $table->string('session_code', 30)->unique();
@@ -43,6 +45,8 @@ return new class extends Migration
             $table->index(['tricycle_id', 'status']);
             $table->index(['driver_id', 'status']);
         });
+
+        \Illuminate\Support\Facades\DB::statement('SET FOREIGN_KEY_CHECKS=1');
     }
 
     public function down(): void

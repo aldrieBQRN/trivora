@@ -18,6 +18,8 @@ return new class extends Migration
             return;
         }
 
+        \Illuminate\Support\Facades\DB::statement('SET FOREIGN_KEY_CHECKS=0');
+
         Schema::create('franchise_status_histories', function (Blueprint $table) {
             $table->id();
             $table->foreignId('franchise_scheme_id')->constrained('franchise_schemes')->onDelete('cascade');
@@ -29,6 +31,8 @@ return new class extends Migration
 
             $table->index(['franchise_scheme_id', 'created_at']);
         });
+
+        \Illuminate\Support\Facades\DB::statement('SET FOREIGN_KEY_CHECKS=1');
     }
 
     public function down(): void
