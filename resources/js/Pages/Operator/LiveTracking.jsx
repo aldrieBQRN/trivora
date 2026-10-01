@@ -35,17 +35,18 @@ function getTrackingStatus(details) {
     return { label: 'No Recent Update', badgeClass: 'border-amber-200 bg-amber-50 text-amber-700', dot: 'bg-amber-500' };
 }
 
-// Creates the custom pulsing green dot icon (Identical to TMO TricycleMap.jsx)
+// Creates the custom tricycle marker with pulsing status halo
 const driverIcon = L.divIcon({
     className: 'custom-trivora-pin',
     html: `
-        <div class="relative flex items-center justify-center w-8 h-8">
-            <div class="absolute inset-0 rounded-full opacity-30 animate-ping bg-emerald-400"></div>
-            <div class="w-3.5 h-3.5 rounded-full bg-emerald-600 ring-[3px] ring-white shadow-md z-10"></div>
+        <div class="relative flex items-center justify-center select-none" style="width: 45px; height: 30px;">
+            <span class="animate-ping absolute inline-flex h-8 w-8 rounded-full bg-emerald-400 opacity-60 pointer-events-none"></span>
+            <img src="/images/tricycle-marker.webp" alt="Tricycle" class="relative z-10 pointer-events-none" style="width: 45px; height: 30px; object-fit: contain; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));" />
+            <span class="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-white z-20 pointer-events-none"></span>
         </div>
     `,
-    iconSize: [32, 32],
-    iconAnchor: [16, 16],
+    iconSize: [45, 30],
+    iconAnchor: [22.5, 15],
 });
 
 // Component to handle map centering when tricycle moves
