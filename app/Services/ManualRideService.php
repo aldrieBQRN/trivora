@@ -112,12 +112,12 @@ class ManualRideService
      *
      * @return array{0: Booking, 1: bool} [booking, created]
      */
-    public function add(User $user, string $signedQuote): array
+    public function add(User $user, string $signedQuote, string $paymentMethod = 'cash'): array
     {
         $driver = $this->driverFor($user);
         $quote = $this->decodeQuote($signedQuote, $driver);
 
-        return DB::transaction(function () use ($user, $driver, $quote) {
+        return DB::transaction(function () use ($user, $driver, $quote, $paymentMethod) {
             // Lock order shared with QR joins: tricycle -> session -> booking/driver.
             $tricycle = Tricycle::whereKey($quote['tricycle_id'])->lockForUpdate()->first();
             $driver = $driver->fresh();
@@ -130,10 +130,18 @@ class ManualRideService
                 return [$existing, false];
             }
 
+            if ($paymentMethod === Booking::PAYMENT_METHOD_GCASH && !$driver->hasGcashConfigured()) {
+                throw new QrRideException('gcash_not_configured', 'You must configure your GCash QR code in Settings before accepting GCash payments.', 422);
+            }
+
             $this->assertCanAdd($driver, $tricycle);
             $this->assertPartyFits($tricycle, (int) $quote['party_size']);
             $session = $this->qrRides->boardingSessionForNewPassenger($tricycle, $driver, (int) $quote['party_size']);
             $driver = Driver::whereKey($driver->id)->lockForUpdate()->first();
+
+            $method = in_array($paymentMethod, [Booking::PAYMENT_METHOD_CASH, Booking::PAYMENT_METHOD_GCASH], true)
+                ? $paymentMethod
+                : Booking::PAYMENT_METHOD_CASH;
 
             $now = now();
             $booking = Booking::create([
@@ -155,8 +163,8 @@ class ManualRideService
                 'distance_km' => $quote['distance_km'],
                 'distance_source' => $quote['distance_source'],
                 'estimated_duration_mins' => $quote['duration_mins'],
-                'payment_method' => 'cash',
-                'payment_status' => 'pending',
+                'payment_method' => $method,
+                'payment_status' => Booking::PAYMENT_STATUS_UNPAID,
                 // Waiting in the session, like a QR passenger; Start Ride moves everyone aboard.
                 'status' => 'accepted',
                 'requested_at' => $now,
@@ -218,14 +226,12 @@ class ManualRideService
             $booking->update([
                 'status' => 'completed',
                 'completed_at' => now(),
-                'payment_status' => 'paid',
+                'payment_status' => ($booking->payment_status === Booking::PAYMENT_STATUS_PAID) ? Booking::PAYMENT_STATUS_PAID : Booking::PAYMENT_STATUS_UNPAID,
                 'dropped_off_lat' => $position['lat'] ?? null,
                 'dropped_off_lng' => $position['lng'] ?? null,
             ]);
 
-            // Same completion bookkeeping as booked and QR rides: one completed trip.
-            $driver->increment('today_earnings', $booking->fare_amount);
-            $driver->increment('total_trips');
+            // Release driver once trip finishes. Earnings credited on payment confirmation.
             $this->releaseDriver($driver);
 
             $this->audit('manual_ride.completed', $booking, $user, [
@@ -481,6 +487,10 @@ class ManualRideService
             'fare_amount' => $booking->fare_amount,
             'payment_method' => $booking->payment_method,
             'payment_status' => $booking->payment_status,
+            'payment_reference' => $booking->payment_reference,
+            'payment_amount_received' => $booking->payment_amount_received,
+            'payment_change_amount' => $booking->payment_change_amount,
+            'paid_at' => $booking->paid_at?->toIso8601String(),
             'started_at' => $booking->started_at?->toIso8601String(),
             'completed_at' => $booking->completed_at?->toIso8601String(),
             'cancelled_at' => $booking->cancelled_at?->toIso8601String(),

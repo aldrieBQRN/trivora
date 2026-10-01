@@ -131,12 +131,26 @@ class MixedRideSessionTest extends TestCase
         $this->start($driver)->assertOk()->assertJsonPath('ride.session.status', RideSession::STATUS_IN_PROGRESS);
         $this->assertSame(['in_transit', 'in_transit'], Booking::whereIn('booking_code', [$qrCode, $walkIn])->pluck('status')->all());
 
-        // Individual drop-offs; the last one completes the session; earnings credited once each.
+        // Individual drop-offs; the last one completes the session
         $before = $driver->fresh();
         $this->dropOff($driver, $walkIn)->assertOk()->assertJsonPath('ride.session.status', RideSession::STATUS_IN_PROGRESS);
         $this->dropOff($driver, $walkIn)->assertOk(); // retry
         $this->dropOff($driver, $qrCode)->assertOk()->assertJsonPath('ride.session.status', RideSession::STATUS_COMPLETED);
         $this->dropOff($driver, $qrCode)->assertOk(); // retry
+
+        // Confirm cash payments for each booking independently
+        $bWalkIn = Booking::where('booking_code', $walkIn)->firstOrFail();
+        $bQr = Booking::where('booking_code', $qrCode)->firstOrFail();
+        $this->assertSame('unpaid', $bWalkIn->payment_status);
+        $this->assertSame('unpaid', $bQr->payment_status);
+
+        $this->as($driver->user)->postJson("/api/v1/driver/bookings/{$bWalkIn->id}/payment/confirm-cash", [
+            'amount_received' => $bWalkIn->fare_amount,
+        ])->assertOk();
+
+        $this->as($driver->user)->postJson("/api/v1/driver/bookings/{$bQr->id}/payment/confirm-cash", [
+            'amount_received' => $bQr->fare_amount,
+        ])->assertOk();
 
         $fresh = $driver->fresh();
         $total = FareService::calculate(5.4, 1) + FareService::calculate(5.4, 2);

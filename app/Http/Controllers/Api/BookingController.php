@@ -94,8 +94,8 @@ class BookingController extends Controller
             'distance_km' => $validated['distance_km'],
             'estimated_duration_mins' => $validated['estimated_duration_mins'] ?? 8,
             'passenger_notes' => $validated['passenger_notes'] ?? null,
-            'payment_method' => $validated['payment_method'] ?? 'cash',
-            'payment_status' => 'pending',
+            'payment_method' => $validated['payment_method'] ?? Booking::PAYMENT_METHOD_CASH,
+            'payment_status' => Booking::PAYMENT_STATUS_UNPAID,
             'status' => 'pending',
             'requested_at' => now(),
         ]);
@@ -370,13 +370,10 @@ class BookingController extends Controller
                 $updateData['started_at'] = now();
             } elseif ($newStatus === 'completed') {
                 $updateData['completed_at'] = now();
-                $updateData['payment_status'] = 'paid';
-
-                if ($locked->driver) {
-                    $locked->driver->increment('today_earnings', $locked->fare_amount);
-                    $locked->driver->increment('total_trips');
-                    $locked->driver->update(['is_available' => true]);
+                if ($locked->payment_status !== Booking::PAYMENT_STATUS_PAYMENT_SUBMITTED && $locked->payment_status !== Booking::PAYMENT_STATUS_PAID) {
+                    $updateData['payment_status'] = Booking::PAYMENT_STATUS_UNPAID;
                 }
+
                 if ($locked->passenger) {
                     $locked->passenger->increment('total_rides');
                 }

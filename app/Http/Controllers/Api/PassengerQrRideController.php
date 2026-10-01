@@ -44,9 +44,16 @@ class PassengerQrRideController extends Controller
     /** POST /passenger/qr-rides/join — join with the signed quote (retry-safe). */
     public function join(Request $request): JsonResponse
     {
-        $validated = $request->validate(['quote' => 'required|string']);
+        $validated = $request->validate([
+            'quote' => 'required|string',
+            'payment_method' => 'nullable|string|in:cash,gcash',
+        ]);
 
-        [$booking, $created] = $this->qrRides->join($request->user(), $validated['quote']);
+        [$booking, $created] = $this->qrRides->join(
+            $request->user(),
+            $validated['quote'],
+            $validated['payment_method'] ?? 'cash'
+        );
 
         return response()->json(
             ['message' => $created ? 'You joined the ride.' : "You've already joined this ride."]

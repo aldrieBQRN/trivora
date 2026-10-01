@@ -38,8 +38,15 @@ class DriverManualRideController extends Controller
      */
     public function add(Request $request): JsonResponse
     {
-        $validated = $request->validate(['quote' => 'required|string']);
-        [$booking, $created] = $this->manualRides->add($request->user(), $validated['quote']);
+        $validated = $request->validate([
+            'quote' => 'required|string',
+            'payment_method' => 'nullable|string|in:cash,gcash',
+        ]);
+        [$booking, $created] = $this->manualRides->add(
+            $request->user(),
+            $validated['quote'],
+            $validated['payment_method'] ?? 'cash'
+        );
 
         return response()->json([
             'message' => $created ? 'Walk-in passenger added.' : 'This walk-in passenger was already added.',
