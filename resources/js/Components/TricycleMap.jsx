@@ -28,17 +28,20 @@ const createCustomIcon = (status, isOnline = true) => {
         hasAnimation = true;
     }
 
+    const isOffline = !isOnline || status === 'offline';
+
     return L.divIcon({
         className: 'custom-tricycle-marker',
         html: `
-            <div class="relative flex items-center justify-center w-6 h-6">
-                ${hasAnimation ? `<span class="animate-ping absolute inline-flex h-full w-full rounded-full ${pulse} opacity-75"></span>` : ''}
-                <div class="relative inline-flex rounded-full h-3.5 w-3.5 ${color} shadow-md z-10" style="border: 2px solid #FFFFFF;"></div>
+            <div class="relative flex items-center justify-center cursor-pointer select-none" style="width: 45px; height: 30px;">
+                ${hasAnimation ? `<span class="animate-ping absolute inline-flex h-8 w-8 rounded-full ${pulse} opacity-60 pointer-events-none"></span>` : ''}
+                <img src="/images/tricycle-marker.webp" alt="Tricycle" class="relative z-10 pointer-events-none" style="width: 45px; height: 30px; object-fit: contain; ${isOffline ? 'filter: grayscale(100%) opacity(0.6);' : 'filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));'}" />
+                <span class="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full ${color} ring-2 ring-white z-20 pointer-events-none"></span>
             </div>
         `,
-        iconSize: [24, 24],
-        iconAnchor: [12, 12],
-        popupAnchor: [0, -14]
+        iconSize: [45, 30],
+        iconAnchor: [22.5, 15],
+        popupAnchor: [0, -18]
     });
 };
 
