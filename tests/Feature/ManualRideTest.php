@@ -407,10 +407,18 @@ class ManualRideTest extends TestCase
         $booking = Booking::where('booking_code', $code)->first();
         $this->assertSame(14.09001234, $booking->dropped_off_lat);
         $this->assertSame(120.65005678, $booking->dropped_off_lng);
-        $this->assertSame('paid', $booking->payment_status);
+        $this->assertSame('unpaid', $booking->payment_status, 'Dropoff leaves payment unpaid until settlement');
         $this->assertNotNull($booking->completed_at);
 
-        // Retry changes nothing.
+        // Driver confirms cash payment
+        $this->as($driver->user)->postJson("/api/v1/driver/bookings/{$booking->id}/payment/confirm-cash", [
+            'amount_received' => $booking->fare_amount,
+        ])->assertOk();
+
+        $booking->refresh();
+        $this->assertSame('paid', $booking->payment_status);
+
+        // Retry dropoff changes nothing.
         $this->dropOff($driver, $code)->assertOk();
         $fresh = $driver->fresh();
         $this->assertEqualsWithDelta($before->today_earnings + $booking->fare_amount, $fresh->today_earnings, 0.001);
@@ -489,6 +497,14 @@ class ManualRideTest extends TestCase
             ->assertJsonPath('ride.status', 'completed')
             ->assertJsonPath('ride.dropped_off_recorded', true);
         $this->as($driver->user)->postJson("/api/v1/driver/manual-ride/{$code}/complete")->assertOk();
+
+        $booking = Booking::where('booking_code', $code)->first();
+        $this->assertSame('unpaid', $booking->payment_status);
+
+        // Confirm cash payment to settle
+        $this->as($driver->user)->postJson("/api/v1/driver/bookings/{$booking->id}/payment/confirm-cash", [
+            'amount_received' => 60,
+        ])->assertOk();
 
         $fresh = $driver->fresh();
         $this->assertEqualsWithDelta($before->today_earnings + 60, $fresh->today_earnings, 0.001);

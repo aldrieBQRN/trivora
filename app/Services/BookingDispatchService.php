@@ -47,6 +47,7 @@ class BookingDispatchService
             ->whereDoesntHave('rideSessions', fn ($q) => $q->open())
             // ...and neither is a driver in the middle of a Manual Ride (walk-in, no app).
             ->whereDoesntHave('bookings', fn ($q) => $q->where('booking_type', Booking::TYPE_MANUAL)->where('status', 'in_transit'))
+            ->when($booking->payment_method === Booking::PAYMENT_METHOD_GCASH, fn ($q) => $q->whereNotNull('gcash_qr_path'))
             ->whereNotNull('current_lat')
             ->whereNotNull('current_lng')
             ->whereNotIn('id', $declinedDriverIds)

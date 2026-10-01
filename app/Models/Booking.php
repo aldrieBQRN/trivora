@@ -20,6 +20,13 @@ class Booking extends Model
     /** A Manual Ride: recorded by the driver for a walk-in passenger with no account (passenger_id NULL). */
     public const TYPE_MANUAL = 'manual';
 
+    public const PAYMENT_METHOD_CASH = 'cash';
+    public const PAYMENT_METHOD_GCASH = 'gcash';
+
+    public const PAYMENT_STATUS_UNPAID = 'unpaid';
+    public const PAYMENT_STATUS_PAYMENT_SUBMITTED = 'payment_submitted';
+    public const PAYMENT_STATUS_PAID = 'paid';
+
     protected $fillable = [
         'booking_code',
         'booking_type',
@@ -46,6 +53,10 @@ class Booking extends Model
         'status',
         'payment_method',
         'payment_status',
+        'payment_reference',
+        'payment_amount_received',
+        'payment_change_amount',
+        'paid_at',
         'cancelled_by',
         'cancellation_reason',
         'dispatched_driver_id',
@@ -69,6 +80,9 @@ class Booking extends Model
         'passenger_count' => 'integer',
         'fare_per_passenger' => 'float',
         'distance_km' => 'float',
+        'payment_amount_received' => 'float',
+        'payment_change_amount' => 'float',
+        'paid_at' => 'datetime',
         'estimated_duration_mins' => 'integer',
         'dispatched_at' => 'datetime',
         'requested_at' => 'datetime',

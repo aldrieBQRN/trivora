@@ -1,7 +1,9 @@
 <?php
 
 use App\Http\Controllers\Api\BookingController;
+use App\Http\Controllers\Api\BookingPaymentController;
 use App\Http\Controllers\Api\DriverAuthController;
+use App\Http\Controllers\Api\DriverGcashQrController;
 use App\Http\Controllers\Api\DriverManualRideController;
 use App\Http\Controllers\Api\DriverQrSessionController;
 use App\Http\Controllers\Api\DriverTelematicsController;
@@ -110,6 +112,17 @@ Route::prefix('v1/driver')->group(function () {
         // $request->user() only, no cross-app duplication needed).
         Route::post('/profile-photo', [ProfilePhotoController::class, 'update']);
         Route::delete('/profile-photo', [ProfilePhotoController::class, 'destroy']);
+
+        // Driver GCash QR Management
+        Route::get('/gcash-qr', [DriverGcashQrController::class, 'show']);
+        Route::post('/gcash-qr', [DriverGcashQrController::class, 'update']);
+        Route::delete('/gcash-qr', [DriverGcashQrController::class, 'destroy']);
+
+        // Driver Payment Confirmation (Cash & GCash)
+        Route::post('/bookings/{id}/payment/confirm-cash', [BookingPaymentController::class, 'confirmCash']);
+        Route::post('/bookings/{id}/payment/confirm-gcash', [BookingPaymentController::class, 'confirmGcash']);
+        Route::post('/bookings/{id}/payment/manual-gcash', [BookingPaymentController::class, 'recordManualGcash']);
+        Route::post('/bookings/{id}/payment/record-manual-gcash', [BookingPaymentController::class, 'recordManualGcash']);
     });
 });
 
@@ -140,6 +153,9 @@ Route::prefix('v1/passenger')->group(function () {
         Route::get('/bookings/history', [BookingController::class, 'history']);
         Route::post('/bookings/{id}/status', [BookingController::class, 'updateStatus']);
         Route::post('/bookings/{id}/cancel', [BookingController::class, 'updateStatus']);
+
+        // No passenger payment routes: the driver shows their own GCash QR, enters the reference
+        // and confirms (driver routes above); the passenger app only reads payment status.
 
         // Saved Places — destination shortcuts tied to the authenticated passenger only,
         // never a client-supplied passenger id (see SavedPlaceController::resolvePassenger).

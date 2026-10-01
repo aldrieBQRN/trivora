@@ -505,9 +505,17 @@ class QrRideWorkflowTest extends TestCase
         $bookingA = Booking::where('booking_code', $codeA)->first();
         $this->assertSame(14.09001234, $bookingA->dropped_off_lat);
         $this->assertSame(120.65005678, $bookingA->dropped_off_lng);
-        $this->assertSame('paid', $bookingA->payment_status);
+        $this->assertSame('unpaid', $bookingA->payment_status);
         $this->assertNotNull($bookingA->completed_at);
         $this->assertSame('in_transit', Booking::where('booking_code', $codeB)->value('status'), 'B still aboard');
+
+        // Confirm cash payment for passenger A
+        $this->as($driver->user)->postJson("/api/v1/driver/bookings/{$bookingA->id}/payment/confirm-cash", [
+            'amount_received' => 57,
+        ])->assertOk();
+
+        $bookingA->refresh();
+        $this->assertSame('paid', $bookingA->payment_status);
         $this->assertSame($before->total_trips + 1, $driver->fresh()->total_trips);
         $this->assertSame(1, $this->passengerOf($a)->fresh()->total_rides);
 
@@ -522,6 +530,15 @@ class QrRideWorkflowTest extends TestCase
         $this->as($driver->user)->postJson("/api/v1/driver/qr-session/passengers/{$codeB}/drop-off")->assertOk()
             ->assertJsonPath('ride.session.status', 'completed')
             ->assertJsonPath('ride.session.end_reason', 'all_dropped');
+
+        $bookingB = Booking::where('booking_code', $codeB)->first();
+        $this->assertSame('unpaid', $bookingB->payment_status);
+
+        // Confirm cash payment for passenger B
+        $this->as($driver->user)->postJson("/api/v1/driver/bookings/{$bookingB->id}/payment/confirm-cash", [
+            'amount_received' => 64,
+        ])->assertOk();
+
         $fresh = $driver->fresh();
         $this->assertSame($before->total_trips + 2, $fresh->total_trips, 'one trip per completed passenger (D4)');
         $this->assertEqualsWithDelta($before->today_earnings + 57 + 64, $fresh->today_earnings, 0.001);
@@ -531,6 +548,44 @@ class QrRideWorkflowTest extends TestCase
         // Both trips appear in the normal history endpoints.
         $this->as($driver->user)->getJson('/api/v1/driver/bookings/history')->assertOk()->assertJsonCount(2, 'bookings');
         $this->as($a)->getJson('/api/v1/passenger/bookings/history')->assertJsonPath('bookings.0.booking_type', 'qr_walkin');
+    }
+
+    #[Test]
+    public function a_dropped_off_unpaid_ride_stays_the_passengers_active_ride_until_paid(): void
+    {
+        [$tricycle, $driver] = $this->makeUnit();
+        $a = $this->makePassengerUser();
+        $b = $this->makePassengerUser();
+        $codeA = $this->quoteAndJoin($a, $tricycle, self::DEST_A, 1)->json('booking.booking_code');
+        $codeB = $this->quoteAndJoin($b, $tricycle, self::DEST_B, 1)->json('booking.booking_code');
+        $this->as($driver->user)->postJson('/api/v1/driver/qr-session/start')->assertOk();
+        $driver->update(['current_lat' => 14.09, 'current_lng' => 120.65, 'last_location_updated_at' => now()]);
+        $this->as($driver->user)->postJson("/api/v1/driver/qr-session/passengers/{$codeA}/drop-off")->assertOk();
+
+        // Drop-off is not payment: without a booking code, A still recovers the unpaid ride.
+        $this->as($a)->getJson('/api/v1/passenger/qr-rides/active')->assertOk()
+            ->assertJsonPath('ride.booking.booking_code', $codeA)
+            ->assertJsonPath('ride.booking.status', 'completed')
+            ->assertJsonPath('ride.booking.payment_status', 'unpaid');
+        // B (still aboard) is unaffected by A's drop-off.
+        $this->as($b)->getJson('/api/v1/passenger/qr-rides/active')->assertOk()
+            ->assertJsonPath('ride.booking.booking_code', $codeB)
+            ->assertJsonPath('ride.booking.status', 'in_transit');
+
+        $bookingA = Booking::where('booking_code', $codeA)->first();
+        $this->as($driver->user)->postJson("/api/v1/driver/bookings/{$bookingA->id}/payment/confirm-cash", [
+            'amount_received' => 100,
+        ])->assertOk();
+
+        // Paid: no longer active, but still readable by its code (payment success after reload).
+        $this->as($a)->getJson('/api/v1/passenger/qr-rides/active')->assertOk()->assertJsonPath('ride', null);
+        $this->as($a)->getJson("/api/v1/passenger/qr-rides/active?booking={$codeA}")->assertOk()
+            ->assertJsonPath('ride.booking.payment_status', 'paid');
+
+        // An unpaid ride older than the 2-hour window is no longer forced on the passenger.
+        $this->as($driver->user)->postJson("/api/v1/driver/qr-session/passengers/{$codeB}/drop-off")->assertOk();
+        Booking::where('booking_code', $codeB)->update(['completed_at' => now()->subHours(3)]);
+        $this->as($b)->getJson('/api/v1/passenger/qr-rides/active')->assertOk()->assertJsonPath('ride', null);
     }
 
     #[Test]

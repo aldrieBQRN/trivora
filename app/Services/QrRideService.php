@@ -168,12 +168,12 @@ class QrRideService
      *
      * @return array{0: Booking, 1: bool} [booking, created]
      */
-    public function join(User $user, string $signedQuote): array
+    public function join(User $user, string $signedQuote, string $paymentMethod = 'cash'): array
     {
         $passenger = $this->passengerFor($user);
         $quote = $this->decodeQuote($signedQuote, $passenger);
 
-        return DB::transaction(function () use ($user, $passenger, $quote) {
+        return DB::transaction(function () use ($user, $passenger, $quote, $paymentMethod) {
             Passenger::whereKey($passenger->id)->lockForUpdate()->first();
             $tricycle = Tricycle::whereKey($quote['tricycle_id'])->lockForUpdate()->first();
             if (!$tricycle || !hash_equals($quote['token_hash'], hash('sha256', (string) $tricycle->qr_token))) {
@@ -195,6 +195,10 @@ class QrRideService
                 throw new QrRideException('driver_changed', 'The driver of this tricycle changed. Please scan the QR code again.');
             }
 
+            if ($paymentMethod === Booking::PAYMENT_METHOD_GCASH && !$driver->hasGcashConfigured()) {
+                throw new QrRideException('gcash_not_configured', 'The driver of this tricycle has not configured GCash. Please choose Cash.', 422);
+            }
+
             [$canJoin, $reason, $capacity, $used] = $this->joinability($tricycle, $session);
             if (!$canJoin) {
                 throw new QrRideException($reason, $this->reasonMessage($reason));
@@ -202,6 +206,10 @@ class QrRideService
             $this->assertSeats($capacity, $used, $quote['party_size']);
 
             $session ??= $this->createBoardingSession($tricycle, $driver, $capacity);
+
+            $method = in_array($paymentMethod, [Booking::PAYMENT_METHOD_CASH, Booking::PAYMENT_METHOD_GCASH], true)
+                ? $paymentMethod
+                : Booking::PAYMENT_METHOD_CASH;
 
             $booking = Booking::create([
                 'booking_code' => $this->uniqueCode(Booking::class, 'booking_code', 'QR'),
@@ -222,8 +230,8 @@ class QrRideService
                 'distance_km' => $quote['distance_km'],
                 'distance_source' => $quote['distance_source'],
                 'estimated_duration_mins' => $quote['duration_mins'],
-                'payment_method' => 'cash',
-                'payment_status' => 'pending',
+                'payment_method' => $method,
+                'payment_status' => Booking::PAYMENT_STATUS_UNPAID,
                 'status' => 'accepted',
                 'requested_at' => now(),
                 'accepted_at' => now(),
@@ -249,9 +257,17 @@ class QrRideService
         $passenger = $this->passengerFor($user);
         $query = Booking::where('passenger_id', $passenger->id)->where('booking_type', Booking::TYPE_QR_WALKIN);
 
+        // Without a code: the seated ride, else a dropped-off ride still awaiting the driver's
+        // payment confirmation (same 2-hour window as driverActiveSession) — drop-off is not
+        // payment, so the passenger app must be able to recover its payment screen.
         $booking = $bookingCode
             ? $query->where('booking_code', $bookingCode)->first()
-            : $query->whereIn('status', self::SEATED_STATUSES)->latest('id')->first();
+            : ((clone $query)->whereIn('status', self::SEATED_STATUSES)->latest('id')->first()
+                ?? $query->where('status', 'completed')
+                    ->where('payment_status', '!=', Booking::PAYMENT_STATUS_PAID)
+                    ->where('completed_at', '>=', now()->subHours(2))
+                    ->latest('id')
+                    ->first());
 
         if (!$booking) {
             return null;
@@ -323,6 +339,18 @@ class QrRideService
     {
         $driver = $this->driverFor($user);
         $session = $this->openSessionForDriver($driver);
+
+        if (!$session) {
+            $session = RideSession::where('driver_id', $driver->id)
+                ->where('status', RideSession::STATUS_COMPLETED)
+                ->where('ended_at', '>=', now()->subHours(2))
+                ->whereHas('bookings', function ($q) {
+                    $q->where('status', 'completed')
+                        ->where('payment_status', '!=', Booking::PAYMENT_STATUS_PAID);
+                })
+                ->latest('id')
+                ->first();
+        }
 
         return $session ? $this->sessionPayload($session) : null;
     }
@@ -437,15 +465,13 @@ class QrRideService
             $booking->update([
                 'status' => 'completed',
                 'completed_at' => now(),
-                'payment_status' => 'paid',
+                'payment_status' => ($booking->payment_status === Booking::PAYMENT_STATUS_PAID) ? Booking::PAYMENT_STATUS_PAID : Booking::PAYMENT_STATUS_UNPAID,
                 'dropped_off_lat' => $position['lat'] ?? null,
                 'dropped_off_lng' => $position['lng'] ?? null,
             ]);
 
-            // Same completion bookkeeping as a normal booking (BookingController::updateStatus):
-            // one completed passenger = one trip (decision D4).
-            $driver->increment('today_earnings', $booking->fare_amount);
-            $driver->increment('total_trips');
+            // Passenger ride count increments on drop-off. Driver earnings and trips
+            // are credited exclusively upon payment confirmation via BookingPaymentController.
             $booking->passenger?->increment('total_rides');
 
             $this->audit('qr_ride.dropped_off', $booking, $user, [
@@ -468,7 +494,11 @@ class QrRideService
     public function end(User $user): array
     {
         $driver = $this->driverFor($user);
-        $found = $this->openSessionForDriver($driver);
+        $found = $this->openSessionForDriver($driver)
+            ?? RideSession::where('driver_id', $driver->id)
+                ->where('status', RideSession::STATUS_COMPLETED)
+                ->latest('id')
+                ->first();
         if (!$found) {
             throw new QrRideException('no_active_session', 'You have no open walk-in ride.', 404);
         }
@@ -476,6 +506,9 @@ class QrRideService
         $session = DB::transaction(function () use ($user, $found) {
             Tricycle::whereKey($found->tricycle_id)->lockForUpdate()->first();
             $session = RideSession::whereKey($found->id)->lockForUpdate()->first();
+            if ($session->status === RideSession::STATUS_COMPLETED) {
+                return $session;
+            }
             if (!$session->isOpen()) {
                 return $session;
             }
@@ -1006,6 +1039,7 @@ class QrRideService
             'first_name' => $user ? Str::of($user->name)->trim()->explode(' ')->first() : null,
             'profile_photo_url' => $user?->profile_photo_url,
             'rating' => $driver->rating,
+            'gcash_available' => $driver->hasGcashConfigured(),
         ];
     }
 
@@ -1048,6 +1082,10 @@ class QrRideService
             'fare_amount' => $booking->fare_amount,
             'payment_method' => $booking->payment_method,
             'payment_status' => $booking->payment_status,
+            'payment_reference' => $booking->payment_reference,
+            'payment_amount_received' => $booking->payment_amount_received,
+            'payment_change_amount' => $booking->payment_change_amount,
+            'paid_at' => $booking->paid_at?->toIso8601String(),
             'joined_at' => $booking->accepted_at?->toIso8601String(),
             'started_at' => $booking->started_at?->toIso8601String(),
             'completed_at' => $booking->completed_at?->toIso8601String(),

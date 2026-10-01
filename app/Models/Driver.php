@@ -26,6 +26,14 @@ class Driver extends Model
         'rating',
         'total_trips',
         'today_earnings',
+        'gcash_qr_path',
+        'gcash_name',
+        'gcash_number',
+    ];
+
+    protected $appends = [
+        'gcash_qr_url',
+        'has_gcash_qr',
     ];
 
     protected $casts = [
@@ -39,6 +47,21 @@ class Driver extends Model
         'today_earnings' => 'float',
         'last_location_updated_at' => 'datetime',
     ];
+
+    public function getGcashQrUrlAttribute(): ?string
+    {
+        return $this->gcash_qr_path ? asset('storage/' . $this->gcash_qr_path) : null;
+    }
+
+    public function getHasGcashQrAttribute(): bool
+    {
+        return !empty($this->gcash_qr_path);
+    }
+
+    public function hasGcashConfigured(): bool
+    {
+        return !empty($this->gcash_qr_path);
+    }
 
     public function user(): BelongsTo
     {
