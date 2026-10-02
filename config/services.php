@@ -35,4 +35,10 @@ return [
         ],
     ],
 
+    'overpass' => [
+        'url' => env('OVERPASS_URL', env('OVERPASS_API_URL', 'https://overpass-api.de/api/interpreter')),
+        'timeout' => (int) env('OVERPASS_TIMEOUT', 3),
+        'enable_fallback' => env('OVERPASS_ENABLE_FALLBACK', null),
+    ],
+
 ];

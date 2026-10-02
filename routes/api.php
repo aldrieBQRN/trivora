@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\DriverManualRideController;
 use App\Http\Controllers\Api\DriverQrSessionController;
 use App\Http\Controllers\Api\DriverTelematicsController;
 use App\Http\Controllers\Api\DriverViolationController;
+use App\Http\Controllers\Api\NearbyPlaceController;
 use App\Http\Controllers\Api\PassengerAuthController;
 use App\Http\Controllers\Api\PassengerQrRideController;
 use App\Http\Controllers\Api\ProfilePhotoController;
@@ -24,6 +25,9 @@ use Illuminate\Support\Facades\Route;
 
 // Public Health Check
 Route::get('v1/health', fn() => response()->json(['status' => 'ok']));
+
+// Public Places & POI Discovery
+Route::get('v1/places/nearby', [NearbyPlaceController::class, 'index'])->middleware('throttle:60,1');
 
 // Driver Mobile API Routes
 Route::prefix('v1/driver')->group(function () {
