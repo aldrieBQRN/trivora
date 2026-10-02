@@ -96,6 +96,9 @@ Route::prefix('v1/driver')->group(function () {
         Route::post('/qr-session/passengers/{booking}/remove', [DriverQrSessionController::class, 'remove']);
         Route::post('/qr-session/end', [DriverQrSessionController::class, 'end']);
 
+        // Driver Assigned QR Code — access to the driver's own assigned unit QR details
+        Route::get('/qr-code', [\App\Http\Controllers\Api\DriverQrCodeController::class, 'show']);
+
         // Manual Ride — the driver adds a walk-in passenger with no app to the tricycle's one open
         // ride session (see ManualRideService); from there the qr-session routes above run the
         // ride for QR and walk-in passengers alike. Quote/add are "operate" actions gated by

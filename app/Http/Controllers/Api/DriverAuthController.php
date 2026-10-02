@@ -556,6 +556,9 @@ class DriverAuthController extends Controller
                     'active_tracking_mode' => $tricycle->active_tracking_mode,
                     'tracking_capability'  => $tricycle->tracking_capability,
                     'iot_device_id'        => $tricycle->iot_device_id,
+                    'passenger_capacity'   => $tricycle->passenger_capacity,
+                    'unit_code'            => 'TRV-' . str_pad($tricycle->id, 3, '0', STR_PAD_LEFT),
+                    'sticker_number'       => $tricycle->coding_scheme_number ?: null,
                 ],
                 'franchise' => [
                     'status'             => $franchiseScheme->status,
@@ -724,6 +727,9 @@ class DriverAuthController extends Controller
                 'active_tracking_mode' => $tricycle->active_tracking_mode ?: ($tricycle->tracking_capability === 'iot_enabled' ? 'iot_device' : 'mobile_app'),
                 'iot_device_id'        => $tricycle->iot_device_id,
                 'franchise_number'     => $tricycle->franchiseScheme?->franchise_number,
+                'passenger_capacity'   => $tricycle->passenger_capacity,
+                'unit_code'            => 'TRV-' . str_pad($tricycle->id, 3, '0', STR_PAD_LEFT),
+                'sticker_number'       => $tricycle->coding_scheme_number ?: null,
             ] : null,
             // Operational authorization status — the app shows a "Franchise Suspended"/"Franchise
             // Revoked" indicator from this, never from anything on the driver's own account.
@@ -790,6 +796,9 @@ class DriverAuthController extends Controller
                 'tracking_capability'  => $tricycle->tracking_capability ?: 'mobile_only',
                 'iot_device_id'        => $tricycle->iot_device_id,
                 'franchise_number'     => $tricycle->franchiseScheme?->franchise_number,
+                'passenger_capacity'   => $tricycle->passenger_capacity,
+                'unit_code'            => 'TRV-' . str_pad($tricycle->id, 3, '0', STR_PAD_LEFT),
+                'sticker_number'       => $tricycle->coding_scheme_number ?: null,
             ] : null,
             'franchise' => $tricycle?->franchiseScheme ? [
                 'status'             => $tricycle->franchiseScheme->status,

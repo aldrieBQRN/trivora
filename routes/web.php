@@ -29,6 +29,10 @@ Route::get('/ride/q/{token}', [\App\Http\Controllers\PublicQrRideController::cla
     ->middleware('throttle:60,1')
     ->name('qr-ride.landing');
 
+// Driver QR Code Printable Sheet (accessible for driver's assigned unit token)
+Route::get('/driver/qr/print/{token}', [\App\Http\Controllers\Api\DriverQrCodeController::class, 'printSheet'])
+    ->name('driver.qr.print');
+
 // Public MTOP Registration Wizard (Account Creation + First Application)
 Route::get('/register-mtop', [RegistrationController::class, 'publicWizard'])->name('register.public');
 Route::post('/register-mtop', [RegistrationController::class, 'store'])->name('register.public.submit');
