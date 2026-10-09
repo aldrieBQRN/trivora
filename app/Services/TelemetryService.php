@@ -94,14 +94,15 @@ class TelemetryService
         // happened, not the day they were uploaded.
         $today = $location->recorded_at ?? now();
         $dayName = $today->format('l');
-        $restrictedEndings = ColorCodingRuleService::restrictedDigitsForDay($dayName);
 
-        $identifier = $tricycle->coding_scheme_number ?: $tricycle->plate_number;
-        $lastDigit = $identifier ? (int) substr(trim($identifier), -1) : null;
+        $evaluation = ColorCodingRuleService::evaluateTricycle($tricycle, $today);
 
-        if ($lastDigit === null || !in_array($lastDigit, $restrictedEndings, true)) {
+        if (!$evaluation['is_restricted_today']) {
             return ['flagged' => false];
         }
+
+        $lastDigit = $evaluation['last_digit'];
+        $fineAmount = $evaluation['fine_amount'];
 
         // Receiving a GPS ping alone must not trigger a violation — the tricycle must have
         // genuinely MOVED at least the configured threshold from where it first reported after
@@ -130,7 +131,7 @@ class TelemetryService
                 'day_of_week'            => $dayName,
                 'detection_method'       => 'automated',
                 'status'                 => 'open',
-                'fine_amount'            => 500.00,
+                'fine_amount'            => $fineAmount,
                 'notes'                  => "Automated GPS detection: operating on restricted color-coding day ({$dayName}), Sticker Number ending {$lastDigit}.",
             ]);
         } catch (QueryException $e) {

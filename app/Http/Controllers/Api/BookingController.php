@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Events\DriverLocationUpdated;
 use App\Models\Booking;
 use App\Models\BookingDriverDecline;
 use App\Models\Driver;
@@ -127,7 +128,7 @@ class BookingController extends Controller
         $driver = Driver::where('user_id', $request->user()->id)->first();
 
         // Only online and available drivers receive booking requests
-        if (!$driver || !$driver->is_online || !$driver->is_available) {
+        if (!$driver || !$driver->isEffectivelyOnline() || !$driver->is_available) {
             return response()->json([
                 'requests' => [],
                 'notice' => $driver ? 'Driver is offline or unavailable.' : 'Driver not found.',
@@ -567,6 +568,27 @@ class BookingController extends Controller
                     ]);
                 } catch (\Exception $e) {
                     \Illuminate\Support\Facades\Log::warning('TricycleLocation log failed: ' . $e->getMessage());
+                }
+            }
+
+            // Real-time broadcast to active passenger booking channels
+            $activeBookings = Booking::where('driver_id', $driver->id)
+                ->whereIn('status', ['accepted', 'arrived', 'in_transit'])
+                ->get();
+
+            foreach ($activeBookings as $activeBooking) {
+                try {
+                    broadcast(new DriverLocationUpdated(
+                        bookingId: $activeBooking->id,
+                        driverId: $driver->id,
+                        tricycleId: (int) ($tricycleId ?? 0),
+                        latitude: (float) $validated['latitude'],
+                        longitude: (float) $validated['longitude'],
+                        headingDeg: $request->has('heading_deg') ? (int) $request->input('heading_deg') : null,
+                        recordedAt: now()->toIso8601String()
+                    ));
+                } catch (\Throwable $e) {
+                    \Illuminate\Support\Facades\Log::warning("Driver location broadcast failed for booking {$activeBooking->id}: {$e->getMessage()}");
                 }
             }
         }

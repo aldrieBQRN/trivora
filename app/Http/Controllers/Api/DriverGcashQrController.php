@@ -52,23 +52,26 @@ class DriverGcashQrController extends Controller
         }
 
         $validated = $request->validate([
-            'qr_image' => 'required|image|mimes:jpg,jpeg,png,webp,heic|max:5120',
+            'qr_image' => 'nullable|image|mimes:jpg,jpeg,png,webp,heic|max:5120',
             'gcash_name' => 'nullable|string|max:150',
             'gcash_number' => 'nullable|string|max:20',
         ]);
 
         $oldPath = $driver->gcash_qr_path;
-        $newPath = $request->file('qr_image')->store('driver_gcash_qrs', 'public');
+        $newPath = $oldPath;
+
+        if ($request->hasFile('qr_image')) {
+            $newPath = $request->file('qr_image')->store('driver_gcash_qrs', 'public');
+            if ($oldPath && $oldPath !== $newPath && Storage::disk('public')->exists($oldPath)) {
+                Storage::disk('public')->delete($oldPath);
+            }
+        }
 
         $driver->update([
             'gcash_qr_path' => $newPath,
-            'gcash_name' => $validated['gcash_name'] ?? $driver->gcash_name,
-            'gcash_number' => $validated['gcash_number'] ?? $driver->gcash_number,
+            'gcash_name' => array_key_exists('gcash_name', $validated) ? $validated['gcash_name'] : $driver->gcash_name,
+            'gcash_number' => array_key_exists('gcash_number', $validated) ? $validated['gcash_number'] : $driver->gcash_number,
         ]);
-
-        if ($oldPath && $oldPath !== $newPath && Storage::disk('public')->exists($oldPath)) {
-            Storage::disk('public')->delete($oldPath);
-        }
 
         AuditLog::create([
             'user_id' => $request->user()->id,

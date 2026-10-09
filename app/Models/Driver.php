@@ -182,4 +182,52 @@ class Driver extends Model
 
         return $distKm <= $maxRadiusKm;
     }
+
+    /**
+     * Determine if the driver is operationally online based on the authoritative
+     * last_location_updated_at telemetry timestamp and is_online flag.
+     *
+     * Hierarchy:
+     * - is_online = false -> false (Offline)
+     * - is_online = true + telemetry age < 600s -> true (Online or No Signal, operationally active)
+     * - is_online = true + telemetry age >= 600s (or missing/null) -> false (Offline)
+     */
+    public function isEffectivelyOnline(): bool
+    {
+        if (!$this->is_online) {
+            return false;
+        }
+
+        if (!$this->last_location_updated_at) {
+            return false;
+        }
+
+        $timeoutSeconds = (int) config('tracking.fleet_auto_offline_seconds', 600);
+        return $this->last_location_updated_at->diffInSeconds(now()) < $timeoutSeconds;
+    }
+
+    /**
+     * Query scope for drivers who are effectively online.
+     */
+    public function scopeEffectivelyOnline($query)
+    {
+        $timeoutSeconds = (int) config('tracking.fleet_auto_offline_seconds', 600);
+        $cutoff = now()->subSeconds($timeoutSeconds);
+
+        return $query->where('is_online', true)
+            ->whereNotNull('last_location_updated_at')
+            ->where('last_location_updated_at', '>=', $cutoff);
+    }
+
+    /**
+     * Transition driver to offline, clearing online session anchor and availability.
+     */
+    public function transitionToOffline(string $reason = 'manual'): void
+    {
+        $this->update([
+            'is_online'    => false,
+            'online_since' => null,
+            'is_available' => false,
+        ]);
+    }
 }

@@ -6,7 +6,7 @@ import {
     ChevronDown, ChevronRight,
     LayoutDashboard, ShieldCheck,
     FileSearch, ClipboardCheck,
-    Bike, ShieldAlert, Users, X, Radio, BarChart3, MapPin
+    Bike, ShieldAlert, Users, X, Radio, BarChart3, MapPin, Banknote, ScrollText
 } from 'lucide-react';
 
 /* ─────────────────────────────────────────────────────────────────────────
@@ -48,7 +48,9 @@ export default function TrivoraLayout({ children, title, role = "TMO Personnel",
         {
             group: "Management",
             links: [
-                { name: 'Staff Management', icon: Users,  route: '/tmo/users' },
+                { name: 'Staff Management',     icon: Users,        route: '/tmo/users' },
+                { name: 'Fare Management',      icon: Banknote,     route: '/tmo/fares' },
+                { name: 'System Activity Logs', icon: ScrollText,   route: '/tmo/activity-logs' },
             ]
         },
     ];

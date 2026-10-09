@@ -141,17 +141,9 @@ class TricyclesSeeder extends Seeder
                 $payload
             );
 
-            // Determine matching color coding scheme by last digit of 4-digit number
+            // Determine matching color coding scheme by last digit of 4-digit number from DB rules
             $lastDigit = (int)substr($data['coding_number'], -1);
-            $colorName = match (true) {
-                in_array($lastDigit, [1, 2]) => 'Red',
-                in_array($lastDigit, [3, 4]) => 'Blue',
-                in_array($lastDigit, [5, 6]) => 'Yellow',
-                in_array($lastDigit, [7, 8]) => 'Green',
-                default                       => 'White',
-            };
-
-            $schemeModel = $colorSchemes[$colorName] ?? null;
+            $schemeModel = \App\Services\ColorCodingRuleService::schemeForLastDigit($lastDigit) ?? ($colorSchemes['White'] ?? null);
             if ($schemeModel) {
                 // Never clobber a franchise issued by a real application (application_id set):
                 // e.g. Pedro Ramos's completed APP-2026-00001 deliberately holds an EXPIRED

@@ -1,15 +1,12 @@
 import React, { useState, useMemo } from 'react';
-import { Head, Link, router, useForm } from '@inertiajs/react';
+import { Head, Link } from '@inertiajs/react';
 import useBackgroundRefresh from '@/hooks/useBackgroundRefresh';
 import TrivoraLayout from '@/Layouts/TrivoraLayout';
-import Swal from 'sweetalert2';
 import {
     Clock, ChevronRight, ChevronLeft, Inbox, Bike,
-    Search, X, RotateCcw, CheckCircle2, ShieldCheck,
-    AlertTriangle, Cpu, Smartphone, Receipt, Tag,
-    CheckSquare, Square, Eye, Phone, Check,
+    Search, X, RotateCcw, CheckCircle2,
+    Cpu, Smartphone, Phone,
 } from 'lucide-react';
-import { Button, Modal, Input, StatusBadge } from '@/Components/TMO';
 
 const ITEMS_PER_PAGE = 10;
 
@@ -22,31 +19,6 @@ function getInitials(name) {
     const parts = name.trim().split(/\s+/);
     if (parts.length === 1) return parts[0].substring(0, 2).toUpperCase();
     return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-}
-
-// Reflects only what the backend has actually received (Tricycle::gpsStatus()) — never implies
-// "Connected" just because a tracking method was selected. Mirrors FinalConfirmationDetail.jsx's
-// GpsStatusBadge so both surfaces describe device connectivity identically.
-function GpsStatusBadge({ status, lastSeenAt }) {
-    if (status === 'connected') {
-        return (
-            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-700">
-                Connected{lastSeenAt ? ` · last signal ${lastSeenAt}` : ''}
-            </span>
-        );
-    }
-    if (status === 'stale') {
-        return (
-            <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-700">
-                Signal lost{lastSeenAt ? ` · last seen ${lastSeenAt}` : ''}
-            </span>
-        );
-    }
-    return (
-        <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-600">
-            Awaiting first signal
-        </span>
-    );
 }
 
 // Matches TMODashboard/DocumentQueue.jsx's StatusPill exactly (size, weight, not uppercase) so
@@ -78,26 +50,10 @@ export default function FinalConfirmationQueue({
     const [query, setQuery] = useState(searchTerm);
     const [currentPage, setCurrentPage] = useState(1);
 
-    const [selectedApp, setSelectedApp] = useState(null);
-    const [modalOpen, setModalOpen] = useState(false);
-
-    const { data, setData, post, processing, reset } = useForm({
-        signed_ticket_verified: false,
-        bplo_approval_confirmed: false,
-        sticker_possession_confirmed: false,
-        tracking_method: 'mobile_gps',
-        iot_device_id: '',
-        reassign_confirmed: false,
-        officer_notes: '',
-    });
-
     // Silent background refresh — a BPLO release elsewhere feeds new units into this queue, and a
-    // just-confirmed application moves out of "Pending" here, without a manual reload. Does not
-    // disturb an already-open confirmation modal — selectedApp is a snapshot taken at click time,
-    // and the refresh pauses outright while that modal or a submission is in progress.
+    // just-confirmed application moves out of "Pending" here, without a manual reload.
     useBackgroundRefresh(
-        ['applications', 'awaitingCount', 'confirmedTodayCount', 'iotActiveCount', 'mobileActiveCount'],
-        { paused: modalOpen || processing }
+        ['applications', 'awaitingCount', 'confirmedTodayCount', 'iotActiveCount', 'mobileActiveCount']
     );
 
     // This queue only ever shows the actionable, pending items — an application that already
@@ -130,147 +86,6 @@ export default function FinalConfirmationQueue({
         setQuery('');
         setCurrentPage(1);
     };
-
-    const handleShowDetails = (app) => {
-        setSelectedApp(app);
-        const isCompleted = app.raw_status === 'completed';
-        setData({
-            signed_ticket_verified: isCompleted,
-            bplo_approval_confirmed: isCompleted,
-            sticker_possession_confirmed: isCompleted,
-            tracking_method: app.tracking_method || 'mobile_gps',
-            iot_device_id: app.iot_device_id || '',
-            reassign_confirmed: false,
-            officer_notes: '',
-        });
-        setModalOpen(true);
-    };
-
-    const handleCloseModal = () => {
-        setModalOpen(false);
-        setSelectedApp(null);
-        reset();
-    };
-
-    const handleToggleAllChecks = () => {
-        if (isAlreadyCompleted) return;
-        const allCurrent = data.signed_ticket_verified && data.bplo_approval_confirmed && data.sticker_possession_confirmed;
-        setData({
-            ...data,
-            signed_ticket_verified: !allCurrent,
-            bplo_approval_confirmed: !allCurrent,
-            sticker_possession_confirmed: !allCurrent,
-        });
-    };
-
-    const handleConfirmActivation = () => {
-        if (!selectedApp) return;
-
-        if (!data.signed_ticket_verified || !data.bplo_approval_confirmed || !data.sticker_possession_confirmed) {
-            Swal.fire({
-                title: 'Clearance Incomplete',
-                text: 'Please confirm that the payment ticket, BPLO release, and coding clearance are all verified.',
-                icon: 'warning',
-                confirmButtonColor: '#1D2542'
-            });
-            return;
-        }
-
-        if (data.tracking_method === 'iot_device' && !data.iot_device_id.trim()) {
-            Swal.fire({
-                title: 'IoT Serial Number Required',
-                text: 'Please enter the physical IoT device serial number before completing activation.',
-                icon: 'warning',
-                confirmButtonColor: '#1D2542'
-            });
-            return;
-        }
-
-        const methodDesc = data.tracking_method === 'iot_device'
-            ? `Physical IoT Hardware Tracker <b>(#${data.iot_device_id})</b>`
-            : `Mobile Device (Driver Smartphone GPS)`;
-
-        Swal.fire({
-            title: 'Confirm Franchise Activation',
-            html: `Are you sure you want to mark this franchise permit as <b>ACTIVATED &amp; COMPLETED</b>?<br/><br/>
-                   <div style="text-align: left; background: #F8FAFC; padding: 14px 16px; border-radius: 8px; font-size: 13px; line-height: 1.6; border: 1px solid #E2E8F0;">
-                     Tricycle Owner: <b>${selectedApp.operator_name}</b><br/>
-                     Tricycle Unit: <b>${selectedApp.make_model} (${selectedApp.plate_number})</b><br/>
-                     Sticker Number: <b>#${selectedApp.coding_number} (${selectedApp.color_scheme} Scheme)</b><br/>
-                     Tracking Mode: ${methodDesc}
-                   </div>`,
-            icon: 'question',
-            showCancelButton: true,
-            confirmButtonColor: '#059669',
-            cancelButtonColor: '#8A96BC',
-            confirmButtonText: 'Yes, Activate Permit',
-            cancelButtonText: 'Cancel',
-        }).then((result) => {
-            if (result.isConfirmed) {
-                submitActivation();
-            }
-        });
-    };
-
-    const submitActivation = () => {
-        post(`/tmo/final-confirmation/${selectedApp.id}`, {
-            preserveScroll: true,
-            onSuccess: () => {
-                setModalOpen(false);
-                Swal.fire({
-                    title: 'Franchise Activated!',
-                    text: `Permit for ${selectedApp.operator_name} is now active in the municipal registry.`,
-                    icon: 'success',
-                    confirmButtonColor: '#059669',
-                    timer: 2500,
-                    showConfirmButton: false,
-                });
-            },
-            onError: (errors) => {
-                // The backend refuses to silently move a tracker that's already paired to a
-                // different tricycle — surface that as an explicit choice instead of a generic
-                // validation failure.
-                if (errors.iot_device_id && errors.iot_device_id.includes('already paired')) {
-                    Swal.fire({
-                        title: 'Tracker Already Paired Elsewhere',
-                        html: errors.iot_device_id,
-                        icon: 'warning',
-                        showCancelButton: true,
-                        confirmButtonColor: '#D97706',
-                        cancelButtonColor: '#8A96BC',
-                        confirmButtonText: 'Reassign to This Tricycle',
-                        cancelButtonText: 'Cancel',
-                    }).then((confirmResult) => {
-                        if (confirmResult.isConfirmed) {
-                            // useForm's post() always submits its own (async) data state, which
-                            // wouldn't yet reflect a setData() called this tick — router.post()
-                            // with an explicit payload submits the override immediately instead.
-                            router.post(`/tmo/final-confirmation/${selectedApp.id}`, {
-                                ...data,
-                                reassign_confirmed: true,
-                            }, {
-                                preserveScroll: true,
-                                onSuccess: () => {
-                                    setModalOpen(false);
-                                    Swal.fire({
-                                        title: 'Franchise Activated!',
-                                        text: `Permit for ${selectedApp.operator_name} is now active in the municipal registry.`,
-                                        icon: 'success',
-                                        confirmButtonColor: '#059669',
-                                        timer: 2500,
-                                        showConfirmButton: false,
-                                    });
-                                },
-                            });
-                        }
-                    });
-                }
-            },
-        });
-    };
-
-    const isAlreadyCompleted = selectedApp?.raw_status === 'completed';
-    const allChecksDone = data.signed_ticket_verified && data.bplo_approval_confirmed && data.sticker_possession_confirmed;
 
     const queueTotal = applications.length;
     const pct = (n) => queueTotal > 0 ? Math.round((n / queueTotal) * 100) : 0;
@@ -511,7 +326,6 @@ export default function FinalConfirmationQueue({
                                         <DesktopConfirmationRow
                                             key={app.id}
                                             app={app}
-                                            onConfirm={() => handleShowDetails(app)}
                                         />
                                     ))}
                                 </tbody>
@@ -589,7 +403,6 @@ export default function FinalConfirmationQueue({
                             <MobileConfirmationCard
                                 key={app.id}
                                 app={app}
-                                onConfirm={() => handleShowDetails(app)}
                             />
                         ))}
 
@@ -623,242 +436,6 @@ export default function FinalConfirmationQueue({
                     </div>
                 </>
             )}
-
-            {/* ══════════════ SHOW DETAILS & CONFIGURATION MODAL ══════════════ */}
-            {selectedApp && (
-                <Modal
-                    show={modalOpen}
-                    onClose={handleCloseModal}
-                    maxWidth="4xl"
-                    title="Final Confirmation & GPS Tracking Setup"
-                    description={
-                        <span className="mt-1 flex items-center gap-2">
-                            <span className="rounded bg-slate-100 px-2 py-0.5 font-mono text-xs font-extrabold text-slate-800">{selectedApp.reference}</span>
-                            {isAlreadyCompleted ? (
-                                <StatusBadge variant="success">Active &amp; Completed</StatusBadge>
-                            ) : (
-                                <StatusBadge variant="warning">Awaiting Final Verification</StatusBadge>
-                            )}
-                        </span>
-                    }
-                    footer={
-                        <div className="flex w-full items-center justify-between">
-                            <Button variant="secondary" onClick={handleCloseModal}>Close</Button>
-                            {isAlreadyCompleted ? (
-                                <div className="flex items-center gap-1.5 text-xs font-extrabold uppercase tracking-wide text-emerald-600">
-                                    <CheckCircle2 size={16} />
-                                    Franchise Permit Activated &amp; Active
-                                </div>
-                            ) : (
-                                <Button
-                                    variant="success"
-                                    icon={processing ? undefined : ShieldCheck}
-                                    loading={processing}
-                                    onClick={handleConfirmActivation}
-                                >
-                                    Activate Franchise Permit &amp; Complete
-                                </Button>
-                            )}
-                        </div>
-                    }
-                >
-                    <div className="flex flex-col gap-6">
-
-                        {/* ── STEP 1: REVIEW APPLICATION & INSPECTION ── */}
-                        <StepBox num={1} title="Application & Inspection Details">
-                            <div className="mb-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
-                                <InfoPanel title="Applicant Information">
-                                    <InfoRow label="Tricycle Owner:" value={selectedApp.owner?.full_name || selectedApp.operator_name} strong />
-                                    <InfoRow label="Contact Number:" value={selectedApp.contact_number} />
-                                    <InfoRow label="Barangay:" value={selectedApp.barangay || 'Nasugbu'} />
-                                    <InfoRow
-                                        label="Tricycle Driver:"
-                                        value={
-                                            selectedApp.ownerIsDriver
-                                                ? 'Same as Tricycle Owner'
-                                                : (selectedApp.tricycleDriver?.full_name || 'Not provided')
-                                        }
-                                    />
-                                </InfoPanel>
-                                <InfoPanel title="Tricycle Unit Specifications">
-                                    <InfoRow label="Plate Number:" value={selectedApp.plate_number} mono strong />
-                                    <InfoRow label="Make & Model:" value={selectedApp.make_model} />
-                                    <InfoRow label="Engine Serial:" value={selectedApp.engine_number} mono />
-                                    <InfoRow label="Chassis Serial:" value={selectedApp.chassis_number} mono />
-                                </InfoPanel>
-                            </div>
-
-                            <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-3">
-                                <ApprovalItem title="Document Review" icon={CheckCircle2} value="Approved" sub="Documents verified" />
-                                <ApprovalItem title="Physical Inspection" icon={CheckCircle2} value="Roadworthy" sub={selectedApp.inspection_date || 'Inspection cleared'} />
-                                <ApprovalItem title="Sticker Number" icon={Tag} value={`#${selectedApp.coding_number}`} sub={`${selectedApp.color_scheme} Scheme`} />
-                            </div>
-                        </StepBox>
-
-                        {/* ── STEP 2: CONFIRM PHYSICAL CLEARANCES ── */}
-                        <StepBox num={2} title="Verify Clearances & Payment">
-                            <div className="mb-3 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-                                <p className="text-xs text-slate-500">
-                                    Cross-check the driver's payment ticket and assigned Sticker Number before activating the franchise.
-                                </p>
-                                {!isAlreadyCompleted && (
-                                    <button
-                                        type="button"
-                                        onClick={handleToggleAllChecks}
-                                        className="inline-flex shrink-0 items-center gap-1 rounded-md bg-emerald-100 px-2.5 py-1 text-[11px] font-extrabold text-emerald-800 transition hover:bg-emerald-200"
-                                    >
-                                        <Check size={12} strokeWidth={3} />
-                                        {allChecksDone ? 'Clear Checks' : 'Check All Clearances'}
-                                    </button>
-                                )}
-                            </div>
-
-                            <CheckRow
-                                checked={data.signed_ticket_verified}
-                                disabled={isAlreadyCompleted}
-                                onClick={() => setData('signed_ticket_verified', !data.signed_ticket_verified)}
-                            >
-                                <strong>Municipal Payment Ticket:</strong> Driver presented the stamped Payment Ticket from the Municipal Cashier (Window 2 OTC).
-                            </CheckRow>
-
-                            <CheckRow
-                                checked={data.bplo_approval_confirmed}
-                                disabled={isAlreadyCompleted}
-                                onClick={() => setData('bplo_approval_confirmed', !data.bplo_approval_confirmed)}
-                            >
-                                <strong>BPLO Release:</strong> Confirmed BPLO signed off and released the Franchise Number for this unit.
-                            </CheckRow>
-
-                            <CheckRow
-                                checked={data.sticker_possession_confirmed}
-                                disabled={isAlreadyCompleted}
-                                last
-                                onClick={() => setData('sticker_possession_confirmed', !data.sticker_possession_confirmed)}
-                            >
-                                <strong>Sticker Number:</strong> Confirmed driver has Sticker Number <strong>#{selectedApp.coding_number}</strong> ({selectedApp.color_scheme} Scheme).
-                            </CheckRow>
-                        </StepBox>
-
-                        {/* ── STEP 3: CONFIGURE GPS TRACKING (DEVICE VS PHONE) ── */}
-                        <StepBox num={3} title="GPS Setup & Tracking Method">
-                            <p className="mb-3 text-xs text-slate-500">
-                                Choose how this tricycle will be tracked: using a dedicated <strong>GPS Tracker Device</strong> installed on the tricycle, or using the <strong>Driver's Smartphone</strong> with the Trivora Driver App.
-                            </p>
-
-                            <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
-                                <GpsCard
-                                    icon={Cpu}
-                                    name="GPS Tracker Device"
-                                    badge="Installed on Tricycle"
-                                    badgeTone="bg-amber-100 text-amber-800"
-                                    description="A dedicated GPS tracker wired directly to the tricycle's 12V battery. Automatically updates location without needing a phone."
-                                    selected={data.tracking_method === 'iot_device'}
-                                    disabled={isAlreadyCompleted}
-                                    onClick={() => setData('tracking_method', 'iot_device')}
-                                />
-                                <GpsCard
-                                    icon={Smartphone}
-                                    name="Driver Smartphone"
-                                    badge="Driver Phone App"
-                                    badgeTone="bg-indigo-100 text-indigo-800"
-                                    description="The driver uses their own smartphone and the Trivora Driver App to share their location while driving."
-                                    selected={data.tracking_method === 'mobile_gps'}
-                                    disabled={isAlreadyCompleted}
-                                    onClick={() => setData('tracking_method', 'mobile_gps')}
-                                />
-                            </div>
-
-                            {/* ── OPTION A: GPS TRACKER DEVICE ── */}
-                            {data.tracking_method === 'iot_device' && (
-                                <div className="mt-4 rounded-xl border border-dashed border-amber-300 bg-amber-50/50 p-4">
-                                    <div className="mb-2 flex items-center justify-between">
-                                        <label className="flex items-center gap-1.5 text-xs font-extrabold uppercase tracking-wide text-slate-800">
-                                            <Cpu size={15} className="text-amber-600" />
-                                            Tracker ID / Device ID:
-                                        </label>
-                                        <span className="inline-flex items-center gap-1 rounded bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-800">
-                                            Required
-                                        </span>
-                                    </div>
-
-                                    <Input
-                                        type="text"
-                                        value={data.iot_device_id}
-                                        onChange={(e) => setData('iot_device_id', e.target.value)}
-                                        placeholder="e.g. 1011 or SinoTrack Tracker ID"
-                                        disabled={isAlreadyCompleted}
-                                        className="mt-1 font-mono text-sm font-bold text-slate-900"
-                                    />
-
-                                    {!data.iot_device_id && !isAlreadyCompleted && (
-                                        <p className="mt-2 text-[11px] text-slate-500">
-                                            No tracker ID configured yet. Enter the actual device ID configured for this tricycle.
-                                        </p>
-                                    )}
-
-                                    <div className="mt-3 rounded-md bg-amber-100/60 px-3 py-2 text-[10.5px] leading-relaxed text-amber-900">
-                                        <strong>Wiring:</strong> Connect Red wire to battery (+), Black to ground (-), and Yellow to ignition key.
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* ── OPTION B: DRIVER SMARTPHONE APP ── */}
-                            {data.tracking_method === 'mobile_gps' && (
-                                <div className="mt-4 rounded-xl border border-dashed border-indigo-200 bg-indigo-50/60 p-4">
-                                    <div className="flex items-start gap-3">
-                                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-indigo-100 text-indigo-700">
-                                            <Smartphone size={18} strokeWidth={2.2} />
-                                        </div>
-                                        <div className="flex-1 text-xs">
-                                            <div className="flex items-center justify-between">
-                                                <span className="font-extrabold text-slate-900 text-[13px]">
-                                                    Driver Smartphone App
-                                                </span>
-                                                <span className="rounded bg-indigo-100 px-2 py-0.5 text-[10px] font-bold text-indigo-800">
-                                                    Uses Driver Phone
-                                                </span>
-                                            </div>
-                                            <p className="mt-1 text-slate-600 leading-relaxed">
-                                                The driver shares their location through the Trivora Driver App on their phone.
-                                            </p>
-
-                                            <div className="mt-3 rounded-lg border border-indigo-200/80 bg-white p-3.5 shadow-2xs">
-                                                <div className="flex items-center gap-1.5 font-bold text-slate-800 text-xs">
-                                                    <span className="h-2 w-2 rounded-full bg-amber-500" />
-                                                    App Account Activation:
-                                                </div>
-                                                <p className="mt-1 text-[11.5px] leading-relaxed text-slate-600">
-                                                    The driver <strong>cannot log in</strong> to the Trivora Driver App until this application is approved and activated here by TMO.
-                                                </p>
-                                                <p className="mt-1.5 text-[11.5px] leading-relaxed text-slate-600">
-                                                    Once activated, driver <strong>{selectedApp.operator_name}</strong> can log in using their registered contact number <strong className="font-mono text-slate-800">{selectedApp.contact_number}</strong> and tap <strong>"Go Online"</strong> to start driving.
-                                                </p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* Officer Notes */}
-                            {!isAlreadyCompleted && (
-                                <div className="mt-4">
-                                    <label className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-slate-500">
-                                        Officer Notes / Remarks (Optional):
-                                    </label>
-                                    <textarea
-                                        rows={2}
-                                        className="w-full rounded-lg border border-slate-200 p-2.5 text-xs text-slate-800 outline-none focus:border-tmo-primary focus:ring-1 focus:ring-tmo-primary"
-                                        placeholder="Any additional notes or remarks..."
-                                        value={data.officer_notes}
-                                        onChange={(e) => setData('officer_notes', e.target.value)}
-                                    />
-                                </div>
-                            )}
-                        </StepBox>
-
-                    </div>
-                </Modal>
-            )}
         </TrivoraLayout>
     );
 }
@@ -867,7 +444,7 @@ export default function FinalConfirmationQueue({
    SUBCOMPONENTS: Table Row & Mobile Card
 ───────────────────────────────────────────────────────────────────────── */
 
-function DesktopConfirmationRow({ app, onConfirm }) {
+function DesktopConfirmationRow({ app }) {
     const isAwaiting = app.raw_status === 'awaiting_tmo_confirmation';
     const initials = getInitials(app.operator_name);
 
@@ -941,20 +518,19 @@ function DesktopConfirmationRow({ app, onConfirm }) {
 
             {/* Column 6: Action */}
             <td className="py-3.5 pl-3 pr-5 text-right align-middle">
-                <button
-                    type="button"
-                    onClick={onConfirm}
+                <Link
+                    href={route('tmo.final-confirmation.show', app.id)}
                     className="inline-flex items-center gap-1 rounded-full bg-[#1D2542] hover:bg-[#283256] text-white px-3.5 py-1.5 text-xs font-semibold shadow-2xs transition-all active:scale-[0.98]"
                 >
                     <span>{isAwaiting ? 'Confirm' : 'View'}</span>
                     <ChevronRight size={13} strokeWidth={2.5} className="text-slate-300" />
-                </button>
+                </Link>
             </td>
         </tr>
     );
 }
 
-function MobileConfirmationCard({ app, onConfirm }) {
+function MobileConfirmationCard({ app }) {
     const isAwaiting = app.raw_status === 'awaiting_tmo_confirmation';
     const initials = getInitials(app.operator_name);
 
@@ -1006,102 +582,14 @@ function MobileConfirmationCard({ app, onConfirm }) {
 
             {/* Action Button */}
             <div className="mt-2.5 pt-2 border-t border-slate-100">
-                <button
-                    type="button"
-                    onClick={onConfirm}
+                <Link
+                    href={route('tmo.final-confirmation.show', app.id)}
                     className="flex w-full items-center justify-center gap-1.5 rounded-full bg-[#1D2542] hover:bg-[#283256] text-white py-2 text-xs font-bold shadow-2xs transition-all active:scale-[0.98]"
                 >
                     <span>{isAwaiting ? 'Confirm' : 'View'}</span>
                     <ChevronRight size={13} strokeWidth={2.5} className="text-slate-300" />
-                </button>
+                </Link>
             </div>
-        </div>
-    );
-}
-
-function StepBox({ num, title, children }) {
-    return (
-        <div className={`rounded-2xl border border-slate-200/70 bg-white p-5 ${CARD_SHADOW}`}>
-            <div className="mb-3.5 flex items-center gap-2.5">
-                <div className="flex h-[26px] w-[26px] shrink-0 items-center justify-center rounded-full bg-[#1D2542] text-[11px] font-extrabold text-white">
-                    {num}
-                </div>
-                <div className="text-sm font-extrabold text-slate-900">{title}</div>
-            </div>
-            {children}
-        </div>
-    );
-}
-
-function InfoPanel({ title, children }) {
-    return (
-        <div className="rounded-xl bg-slate-50 p-3.5 text-[12.5px]">
-            <div className="mb-1.5 text-[10px] font-extrabold uppercase tracking-wide text-slate-400">{title}</div>
-            {children}
-        </div>
-    );
-}
-
-function InfoRow({ label, value, mono, strong, accent }) {
-    return (
-        <div className="flex justify-between py-0.5">
-            <span className="text-slate-500">{label}</span>
-            <span className={`${mono ? 'font-mono' : ''} ${strong || accent ? 'font-bold' : 'font-semibold'} ${accent ? 'text-indigo-600' : 'text-slate-800'}`}>
-                {value}
-            </span>
-        </div>
-    );
-}
-
-function ApprovalItem({ title, icon: Icon, value, sub }) {
-    return (
-        <div className="rounded-xl border border-emerald-200 bg-emerald-50/80 p-3">
-            <div className="text-[9.5px] font-extrabold uppercase tracking-wide text-emerald-800">{title}</div>
-            <div className="mt-0.5 flex items-center gap-1 text-xs font-bold text-slate-900">
-                <Icon size={12} className="text-emerald-700" /> {value}
-            </div>
-            <div className="mt-0.5 text-[10.5px] text-slate-500">{sub}</div>
-        </div>
-    );
-}
-
-function CheckRow({ checked, disabled, last, onClick, children }) {
-    return (
-        <div
-            onClick={disabled ? undefined : onClick}
-            className={`flex items-start gap-3 rounded-lg border-[1.5px] p-3.5 transition-colors ${last ? '' : 'mb-2.5'} ${
-                disabled ? 'cursor-default opacity-70' : 'cursor-pointer'
-            } ${checked ? 'border-emerald-600 bg-emerald-50/70' : 'border-slate-200 bg-slate-50/70 hover:border-slate-300 hover:bg-slate-100/70'}`}
-        >
-            <div className={`mt-0.5 shrink-0 ${checked ? 'text-emerald-600' : 'text-slate-400'}`}>
-                {checked ? <CheckSquare size={18} strokeWidth={2.5} /> : <Square size={18} strokeWidth={2} />}
-            </div>
-            <div className="text-[12.5px] leading-relaxed text-slate-800">{children}</div>
-        </div>
-    );
-}
-
-function GpsCard({ icon: Icon, name, badge, badgeTone, description, selected, disabled, onClick }) {
-    return (
-        <div
-            onClick={disabled ? undefined : onClick}
-            className={`rounded-xl border-2 p-4 transition-all ${disabled ? 'cursor-default opacity-70' : 'cursor-pointer'} ${
-                selected ? 'border-[#1D2542] bg-slate-50 shadow-sm' : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50/50'
-            }`}
-        >
-            <div className="mb-2.5 flex items-center justify-between">
-                <div className={`flex h-[38px] w-[38px] items-center justify-center rounded-lg transition-colors ${selected ? 'bg-[#1D2542] text-white' : 'bg-slate-100 text-slate-600'}`}>
-                    <Icon size={20} strokeWidth={2.2} />
-                </div>
-                {selected && <CheckCircle2 size={18} className="text-[#1D2542]" />}
-            </div>
-            <div className="mb-1 text-[13.5px] font-extrabold text-slate-900">{name}</div>
-            {badge && (
-                <span className={`mb-2 inline-block rounded px-1.5 py-0.5 text-[9.5px] font-extrabold uppercase tracking-wide ${badgeTone}`}>
-                    {badge}
-                </span>
-            )}
-            <div className="text-[11.5px] leading-relaxed text-slate-500">{description}</div>
         </div>
     );
 }

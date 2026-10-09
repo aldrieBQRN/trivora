@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { Head, Link, router } from '@inertiajs/react';
 import Swal from 'sweetalert2';
 import useBackgroundRefresh from '@/hooks/useBackgroundRefresh';
@@ -8,7 +8,7 @@ import {
     CheckSquare, FileText, Award, Cpu,
     ChevronLeft, Phone, Hash, Calendar, Radio, Check, ExternalLink,
     Map, ShieldAlert, Filter, Sparkles,
-    ShieldOff, Ban, ShieldCheck,
+    ShieldOff, Ban, ShieldCheck, XCircle,
 } from 'lucide-react';
 import { PHYSICAL_INSPECTION_ITEMS } from '@/data/physicalInspectionItems';
 
@@ -781,35 +781,14 @@ export default function TricycleDetails({
     );
 }
 
-const toast = (icon, title) => Swal.fire({ toast: true, position: 'top-end', icon, title, showConfirmButton: false, timer: 2600, timerProgressBar: true });
-
 /**
- * Passenger capacity configuration for this unit: explicitly set by TMO — never defaulted.
- * QR code display, download, and management are located exclusively on the driver's mobile app.
+ * Passenger capacity for this unit — READ-ONLY in TMO. Configuration/editing was intentionally
+ * moved to the authenticated driver's own Driver App (Profile → Assigned QR Code). QR code
+ * display, download, and management likewise live exclusively on the driver mobile app.
  */
 function PassengerCapacityCard({ tricycle }) {
-    const currentCapacity = tricycle.qr_ride?.passenger_capacity ?? tricycle.passenger_capacity ?? '';
-    const [capacity, setCapacity] = useState(currentCapacity);
-    const [capacityError, setCapacityError] = useState(null);
-    const [saving, setSaving] = useState(false);
-
-    useEffect(() => {
-        setCapacity(tricycle.qr_ride?.passenger_capacity ?? tricycle.passenger_capacity ?? '');
-    }, [tricycle.qr_ride?.passenger_capacity, tricycle.passenger_capacity]);
-
-    const dirty = String(capacity) !== String(currentCapacity);
-
-    const saveCapacity = (e) => {
-        e.preventDefault();
-        setSaving(true);
-        setCapacityError(null);
-        router.post(route('tmo.qr-ride.capacity', tricycle.id), { passenger_capacity: capacity === '' ? null : Number(capacity) }, {
-            preserveScroll: true,
-            onSuccess: () => toast('success', capacity === '' ? 'Passenger capacity cleared' : `Passenger capacity set to ${capacity}`),
-            onError: (errors) => setCapacityError(errors.passenger_capacity || 'Could not save the capacity.'),
-            onFinish: () => setSaving(false),
-        });
-    };
+    const currentCapacity = tricycle.qr_ride?.passenger_capacity ?? tricycle.passenger_capacity ?? null;
+    const configured = currentCapacity !== null && currentCapacity !== '';
 
     return (
         <div className={`rounded-2xl border border-slate-200/70 bg-white p-4 sm:p-5 ${CARD_SHADOW}`}>
@@ -820,10 +799,10 @@ function PassengerCapacityCard({ tricycle }) {
                     </div>
                     <div>
                         <h3 className="text-sm font-bold text-slate-900">Passenger Capacity</h3>
-                        <p className="text-[11px] text-slate-500">TMO municipal capacity setting</p>
+                        <p className="text-[11px] text-slate-500">Configured by the driver</p>
                     </div>
                 </div>
-                {currentCapacity !== '' && currentCapacity !== null ? (
+                {configured ? (
                     <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold border bg-emerald-50 text-emerald-700 border-emerald-200">
                         {currentCapacity} {Number(currentCapacity) === 1 ? 'Seat' : 'Seats'}
                     </span>
@@ -834,50 +813,19 @@ function PassengerCapacityCard({ tricycle }) {
                 )}
             </div>
 
-            <form onSubmit={saveCapacity} className="mt-4">
-                <label htmlFor="tmo-passenger-capacity" className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">
+            <div className="mt-4">
+                <span className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">
                     Configured Passenger Capacity
-                </label>
-                <div className="mt-1.5 flex items-center gap-2">
-                    <input
-                        id="tmo-passenger-capacity"
-                        type="number"
-                        inputMode="numeric"
-                        min={1}
-                        max={20}
-                        step={1}
-                        value={capacity}
-                        placeholder="Not set"
-                        onChange={(e) => { setCapacity(e.target.value); setCapacityError(null); }}
-                        className={`h-9 w-28 rounded-lg border px-3 text-sm font-semibold text-slate-900 placeholder:font-normal placeholder:text-slate-400 focus:border-[#1D2542] focus:ring-1 focus:ring-[#1D2542] ${capacityError ? 'border-red-300' : 'border-slate-300'}`}
-                    />
-                    <button
-                        type="submit"
-                        disabled={!dirty || saving}
-                        className="h-9 rounded-lg bg-[#1D2542] px-4 text-xs font-bold text-white transition-opacity hover:opacity-90 disabled:opacity-40"
-                    >
-                        {saving ? 'Saving…' : 'Save Capacity'}
-                    </button>
-                    {dirty && (
-                        <button
-                            type="button"
-                            onClick={() => { setCapacity(currentCapacity); setCapacityError(null); }}
-                            className="h-9 rounded-lg border border-slate-200 px-3 text-xs font-semibold text-slate-600 hover:bg-slate-50"
-                        >
-                            Cancel
-                        </button>
-                    )}
-                </div>
-                {capacityError ? (
-                    <p className="mt-1.5 text-[11px] font-medium text-red-600">{capacityError}</p>
-                ) : (
-                    <p className="mt-2 text-[11px] leading-relaxed text-slate-500">
-                        {currentCapacity === null || currentCapacity === ''
-                            ? 'Passenger capacity is not yet set. Tricycle cannot accept walk-in passengers until configured.'
-                            : 'Seats are counted per passenger in each party. QR code display and downloads are managed directly on the driver mobile app.'}
-                    </p>
-                )}
-            </form>
+                </span>
+                <p className="mt-1.5 text-sm font-semibold text-slate-900">
+                    {configured ? `${currentCapacity} ${Number(currentCapacity) === 1 ? 'passenger' : 'passengers'}` : 'Not set'}
+                </p>
+                <p className="mt-2 text-[11px] leading-relaxed text-slate-500">
+                    {configured
+                        ? 'Passenger capacity is configured by the driver in the Trivora Driver App (Profile → Assigned QR Code). This registry view is read-only.'
+                        : 'Passenger capacity is not yet set. The driver configures it in the Trivora Driver App (Profile → Assigned QR Code); TMO cannot change it here.'}
+                </p>
+            </div>
         </div>
     );
 }

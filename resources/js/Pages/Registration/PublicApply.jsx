@@ -9,6 +9,7 @@ import { VEHICLE_DETAIL_FIELDS, getApplicableDocuments } from '@/data/registrati
 import { NASUGBU_BARANGAYS } from '@/data/nasugbuBarangays';
 import {
     REGISTRATION_CSS as CSS, Field, FileUpload, todayIso, validateVehicleInfo, validateDriverInfo,
+    handleMobileKeyDown, sanitizeMobileNumber, handleMobilePaste, PasswordStrengthMeter, VehicleSpecsFields,
 } from '@/Components/Registration/RegistrationUI';
 
 /* ─────────────────────────────────────────────────────────────────────────
@@ -21,22 +22,47 @@ import {
 // Mirrors RegistrationController::store()'s validation rules exactly, so what the user sees
 // per-step is a preview of the same rules the backend enforces — not a separate, potentially
 // looser set of client-only requirements. The backend remains the authoritative/final check.
-const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
+const EMAIL_PATTERN = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
 
 function validateApplicantInfo(data) {
     const errors = {};
     // Tricycle Owner (primary applicant)
-    if (!data.first_name.trim()) errors.first_name = 'First name is required.';
-    if (!data.last_name.trim()) errors.last_name = 'Last name is required.';
+    if (!String(data.first_name || '').trim()) errors.first_name = 'First name is required.';
+    if (!String(data.last_name || '').trim()) errors.last_name = 'Last name is required.';
     if (!data.birthday) errors.birthday = 'Birthday is required.';
     else if (data.birthday > todayIso()) errors.birthday = 'Birthday cannot be in the future.';
-    if (!data.contact.trim()) errors.contact = 'Mobile number is required.';
+
+    // Mobile Number
+    const contact = String(data.contact || '').trim();
+    if (!contact) {
+        errors.contact = 'Mobile number is required.';
+    } else if (!/^09\d{9}$/.test(contact)) {
+        errors.contact = 'Mobile number must be a valid 11-digit Philippine mobile number starting with 09 (e.g. 09171234567).';
+    }
+
     if (!data.barangay) errors.barangay = 'Please select your barangay.';
-    if (!data.email.trim()) errors.email = 'Email address is required.';
-    else if (!EMAIL_PATTERN.test(data.email.trim())) errors.email = 'Please enter a valid email address.';
-    if (!data.password) errors.password = 'Password is required.';
-    else if (data.password.length < 8) errors.password = 'Password must be at least 8 characters.';
+
+    // Email Address
+    const email = String(data.email || '').trim();
+    if (!email) {
+        errors.email = 'Email address is required.';
+    } else if (!EMAIL_PATTERN.test(email)) {
+        errors.email = 'Please enter a valid email address (e.g. name@example.com).';
+    }
+
+    // Account Password
+    if (!data.password) {
+        errors.password = 'Password is required.';
+    } else if (data.password.length < 8) {
+        errors.password = 'Password must be at least 8 characters.';
+    }
+
+    // Confirm Password
+    if (!data.password_confirmation) {
+        errors.password_confirmation = 'Please confirm your password.';
+    } else if (data.password !== data.password_confirmation) {
+        errors.password_confirmation = 'Passwords do not match.';
+    }
 
     // Separate Tricycle Driver — only required when the owner is NOT the driver (shared with the
     // Driver Portal MTOP wizard).
@@ -124,11 +150,14 @@ export default function PublicApply() {
         driver_barangay: initialFormData.driver_barangay || '',
         email: initialFormData.email || '',
         password: initialFormData.password || '',
+        password_confirmation: initialFormData.password_confirmation || '',
         plate_number: initialFormData.plate_number || '',
         make_model: initialFormData.make_model || '',
-        year_model: initialFormData.year_model || '',
+        year_model: initialFormData.year_model ? String(initialFormData.year_model) : '',
         body_color: initialFormData.body_color || '',
+        body_color_other: initialFormData.body_color_other || '',
         body_type: initialFormData.body_type || '',
+        body_type_other: initialFormData.body_type_other || '',
         engine_number: initialFormData.engine_number || '',
         chassis_number: initialFormData.chassis_number || '',
         or_number: initialFormData.or_number || '',
@@ -499,10 +528,20 @@ export default function PublicApply() {
                                 <Field label="Mobile Number" error={fieldError('contact', applicantInfoErrors)}>
                                     <div className="pa-input-wrap">
                                         <span className="pa-input-wrap-icon"><Phone size={15} strokeWidth={2} /></span>
-                                        <input className={`pa-input${fieldError('contact', applicantInfoErrors) ? ' pa-input-error' : ''}`}
-                                            placeholder="e.g. 0917 123 4567" autoComplete="off"
-                                            value={data.contact || ''} onChange={e => setData('contact', e.target.value)}
-                                            onBlur={() => markTouched('contact')} />
+                                        <input
+                                            className={`pa-input${fieldError('contact', applicantInfoErrors) ? ' pa-input-error' : ''}`}
+                                            type="tel"
+                                            inputMode="numeric"
+                                            pattern="[0-9]*"
+                                            maxLength={11}
+                                            placeholder="09171234567"
+                                            autoComplete="tel"
+                                            value={data.contact || ''}
+                                            onChange={e => setData('contact', sanitizeMobileNumber(e.target.value))}
+                                            onKeyDown={handleMobileKeyDown}
+                                            onPaste={e => handleMobilePaste(e, clean => setData('contact', clean))}
+                                            onBlur={() => markTouched('contact')}
+                                        />
                                     </div>
                                 </Field>
                                 <Field label="Barangay (Nasugbu)" error={fieldError('barangay', applicantInfoErrors)}>
@@ -521,18 +560,30 @@ export default function PublicApply() {
                                     <div className="pa-input-wrap">
                                         <span className="pa-input-wrap-icon"><Mail size={15} strokeWidth={2} /></span>
                                         <input className={`pa-input${fieldError('email', applicantInfoErrors) ? ' pa-input-error' : ''}`}
-                                            type="email" placeholder="e.g. juan@example.com" autoComplete="off"
+                                            type="email" placeholder="e.g. juan@example.com" autoComplete="email"
                                             value={data.email || ''} onChange={e => setData('email', e.target.value)}
                                             onBlur={() => markTouched('email')} />
                                     </div>
                                 </Field>
-                                <Field label="Account Password" error={fieldError('password', applicantInfoErrors)}>
+                                <div>
+                                    <Field label="Account Password" error={fieldError('password', applicantInfoErrors)}>
+                                        <div className="pa-input-wrap">
+                                            <span className="pa-input-wrap-icon"><Lock size={15} strokeWidth={2} /></span>
+                                            <input className={`pa-input${fieldError('password', applicantInfoErrors) ? ' pa-input-error' : ''}`}
+                                                type="password" placeholder="Min. 8 characters" autoComplete="new-password"
+                                                value={data.password || ''} onChange={e => setData('password', e.target.value)}
+                                                onBlur={() => markTouched('password')} />
+                                        </div>
+                                    </Field>
+                                    <PasswordStrengthMeter password={data.password} />
+                                </div>
+                                <Field label="Confirm Password" error={fieldError('password_confirmation', applicantInfoErrors)}>
                                     <div className="pa-input-wrap">
                                         <span className="pa-input-wrap-icon"><Lock size={15} strokeWidth={2} /></span>
-                                        <input className={`pa-input${fieldError('password', applicantInfoErrors) ? ' pa-input-error' : ''}`}
-                                            type="password" placeholder="Min. 8 characters" autoComplete="new-password"
-                                            value={data.password || ''} onChange={e => setData('password', e.target.value)}
-                                            onBlur={() => markTouched('password')} />
+                                        <input className={`pa-input${fieldError('password_confirmation', applicantInfoErrors) ? ' pa-input-error' : ''}`}
+                                            type="password" placeholder="Re-enter your password" autoComplete="new-password"
+                                            value={data.password_confirmation || ''} onChange={e => setData('password_confirmation', e.target.value)}
+                                            onBlur={() => markTouched('password_confirmation')} />
                                     </div>
                                 </Field>
                             </div>
@@ -602,8 +653,16 @@ export default function PublicApply() {
                                             <div className="pa-input-wrap">
                                                 <span className="pa-input-wrap-icon"><Phone size={15} strokeWidth={2} /></span>
                                                 <input className={`pa-input${fieldError('driver_contact', applicantInfoErrors) ? ' pa-input-error' : ''}`}
-                                                    placeholder="e.g. 0917 123 4567" autoComplete="off"
-                                                    value={data.driver_contact || ''} onChange={e => setData('driver_contact', e.target.value)}
+                                                    type="tel"
+                                                    inputMode="numeric"
+                                                    pattern="[0-9]*"
+                                                    maxLength={11}
+                                                    placeholder="09171234567"
+                                                    autoComplete="tel"
+                                                    value={data.driver_contact || ''}
+                                                    onChange={e => setData('driver_contact', sanitizeMobileNumber(e.target.value))}
+                                                    onKeyDown={handleMobileKeyDown}
+                                                    onPaste={e => handleMobilePaste(e, clean => setData('driver_contact', clean))}
                                                     onBlur={() => markTouched('driver_contact')} />
                                             </div>
                                         </Field>
@@ -662,16 +721,18 @@ export default function PublicApply() {
                                 </div>
                             </div>
 
-                            <div className="pa-fields">
-                                {VEHICLE_DETAIL_FIELDS.map(f => (
-                                    <Field key={f.id} label={f.label} error={fieldError(f.id, vehicleInfoErrors)}>
-                                        <input className={`pa-input${fieldError(f.id, vehicleInfoErrors) ? ' pa-input-error' : ''}`}
-                                            placeholder={f.placeholder} autoComplete="off"
-                                            value={data[f.id] || ''} onChange={e => setData(f.id, e.target.value)}
-                                            onBlur={() => markTouched(f.id)} />
-                                    </Field>
-                                ))}
-                            </div>
+                            <VehicleSpecsFields
+                                data={data}
+                                setData={(f, v) => {
+                                    if (typeof f === 'object' && f !== null) {
+                                        setData(current => ({ ...current, ...f }));
+                                    } else {
+                                        setData(f, v);
+                                    }
+                                }}
+                                fieldError={f => fieldError(f, vehicleInfoErrors)}
+                                markTouched={markTouched}
+                            />
 
                             <div className="pa-actions">
                                 <button className="pa-btn-ghost" onClick={back}>
@@ -682,9 +743,18 @@ export default function PublicApply() {
                                     onClick={() => {
                                         if (!isStep3Valid) {
                                             setTouched(t => ({
-                                                ...t, plate_number: true, make_model: true, year_model: true,
-                                                body_color: true, body_type: true, engine_number: true, chassis_number: true,
-                                                or_number: true, cr_number: true,
+                                                ...t,
+                                                plate_number: true,
+                                                make_model: true,
+                                                year_model: true,
+                                                body_color: true,
+                                                body_color_other: true,
+                                                body_type: true,
+                                                body_type_other: true,
+                                                engine_number: true,
+                                                chassis_number: true,
+                                                or_number: true,
+                                                cr_number: true,
                                             }));
                                             return;
                                         }

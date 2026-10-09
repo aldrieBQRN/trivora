@@ -9,13 +9,16 @@ use App\Models\TricycleLocation;
 use App\Models\User;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Route;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\Feature\Concerns\BuildsQrRides;
 use Tests\TestCase;
 
 /**
- * QR Ride Phase 3: TMO passenger-capacity configuration, QR management (URL, regeneration,
+ * QR Ride Phase 3: TMO's READ-ONLY passenger capacity view, QR management (URL, regeneration,
  * print sheet), the public /ride/q/{token} landing page, and the server-decided pick-up point.
+ * Passenger-capacity *configuration* was moved to the authenticated driver's Driver App — see
+ * DriverQrCapacityUpdateTest.
  */
 class QrRideTmoConfigurationTest extends TestCase
 {
@@ -63,69 +66,34 @@ class QrRideTmoConfigurationTest extends TestCase
         return $status;
     }
 
-    // ------------------------------------------------------------------ CAPACITY
+    // ------------------------------------------------------------------ CAPACITY (TMO READ-ONLY)
 
     #[Test]
-    public function tmo_can_set_the_passenger_capacity_and_the_details_page_returns_it(): void
+    public function tmo_details_page_returns_the_driver_configured_capacity_read_only(): void
     {
         [$tricycle] = $this->makeUnit(capacity: null);
         $tmo = $this->tmo();
 
+        // TMO cannot configure capacity: the write route no longer exists.
+        $this->assertFalse(Route::has('tmo.qr-ride.capacity'), 'TMO capacity configuration route must be gone');
         $this->assertNull($this->qrRideProps($tmo, $tricycle)['passenger_capacity'], 'never defaulted');
 
-        $this->actingAs($tmo)->from(route('tricycle.details', $tricycle->id))
-            ->post(route('tmo.qr-ride.capacity', $tricycle), ['passenger_capacity' => 4])
-            ->assertRedirect(route('tricycle.details', $tricycle->id))
-            ->assertSessionHasNoErrors();
+        // A driver-set capacity is surfaced to TMO as read-only information.
+        $tricycle->update(['passenger_capacity' => 4]);
 
         $this->assertSame(4, $tricycle->fresh()->passenger_capacity);
         $props = $this->qrRideProps($tmo, $tricycle);
         $this->assertSame(4, $props['passenger_capacity']);
         $this->assertSame('ready', $props['status']);
-
-        $log = AuditLog::where('event', 'tricycle.passenger_capacity_updated')->where('auditable_id', $tricycle->id)->firstOrFail();
-        $this->assertSame(['passenger_capacity' => null], $log->old_values);
-        $this->assertSame(['passenger_capacity' => 4], $log->new_values);
-        $this->assertSame($tmo->id, $log->user_id);
     }
 
     #[Test]
-    public function invalid_capacities_are_rejected_and_nothing_changes(): void
-    {
-        [$tricycle] = $this->makeUnit(capacity: 3);
-        $tmo = $this->tmo();
-
-        foreach ([0, -1, 21, 'abc', 2.5] as $bad) {
-            $this->actingAs($tmo)->post(route('tmo.qr-ride.capacity', $tricycle), ['passenger_capacity' => $bad])
-                ->assertSessionHasErrors('passenger_capacity');
-        }
-        $this->actingAs($tmo)->post(route('tmo.qr-ride.capacity', $tricycle), [])->assertSessionHasErrors('passenger_capacity');
-
-        $this->assertSame(3, $tricycle->fresh()->passenger_capacity);
-        $this->assertSame(0, AuditLog::where('event', 'tricycle.passenger_capacity_updated')->where('auditable_id', $tricycle->id)->count());
-    }
-
-    #[Test]
-    public function capacity_can_be_cleared_back_to_not_configured(): void
-    {
-        [$tricycle] = $this->makeUnit(capacity: 4);
-        $tmo = $this->tmo();
-
-        $this->actingAs($tmo)->post(route('tmo.qr-ride.capacity', $tricycle), ['passenger_capacity' => null])->assertSessionHasNoErrors();
-
-        $this->assertNull($tricycle->fresh()->passenger_capacity);
-        $this->assertSame('capacity_required', $this->qrRideProps($tmo, $tricycle)['status']);
-        $this->quote($this->makePassengerUser(), $tricycle)->assertStatus(409)->assertJsonPath('code', 'capacity_not_configured');
-    }
-
-    #[Test]
-    public function only_tmo_can_configure_qr_ride(): void
+    public function only_tmo_can_manage_qr_ride(): void
     {
         [$tricycle, $driver] = $this->makeUnit(capacity: null);
 
         foreach ([$driver->user, $this->makePassengerUser(), $this->qrIssuer()] as $user) {
             $user->forceFill(['is_active' => true])->save(); // active account, wrong role -> 403
-            $this->actingAs($user)->post(route('tmo.qr-ride.capacity', $tricycle), ['passenger_capacity' => 4])->assertForbidden();
             $this->actingAs($user)->post(route('tmo.qr-ride.regenerate', $tricycle))->assertForbidden();
             $this->actingAs($user)->get(route('tmo.qr-ride.print', $tricycle))->assertForbidden();
         }

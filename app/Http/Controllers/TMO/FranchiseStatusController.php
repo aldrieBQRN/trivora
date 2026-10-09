@@ -5,6 +5,7 @@ namespace App\Http\Controllers\TMO;
 use App\Http\Controllers\Controller;
 use App\Models\FranchiseScheme;
 use App\Models\Tricycle;
+use App\Services\AuditService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -46,11 +47,37 @@ class FranchiseStatusController extends Controller
             return back()->with('error', 'This tricycle has no current franchise permit to manage.');
         }
 
+        $fromStatus = $franchiseScheme->status;
+
         try {
             $franchiseScheme->transitionStatus($toStatus, $reason, Auth::id());
         } catch (\InvalidArgumentException $e) {
             return back()->with('error', $e->getMessage());
         }
+
+        $canonicalAction = match ($toStatus) {
+            FranchiseScheme::STATUS_SUSPENDED => 'franchise.suspended',
+            FranchiseScheme::STATUS_REVOKED   => 'franchise.revoked',
+            FranchiseScheme::STATUS_ACTIVE    => 'franchise.reinstated',
+            default                           => 'franchise.status_changed',
+        };
+
+        $auditDesc = "Franchise #{$franchiseScheme->franchise_number} for unit {$tricycle->plate_number} has been {$pastTenseVerb}." .
+            ($reason ? " Reason: {$reason}" : "");
+
+        AuditService::log(
+            module: 'franchise',
+            action: $canonicalAction,
+            record: $franchiseScheme,
+            description: $auditDesc,
+            oldValues: ['status' => $fromStatus],
+            newValues: ['status' => $toStatus, 'status_reason' => $reason],
+            targetReference: $franchiseScheme->franchise_number ?: $tricycle->plate_number,
+            metadata: [
+                'plate_number' => $tricycle->plate_number,
+                'reason'       => $reason,
+            ]
+        );
 
         return back()->with('success', "Franchise #{$franchiseScheme->franchise_number} has been {$pastTenseVerb}.");
     }

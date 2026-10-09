@@ -34,7 +34,7 @@ class BookingDispatchService
             ->pluck('driver_id')
             ->all();
 
-        $drivers = Driver::where('is_online', true)
+        $drivers = Driver::effectivelyOnline()
             ->where('is_available', true)
             // A driver whose assigned franchise is suspended/revoked is already forced offline
             // the moment TMO changes the franchise's status (see

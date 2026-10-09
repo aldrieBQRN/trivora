@@ -13,41 +13,13 @@ use Inertia\Inertia;
 use Inertia\Response;
 
 /**
- * TMO QR Ride configuration for one tricycle, shown on the Tricycle Details page: passenger
- * capacity (tricycles.passenger_capacity — never defaulted, TMO sets it explicitly), QR token
- * regeneration, and the printable QR sheet. Readiness rules live in QrRideService::tmoSummary().
+ * TMO QR Ride management for one tricycle, shown on the Tricycle Details page: QR token
+ * regeneration and the printable QR sheet. Passenger capacity is NOT configured here — it is
+ * read-only in TMO and is configured by the authenticated driver in the Driver App (see
+ * Api\DriverQrCodeController::updateCapacity). Readiness rules live in QrRideService::tmoSummary().
  */
 class QrRideController extends Controller
 {
-    /**
-     * Set (or clear) the unit's passenger capacity — seats counted by party size, the same unit
-     * QR Ride joins consume. Cleared (null) takes the unit out of QR Ride until it is set again.
-     */
-    public function updateCapacity(Request $request, Tricycle $tricycle): RedirectResponse
-    {
-        $validated = $request->validate([
-            'passenger_capacity' => 'present|nullable|integer|min:1|max:20',
-        ], [
-            'passenger_capacity.integer' => 'Passenger capacity must be a whole number.',
-            'passenger_capacity.min' => 'Passenger capacity must be at least 1.',
-            'passenger_capacity.max' => 'Passenger capacity cannot be more than 20.',
-        ]);
-
-        $old = $tricycle->passenger_capacity;
-        $new = $validated['passenger_capacity'] === null ? null : (int) $validated['passenger_capacity'];
-
-        if ($old !== $new) {
-            DB::transaction(function () use ($request, $tricycle, $old, $new) {
-                $tricycle->update(['passenger_capacity' => $new]);
-                $this->audit($request, $tricycle, 'tricycle.passenger_capacity_updated', ['passenger_capacity' => $old], ['passenger_capacity' => $new]);
-            });
-        }
-
-        return back()->with('success', $new === null
-            ? 'Passenger capacity cleared. This unit will not accept QR Ride passengers until it is set.'
-            : "Passenger capacity set to {$new}.");
-    }
-
     /**
      * Issue a new QR token. The old QR (and every fare quote made with it) stops working
      * immediately; ride history, franchise data and driver assignment are untouched. The token
@@ -81,15 +53,15 @@ class QrRideController extends Controller
 
     private function audit(Request $request, Tricycle $tricycle, string $event, array $old, array $new): void
     {
-        AuditLog::create([
-            'user_id' => $request->user()->id,
-            'event' => $event,
-            'auditable_type' => Tricycle::class,
-            'auditable_id' => $tricycle->id,
-            'old_values' => $old,
-            'new_values' => $new,
-            'ip_address' => $request->ip(),
-            'user_agent' => $request->userAgent(),
-        ]);
+        \App\Services\AuditService::log(
+            module: 'qr_management',
+            action: $event,
+            record: $tricycle,
+            description: "Regenerated public QR ride token for tricycle {$tricycle->plate_number}.",
+            oldValues: $old,
+            newValues: $new,
+            targetReference: $tricycle->plate_number ?: ('TRV-' . str_pad($tricycle->id, 3, '0', STR_PAD_LEFT)),
+            metadata: ['plate_number' => $tricycle->plate_number]
+        );
     }
 }

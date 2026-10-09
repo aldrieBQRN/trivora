@@ -13,53 +13,40 @@ import {
 /**
  * Determine coding day and scheme details from the Sticker Number or registry coding_day.
  */
-function getCodingSchemeInfo(codingNumber, serverCodingDay) {
-    if (serverCodingDay && serverCodingDay !== 'None' && serverCodingDay !== 'Unassigned') {
-        const dayMap = {
-            'Monday': { digits: '1 & 2', scheme: 'Blue Scheme', badgeClass: 'bg-blue-50 text-blue-700 border-blue-200/80', dotClass: 'bg-blue-500' },
-            'Tuesday': { digits: '3 & 4', scheme: 'Green Scheme', badgeClass: 'bg-emerald-50 text-emerald-700 border-emerald-200/80', dotClass: 'bg-emerald-500' },
-            'Wednesday': { digits: '5 & 6', scheme: 'Yellow Scheme', badgeClass: 'bg-amber-50 text-amber-700 border-amber-200/80', dotClass: 'bg-amber-500' },
-            'Thursday': { digits: '7 & 8', scheme: 'Purple Scheme', badgeClass: 'bg-purple-50 text-purple-700 border-purple-200/80', dotClass: 'bg-purple-500' },
-            'Friday': { digits: '9 & 0', scheme: 'Red Scheme', badgeClass: 'bg-rose-50 text-rose-700 border-rose-200/80', dotClass: 'bg-rose-500' },
-        };
-        const mapped = dayMap[serverCodingDay] || { digits: '—', scheme: 'Standard Scheme', badgeClass: 'bg-slate-100 text-slate-700 border-slate-200', dotClass: 'bg-slate-400' };
+function getCodingSchemeInfo(registry) {
+    if (!registry) {
+        return { day: 'Unassigned', digits: '—', scheme: 'Standard Scheme', badgeClass: 'bg-slate-100 text-slate-700 border-slate-200', dotClass: 'bg-slate-400' };
+    }
+
+    const cs = registry.coding_status;
+    if (cs && cs.scheme_name) {
+        const day = (cs.restricted_days && cs.restricted_days[0]) ? cs.restricted_days[0] : (registry.coding_day || 'Unassigned');
+        const digits = (cs.restricted_digits && cs.restricted_digits.length > 0) ? cs.restricted_digits.join(' & ') : '—';
         return {
-            day: serverCodingDay,
-            ...mapped
+            day,
+            digits,
+            scheme: `${cs.scheme_name} Scheme`,
+            hex: cs.color_hex,
+            badgeClass: 'border-slate-200/80',
+            dotClass: '',
+            style: { backgroundColor: `${cs.color_hex}15`, color: '#1e293b', borderColor: `${cs.color_hex}40` },
+            dotStyle: { backgroundColor: cs.color_hex },
         };
     }
 
-    if (!codingNumber) {
-        return { day: 'Monday', digits: '1 & 2', scheme: 'Blue Scheme', badgeClass: 'bg-blue-50 text-blue-700 border-blue-200/80', dotClass: 'bg-blue-500' };
-    }
-
-    const clean = String(codingNumber).trim();
-    const lastChar = clean.charAt(clean.length - 1);
-    const lastDigit = parseInt(lastChar, 10);
-
-    if (isNaN(lastDigit)) {
-        return { day: 'Monday', digits: '1 & 2', scheme: 'Blue Scheme', badgeClass: 'bg-blue-50 text-blue-700 border-blue-200/80', dotClass: 'bg-blue-500' };
-    }
-
-    switch (lastDigit) {
-        case 1:
-        case 2:
-            return { day: 'Monday', digits: '1 & 2', scheme: 'Blue Scheme', badgeClass: 'bg-blue-50 text-blue-700 border-blue-200/80', dotClass: 'bg-blue-500' };
-        case 3:
-        case 4:
-            return { day: 'Tuesday', digits: '3 & 4', scheme: 'Green Scheme', badgeClass: 'bg-emerald-50 text-emerald-700 border-emerald-200/80', dotClass: 'bg-emerald-500' };
-        case 5:
-        case 6:
-            return { day: 'Wednesday', digits: '5 & 6', scheme: 'Yellow Scheme', badgeClass: 'bg-amber-50 text-amber-700 border-amber-200/80', dotClass: 'bg-amber-500' };
-        case 7:
-        case 8:
-            return { day: 'Thursday', digits: '7 & 8', scheme: 'Purple Scheme', badgeClass: 'bg-purple-50 text-purple-700 border-purple-200/80', dotClass: 'bg-purple-500' };
-        case 9:
-        case 0:
-            return { day: 'Friday', digits: '9 & 0', scheme: 'Red Scheme', badgeClass: 'bg-rose-50 text-rose-700 border-rose-200/80', dotClass: 'bg-rose-500' };
-        default:
-            return { day: 'Monday', digits: '1 & 2', scheme: 'Blue Scheme', badgeClass: 'bg-blue-50 text-blue-700 border-blue-200/80', dotClass: 'bg-blue-500' };
-    }
+    const day = registry.coding_day && registry.coding_day !== 'None' ? registry.coding_day : 'Unassigned';
+    const scheme = registry.coding_scheme ? `${registry.coding_scheme} Scheme` : 'Standard Scheme';
+    const hex = registry.coding_color || '#64748B';
+    return {
+        day,
+        digits: '—',
+        scheme,
+        hex,
+        badgeClass: 'border-slate-200/80',
+        dotClass: '',
+        style: { backgroundColor: `${hex}15`, color: '#1e293b', borderColor: `${hex}40` },
+        dotStyle: { backgroundColor: hex },
+    };
 }
 
 // Shared soft, layered shadow token — same elevation language used across the redesigned TMO
@@ -67,7 +54,7 @@ function getCodingSchemeInfo(codingNumber, serverCodingDay) {
 const CARD_SHADOW = 'shadow-[0_1px_2px_0_rgba(15,23,42,0.04),0_8px_24px_-8px_rgba(15,23,42,0.10)]';
 
 export default function RegistryDetails({ registry }) {
-    const codingInfo = getCodingSchemeInfo(registry?.coding_scheme_number, registry?.coding_day);
+    const codingInfo = useMemo(() => getCodingSchemeInfo(registry), [registry]);
     const isActive = registry?.status === 'active';
 
     // Background refresh of this registry entry: a status change made in another session updates
@@ -141,7 +128,7 @@ export default function RegistryDetails({ registry }) {
                             <span className="text-slate-300 hidden sm:inline">&bull;</span>
 
                             <span className="flex items-center gap-1.5">
-                                <span className={`inline-block h-2.5 w-2.5 rounded-full ring-2 ring-slate-200 shrink-0 ${codingInfo.dotClass}`} />
+                                <span className={`inline-block h-2.5 w-2.5 rounded-full ring-2 ring-slate-200 shrink-0 ${codingInfo.dotClass}`} style={codingInfo.dotStyle} />
                                 <span className="font-semibold text-slate-900">
                                     {codingInfo.day} Coding ({codingInfo.scheme})
                                 </span>
@@ -495,7 +482,7 @@ export default function RegistryDetails({ registry }) {
                                         </p>
                                     </div>
                                 </div>
-                                <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-bold border ${codingInfo.badgeClass}`}>
+                                <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-bold border ${codingInfo.badgeClass}`} style={codingInfo.style}>
                                     {codingInfo.day} Coding
                                 </span>
                             </div>

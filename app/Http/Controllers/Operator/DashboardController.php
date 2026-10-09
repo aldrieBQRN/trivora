@@ -33,6 +33,7 @@ class DashboardController extends Controller
                 'recentViolations' => [],
                 'expiringRegistrations' => [],
                 'applicationProgress' => null,
+                'activeCodingSchemes' => \App\Models\ColorCodingScheme::where('is_active', true)->get(),
             ]);
         }
 
@@ -103,6 +104,7 @@ class DashboardController extends Controller
                 'mtop_status'         => $hasPendingRenewal ? 'Renewal In Progress' : ($isExpired ? 'Expired' : ($tri->status === 'active' ? 'Valid' : 'Pending')),
                 'mtop_expiry'         => $fs && $fs->expiry_date ? $fs->expiry_date->format('M d, Y') : 'N/A',
                 'mtop_days_left'      => $daysLeft,
+                'coding_status'       => \App\Services\ColorCodingRuleService::evaluateTricycle($tri),
             ];
         });
 
@@ -186,12 +188,13 @@ class DashboardController extends Controller
         }
 
         return Inertia::render('Operator/Dashboard', [
-            'operator' => $operator,
-            'stats' => $stats,
-            'tricycles' => $tricycles,
-            'recentViolations' => $recentViolations,
+            'operator'              => $operator,
+            'stats'                 => $stats,
+            'tricycles'             => $tricycles,
+            'recentViolations'      => $recentViolations,
             'expiringRegistrations' => $expiringRegistrations,
-            'applicationProgress' => $applicationProgress,
+            'applicationProgress'   => $applicationProgress,
+            'activeCodingSchemes'   => \App\Models\ColorCodingScheme::where('is_active', true)->get(),
         ]);
     }
 }

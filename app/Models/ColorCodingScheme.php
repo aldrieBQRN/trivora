@@ -11,6 +11,8 @@ class ColorCodingScheme extends Model
         'name',
         'color_hex',
         'restricted_days',
+        'restricted_digits',
+        'fine_amount',
         'description',
         'is_active',
     ];
@@ -18,8 +20,10 @@ class ColorCodingScheme extends Model
     protected function casts(): array
     {
         return [
-            'restricted_days' => 'array', // JSON column → PHP array
-            'is_active'       => 'boolean',
+            'restricted_days'   => 'array', // JSON column → PHP array
+            'restricted_digits' => 'array', // JSON column → PHP array
+            'fine_amount'       => 'decimal:2',
+            'is_active'         => 'boolean',
         ];
     }
 
@@ -38,11 +42,44 @@ class ColorCodingScheme extends Model
     }
 
     /**
-     * Check if this color code is restricted today.
+     * Legacy/Display accessor for the primary restricted day name.
      */
-    public function isRestrictedToday(): bool
+    public function getCodingDayAttribute(): string
     {
-        return $this->isRestrictedOn(now()->format('l'));
+        return !empty($this->restricted_days) ? $this->restricted_days[0] : 'None';
+    }
+
+    /**
+     * Check if this color code restricts a given last digit.
+     */
+    public function restrictsDigit(int $digit): bool
+    {
+        return in_array($digit, $this->restricted_digits ?? [], true);
+    }
+
+    /**
+     * Check if this color code is restricted on a given day name and last digit.
+     * If $lastDigit is null, checks only the day restriction.
+     */
+    public function isRestricted(string $dayName, ?int $lastDigit = null): bool
+    {
+        if (!$this->isRestrictedOn($dayName)) {
+            return false;
+        }
+
+        if ($lastDigit !== null && !empty($this->restricted_digits)) {
+            return $this->restrictsDigit($lastDigit);
+        }
+
+        return true;
+    }
+
+    /**
+     * Check if this color code is restricted today (optionally for a given last digit).
+     */
+    public function isRestrictedToday(?int $lastDigit = null): bool
+    {
+        return $this->isRestricted(now()->format('l'), $lastDigit);
     }
 
     // -------------------------------------------------------------------------

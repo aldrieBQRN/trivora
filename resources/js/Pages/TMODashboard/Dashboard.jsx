@@ -162,7 +162,7 @@ export default function Dashboard({
 
                     <div className="flex shrink-0 flex-col items-center gap-3">
                         <div className="relative h-[188px] w-[188px]">
-                            <ResponsiveContainer width="100%" height="100%">
+                            <ResponsiveContainer width="100%" height="100%" initialDimension={{ width: 188, height: 188 }}>
                                 <PieChart>
                                     <Pie
                                         data={donutData}
@@ -460,7 +460,7 @@ function ActivityRadial({ value, max, label, color, size = 76 }) {
                 exceed a ~320px screen at a fixed pixel size) instead of overflowing; `size` is
                 still the cap on larger screens. */}
             <div className="relative mx-auto w-full" style={{ maxWidth: size, aspectRatio: '1 / 1' }}>
-                <ResponsiveContainer width="100%" height="100%">
+                <ResponsiveContainer width="100%" height="100%" initialDimension={{ width: size, height: size }}>
                     <RadialBarChart
                         innerRadius="72%"
                         outerRadius="100%"

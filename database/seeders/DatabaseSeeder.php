@@ -47,6 +47,8 @@ class DatabaseSeeder extends Seeder
             DemoDriverMTOPApplicationsSeeder::class,
             DemoDriverViolationsSeeder::class,
             TestDriverViolationsSeeder::class,
+            FareConfigurationsSeeder::class,
+            SystemAuditLogSeeder::class,
         ]);
 
         $this->command->info('');

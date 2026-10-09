@@ -57,6 +57,20 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Live Fleet Monitoring "Auto Offline" threshold
+    |--------------------------------------------------------------------------
+    |
+    | Telemetry age (in seconds) beyond which an online driver without successful
+    | telemetry updates is automatically considered Offline. Both the backend
+    | operational guard (effective-online check) and the scheduled cleanup
+    | command (drivers:auto-offline-stale) use this threshold.
+    |
+    */
+
+    'fleet_auto_offline_seconds' => 600,
+
+    /*
+    |--------------------------------------------------------------------------
     | Coding/restricted-day movement threshold
     |--------------------------------------------------------------------------
     |
@@ -70,5 +84,18 @@ return [
     */
 
     'coding_violation_movement_threshold_meters' => 100,
+
+    /*
+    |--------------------------------------------------------------------------
+    | SinoTrack IoT receiver port
+    |--------------------------------------------------------------------------
+    |
+    | TCP port `php artisan gps:listen` binds to. Must match the port set on
+    | each tracker by SMS ("804<password> <public-ip> <port>") and be reachable
+    | from the internet (router port-forward, VPS, or a TCP tunnel).
+    |
+    */
+
+    'iot_listen_port' => env('GPS_LISTEN_PORT', 9001),
 
 ];

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\BPLO;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Services\AuditService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -110,7 +111,24 @@ class BPLOUserController extends Controller
 
         // Employee ID is system-generated from the account's own auto-increment id,
         // so it's guaranteed unique and never editable by the form.
-        $user->update(['employee_id' => 'BPLO-' . str_pad($user->id, 4, '0', STR_PAD_LEFT)]);
+        $employeeId = 'BPLO-' . str_pad($user->id, 4, '0', STR_PAD_LEFT);
+        $user->update(['employee_id' => $employeeId]);
+
+        AuditService::log(
+            module: 'user_management',
+            action: 'bplo_staff.created',
+            record: $user,
+            description: "Created BPLO staff account for {$user->name} ({$employeeId})",
+            oldValues: null,
+            newValues: [
+                'name'        => $user->name,
+                'email'       => $user->email,
+                'role'        => $user->role,
+                'employee_id' => $employeeId,
+                'position'    => $user->position,
+                'is_active'   => (bool) $user->is_active,
+            ]
+        );
 
         return redirect()->route('bplo.users')->with('success', "BPLO staff account for {$validated['name']} created successfully.");
     }
@@ -136,6 +154,16 @@ class BPLOUserController extends Controller
             'address'        => 'nullable|string|max:255',
         ]);
 
+        $oldValues = [
+            'name'           => $user->name,
+            'email'          => $user->email,
+            'position'       => $user->position,
+            'birthday'       => $user->birthday?->format('Y-m-d'),
+            'contact_number' => $user->contact_number,
+            'address'        => $user->address,
+            'is_active'      => (bool) $user->is_active,
+        ];
+
         // employee_id is system-generated on creation and never editable here.
         $updateData = [
             'name'           => trim($validated['name']),
@@ -159,6 +187,23 @@ class BPLOUserController extends Controller
 
         $user->update($updateData);
 
+        AuditService::log(
+            module: 'user_management',
+            action: 'bplo_staff.updated',
+            record: $user,
+            description: "Updated BPLO staff account for {$user->name} ({$user->employee_id})",
+            oldValues: $oldValues,
+            newValues: [
+                'name'           => $user->name,
+                'email'          => $user->email,
+                'position'       => $user->position,
+                'birthday'       => $user->birthday?->format('Y-m-d'),
+                'contact_number' => $user->contact_number,
+                'address'        => $user->address,
+                'is_active'      => (bool) $user->is_active,
+            ]
+        );
+
         return redirect()->route('bplo.users')->with('success', "Staff account for {$user->name} updated successfully.");
     }
 
@@ -175,9 +220,20 @@ class BPLOUserController extends Controller
             return redirect()->route('bplo.users')->with('error', 'You cannot deactivate your own logged-in account.');
         }
 
+        $oldStatus = (bool) $user->is_active;
         $user->update(['is_active' => !$user->is_active]);
 
         $statusText = $user->is_active ? 'activated' : 'deactivated';
+
+        AuditService::log(
+            module: 'user_management',
+            action: 'bplo_staff.status_toggled',
+            record: $user,
+            description: ucfirst($statusText) . " BPLO staff account for {$user->name} ({$user->employee_id})",
+            oldValues: ['is_active' => $oldStatus],
+            newValues: ['is_active' => (bool) $user->is_active]
+        );
+
         return redirect()->route('bplo.users')->with('success', "Staff account for {$user->name} has been {$statusText}.");
     }
 
@@ -195,6 +251,24 @@ class BPLOUserController extends Controller
         }
 
         $userName = $user->name;
+        $employeeId = $user->employee_id;
+        $userId = $user->id;
+
+        AuditService::log(
+            module: 'user_management',
+            action: 'bplo_staff.deleted',
+            record: $user,
+            description: "Deleted BPLO staff account for {$userName} ({$employeeId})",
+            oldValues: [
+                'name'        => $user->name,
+                'email'       => $user->email,
+                'employee_id' => $employeeId,
+                'role'        => $user->role,
+            ],
+            newValues: null,
+            targetReference: $employeeId ?: "USER-{$userId}"
+        );
+
         $user->delete();
 
         return redirect()->route('bplo.users')->with('success', "Staff account for {$userName} has been removed.");

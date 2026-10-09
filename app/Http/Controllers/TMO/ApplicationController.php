@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Application;
 use App\Models\ApplicationDocument;
 use App\Models\ApplicationStatusHistory;
+use App\Services\AuditService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -194,6 +195,25 @@ class ApplicationController extends Controller
                 'notes'          => $notes,
                 'created_at'     => now(),
             ]);
+
+            // 4. Record administrative audit log
+            $canonicalAction = $action === 'approve' ? 'document.approved' : 'document.rejected';
+            $auditDesc = $action === 'approve'
+                ? "Approved document requirements for application {$application->reference_number}."
+                : "Rejected document requirements for application {$application->reference_number}.";
+
+            AuditService::log(
+                module: 'document_review',
+                action: $canonicalAction,
+                record: $application,
+                description: $auditDesc,
+                oldValues: ['status' => $fromStatus, 'current_step' => $fromStep],
+                newValues: ['status' => $toStatus, 'current_step' => $toStep],
+                metadata: [
+                    'doc_statuses'      => $docStatuses,
+                    'rejection_reasons' => $rejectionReasons,
+                ]
+            );
         });
 
         // TMO inspection team: documents approved -> vehicle inspection pending (a rejection waits

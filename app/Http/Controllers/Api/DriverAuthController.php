@@ -8,6 +8,7 @@ use App\Models\FranchiseScheme;
 use App\Models\Operator;
 use App\Models\Tricycle;
 use App\Models\User;
+use App\Services\ColorCodingRuleService;
 use App\Support\MobileNumber;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -697,6 +698,14 @@ class DriverAuthController extends Controller
             $todaName = $operator->todaZone->name;
         }
 
+        $codingStatus = $tricycle ? ColorCodingRuleService::evaluateTricycle($tricycle) : null;
+        if ($driver) {
+            // Every new login starts Offline until the driver manually taps Go Online.
+            $driver->transitionToOffline('login_start_offline');
+            $driver->refresh();
+            $driver->setAttribute('coding_status', $codingStatus);
+        }
+
         return response()->json([
             'success' => true,
             'message' => 'Login successful.',
@@ -730,6 +739,7 @@ class DriverAuthController extends Controller
                 'passenger_capacity'   => $tricycle->passenger_capacity,
                 'unit_code'            => 'TRV-' . str_pad($tricycle->id, 3, '0', STR_PAD_LEFT),
                 'sticker_number'       => $tricycle->coding_scheme_number ?: null,
+                'coding_status'        => $codingStatus,
             ] : null,
             // Operational authorization status — the app shows a "Franchise Suspended"/"Franchise
             // Revoked" indicator from this, never from anything on the driver's own account.
@@ -738,6 +748,7 @@ class DriverAuthController extends Controller
                 'status_reason'      => $tricycle->franchiseScheme->status_reason,
                 'status_changed_at'  => $tricycle->franchiseScheme->status_changed_at,
             ] : null,
+            'coding_status' => $codingStatus,
         ], 200);
     }
 
@@ -760,6 +771,11 @@ class DriverAuthController extends Controller
             $driver->load(['tricycle.todaZone', 'tricycle.franchiseScheme']);
         }
         $tricycle = $driver ? $driver->tricycle : null;
+
+        $codingStatus = $tricycle ? ColorCodingRuleService::evaluateTricycle($tricycle) : null;
+        if ($driver) {
+            $driver->setAttribute('coding_status', $codingStatus);
+        }
 
         return response()->json([
             'success' => true,
@@ -799,12 +815,14 @@ class DriverAuthController extends Controller
                 'passenger_capacity'   => $tricycle->passenger_capacity,
                 'unit_code'            => 'TRV-' . str_pad($tricycle->id, 3, '0', STR_PAD_LEFT),
                 'sticker_number'       => $tricycle->coding_scheme_number ?: null,
+                'coding_status'        => $codingStatus,
             ] : null,
             'franchise' => $tricycle?->franchiseScheme ? [
                 'status'             => $tricycle->franchiseScheme->status,
                 'status_reason'      => $tricycle->franchiseScheme->status_reason,
                 'status_changed_at'  => $tricycle->franchiseScheme->status_changed_at,
             ] : null,
+            'coding_status' => $codingStatus,
         ], 200);
     }
 
@@ -834,25 +852,27 @@ class DriverAuthController extends Controller
             ], 404);
         }
 
-        $updateData = ['is_online' => $validated['is_online']];
+        if (!$validated['is_online']) {
+            $driver->transitionToOffline('manual');
 
-        if ($validated['is_online']) {
-            // Only stamp a NEW session start when actually transitioning from offline (or no
-            // session was ever recorded) — a redundant "still online" call must never reset an
-            // in-progress movement anchor.
-            if (!$driver->is_online || !$driver->online_since) {
-                $updateData['online_since'] = now();
-            }
-        } else {
-            // Going offline always clears/ends the current movement-tracking session.
-            $updateData['online_since'] = null;
+            return response()->json([
+                'success'      => true,
+                'is_online'    => false,
+                'is_available' => false,
+            ]);
+        }
+
+        $updateData = ['is_online' => true];
+
+        // Only stamp a NEW session start when actually transitioning from offline (or no
+        // session was ever recorded) — a redundant "still online" call must never reset an
+        // in-progress movement anchor.
+        if (!$driver->is_online || !$driver->online_since) {
+            $updateData['online_since'] = now();
         }
 
         if (array_key_exists('is_available', $validated) && $validated['is_available'] !== null) {
             $updateData['is_available'] = $validated['is_available'];
-        } elseif (!$validated['is_online']) {
-            // Going offline always implies unavailable for new dispatch.
-            $updateData['is_available'] = false;
         }
 
         // While a QR walk-in ride session is open the driver stays unavailable for normal
@@ -881,12 +901,8 @@ class DriverAuthController extends Controller
         // immediately, not after the GPS signal-lost window. Same fields as going Offline via
         // updateStatus() (ends the online_since movement session, unavailable for dispatch).
         $driver = \App\Models\Driver::where('user_id', $request->user()->id)->first();
-        if ($driver && $driver->is_online) {
-            $driver->update([
-                'is_online'    => false,
-                'online_since' => null,
-                'is_available' => false,
-            ]);
+        if ($driver) {
+            $driver->transitionToOffline('logout');
         }
 
         $request->user()->currentAccessToken()->delete();

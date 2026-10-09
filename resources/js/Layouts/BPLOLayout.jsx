@@ -5,7 +5,7 @@ import {
     Bell, Menu, Settings, LogOut,
     ChevronDown, ChevronRight,
     LayoutDashboard, FileText,
-    FolderCheck, Users, X, BarChart3
+    FolderCheck, Users, X, BarChart3, ScrollText
 } from 'lucide-react';
 
 /* ─────────────────────────────────────────────────────────────────────────

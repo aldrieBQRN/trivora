@@ -10,6 +10,7 @@ use App\Models\ColorCodingScheme;
 use App\Models\FranchiseScheme;
 use App\Models\Tricycle;
 use App\Models\TricycleLocation;
+use App\Services\AuditService;
 use App\Services\ColorCodingRuleService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -218,7 +219,8 @@ class BPLOController extends Controller
         ];
 
         return Inertia::render('BPLODashboard/IssueStickerNumber', [
-            'application' => $appData,
+            'application'   => $appData,
+            'codingSchemes' => ColorCodingScheme::where('is_active', true)->get(),
         ]);
     }
 
@@ -296,9 +298,8 @@ class BPLOController extends Controller
 
                 // 2. Setup Franchise Scheme with Color Coding Scheme based on last digit of the Sticker Number
                 $lastDigit = (int)substr(trim($codingNumber), -1);
-                $codingDay = $this->getCodingDay($lastDigit);
-                $scheme = ColorCodingScheme::whereJsonContains('restricted_days', $codingDay)->first();
-                $schemeId = $scheme ? $scheme->id : (ColorCodingScheme::first()?->id ?? 1);
+                $scheme = ColorCodingRuleService::schemeForLastDigit($lastDigit);
+                $schemeId = $scheme ? $scheme->id : (ColorCodingScheme::where('is_active', true)->first()?->id ?? 1);
 
                 // If renewal, deactivate prior active franchise scheme for this tricycle
                 if ($isRenewal) {
@@ -350,6 +351,28 @@ class BPLOController extends Controller
                 'notes'          => $notes,
                 'created_at'     => now(),
             ]);
+
+            AuditService::log(
+                module: 'franchise',
+                action: 'bplo.franchise_released',
+                record: $application,
+                description: "BPLO released Franchise Number #{$franchiseNumber} with Sticker Number #{$codingNumber} for Application {$application->reference_number}",
+                oldValues: [
+                    'status'       => $fromStatus,
+                    'current_step' => $fromStep,
+                ],
+                newValues: [
+                    'status'               => $toStatus,
+                    'current_step'         => $toStep,
+                    'franchise_number'     => $franchiseNumber,
+                    'coding_scheme_number' => $codingNumber,
+                ],
+                metadata: [
+                    'is_renewal'   => $isRenewal,
+                    'tricycle_id'  => $tricycle?->id,
+                    'plate_number' => $tricycle?->plate_number,
+                ]
+            );
         });
 
         // TMO: released by BPLO -> Final Confirmation & GPS setup pending.
@@ -546,18 +569,20 @@ class BPLOController extends Controller
             'cr_number'         => $tricycle->cr_number ?: "CR-" . date('Y') . "-000" . $tricycle->id,
             'issue_date'        => $scheme ? $scheme->issue_date->format('F j, Y') : $tricycle->created_at->format('F j, Y'),
             'coding_day'        => $scheme ? ($scheme->colorCodingScheme ? $scheme->colorCodingScheme->coding_day : 'None') : 'None',
+            'coding_status'     => ColorCodingRuleService::evaluateTricycle($tricycle),
             'status'            => $tricycle->status,
             'tracking_mode'     => $tricycle->active_tracking_mode ?: 'mobile_app',
             'requirements'      => $requirements,
         ];
 
         return Inertia::render('BPLODashboard/RegistryDetails', [
-            'registry' => $registry,
+            'registry'      => $registry,
+            'codingSchemes' => ColorCodingScheme::where('is_active', true)->get(),
         ]);
     }
 
     /**
-     * Map Last Digit of the Sticker Number to coding day.
+     * Map Last Digit of the Sticker Number to coding day using DB-backed rule service.
      */
     private function getCodingDay(int $lastDigit): string
     {

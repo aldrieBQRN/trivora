@@ -119,6 +119,7 @@ class SequentialDispatchTest extends TestCase
             'is_available' => $available,
             'current_lat' => $lat,
             'current_lng' => $lng,
+            'last_location_updated_at' => $online ? now() : null,
         ]);
     }
 

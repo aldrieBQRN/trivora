@@ -11,6 +11,7 @@ use App\Models\Violation;
 use App\Models\Tricycle;
 use App\Models\Driver;
 use App\Models\ViolationAppeal;
+use App\Services\AuditService;
 
 class ViolationController extends Controller
 {
@@ -189,8 +190,11 @@ class ViolationController extends Controller
             $evidencePath = $request->file('proof')->store('violation_appeals', 'public');
         }
 
-        DB::transaction(function () use ($violation, $driver, $validated, $evidencePath) {
-            ViolationAppeal::create([
+        $statusBeforeAppeal = $violation->status;
+        $violationRef = 'VIO-26-' . str_pad($violation->id, 4, '0', STR_PAD_LEFT);
+
+        DB::transaction(function () use ($violation, $driver, $validated, $evidencePath, $statusBeforeAppeal, $violationRef) {
+            $appeal = ViolationAppeal::create([
                 'violation_id' => $violation->id,
                 'driver_id'    => $driver->id,
                 'reason'       => $validated['reason'],
@@ -202,6 +206,25 @@ class ViolationController extends Controller
             // 'contested' already exists in the violations.status enum specifically for this —
             // a violation under active dispute, distinct from a plain unactioned 'open' one.
             $violation->update(['status' => 'contested']);
+
+            AuditService::log(
+                module: 'violation',
+                action: 'driver.appeal_submitted',
+                record: $violation,
+                description: "Driver submitted appeal for Violation {$violationRef}",
+                oldValues: [
+                    'status' => $statusBeforeAppeal,
+                ],
+                newValues: [
+                    'status'        => 'contested',
+                    'appeal_status' => 'under_review',
+                ],
+                targetReference: $violationRef,
+                metadata: [
+                    'appeal_id'    => $appeal->id,
+                    'has_evidence' => !empty($evidencePath),
+                ]
+            );
         });
 
         // TMO: a new violation appeal is waiting for review.

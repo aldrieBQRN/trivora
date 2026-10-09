@@ -56,6 +56,7 @@ trait DrivesFranchiseWorkflow
             'owner_is_driver'         => true,    // default scenario: owner drives their own unit
             'email'                   => "juan.delacruz.{$unique}@trivora.test",
             'password'                => 'password123',
+            'password_confirmation'   => 'password123',
             'plate_number'            => "WFL-{$unique}",
             'make_model'              => 'Honda TMX155',
             'year_model'              => 2021,

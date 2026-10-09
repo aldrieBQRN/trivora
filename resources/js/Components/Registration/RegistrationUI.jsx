@@ -1,6 +1,15 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { Upload, CheckCircle2, Camera, Eye, X, FileText } from 'lucide-react';
+import { Upload, CheckCircle2, Camera, Eye, X, FileText, ChevronDown, RotateCcw } from 'lucide-react';
+import {
+    getVehicleYears,
+    vehicleYears,
+    VEHICLE_BODY_COLORS,
+    vehicleBodyColors,
+    VEHICLE_BODY_TYPES,
+    vehicleBodyTypes,
+    VEHICLE_DETAIL_FIELDS
+} from '@/data/registrationRequirements';
 
 /* ─────────────────────────────────────────────────────────────────────────
    Shared franchise registration UI — the design system of Public Registration
@@ -274,6 +283,20 @@ export const REGISTRATION_CSS = `
 .pa-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 32px; }
 @media (max-width: 640px) { .pa-fields { grid-template-columns: 1fr; } }
 .pa-field-full { grid-column: 1 / -1; }
+.pa-label-row { display: flex; align-items: center; justify-content: space-between; width: 100%; }
+.pa-switch-btn {
+  display: inline-flex; align-items: center; gap: 4px;
+  background: none; border: none; padding: 0; cursor: pointer;
+  font-family: 'DM Sans', sans-serif; font-size: 10px; font-weight: 600;
+  color: #4F5BCB; text-transform: none; letter-spacing: normal;
+  transition: color .15s, opacity .15s;
+}
+.pa-switch-btn:hover { color: #2E3A9E; text-decoration: underline; }
+.pa-other-field { animation: paFadeIn .18s ease-out; }
+@keyframes paFadeIn {
+  from { opacity: 0; transform: translateY(-3px); }
+  to { opacity: 1; transform: translateY(0); }
+}
 
 /* ── Owner vs separate Tricycle Driver toggle ────────────────────────── */
 .pa-toggle-row {
@@ -738,16 +761,28 @@ export function validateVehicleInfo(data) {
     const currentYear = new Date().getFullYear();
     if (!String(data.plate_number || '').trim()) errors.plate_number = 'LTO plate number is required.';
     if (!String(data.make_model || '').trim()) errors.make_model = 'Motorcycle make & model is required.';
-    if (!String(data.year_model).trim()) {
-        errors.year_model = 'Year model is required.';
+
+    if (!String(data.year_model || '').trim()) {
+        errors.year_model = 'Please select a year model.';
     } else {
         const year = parseInt(data.year_model, 10);
-        if (Number.isNaN(year) || year < 1980 || year > currentYear + 1) {
-            errors.year_model = `Enter a valid year between 1980 and ${currentYear + 1}.`;
+        if (Number.isNaN(year) || year < 2000 || year > currentYear) {
+            errors.year_model = `Please select a valid year between 2000 and ${currentYear}.`;
         }
     }
-    if (!String(data.body_color || '').trim()) errors.body_color = 'Body color is required.';
-    if (!String(data.body_type || '').trim()) errors.body_type = 'Body type is required.';
+
+    if (!String(data.body_color || '').trim()) {
+        errors.body_color = 'Please select a body color.';
+    } else if (data.body_color === 'Other' && !String(data.body_color_other || '').trim()) {
+        errors.body_color_other = 'Please specify body color.';
+    }
+
+    if (!String(data.body_type || '').trim()) {
+        errors.body_type = 'Please select a body type.';
+    } else if (data.body_type === 'Other' && !String(data.body_type_other || '').trim()) {
+        errors.body_type_other = 'Please specify body type.';
+    }
+
     if (!String(data.engine_number || '').trim()) errors.engine_number = 'Engine number is required.';
     if (!String(data.chassis_number || '').trim()) errors.chassis_number = 'Chassis number is required.';
     if (!String(data.or_number || '').trim()) errors.or_number = 'LTO OR number is required.';
@@ -763,18 +798,386 @@ export function validateDriverInfo(data) {
         if (!String(data.driver_last_name || '').trim()) errors.driver_last_name = 'Driver last name is required.';
         if (!data.driver_birthday) errors.driver_birthday = 'Driver birthday is required.';
         else if (data.driver_birthday > todayIso()) errors.driver_birthday = 'Birthday cannot be in the future.';
-        if (!String(data.driver_contact || '').trim()) errors.driver_contact = 'Driver mobile number is required.';
+
+        const cleanContact = String(data.driver_contact || '').trim();
+        if (!cleanContact) {
+            errors.driver_contact = 'Driver mobile number is required.';
+        } else if (!/^09\d{9}$/.test(cleanContact)) {
+            errors.driver_contact = 'Driver mobile number must be a valid 11-digit Philippine mobile number starting with 09 (e.g. 09171234567).';
+        }
+
         if (!data.driver_barangay) errors.driver_barangay = 'Please select the driver barangay.';
     }
     return errors;
 }
 
+/**
+ * Mobile number input helpers — ensures numbers only, prevents letters/symbols,
+ * handles paste, and restricts to max 11 digits.
+ */
+export const handleMobileKeyDown = (e) => {
+    const allowed = [
+        'Backspace', 'Delete', 'Tab', 'Escape', 'Enter',
+        'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown',
+        'Home', 'End'
+    ];
+    if (allowed.includes(e.key) || e.ctrlKey || e.metaKey) return;
+    if (!/^[0-9]$/.test(e.key)) {
+        e.preventDefault();
+    }
+};
+
+export const sanitizeMobileNumber = (val) => {
+    return String(val || '').replace(/\D/g, '').slice(0, 11);
+};
+
+export const handleMobilePaste = (e, onCleanValue) => {
+    e.preventDefault();
+    const paste = (e.clipboardData || window.clipboardData)?.getData('text') || '';
+    const clean = sanitizeMobileNumber(paste);
+    onCleanValue(clean);
+};
+
+/**
+ * Password strength calculation considering:
+ * - minimum length (8+)
+ * - uppercase and lowercase
+ * - numbers
+ * - special characters
+ * States: Weak, Medium, Strong
+ */
+export function calculatePasswordStrength(pass) {
+    if (!pass) return { score: 0, label: '', color: '', percent: 0 };
+    const len = pass.length;
+    const hasUpper = /[A-Z]/.test(pass);
+    const hasLower = /[a-z]/.test(pass);
+    const hasNumber = /[0-9]/.test(pass);
+    const hasSpecial = /[^A-Za-z0-9]/.test(pass);
+
+    let score = 0;
+    if (len >= 8) score++;
+    if (len >= 12) score++;
+    if (hasUpper && hasLower) score++;
+    if (hasNumber) score++;
+    if (hasSpecial) score++;
+
+    if (len < 8 || score <= 2) {
+        return { score: 1, label: 'Weak', color: '#DC2626', percent: 33 };
+    }
+    if (score <= 3 || !(hasUpper && hasLower && (hasNumber || hasSpecial))) {
+        return { score: 2, label: 'Medium', color: '#D97706', percent: 66 };
+    }
+    return { score: 3, label: 'Strong', color: '#059669', percent: 100 };
+}
+
+/**
+ * Compact, professional password-strength meter
+ */
+export function PasswordStrengthMeter({ password }) {
+    if (!password) return null;
+    const strength = calculatePasswordStrength(password);
+
+    return (
+        <div style={{ marginTop: '8px', marginBottom: '6px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '5px' }}>
+                <span style={{ fontSize: '9px', fontWeight: 700, color: '#8A96BC', textTransform: 'uppercase', letterSpacing: '0.12em', fontFamily: "'DM Sans', sans-serif" }}>
+                    Password Strength
+                </span>
+                <span style={{ fontSize: '11px', fontWeight: 700, color: strength.color, fontFamily: "'Inter', sans-serif" }}>
+                    {strength.label}
+                </span>
+            </div>
+            <div style={{ display: 'flex', gap: '4px', height: '4px' }}>
+                <div style={{ flex: 1, borderRadius: '2px', background: strength.score >= 1 ? strength.color : 'rgba(28,35,64,0.1)', transition: 'background 0.2s' }} />
+                <div style={{ flex: 1, borderRadius: '2px', background: strength.score >= 2 ? strength.color : 'rgba(28,35,64,0.1)', transition: 'background 0.2s' }} />
+                <div style={{ flex: 1, borderRadius: '2px', background: strength.score >= 3 ? strength.color : 'rgba(28,35,64,0.1)', transition: 'background 0.2s' }} />
+            </div>
+        </div>
+    );
+}
+
+/**
+ * Shared Vehicle Specs form fields — used by both Public Registration (New Unit)
+ * and Driver Portal MTOP Wizard (Renewal & New Unit) so options and behaviors remain strictly unified.
+ */
+export function VehicleSpecsFields({ data, setData, fieldError, markTouched, years, colors, bodyTypes }) {
+    const currentYears = years || vehicleYears;
+    const currentColorList = colors || vehicleBodyColors;
+    const currentBodyTypeList = bodyTypes || vehicleBodyTypes;
+
+    const colorSelectRef = useRef(null);
+    const bodyTypeSelectRef = useRef(null);
+
+    const handleSwitchToColorDropdown = (e) => {
+        if (e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+        if (typeof setData === 'function') {
+            try {
+                setData({ body_color: '', body_color_other: '' });
+            } catch {
+                setData('body_color', '');
+                setData('body_color_other', '');
+            }
+        }
+        setTimeout(() => {
+            if (colorSelectRef.current) {
+                colorSelectRef.current.focus();
+                if (typeof colorSelectRef.current.showPicker === 'function') {
+                    try {
+                        colorSelectRef.current.showPicker();
+                    } catch {}
+                }
+            }
+        }, 50);
+    };
+
+    const handleSwitchToBodyTypeDropdown = (e) => {
+        if (e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+        if (typeof setData === 'function') {
+            try {
+                setData({ body_type: '', body_type_other: '' });
+            } catch {
+                setData('body_type', '');
+                setData('body_type_other', '');
+            }
+        }
+        setTimeout(() => {
+            if (bodyTypeSelectRef.current) {
+                bodyTypeSelectRef.current.focus();
+                if (typeof bodyTypeSelectRef.current.showPicker === 'function') {
+                    try {
+                        bodyTypeSelectRef.current.showPicker();
+                    } catch {}
+                }
+            }
+        }, 50);
+    };
+
+    return (
+        <div className="pa-fields">
+            {/* LTO Plate Number (Headline field spanning row 1) */}
+            <Field label="LTO Plate Number" error={fieldError('plate_number')} className="pa-field-full">
+                <input
+                    className={`pa-input${fieldError('plate_number') ? ' pa-input-error' : ''}`}
+                    placeholder="e.g. AAA-1234"
+                    autoComplete="off"
+                    value={data.plate_number || ''}
+                    onChange={e => setData('plate_number', e.target.value)}
+                    onBlur={() => markTouched('plate_number')}
+                />
+            </Field>
+
+            {/* Motorcycle Make & Model + Year Model (Row 2) */}
+            <Field label="Motorcycle Make & Model" error={fieldError('make_model')}>
+                <input
+                    className={`pa-input${fieldError('make_model') ? ' pa-input-error' : ''}`}
+                    placeholder="e.g. Honda TMX 125"
+                    autoComplete="off"
+                    value={data.make_model || ''}
+                    onChange={e => setData('make_model', e.target.value)}
+                    onBlur={() => markTouched('make_model')}
+                />
+            </Field>
+
+            <Field label="Year Model" error={fieldError('year_model')}>
+                <div className="pa-select-wrap">
+                    <select
+                        className={`pa-select${fieldError('year_model') ? ' pa-input-error' : ''}`}
+                        value={data.year_model || ''}
+                        onChange={e => setData('year_model', e.target.value)}
+                        onBlur={() => markTouched('year_model')}
+                    >
+                        <option value="">Select Year Model</option>
+                        {currentYears.map(yr => (
+                            <option key={yr} value={yr}>{yr}</option>
+                        ))}
+                    </select>
+                    <ChevronDown size={15} strokeWidth={2} />
+                </div>
+            </Field>
+
+            {/* Body Color & Body Type (Row 3 - Same Row, In-Place Transform) */}
+            {data.body_color === 'Other' ? (
+                <Field
+                    label="Body Color (Custom)"
+                    action={
+                        <button
+                            type="button"
+                            className="pa-switch-btn"
+                            onClick={handleSwitchToColorDropdown}
+                            title="Switch back to standard color list"
+                        >
+                            <RotateCcw size={10} strokeWidth={2.4} />
+                            <span>Choose from list</span>
+                        </button>
+                    }
+                    error={fieldError('body_color_other') || fieldError('body_color')}
+                    className="pa-other-field"
+                >
+                    <input
+                        className={`pa-input${(fieldError('body_color_other') || fieldError('body_color')) ? ' pa-input-error' : ''}`}
+                        placeholder="Type custom body color (e.g. Matte Black)"
+                        autoComplete="off"
+                        autoFocus
+                        value={data.body_color_other || ''}
+                        onChange={e => setData('body_color_other', e.target.value)}
+                        onBlur={() => {
+                            markTouched('body_color');
+                            markTouched('body_color_other');
+                        }}
+                    />
+                </Field>
+            ) : (
+                <Field label="Body Color" error={fieldError('body_color')}>
+                    <div className="pa-select-wrap">
+                        <select
+                            ref={colorSelectRef}
+                            className={`pa-select${fieldError('body_color') ? ' pa-input-error' : ''}`}
+                            value={data.body_color || ''}
+                            onChange={e => {
+                                const val = e.target.value;
+                                setData('body_color', val);
+                                if (val !== 'Other') {
+                                    setData('body_color_other', '');
+                                }
+                            }}
+                            onBlur={() => markTouched('body_color')}
+                        >
+                            <option value="">Select Body Color</option>
+                            {currentColorList.map(c => (
+                                <option key={c} value={c}>{c}</option>
+                            ))}
+                        </select>
+                        <ChevronDown size={15} strokeWidth={2} />
+                    </div>
+                </Field>
+            )}
+
+            {data.body_type === 'Other' ? (
+                <Field
+                    label="Body Type (Custom)"
+                    action={
+                        <button
+                            type="button"
+                            className="pa-switch-btn"
+                            onClick={handleSwitchToBodyTypeDropdown}
+                            title="Switch back to standard body type list"
+                        >
+                            <RotateCcw size={10} strokeWidth={2.4} />
+                            <span>Choose from list</span>
+                        </button>
+                    }
+                    error={fieldError('body_type_other') || fieldError('body_type')}
+                    className="pa-other-field"
+                >
+                    <input
+                        className={`pa-input${(fieldError('body_type_other') || fieldError('body_type')) ? ' pa-input-error' : ''}`}
+                        placeholder="Type custom body type (e.g. Extended Sidecar)"
+                        autoComplete="off"
+                        autoFocus
+                        value={data.body_type_other || ''}
+                        onChange={e => setData('body_type_other', e.target.value)}
+                        onBlur={() => {
+                            markTouched('body_type');
+                            markTouched('body_type_other');
+                        }}
+                    />
+                </Field>
+            ) : (
+                <Field label="Body Type" error={fieldError('body_type')}>
+                    <div className="pa-select-wrap">
+                        <select
+                            ref={bodyTypeSelectRef}
+                            className={`pa-select${fieldError('body_type') ? ' pa-input-error' : ''}`}
+                            value={data.body_type || ''}
+                            onChange={e => {
+                                const val = e.target.value;
+                                setData('body_type', val);
+                                if (val !== 'Other') {
+                                    setData('body_type_other', '');
+                                }
+                            }}
+                            onBlur={() => markTouched('body_type')}
+                        >
+                            <option value="">Select Body Type</option>
+                            {currentBodyTypeList.map(bt => (
+                                <option key={bt} value={bt}>{bt}</option>
+                            ))}
+                        </select>
+                        <ChevronDown size={15} strokeWidth={2} />
+                    </div>
+                </Field>
+            )}
+
+            {/* Engine Number */}
+            <Field label="Engine Number" error={fieldError('engine_number')}>
+                <input
+                    className={`pa-input${fieldError('engine_number') ? ' pa-input-error' : ''}`}
+                    placeholder="e.g. ENG-123456"
+                    autoComplete="off"
+                    value={data.engine_number || ''}
+                    onChange={e => setData('engine_number', e.target.value)}
+                    onBlur={() => markTouched('engine_number')}
+                />
+            </Field>
+
+            {/* Chassis Number */}
+            <Field label="Chassis Number" error={fieldError('chassis_number')}>
+                <input
+                    className={`pa-input${fieldError('chassis_number') ? ' pa-input-error' : ''}`}
+                    placeholder="e.g. CHS-123456"
+                    autoComplete="off"
+                    value={data.chassis_number || ''}
+                    onChange={e => setData('chassis_number', e.target.value)}
+                    onBlur={() => markTouched('chassis_number')}
+                />
+            </Field>
+
+            {/* LTO OR Number */}
+            <Field label="LTO OR Number" error={fieldError('or_number')}>
+                <input
+                    className={`pa-input${fieldError('or_number') ? ' pa-input-error' : ''}`}
+                    placeholder="e.g. OR-12345678"
+                    autoComplete="off"
+                    value={data.or_number || ''}
+                    onChange={e => setData('or_number', e.target.value)}
+                    onBlur={() => markTouched('or_number')}
+                />
+            </Field>
+
+            {/* LTO CR Number */}
+            <Field label="LTO CR Number" error={fieldError('cr_number')}>
+                <input
+                    className={`pa-input${fieldError('cr_number') ? ' pa-input-error' : ''}`}
+                    placeholder="e.g. CR-12345678"
+                    autoComplete="off"
+                    value={data.cr_number || ''}
+                    onChange={e => setData('cr_number', e.target.value)}
+                    onBlur={() => markTouched('cr_number')}
+                />
+            </Field>
+        </div>
+    );
+}
+
 /* ── Sub-components ──────────────────────────────────────────────────────── */
 
-export function Field({ label, children, className, error }) {
+export function Field({ label, action, children, className, error }) {
     return (
         <div className={className}>
-            <label className="pa-label">{label}</label>
+            {action ? (
+                <div className="pa-label-row" style={{ marginBottom: '8px' }}>
+                    <span className="pa-label" style={{ marginBottom: 0 }}>{label}</span>
+                    {action}
+                </div>
+            ) : (
+                <label className="pa-label">{label}</label>
+            )}
             {children}
             {error && <p className="pa-field-error">{error}</p>}
         </div>

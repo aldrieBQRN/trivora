@@ -524,9 +524,10 @@ Route::middleware(['auth', 'role:tmo_personnel,admin'])->group(function () {
     Route::post('/tmo/tricycles/{tricycle}/franchise/revoke', [\App\Http\Controllers\TMO\FranchiseStatusController::class, 'revoke'])->name('tmo.franchise.revoke');
     Route::post('/tmo/tricycles/{tricycle}/franchise/reinstate', [\App\Http\Controllers\TMO\FranchiseStatusController::class, 'reinstate'])->name('tmo.franchise.reinstate');
 
-    // QR Ride configuration (Tricycle Details page) — passenger capacity, QR regeneration and
-    // the printable "Scan to Ride" sheet. See TMO\QrRideController / QrRideService::tmoSummary().
-    Route::post('/tmo/tricycles/{tricycle}/qr-ride/capacity', [\App\Http\Controllers\TMO\QrRideController::class, 'updateCapacity'])->name('tmo.qr-ride.capacity');
+    // QR management (Tricycle Details page) — QR regeneration and the printable "Scan to Ride"
+    // sheet. Passenger capacity is NOT configured here: it is read-only in TMO and is configured
+    // by the driver in the Driver App (see Api\DriverQrCodeController). See
+    // TMO\QrRideController / QrRideService::tmoSummary().
     Route::post('/tmo/tricycles/{tricycle}/qr-ride/regenerate', [\App\Http\Controllers\TMO\QrRideController::class, 'regenerate'])->name('tmo.qr-ride.regenerate');
     Route::get('/tmo/tricycles/{tricycle}/qr-ride/print', [\App\Http\Controllers\TMO\QrRideController::class, 'print'])->name('tmo.qr-ride.print');
 
@@ -581,6 +582,14 @@ Route::middleware(['auth', 'role:tmo_personnel,admin'])->group(function () {
     Route::put('/tmo/users/{user}', [App\Http\Controllers\TMO\TMOUserController::class, 'update'])->name('tmo.users.update');
     Route::patch('/tmo/users/{user}/toggle-status', [App\Http\Controllers\TMO\TMOUserController::class, 'toggleStatus'])->name('tmo.users.toggle-status');
     Route::delete('/tmo/users/{user}', [App\Http\Controllers\TMO\TMOUserController::class, 'destroy'])->name('tmo.users.destroy');
+
+    // --- FARE MANAGEMENT ---
+    Route::get('/tmo/fares', [App\Http\Controllers\TMO\FareManagementController::class, 'index'])->name('tmo.fares');
+    Route::post('/tmo/fares', [App\Http\Controllers\TMO\FareManagementController::class, 'store'])->name('tmo.fares.store');
+
+    // --- SYSTEM ACTIVITY / AUDIT LOGS ---
+    Route::get('/tmo/activity-logs', [\App\Http\Controllers\AuditLogController::class, 'index'])->name('tmo.activity-logs');
+    Route::get('/tmo/activity-logs/export/excel', [\App\Http\Controllers\AuditLogController::class, 'exportExcel'])->name('tmo.activity-logs.export-excel');
 
     // Document Preview Routes
     Route::get('/document/inspection-preview', [DocumentController::class, 'previewDocument'])->name('document.preview');

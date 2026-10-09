@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
+use App\Services\AuditService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -34,6 +35,31 @@ class AuthenticatedSessionController extends Controller
         $request->session()->regenerate();
 
         $user = Auth::user();
+
+        if ($user) {
+            $roleLabel = match ($user->role) {
+                'tmo_personnel'   => 'TMO Personnel',
+                'bplo_staff'      => 'BPLO Staff',
+                'tricycle_driver' => 'Tricycle Driver / Operator',
+                'admin'           => 'Administrator',
+                default           => ucwords(str_replace('_', ' ', (string) $user->role)),
+            };
+
+            AuditService::log(
+                module: 'auth',
+                action: 'auth.login',
+                record: $user,
+                description: "{$user->name} ({$roleLabel}) logged in successfully to the web portal.",
+                oldValues: null,
+                newValues: null,
+                metadata: [
+                    'ip_address' => $request->ip(),
+                    'user_agent' => substr((string) $request->userAgent(), 0, 255),
+                ],
+                actor: $user
+            );
+        }
+
         $fallback = match ($user?->role) {
             'tmo_personnel'      => route('tmo.dashboard'),
             'bplo_staff'         => route('bplo.dashboard'),
@@ -49,6 +75,30 @@ class AuthenticatedSessionController extends Controller
      */
     public function destroy(Request $request): RedirectResponse
     {
+        $user = Auth::user();
+
+        if ($user) {
+            $roleLabel = match ($user->role) {
+                'tmo_personnel'   => 'TMO Personnel',
+                'bplo_staff'      => 'BPLO Staff',
+                'tricycle_driver' => 'Tricycle Driver / Operator',
+                'admin'           => 'Administrator',
+                default           => ucwords(str_replace('_', ' ', (string) $user->role)),
+            };
+
+            AuditService::log(
+                module: 'auth',
+                action: 'auth.logout',
+                record: $user,
+                description: "{$user->name} ({$roleLabel}) logged out of the web portal.",
+                metadata: [
+                    'ip_address'  => $request->ip(),
+                    'logout_time' => now()->toIso8601String(),
+                ],
+                actor: $user
+            );
+        }
+
         if (Auth::guard('web')->check()) {
             Auth::guard('web')->logout();
         }

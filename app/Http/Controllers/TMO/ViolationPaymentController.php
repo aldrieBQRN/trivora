@@ -3,8 +3,8 @@
 namespace App\Http\Controllers\TMO;
 
 use App\Http\Controllers\Controller;
-use App\Models\AuditLog;
 use App\Models\Violation;
+use App\Services\AuditService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -44,16 +44,20 @@ class ViolationPaymentController extends Controller
                 'status'       => in_array($violation->status, ['open', 'acknowledged'], true) ? 'resolved' : $violation->status,
             ]);
 
-            AuditLog::create([
-                'user_id'        => $user->id,
-                'event'          => 'violation_payment_confirmed',
-                'auditable_type' => Violation::class,
-                'auditable_id'   => $violation->id,
-                'old_values'     => $oldValues,
-                'new_values'     => $violation->only(['status', 'fine_paid_at']),
-                'ip_address'     => $request->ip(),
-                'user_agent'     => $request->userAgent(),
-            ]);
+            $vioRef = 'VIO-26-' . str_pad($violation->id, 4, '0', STR_PAD_LEFT);
+            AuditService::log(
+                module: 'violation',
+                action: 'violation_payment.confirmed',
+                record: $violation,
+                description: "Confirmed municipal treasury fine payment for violation {$vioRef}. Marked Settled.",
+                oldValues: $oldValues,
+                newValues: $violation->only(['status', 'fine_paid_at']),
+                targetReference: $vioRef,
+                metadata: [
+                    'violation_id' => $violation->id,
+                    'fine_amount'  => (float) $violation->fine_amount,
+                ]
+            );
         });
 
         return back()->with('success', 'Payment confirmed. This violation has been marked Settled.');

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\ProfileUpdateRequest;
+use App\Services\AuditService;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -72,18 +73,48 @@ class ProfileController extends Controller
      */
     public function update(ProfileUpdateRequest $request): RedirectResponse
     {
+        $user = $request->user();
+        $oldValues = [
+            'name'  => $user->name,
+            'email' => $user->email,
+        ];
+        if (in_array($user->role, self::STAFF_ROLES, true)) {
+            $oldValues['contact_number'] = $user->contact_number;
+            $oldValues['address'] = $user->address;
+            $oldValues['birthday'] = $user->birthday?->format('Y-m-d');
+        }
+
         $data = $request->validated();
-        if (!in_array($request->user()->role, self::STAFF_ROLES, true)) {
+        if (!in_array($user->role, self::STAFF_ROLES, true)) {
             unset($data['contact_number'], $data['address'], $data['birthday']);
         }
 
-        $request->user()->fill($data);
+        $user->fill($data);
 
-        if ($request->user()->isDirty('email')) {
-            $request->user()->email_verified_at = null;
+        if ($user->isDirty('email')) {
+            $user->email_verified_at = null;
         }
 
-        $request->user()->save();
+        $user->save();
+
+        $newValues = [
+            'name'  => $user->name,
+            'email' => $user->email,
+        ];
+        if (in_array($user->role, self::STAFF_ROLES, true)) {
+            $newValues['contact_number'] = $user->contact_number;
+            $newValues['address'] = $user->address;
+            $newValues['birthday'] = $user->birthday?->format('Y-m-d');
+        }
+
+        AuditService::log(
+            module: 'profile',
+            action: 'profile.updated',
+            record: $user,
+            description: "User {$user->name} updated account profile",
+            oldValues: $oldValues,
+            newValues: $newValues
+        );
 
         return Redirect::route('profile.edit')->with('status', 'profile-updated');
     }

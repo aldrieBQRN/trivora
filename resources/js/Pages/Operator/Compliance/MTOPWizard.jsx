@@ -17,11 +17,12 @@ import {
     MapPin,
     Mail
 } from 'lucide-react';
-import { VEHICLE_DETAIL_FIELDS, getApplicableDocuments } from '@/data/registrationRequirements';
+import { VEHICLE_BODY_COLORS, VEHICLE_BODY_TYPES, VEHICLE_DETAIL_FIELDS, getApplicableDocuments } from '@/data/registrationRequirements';
 import { NASUGBU_BARANGAYS } from '@/data/nasugbuBarangays';
 // Same form design, upload tiles and validation as Public Registration (PublicApply.jsx).
 import {
     REGISTRATION_CSS, Field, FileUpload, todayIso, validateVehicleInfo, validateDriverInfo,
+    handleMobileKeyDown, sanitizeMobileNumber, handleMobilePaste, VehicleSpecsFields,
 } from '@/Components/Registration/RegistrationUI';
 
 // Shared soft, layered shadow token — same elevation language used across the redesigned TMO
@@ -38,6 +39,20 @@ export default function MTOPWizard({ applicationType = 'new', tricycleUnit = nul
 
     const isRenewal = applicationType === 'renewal';
 
+    // If renewing an existing unit with a legacy color/body-type not present in the predefined list,
+    // pre-select 'Other' and preserve the legacy value in the conditional custom input.
+    const resolvedInitialColor = tricycleUnit?.body_color
+        ? (VEHICLE_BODY_COLORS.filter(c => c !== 'Other').includes(tricycleUnit.body_color)
+            ? { color: tricycleUnit.body_color, other: '' }
+            : { color: 'Other', other: tricycleUnit.body_color })
+        : { color: '', other: '' };
+
+    const resolvedInitialBodyType = tricycleUnit?.body_type
+        ? (VEHICLE_BODY_TYPES.filter(t => t !== 'Other').includes(tricycleUnit.body_type)
+            ? { type: tricycleUnit.body_type, other: '' }
+            : { type: 'Other', other: tricycleUnit.body_type })
+        : { type: '', other: '' };
+
     // Same field set/order as Public Registration (resources/js/data/registrationRequirements.js)
     // — pre-filled from the tricycle's municipal record for a renewal. The owner/driver split
     // uses the exact same backend data model as Public Registration: `owner_is_driver` on the
@@ -45,9 +60,11 @@ export default function MTOPWizard({ applicationType = 'new', tricycleUnit = nul
     const { data, setData } = useForm({
         plate_number: tricycleUnit?.plate_number || '',
         make_model: tricycleUnit?.make_model || '',
-        year_model: tricycleUnit?.year_model || '',
-        body_color: tricycleUnit?.body_color || '',
-        body_type: tricycleUnit?.body_type || '',
+        year_model: tricycleUnit?.year_model ? String(tricycleUnit.year_model) : '',
+        body_color: resolvedInitialColor.color,
+        body_color_other: resolvedInitialColor.other,
+        body_type: resolvedInitialBodyType.type,
+        body_type_other: resolvedInitialBodyType.other,
         engine_number: tricycleUnit?.engine_number || '',
         chassis_number: tricycleUnit?.chassis_number || '',
         or_number: tricycleUnit?.or_number || '',
@@ -117,6 +134,8 @@ export default function MTOPWizard({ applicationType = 'new', tricycleUnit = nul
             formData.append('unit_id', tricycleUnit.id);
         }
         VEHICLE_DETAIL_FIELDS.forEach(f => formData.append(f.id, data[f.id] || ''));
+        formData.append('body_color_other', data.body_color_other || '');
+        formData.append('body_type_other', data.body_type_other || '');
 
         // Owner/driver split — same payload keys as Public Registration's RegistrationController
         formData.append('owner_is_driver', data.owner_is_driver ? '1' : '0');
@@ -215,18 +234,19 @@ export default function MTOPWizard({ applicationType = 'new', tricycleUnit = nul
                                     </div>
                                 )}
 
-                                {/* Same 9 fields, labels, and order as Public Registration
-                                    (resources/js/data/registrationRequirements.js). */}
-                                <div className="pa-fields">
-                                    {VEHICLE_DETAIL_FIELDS.map(f => (
-                                        <Field key={f.id} label={f.label} error={fieldError(f.id)}>
-                                            <input className={`pa-input${fieldError(f.id) ? ' pa-input-error' : ''}`}
-                                                placeholder={f.placeholder} autoComplete="off"
-                                                value={data[f.id] || ''} onChange={e => setData(f.id, e.target.value)}
-                                                onBlur={() => markTouched(f.id)} />
-                                        </Field>
-                                    ))}
-                                </div>
+                                {/* Unified vehicle specs form fields (shared with Public Registration) */}
+                                <VehicleSpecsFields
+                                    data={data}
+                                    setData={(f, v) => {
+                                        if (typeof f === 'object' && f !== null) {
+                                            setData(current => ({ ...current, ...f }));
+                                        } else {
+                                            setData(f, v);
+                                        }
+                                    }}
+                                    fieldError={fieldError}
+                                    markTouched={markTouched}
+                                />
 
                                 {/* ── Owner / Driver — same structure, wording, and backend data model
                                     (owner_is_driver + ApplicationDriver) as Public Registration ── */}
@@ -314,8 +334,16 @@ export default function MTOPWizard({ applicationType = 'new', tricycleUnit = nul
                                                 <div className="pa-input-wrap">
                                                     <span className="pa-input-wrap-icon"><Phone size={15} strokeWidth={2} /></span>
                                                     <input className={`pa-input${fieldError('driver_contact') ? ' pa-input-error' : ''}`}
-                                                        placeholder="e.g. 0917 123 4567" autoComplete="off"
-                                                        value={data.driver_contact || ''} onChange={e => setData('driver_contact', e.target.value)}
+                                                        type="tel"
+                                                        inputMode="numeric"
+                                                        pattern="[0-9]*"
+                                                        maxLength={11}
+                                                        placeholder="09171234567"
+                                                        autoComplete="tel"
+                                                        value={data.driver_contact || ''}
+                                                        onChange={e => setData('driver_contact', sanitizeMobileNumber(e.target.value))}
+                                                        onKeyDown={handleMobileKeyDown}
+                                                        onPaste={e => handleMobilePaste(e, clean => setData('driver_contact', clean))}
                                                         onBlur={() => markTouched('driver_contact')} />
                                                 </div>
                                             </Field>

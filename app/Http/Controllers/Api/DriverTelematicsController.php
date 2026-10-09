@@ -3,9 +3,12 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Events\DriverLocationUpdated;
+use App\Models\Booking;
 use App\Models\Driver;
 use App\Models\Tricycle;
 use App\Models\TricycleLocation;
+use App\Services\ColorCodingRuleService;
 use App\Services\TelemetryService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -104,6 +107,15 @@ class DriverTelematicsController extends Controller
                 'current_lng'              => $request->longitude,
                 'last_location_updated_at' => $recordedAt,
             ]);
+
+            $this->broadcastDriverLocation(
+                $driver,
+                $tricycle,
+                (float) $request->latitude,
+                (float) $request->longitude,
+                $request->heading_deg !== null ? (int) $request->heading_deg : null,
+                $recordedAt
+            );
         }
 
         return response()->json([
@@ -181,6 +193,15 @@ class DriverTelematicsController extends Controller
                     'current_lng'              => $latest->longitude,
                     'last_location_updated_at' => $latest->recorded_at,
                 ]);
+
+                $this->broadcastDriverLocation(
+                    $driver,
+                    $tricycle,
+                    (float) $latest->latitude,
+                    (float) $latest->longitude,
+                    $latest->heading_deg !== null ? (int) $latest->heading_deg : null,
+                    $latest->recorded_at
+                );
             }
         }
 
@@ -223,6 +244,7 @@ class DriverTelematicsController extends Controller
             'iot_device_id'        => $tricycle->iot_device_id,
             'tracking_capability'  => $tricycle->tracking_capability,
             'active_tracking_mode' => $tricycle->active_tracking_mode,
+            'coding_status'        => ColorCodingRuleService::evaluateTricycle($tricycle),
         ]);
     }
 
@@ -264,4 +286,37 @@ class DriverTelematicsController extends Controller
             'iot_device_id'        => $tricycle->iot_device_id,
         ]);
     }
+
+    /**
+     * Broadcast real-time driver coordinates to active booking channels.
+     */
+    private function broadcastDriverLocation(
+        Driver $driver,
+        Tricycle $tricycle,
+        float $latitude,
+        float $longitude,
+        ?int $headingDeg,
+        \Carbon\CarbonInterface $recordedAt
+    ): void {
+        $activeBookings = Booking::where('driver_id', $driver->id)
+            ->whereIn('status', ['accepted', 'arrived', 'in_transit'])
+            ->get();
+
+        foreach ($activeBookings as $booking) {
+            try {
+                broadcast(new DriverLocationUpdated(
+                    bookingId: $booking->id,
+                    driverId: $driver->id,
+                    tricycleId: $tricycle->id,
+                    latitude: $latitude,
+                    longitude: $longitude,
+                    headingDeg: $headingDeg,
+                    recordedAt: $recordedAt->toIso8601String()
+                ));
+            } catch (\Throwable $e) {
+                Log::warning("Driver location broadcast failed for booking {$booking->id}: {$e->getMessage()}");
+            }
+        }
+    }
 }
+

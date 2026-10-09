@@ -175,10 +175,12 @@ class GpsTelemetryChainTest extends TestCase
         $response->assertOk();
         $response->assertInertia(function ($page) {
             $page->where('initialTricycles', function ($tricycles) {
-                \PHPUnit\Framework\Assert::assertNull(
-                    $tricycles->firstWhere('plate', 'GPS-0002'),
-                    'A tricycle with zero real GPS pings must not appear on the live map at all.'
-                );
+                $unit = $tricycles->firstWhere('plate', 'GPS-0002');
+                \PHPUnit\Framework\Assert::assertNotNull($unit, 'Tricycle is in the fleet roster.');
+                \PHPUnit\Framework\Assert::assertSame('not_configured', $unit['connection_status']);
+                \PHPUnit\Framework\Assert::assertNull($unit['lat'], 'No fake lat');
+                \PHPUnit\Framework\Assert::assertNull($unit['lng'], 'No fake lng');
+                \PHPUnit\Framework\Assert::assertFalse($unit['hasRealGPS']);
 
                 return true;
             });

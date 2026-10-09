@@ -26,34 +26,48 @@ const delay = (ms) => ({ animationDelay: `${ms}ms` });
 // panel reads as one consistent product rather than a different template.
 const CARD_SHADOW = 'shadow-[0_1px_2px_0_rgba(15,23,42,0.04),0_8px_24px_-8px_rgba(15,23,42,0.10)]';
 
-const getCodingDetails = () => {
-    const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-    const today = days[new Date().getDay()];
-    const schedule = {
-        'Monday': '1, 2', 'Tuesday': '3, 4', 'Wednesday': '5, 6',
-        'Thursday': '7, 8', 'Friday': '9, 0', 'Saturday': 'None', 'Sunday': 'None',
-    };
-    return { day: today, restricted: schedule[today] || 'None' };
-};
+const WEEKDAY_ORDER = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
-const CODING_RULES = [
-    { day: 'Monday', color: 'Green', badgeClass: 'bg-emerald-50 text-emerald-700 border-emerald-200', dotClass: 'bg-emerald-500' },
-    { day: 'Tuesday', color: 'Yellow', badgeClass: 'bg-amber-50 text-amber-700 border-amber-200', dotClass: 'bg-amber-500' },
-    { day: 'Wednesday', color: 'Blue', badgeClass: 'bg-blue-50 text-blue-700 border-blue-200', dotClass: 'bg-blue-500' },
-    { day: 'Thursday', color: 'Red', badgeClass: 'bg-red-50 text-red-700 border-red-200', dotClass: 'bg-red-500' },
-    { day: 'Friday', color: 'White', badgeClass: 'bg-gray-100 text-slate-500 border-slate-200', dotClass: 'bg-gray-400' },
-    { day: 'Saturday', color: 'No Coding', badgeClass: 'bg-gray-50 text-slate-400 border-slate-200', dotClass: 'bg-gray-300' },
-    { day: 'Sunday', color: 'No Coding', badgeClass: 'bg-gray-50 text-slate-400 border-slate-200', dotClass: 'bg-gray-300' },
-];
-
-export default function OperatorDashboard({ operator, stats, tricycles, recentViolations, expiringRegistrations = [], applicationProgress }) {
+export default function OperatorDashboard({ operator, stats, tricycles, recentViolations, expiringRegistrations = [], applicationProgress, activeCodingSchemes = [] }) {
     const [currentTime, setCurrentTime] = useState(new Date());
 
     // Background refresh of the driver's live counters/queues — an application moving stage or a
     // new violation showing up elsewhere updates this dashboard without a manual reload.
     useBackgroundRefresh(['stats', 'tricycles', 'recentViolations', 'expiringRegistrations', 'applicationProgress']);
-    const codingInfo = getCodingDetails();
+    
     const todayName = new Date().toLocaleDateString('en-US', { weekday: 'long' });
+
+    // Derive authoritative 7-day schedule from database coding schemes
+    const codingRules = useMemo(() => {
+        return WEEKDAY_ORDER.map((day) => {
+            const scheme = (activeCodingSchemes || []).find((s) =>
+                Array.isArray(s.restricted_days) && s.restricted_days.includes(day) && s.restricted_digits?.length > 0
+            );
+            if (scheme) {
+                return {
+                    day,
+                    color: scheme.name,
+                    digits: scheme.restricted_digits.join(', '),
+                    hex: scheme.color_hex,
+                    badgeStyle: { backgroundColor: `${scheme.color_hex}15`, color: '#1e293b', borderColor: `${scheme.color_hex}40` },
+                    dotStyle: { backgroundColor: scheme.color_hex },
+                };
+            }
+            return {
+                day,
+                color: 'No Coding',
+                digits: 'None',
+                hex: '#94A3B8',
+                badgeStyle: { backgroundColor: '#F8FAFC', color: '#64748B', borderColor: '#E2E8F0' },
+                dotStyle: { backgroundColor: '#CBD5E1' },
+            };
+        });
+    }, [activeCodingSchemes]);
+
+    const todayRule = useMemo(() => {
+        return codingRules.find((r) => r.day === todayName) || { day: todayName, digits: 'None' };
+    }, [codingRules, todayName]);
+
     const expiredUnit = tricycles.find((t) => t.is_expired);
     const finesDue = Number(stats.pending_fine_amount) > 0;
     const violationCount = recentViolations.length;
@@ -138,7 +152,7 @@ export default function OperatorDashboard({ operator, stats, tricycles, recentVi
                                 </span>
                                 <div>
                                     <p className="text-[9px] font-bold uppercase tracking-widest text-slate-400">Restricted Today</p>
-                                    <p className="font-mono text-xs font-bold text-slate-900">{codingInfo.restricted}</p>
+                                    <p className="font-mono text-xs font-bold text-slate-900">{todayRule.digits}</p>
                                 </div>
                             </div>
                             <div className="flex items-center gap-2.5 rounded-xl bg-slate-50 p-2.5">
@@ -146,7 +160,7 @@ export default function OperatorDashboard({ operator, stats, tricycles, recentVi
                                     <Clock size={14} />
                                 </span>
                                 <div>
-                                    <p className="text-[9px] font-bold uppercase tracking-widest text-slate-400">{codingInfo.day}</p>
+                                    <p className="text-[9px] font-bold uppercase tracking-widest text-slate-400">{todayName}</p>
                                     <p className="font-mono text-xs font-bold tabular-nums text-slate-900">{currentTime.toLocaleTimeString('en-US', { hour12: false })}</p>
                                 </div>
                             </div>
@@ -295,7 +309,7 @@ export default function OperatorDashboard({ operator, stats, tricycles, recentVi
                 </div>
                 <div className="flex flex-col gap-4 p-5 lg:flex-row lg:items-center">
                     <div className="grid flex-1 grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-7">
-                        {CODING_RULES.map((rule) => (
+                        {codingRules.map((rule) => (
                             <div
                                 key={rule.day}
                                 className={`flex items-center justify-between gap-2 rounded-lg border px-3 py-2 lg:flex-col lg:justify-center lg:gap-1.5 lg:px-2 lg:py-2.5 lg:text-center ${
@@ -303,7 +317,7 @@ export default function OperatorDashboard({ operator, stats, tricycles, recentVi
                                 }`}
                             >
                                 <div className="flex min-w-0 items-center gap-1.5 lg:gap-1">
-                                    <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${rule.dotClass}`} />
+                                    <span className="h-1.5 w-1.5 shrink-0 rounded-full" style={rule.dotStyle} />
                                     <span className="truncate text-[12.5px] font-bold text-slate-700 lg:text-[11px]">
                                         <span className="lg:hidden">{rule.day}</span>
                                         <span className="hidden lg:inline">{rule.day.slice(0, 3)}</span>
@@ -314,7 +328,7 @@ export default function OperatorDashboard({ operator, stats, tricycles, recentVi
                                         </span>
                                     )}
                                 </div>
-                                <span className={`shrink-0 rounded-md border px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide lg:w-full lg:truncate lg:text-[9.5px] ${rule.badgeClass}`}>
+                                <span className="shrink-0 rounded-md border px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide lg:w-full lg:truncate lg:text-[9.5px]" style={rule.badgeStyle}>
                                     {rule.color}
                                 </span>
                                 {rule.day === todayName && (

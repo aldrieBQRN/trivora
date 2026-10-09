@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Operator;
 use App\Models\User;
+use App\Services\AuditService;
 use App\Support\MobileNumber;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -72,6 +73,28 @@ class OperatorAuthController extends Controller
             ])->onlyInput('login_id');
         }
 
+        $roleLabel = match ($user->role) {
+            'tmo_personnel'   => 'TMO Personnel',
+            'bplo_staff'      => 'BPLO Staff',
+            'tricycle_driver' => 'Tricycle Driver / Operator',
+            'admin'           => 'Administrator',
+            default           => ucwords(str_replace('_', ' ', (string) $user->role)),
+        };
+
+        AuditService::log(
+            module: 'auth',
+            action: 'auth.login',
+            record: $user,
+            description: "{$user->name} ({$roleLabel}) logged in successfully to the web portal.",
+            oldValues: null,
+            newValues: null,
+            metadata: [
+                'ip_address' => $request->ip(),
+                'user_agent' => substr((string) $request->userAgent(), 0, 255),
+            ],
+            actor: $user
+        );
+
         // Redirect to the dashboard that matches the user's role
         return redirect()->to($this->getDashboardRoute($user->role));
     }
@@ -128,6 +151,30 @@ class OperatorAuthController extends Controller
      */
     public function logout(Request $request): RedirectResponse
     {
+        $user = Auth::user();
+
+        if ($user) {
+            $roleLabel = match ($user->role) {
+                'tmo_personnel'   => 'TMO Personnel',
+                'bplo_staff'      => 'BPLO Staff',
+                'tricycle_driver' => 'Tricycle Driver / Operator',
+                'admin'           => 'Administrator',
+                default           => ucwords(str_replace('_', ' ', (string) $user->role)),
+            };
+
+            AuditService::log(
+                module: 'auth',
+                action: 'auth.logout',
+                record: $user,
+                description: "{$user->name} ({$roleLabel}) logged out of the web portal.",
+                metadata: [
+                    'ip_address'  => $request->ip(),
+                    'logout_time' => now()->toIso8601String(),
+                ],
+                actor: $user
+            );
+        }
+
         Auth::guard('web')->logout();
 
         $request->session()->invalidate();

@@ -14,6 +14,7 @@ use App\Models\ViolationAppeal;
 use App\Models\FranchiseScheme;
 use App\Models\ColorCodingScheme;
 use App\Models\AuditLog;
+use App\Services\AuditService;
 use App\Services\ColorCodingRuleService;
 use Illuminate\Support\Facades\DB;
 use Inertia\Response;
@@ -47,70 +48,41 @@ class DashboardController extends Controller
         $restrictedEndings = $this->getRestrictedEndings($todayDay);
 
         // Fetch active tricycles eligible for the Live Monitoring Units list — a tricycle only
-        // belongs here if it has an actual GPS coordinate record stored in the system.
-        // whereHas('locations') with coordinate checks compiles to a WHERE EXISTS against
-        // tricycle_locations, so units without coordinates are excluded at the SQL level.
+        // Fetch active tricycles for the Live Monitoring Units list.
         $activeTricycles = Tricycle::with(['operator', 'franchiseScheme.colorCodingScheme'])
             ->where('status', 'active')
-            ->whereHas('locations', function ($q) {
-                $q->whereNotNull('latitude')->whereNotNull('longitude');
-            })
             ->get();
 
         // Calculate coding suspended count based on the Sticker Number last digit
         $codingSuspended = 0;
         if (!empty($restrictedEndings)) {
             $codingSuspended = Tricycle::where('status', 'active')
-                ->whereHas('franchiseScheme', function ($q) use ($restrictedEndings) {
-                    $q->where(function ($sub) use ($restrictedEndings) {
-                        foreach ($restrictedEndings as $digit) {
-                            $sub->orWhere('franchise_number', 'like', "%{$digit}");
-                        }
-                    });
+                ->where(function ($q) use ($restrictedEndings) {
+                    foreach ($restrictedEndings as $digit) {
+                        $q->orWhere('coding_scheme_number', 'like', "%{$digit}");
+                    }
                 })->count();
         }
 
         $signalLostSeconds = config('tracking.fleet_signal_lost_seconds', 60);
+        $autoOfflineSeconds = config('tracking.fleet_auto_offline_seconds', 600);
 
         // The driver's explicit Online/Offline toggle (drivers.is_online) outranks GPS age: a
         // driver who went Offline (toggle or logout) is Offline immediately, whatever the GPS.
-        // Units with no Driver row (nothing to toggle) are judged by their GPS age alone.
         $driverOnlineByTricycleId = Driver::whereIn('tricycle_id', $activeTricycles->pluck('id'))
             ->pluck('is_online', 'tricycle_id');
 
-        // Map tricycles for the enforcement map. Only tricycles with real coordinate records
-        // are included in the live fleet monitoring dataset.
-        $tricyclesData = $activeTricycles->map(function ($tri) use ($restrictedEndings, $signalLostSeconds, $driverOnlineByTricycleId) {
+        // Map tricycles for the enforcement dashboard and live fleet map.
+        $tricyclesData = $activeTricycles->map(function ($tri) use ($restrictedEndings, $signalLostSeconds, $autoOfflineSeconds, $driverOnlineByTricycleId) {
             $latestLoc = $tri->locations()
                 ->whereNotNull('latitude')
                 ->whereNotNull('longitude')
                 ->latest('recorded_at')
                 ->first();
 
-            if (!$latestLoc || $latestLoc->latitude === null || $latestLoc->longitude === null) {
-                return null;
-            }
-
-            // Server-side source of truth for connectivity — never inferred from frontend polling
-            // or browser activity:
-            //   drivers.is_online = false                  -> 'offline'   (immediately)
-            //   drivers.is_online = true, GPS <= 60s old   -> 'online'
-            //   drivers.is_online = true, GPS  > 60s old   -> 'no_signal'
-            // Units that never sent GPS are not in this list at all (see the query above).
-            $driverToggledOnline = $driverOnlineByTricycleId->has($tri->id)
-                ? (bool) $driverOnlineByTricycleId->get($tri->id)
-                : true;
-            // Real recorded_at only (never reset/fabricated). A phone clock slightly ahead of the
-            // server yields a negative diff, which is simply "just now".
-            $gpsAgeSeconds = $latestLoc->recorded_at
-                ? max(0, $latestLoc->recorded_at->diffInSeconds(now()))
-                : null;
-            $connectionStatus = match (true) {
-                !$driverToggledOnline => 'offline',
-                $gpsAgeSeconds !== null && $gpsAgeSeconds <= $signalLostSeconds => 'online',
-                default => 'no_signal',
-            };
-            $isOnline = $connectionStatus === 'online';
+            // Check if restricted today using DB-authoritative ColorCodingRuleService
+            $codingEval = ColorCodingRuleService::evaluateTricycle($tri);
+            $isRestrictedToday = $codingEval['is_restricted_today'];
 
             // Check if there is an active violation detected today
             $hasUnresolvedViolation = $tri->violations()
@@ -118,48 +90,77 @@ class DashboardController extends Controller
                 ->whereDate('detected_at', today())
                 ->exists();
 
-            // Check if restricted today based on the Sticker Number last digit
-            $stickerNumber = $tri->coding_scheme_number;
-            $lastDigit = $stickerNumber ? (int)substr(trim($stickerNumber), -1) : null;
-            $isRestrictedToday = ($lastDigit !== null) && in_array($lastDigit, $restrictedEndings);
+            $driverToggledOnline = $driverOnlineByTricycleId->has($tri->id)
+                ? (bool) $driverOnlineByTricycleId->get($tri->id)
+                : false;
+
+            // Unit has no valid GPS coordinate history at all:
+            if (!$latestLoc || $latestLoc->latitude === null || $latestLoc->longitude === null) {
+                $status = $hasUnresolvedViolation ? 'violator' : 'offline';
+                return [
+                    'db_id'             => $tri->id,
+                    'id'                => $tri->coding_scheme_number ?: ('TRV-' . $tri->id),
+                    'plate'             => $tri->plate_number,
+                    'operator'          => $tri->operator ? $tri->operator->full_name : 'N/A',
+                    'lat'               => null,
+                    'lng'               => null,
+                    'status'            => $status,
+                    'is_online'         => false,
+                    'connection_status' => 'not_configured',
+                    'hasRealGPS'        => false,
+                    'last_seen'         => 'Never',
+                    'last_update_label' => 'No GPS history',
+                    'recorded_at'       => null,
+                    'coding_status'     => $codingEval,
+                ];
+            }
+
+            // Real recorded_at only (never reset/fabricated).
+            $gpsAgeSeconds = $latestLoc->recorded_at
+                ? max(0, $latestLoc->recorded_at->diffInSeconds(now()))
+                : null;
+
+            // Authoritative connection status hierarchy:
+            // - is_online = false -> offline
+            // - is_online = true + telemetry age <= 60s -> online
+            // - is_online = true + telemetry age > 60s and < 600s -> no_signal
+            // - is_online = true + telemetry age >= 600s -> offline
+            $connectionStatus = match (true) {
+                !$driverToggledOnline => 'offline',
+                $gpsAgeSeconds === null => 'not_configured',
+                $gpsAgeSeconds <= $signalLostSeconds => 'online',
+                $gpsAgeSeconds < $autoOfflineSeconds => 'no_signal',
+                default => 'offline',
+            };
+
+            $isOnline = ($connectionStatus === 'online');
 
             // Precedence: an open violation is always shown, even if the unit has since gone
-            // offline. Otherwise, connectivity takes priority over the coding-day status — if we
-            // haven't heard from a unit recently we can't vouch for its current compliance either way.
+            // offline. Otherwise, connectivity takes priority over the coding-day status.
             $status = 'compliant';
             if ($hasUnresolvedViolation) {
                 $status = 'violator';
-            } elseif (!$isOnline) {
+            } elseif ($connectionStatus === 'offline') {
                 $status = 'offline';
             } elseif ($isRestrictedToday) {
                 $status = 'coding_no_operation';
             }
 
             return [
-                // Stable, guaranteed-unique identity for React keys, marker refs and row
-                // selection: the tricycle's own primary key. `id` below is a *display*
-                // Sticker Number (Tricycle::getCodingSchemeNumberAttribute), which is
-                // deliberately allowed to repeat across units — an empty stored value falls
-                // back to the franchise number, so two different units can legitimately
-                // present the same string (e.g. "0101"). Using that display value as a key
-                // is what produced React's duplicate-key warnings.
-                'db_id'       => $tri->id,
-                'id'          => $tri->coding_scheme_number ?: ('TRV-' . $tri->id),
-                'plate'       => $tri->plate_number,
-                'operator'    => $tri->operator ? $tri->operator->full_name : 'N/A',
-                'lat'         => (float)$latestLoc->latitude,
-                'lng'         => (float)$latestLoc->longitude,
-                'status'      => $status,
-                'is_online'   => $isOnline,
-                // 'online' | 'no_signal' | 'offline' — the Live Monitoring status badge.
+                'db_id'             => $tri->id,
+                'id'                => $tri->coding_scheme_number ?: ('TRV-' . $tri->id),
+                'plate'             => $tri->plate_number,
+                'operator'          => $tri->operator ? $tri->operator->full_name : 'N/A',
+                'lat'               => (float)$latestLoc->latitude,
+                'lng'               => (float)$latestLoc->longitude,
+                'status'            => $status,
+                'is_online'         => $isOnline,
                 'connection_status' => $connectionStatus,
-                'hasRealGPS'  => true,
-                'last_seen'   => $latestLoc->recorded_at ? $latestLoc->recorded_at->diffForHumans() : 'Never',
-                // The ONE display value for "Last update" in Live Monitoring (Units tab and map card
-                // both render this): the latest stored GPS record's own recorded_at, formatted once
-                // here (relative, server clock) — never computed separately by the browser.
+                'hasRealGPS'        => true,
+                'last_seen'         => $latestLoc->recorded_at ? $latestLoc->recorded_at->diffForHumans() : 'Never',
                 'last_update_label' => $latestLoc->recorded_at ? self::formatGpsTimestamp($latestLoc->recorded_at) : null,
-                'recorded_at' => $latestLoc->recorded_at ? $latestLoc->recorded_at->toIso8601String() : null,
+                'recorded_at'       => $latestLoc->recorded_at ? $latestLoc->recorded_at->toIso8601String() : null,
+                'coding_status'     => $codingEval,
             ];
         })->filter()->values()->toArray();
 
@@ -171,8 +172,9 @@ class DashboardController extends Controller
         ];
 
         return Inertia::render('TMODashboard/Index', [
-            'initialTricycles' => $tricyclesData,
-            'stats'            => $stats,
+            'initialTricycles'     => $tricyclesData,
+            'stats'                => $stats,
+            'activeCodingSchemes' => \App\Models\ColorCodingScheme::where('is_active', true)->get(),
         ]);
     }
 
@@ -184,7 +186,8 @@ class DashboardController extends Controller
         $registryList = $this->registryListData();
 
         return Inertia::render('TMODashboard/UnitRegistry', [
-            'initialUnits' => $registryList,
+            'initialUnits'        => $registryList,
+            'activeCodingSchemes' => \App\Models\ColorCodingScheme::where('is_active', true)->get(),
         ]);
     }
 
@@ -217,18 +220,9 @@ class DashboardController extends Controller
                     $fourDigitSticker = str_pad($tri->id, 4, '0', STR_PAD_LEFT);
                 }
 
-                // Default BPLO last-digit rule
-                $lastDigit = (int)substr($fourDigitSticker, -1);
-                $fallbackMeta = match (true) {
-                    in_array($lastDigit, [1, 2]) => ['color' => 'Red',    'hex' => '#EF4444', 'bg' => 'rgba(239,68,68,.12)',  'day' => 'Monday'],
-                    in_array($lastDigit, [3, 4]) => ['color' => 'Blue',   'hex' => '#3B82F6', 'bg' => 'rgba(59,130,246,.12)', 'day' => 'Tuesday'],
-                    in_array($lastDigit, [5, 6]) => ['color' => 'Yellow', 'hex' => '#D97706', 'bg' => 'rgba(245,158,11,.12)', 'day' => 'Wednesday'],
-                    in_array($lastDigit, [7, 8]) => ['color' => 'Green',  'hex' => '#10B981', 'bg' => 'rgba(16,185,129,.12)', 'day' => 'Thursday'],
-                    default                       => ['color' => 'White',  'hex' => '#64748B', 'bg' => 'rgba(100,116,139,.12)','day' => 'Friday'],
-                };
-
-                $colorName = $ccs ? $ccs->name : $fallbackMeta['color'];
-                $colorHex  = $ccs ? ($ccs->color_hex ?: $fallbackMeta['hex']) : $fallbackMeta['hex'];
+                $eval = ColorCodingRuleService::evaluateTricycle($tri);
+                $colorName = $eval['scheme_name'] ?: 'White';
+                $colorHex  = $eval['color_hex'] ?: '#64748B';
                 $colorBg   = match (strtolower($colorName)) {
                     'red'    => 'rgba(239,68,68,.12)',
                     'blue'   => 'rgba(59,130,246,.12)',
@@ -236,14 +230,7 @@ class DashboardController extends Controller
                     'green'  => 'rgba(16,185,129,.12)',
                     default  => 'rgba(100,116,139,.12)',
                 };
-
-                $dayName = null;
-                if ($ccs && !empty($ccs->restricted_days)) {
-                    $dayName = is_array($ccs->restricted_days) ? $ccs->restricted_days[0] : $ccs->restricted_days;
-                }
-                if (!$dayName) {
-                    $dayName = $fallbackMeta['day'];
-                }
+                $dayName = !empty($eval['restricted_days']) ? $eval['restricted_days'][0] : 'None';
 
                 $todaName = $tri->todaZone ? $tri->todaZone->name : ($tri->operator?->todaZone ? $tri->operator->todaZone->name : 'Unassigned');
 
@@ -349,45 +336,30 @@ class DashboardController extends Controller
         $fourDigitSticker = str_pad(preg_replace('/\D/', '', $rawSticker) ?: $tri->id, 4, '0', STR_PAD_LEFT);
         $lastDigit = (int)substr($fourDigitSticker, -1);
 
-        $codingMeta = match (true) {
-            in_array($lastDigit, [1, 2]) => [
-                'color' => 'Red',
-                'hex' => '#EF4444',
-                'bg' => 'bg-red-500',
-                'badge' => 'bg-red-50 text-red-700 border-red-200',
-                'day' => 'Monday',
-            ],
-            in_array($lastDigit, [3, 4]) => [
-                'color' => 'Blue',
-                'hex' => '#3B82F6',
-                'bg' => 'bg-blue-500',
-                'badge' => 'bg-blue-50 text-blue-700 border-blue-200',
-                'day' => 'Tuesday',
-            ],
-            in_array($lastDigit, [5, 6]) => [
-                'color' => 'Yellow',
-                'hex' => '#EAB308',
-                'bg' => 'bg-amber-500',
-                'badge' => 'bg-amber-50 text-amber-800 border-amber-200',
-                'day' => 'Wednesday',
-            ],
-            in_array($lastDigit, [7, 8]) => [
-                'color' => 'Green',
-                'hex' => '#10B981',
-                'bg' => 'bg-emerald-500',
-                'badge' => 'bg-emerald-50 text-emerald-700 border-emerald-200',
-                'day' => 'Thursday',
-            ],
-            default => [
-                'color' => 'White',
-                'hex' => '#64748B',
-                'bg' => 'bg-slate-300 border-slate-400',
-                'badge' => 'bg-slate-50 text-slate-700 border-slate-200',
-                'day' => 'Friday',
-            ],
-        };
+        $eval = ColorCodingRuleService::evaluateTricycle($tri);
+        $colorName = $eval['scheme_name'] ?: 'White';
+        $dayName = !empty($eval['restricted_days']) ? $eval['restricted_days'][0] : 'None';
+        $codingMeta = [
+            'color' => $colorName,
+            'hex'   => $eval['color_hex'] ?: '#64748B',
+            'bg'    => match (strtolower($colorName)) {
+                'red'    => 'bg-red-500',
+                'blue'   => 'bg-blue-500',
+                'yellow' => 'bg-amber-500',
+                'green'  => 'bg-emerald-500',
+                default  => 'bg-slate-300 border-slate-400',
+            },
+            'badge' => match (strtolower($colorName)) {
+                'red'    => 'bg-red-50 text-red-700 border-red-200',
+                'blue'   => 'bg-blue-50 text-blue-700 border-blue-200',
+                'yellow' => 'bg-amber-50 text-amber-800 border-amber-200',
+                'green'  => 'bg-emerald-50 text-emerald-700 border-emerald-200',
+                default  => 'bg-slate-50 text-slate-700 border-slate-200',
+            },
+            'day'   => $dayName,
+        ];
 
-        $isCodedToday = (now()->format('l') === $codingMeta['day']);
+        $isCodedToday = $eval['is_restricted_today'];
         $todaName = $tri->todaZone?->name ?: ($tri->operator?->todaZone?->name ?: 'Unassigned');
 
         // Franchise Number (STK-YYYY-NNNN) — the real serial held on this unit's franchise
@@ -959,7 +931,7 @@ class DashboardController extends Controller
         }
 
         DB::transaction(function () use ($appeal, $request) {
-            $oldValues = $appeal->only(['status', 'reviewed_at', 'reviewed_by', 'review_notes']);
+            $oldValues = $appeal->only(['status', 'review_notes']);
 
             $appeal->update([
                 'status' => 'approved',
@@ -969,16 +941,20 @@ class DashboardController extends Controller
             ]);
             $appeal->violation->update(['status' => 'resolved']);
 
-            AuditLog::create([
-                'user_id'        => $request->user()->id,
-                'event'          => 'violation_appeal_approved',
-                'auditable_type' => ViolationAppeal::class,
-                'auditable_id'   => $appeal->id,
-                'old_values'     => $oldValues,
-                'new_values'     => $appeal->only(['status', 'reviewed_at', 'reviewed_by', 'review_notes']),
-                'ip_address'     => $request->ip(),
-                'user_agent'     => $request->userAgent(),
-            ]);
+            AuditService::log(
+                module: 'violation',
+                action: 'violation_appeal.approved',
+                record: $appeal,
+                description: "Approved violation appeal for ticket VIO-26-" . str_pad($appeal->violation_id, 4, '0', STR_PAD_LEFT) . ". Violation marked resolved.",
+                oldValues: $oldValues,
+                newValues: $appeal->only(['status', 'review_notes']),
+                targetReference: 'VIO-26-' . str_pad($appeal->violation_id, 4, '0', STR_PAD_LEFT),
+                metadata: [
+                    'appeal_id'     => $appeal->id,
+                    'violation_id'  => $appeal->violation_id,
+                    'review_notes'  => $request->input('review_notes'),
+                ]
+            );
         });
 
         return redirect()->route('tmo.violations.details', $appeal->violation_id)
@@ -1006,7 +982,7 @@ class DashboardController extends Controller
         ]);
 
         DB::transaction(function () use ($appeal, $request, $validated) {
-            $oldValues = $appeal->only(['status', 'reviewed_at', 'reviewed_by', 'review_notes']);
+            $oldValues = $appeal->only(['status', 'review_notes']);
 
             $appeal->update([
                 'status' => 'rejected',
@@ -1016,16 +992,20 @@ class DashboardController extends Controller
             ]);
             $appeal->violation->update(['status' => 'open']);
 
-            AuditLog::create([
-                'user_id'        => $request->user()->id,
-                'event'          => 'violation_appeal_rejected',
-                'auditable_type' => ViolationAppeal::class,
-                'auditable_id'   => $appeal->id,
-                'old_values'     => $oldValues,
-                'new_values'     => $appeal->only(['status', 'reviewed_at', 'reviewed_by', 'review_notes']),
-                'ip_address'     => $request->ip(),
-                'user_agent'     => $request->userAgent(),
-            ]);
+            AuditService::log(
+                module: 'violation',
+                action: 'violation_appeal.rejected',
+                record: $appeal,
+                description: "Rejected violation appeal for ticket VIO-26-" . str_pad($appeal->violation_id, 4, '0', STR_PAD_LEFT) . ". Reason: {$validated['review_notes']}",
+                oldValues: $oldValues,
+                newValues: $appeal->only(['status', 'review_notes']),
+                targetReference: 'VIO-26-' . str_pad($appeal->violation_id, 4, '0', STR_PAD_LEFT),
+                metadata: [
+                    'appeal_id'     => $appeal->id,
+                    'violation_id'  => $appeal->violation_id,
+                    'review_notes'  => $validated['review_notes'],
+                ]
+            );
         });
 
         return redirect()->route('tmo.violations.details', $appeal->violation_id)
@@ -1082,7 +1062,7 @@ class DashboardController extends Controller
                 // recent ping so a TMO-logged record still carries an actual GPS source.
                 $latestPing = $tricycle->locations()->latest('recorded_at')->first();
 
-                Violation::create([
+                $violation = Violation::create([
                     'tricycle_id'             => $tricycle->id,
                     'franchise_scheme_id'     => $franchise ? $franchise->id : 1, // fallback
                     'color_coding_scheme_id'  => $franchise ? $franchise->color_coding_scheme_id : 1, // fallback
@@ -1096,6 +1076,25 @@ class DashboardController extends Controller
                     'fine_amount'             => $request->input('fine_amount'),
                     'notes'                   => $request->input('location') . ' — ' . ($request->input('notes') ?: 'Manual infraction logging.'),
                 ]);
+
+                $unitRef = $tricycle->coding_scheme_number ? "Unit #{$tricycle->coding_scheme_number}" : "Unit {$tricycle->plate_number}";
+                AuditService::log(
+                    module: 'violation',
+                    action: 'violation.created',
+                    record: $violation,
+                    description: "Manually logged violation ticket for {$unitRef} (Plate: {$tricycle->plate_number}, Fine: ₱{$violation->fine_amount}).",
+                    oldValues: null,
+                    newValues: [
+                        'violation_type' => $violation->violation_type,
+                        'fine_amount'    => (float) $violation->fine_amount,
+                        'status'         => $violation->status,
+                    ],
+                    targetReference: 'VIO-26-' . str_pad($violation->id, 4, '0', STR_PAD_LEFT),
+                    metadata: [
+                        'plate_number' => $tricycle->plate_number,
+                        'location'     => $request->input('location'),
+                    ]
+                );
             });
         } catch (\Illuminate\Database\QueryException $e) {
             if (str_contains($e->getMessage(), 'violations_color_coding_daily_unique')) {

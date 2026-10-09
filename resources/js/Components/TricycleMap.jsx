@@ -4,10 +4,15 @@ import L from 'leaflet';
 import { Navigation, Maximize2, Minimize2, MapPin, Compass } from 'lucide-react';
 import 'leaflet/dist/leaflet.css';
 
-const createCustomIcon = (status, isOnline = true) => {
+const createCustomIcon = (status, isOnline = true, connectionStatus = 'online') => {
     let color, pulse, hasAnimation;
 
-    if (!isOnline || status === 'offline') {
+    if (connectionStatus === 'no_signal') {
+        // No signal: visible with static amber indicator
+        color = 'bg-amber-500';
+        pulse = '';
+        hasAnimation = false;
+    } else if (!isOnline || status === 'offline' || connectionStatus === 'offline') {
         color = 'bg-slate-400';
         pulse = '';
         hasAnimation = false;
@@ -28,14 +33,14 @@ const createCustomIcon = (status, isOnline = true) => {
         hasAnimation = true;
     }
 
-    const isOffline = !isOnline || status === 'offline';
+    const isOffline = (!isOnline || status === 'offline' || connectionStatus === 'offline') && connectionStatus !== 'no_signal';
 
     return L.divIcon({
         className: 'custom-tricycle-marker',
         html: `
             <div class="relative flex items-center justify-center cursor-pointer select-none" style="width: 45px; height: 30px;">
                 ${hasAnimation ? `<span class="animate-ping absolute inline-flex h-8 w-8 rounded-full ${pulse} opacity-60 pointer-events-none"></span>` : ''}
-                <img src="/images/tricycle-marker.webp" alt="Tricycle" class="relative z-10 pointer-events-none" style="width: 45px; height: 30px; object-fit: contain; ${isOffline ? 'filter: grayscale(100%) opacity(0.6);' : 'filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));'}" />
+                <img src="/images/tricycle-marker.webp" alt="Tricycle" class="relative z-10 pointer-events-none" style="width: 45px; height: 30px; object-fit: contain; ${isOffline ? 'filter: grayscale(100%) opacity(0.6);' : connectionStatus === 'no_signal' ? 'filter: saturate(80%) drop-shadow(0 2px 4px rgba(245,158,11,0.4));' : 'filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));'}" />
                 <span class="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full ${color} ring-2 ring-white z-20 pointer-events-none"></span>
             </div>
         `,
@@ -310,13 +315,16 @@ export default function TricycleMap({
                 />
 
                 {tricycles.map((trike) => {
-                    if (!trike.lat || !trike.lng) return null;
+                    // Units with no GPS or with offline connection status are excluded from the active live map
+                    if (!trike.lat || !trike.lng || trike.connection_status === 'offline' || trike.connection_status === 'not_configured') {
+                        return null;
+                    }
 
                     return (
                         <Marker
                             key={trike.db_id}
                             position={[trike.lat, trike.lng]}
-                            icon={createCustomIcon(trike.status, trike.is_online)}
+                            icon={createCustomIcon(trike.status, trike.is_online, trike.connection_status)}
                             zIndexOffset={trike.status === 'violator' ? 1000 : trike.status === 'coding_no_operation' ? 500 : 0}
                             ref={(ref) => { if (ref) markerRefs.current[trike.db_id] = ref; }}
                             eventHandlers={{
@@ -353,23 +361,27 @@ export default function TricycleMap({
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                                             <div style={{
                                                 width: '8px', height: '8px', borderRadius: '50%',
-                                                backgroundColor: !trike.is_online || trike.status === 'offline'
-                                                    ? '#94A3B8'
-                                                    : trike.status === 'violator'
-                                                        ? '#DC2626'
-                                                        : trike.status === 'coding_no_operation'
-                                                            ? '#F59E0B'
-                                                            : '#10B981'
+                                                backgroundColor: trike.connection_status === 'no_signal'
+                                                    ? '#F59E0B'
+                                                    : !trike.is_online || trike.status === 'offline'
+                                                        ? '#94A3B8'
+                                                        : trike.status === 'violator'
+                                                            ? '#DC2626'
+                                                            : trike.status === 'coding_no_operation'
+                                                                ? '#F59E0B'
+                                                                : '#10B981'
                                             }}></div>
                                             <span style={{
                                                 fontSize: '10px', fontWeight: 'bold', textTransform: 'uppercase',
-                                                color: !trike.is_online || trike.status === 'offline'
-                                                    ? '#64748B'
-                                                    : trike.status === 'violator'
-                                                        ? '#DC2626'
-                                                        : trike.status === 'coding_no_operation'
-                                                            ? '#D97706'
-                                                            : '#059669'
+                                                color: trike.connection_status === 'no_signal'
+                                                    ? '#D97706'
+                                                    : !trike.is_online || trike.status === 'offline'
+                                                        ? '#64748B'
+                                                        : trike.status === 'violator'
+                                                            ? '#DC2626'
+                                                            : trike.status === 'coding_no_operation'
+                                                                ? '#D97706'
+                                                                : '#059669'
                                             }}>
                                                 {trike.connection_status === 'no_signal'
                                                     ? 'No Signal'

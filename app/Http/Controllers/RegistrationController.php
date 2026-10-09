@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\AuditService;
 use App\Support\NasugbuBarangays;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -39,27 +40,47 @@ class RegistrationController extends Controller
         // application is backfilled.
         $ownerIsDriver = $request->boolean('owner_is_driver', true);
 
+        $predefinedColors = [
+            'Black', 'White', 'Gray', 'Silver', 'Red', 'Blue',
+            'Green', 'Yellow', 'Orange', 'Brown', 'Beige', 'Gold',
+            'Maroon', 'Violet', 'Pink',
+        ];
+
+        $predefinedBodyTypes = [
+            'Standard Side Car',
+            'Pass-Thru Sidecar',
+            'Passenger Tricycle',
+            'Standard Tricycle',
+            'Standard',
+            'Sidecar',
+            'Extended Sidecar',
+            'Extended',
+        ];
+
         $rules = [
             // Applicant (tricycle OWNER) info
-            'first_name'      => 'required|string|max:100',
-            'last_name'       => 'required|string|max:100',
-            'birthday'        => 'required|date|before_or_equal:today',
-            'contact'         => 'required|string|max:20',
-            'barangay'        => ['required', 'string', Rule::in(NasugbuBarangays::values())],
-            'email'           => 'required|string|email|max:255|unique:users,email',
-            'password'        => 'required|string|min:8',
-            'owner_is_driver' => 'nullable|boolean',
+            'first_name'            => 'required|string|max:100',
+            'last_name'             => 'required|string|max:100',
+            'birthday'              => 'required|date|before_or_equal:today',
+            'contact'               => ['required', 'string', 'regex:/^09\d{9}$/'],
+            'barangay'              => ['required', 'string', Rule::in(NasugbuBarangays::values())],
+            'email'                 => 'required|string|email|max:255|unique:users,email',
+            'password'              => 'required|string|min:8|confirmed',
+            'password_confirmation' => 'required_with:password|string',
+            'owner_is_driver'       => 'nullable|boolean',
 
             // Vehicle specs
-            'plate_number'   => 'required|string|max:20|unique:tricycles,plate_number',
-            'make_model'     => 'required|string|max:100',
-            'year_model'     => 'required|integer|min:1980|max:' . ($currentYear + 1),
-            'body_color'     => 'required|string|max:50',
-            'body_type'      => 'required|string|max:100',
-            'engine_number'  => 'required|string|max:50|unique:tricycles,engine_number',
-            'chassis_number' => 'required|string|max:50|unique:tricycles,chassis_number',
-            'or_number'      => 'required|string|max:50',
-            'cr_number'      => 'required|string|max:50',
+            'plate_number'      => 'required|string|max:20|unique:tricycles,plate_number',
+            'make_model'        => 'required|string|max:100',
+            'year_model'        => 'required|integer|min:2000|max:' . $currentYear,
+            'body_color'        => ['required', 'string', Rule::in(array_merge($predefinedColors, ['Other']))],
+            'body_color_other'  => 'required_if:body_color,Other|nullable|string|max:50',
+            'body_type'         => ['required', 'string', Rule::in(array_merge($predefinedBodyTypes, ['Other']))],
+            'body_type_other'   => 'required_if:body_type,Other|nullable|string|max:100',
+            'engine_number'     => 'required|string|max:50|unique:tricycles,engine_number',
+            'chassis_number'    => 'required|string|max:50|unique:tricycles,chassis_number',
+            'or_number'         => 'required|string|max:50',
+            'cr_number'         => 'required|string|max:50',
 
             // Terms & Agreement — the single "I have read, understood, and agree to the
             // Terms & Conditions, including the Data Privacy Consent..." checkbox on Step 1.
@@ -104,12 +125,25 @@ class RegistrationController extends Controller
                 'driver_first_name' => 'required|string|max:100',
                 'driver_last_name'  => 'required|string|max:100',
                 'driver_birthday'   => 'required|date|before_or_equal:today',
-                'driver_contact'    => 'required|string|max:20',
+                'driver_contact'    => ['required', 'string', 'regex:/^09\d{9}$/'],
                 'driver_barangay'   => ['required', 'string', Rule::in(NasugbuBarangays::values())],
             ]);
         }
 
-        $request->validate($rules);
+        $messages = [
+            'contact.regex'                => 'Mobile number must be a valid 11-digit Philippine mobile number starting with 09 (e.g. 09171234567).',
+            'driver_contact.regex'         => 'Driver mobile number must be a valid 11-digit Philippine mobile number starting with 09 (e.g. 09171234567).',
+            'year_model.min'               => 'Year model must be between 2000 and ' . $currentYear . '.',
+            'year_model.max'               => 'Year model must be between 2000 and ' . $currentYear . '.',
+            'body_color.in'                => 'Please select an approved body color or choose Other.',
+            'body_color_other.required_if' => 'Please specify body color.',
+            'body_type.in'                 => 'Please select an approved tricycle body type or choose Other.',
+            'body_type_other.required_if'  => 'Please specify body type.',
+            'password.confirmed'           => 'The password confirmation does not match.',
+            'email.email'                  => 'Please enter a valid email address.',
+        ];
+
+        $request->validate($rules, $messages);
 
         [$user, $reference, $application] = DB::transaction(function () use ($request, $ownerIsDriver) {
             // 1. Create User
@@ -140,6 +174,14 @@ class RegistrationController extends Controller
             $make = $parts[0] ?? 'Generic';
             $model = $parts[1] ?? 'Tricycle';
 
+            $bodyColor = $request->input('body_color') === 'Other'
+                ? trim($request->input('body_color_other', ''))
+                : $request->input('body_color');
+
+            $bodyType = $request->input('body_type') === 'Other'
+                ? trim($request->input('body_type_other', ''))
+                : $request->input('body_type');
+
             $tricycle = \App\Models\Tricycle::create([
                 'operator_id'    => $operator->id,
                 'toda_zone_id'   => null,
@@ -149,8 +191,8 @@ class RegistrationController extends Controller
                 'make'           => $make,
                 'model'          => $model,
                 'year_model'     => $request->input('year_model'),
-                'body_color'     => $request->input('body_color'),
-                'body_type'      => $request->input('body_type'),
+                'body_color'     => $bodyColor,
+                'body_type'      => $bodyType,
                 'or_number'      => $request->input('or_number'),
                 'cr_number'      => $request->input('cr_number'),
                 'status'         => 'unregistered',
@@ -236,6 +278,25 @@ class RegistrationController extends Controller
                 'notes'          => 'Public application submitted online by Operator.',
                 'created_at'     => now(),
             ]);
+
+            AuditService::log(
+                module: 'application',
+                action: 'driver.application_submitted',
+                record: $application,
+                description: "New driver application {$refNo} registered online by {$user->name}",
+                oldValues: null,
+                newValues: [
+                    'status'           => 'pending_review',
+                    'current_step'     => 1,
+                    'application_type' => 'new',
+                    'reference_number' => $refNo,
+                ],
+                metadata: [
+                    'is_public_registration' => true,
+                    'plate_number'           => $tricycle->plate_number,
+                ],
+                actor: $user
+            );
 
             return [$user, $refNo, $application];
         });

@@ -9,6 +9,7 @@ use App\Models\ApplicationStatusHistory;
 use App\Models\FranchiseScheme;
 use App\Models\Tricycle;
 use App\Models\Violation;
+use App\Services\AuditService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -123,6 +124,23 @@ class ReportController extends Controller
 
         $filename = 'trivora_violations_report_' . $from->toDateString() . '_to_' . $to->toDateString() . '.xlsx';
 
+        AuditService::log(
+            module: 'reports',
+            action: 'report.exported_excel',
+            record: null,
+            description: "Exported Violations & Compliance Excel Report ({$from->toDateString()} to {$to->toDateString()})",
+            oldValues: null,
+            newValues: null,
+            targetReference: $filename,
+            metadata: [
+                'report' => 'violations',
+                'filename' => $filename,
+                'from' => $from->toDateString(),
+                'to' => $to->toDateString(),
+                'total_records' => count($data['records']),
+            ]
+        );
+
         return $this->streamExcel($spreadsheet, $filename);
     }
 
@@ -202,6 +220,22 @@ class ReportController extends Controller
         }
 
         $filename = 'trivora_applications_report_' . $from->toDateString() . '_to_' . $to->toDateString() . '.xlsx';
+
+        AuditService::log(
+            module: 'reports',
+            action: 'report.exported_excel',
+            record: null,
+            description: "Exported Franchise & Applications Excel Report ({$from->toDateString()} to {$to->toDateString()})",
+            oldValues: null,
+            newValues: null,
+            targetReference: $filename,
+            metadata: [
+                'report' => 'applications',
+                'filename' => $filename,
+                'from' => $from->toDateString(),
+                'to' => $to->toDateString(),
+            ]
+        );
 
         return $this->streamExcel($spreadsheet, $filename);
     }
@@ -296,6 +330,23 @@ class ReportController extends Controller
         $filename = ($from && $to)
             ? 'trivora_fleet_report_' . $from->toDateString() . '_to_' . $to->toDateString() . '.xlsx'
             : 'trivora_fleet_report_' . now()->toDateString() . '.xlsx';
+
+        AuditService::log(
+            module: 'reports',
+            action: 'report.exported_excel',
+            record: null,
+            description: 'Exported Fleet & Franchise Registry Excel Report',
+            oldValues: null,
+            newValues: null,
+            targetReference: $filename,
+            metadata: [
+                'report'      => 'fleet',
+                'filename'    => $filename,
+                'from'        => $from?->toDateString(),
+                'to'          => $to?->toDateString(),
+                'total_units' => $data['kpis']['total'],
+            ]
+        );
 
         return $this->streamExcel($spreadsheet, $filename);
     }

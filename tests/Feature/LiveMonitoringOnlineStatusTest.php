@@ -111,11 +111,14 @@ class LiveMonitoringOnlineStatusTest extends TestCase
     }
 
     #[Test]
-    public function unit_with_no_gps_history_is_excluded(): void
+    public function unit_with_no_gps_history_exposes_not_configured_with_no_coordinates(): void
     {
-        $this->assertNull($this->unit(), 'Never sent GPS: not listed, never a fake position.');
-        $this->driver->update(['is_online' => false]);
-        $this->assertNull($this->unit());
+        $unit = $this->unit();
+        $this->assertNotNull($unit, 'Unit is included in fleet monitoring list.');
+        $this->assertSame('not_configured', $unit['connection_status']);
+        $this->assertNull($unit['lat'], 'Never sent GPS: no fake lat.');
+        $this->assertNull($unit['lng'], 'Never sent GPS: no fake lng.');
+        $this->assertFalse($unit['hasRealGPS']);
     }
 
     #[Test]
@@ -252,6 +255,11 @@ class LiveMonitoringOnlineStatusTest extends TestCase
             'body_color' => 'Red', 'body_type' => 'Standard',
             'or_number' => 'OR-LIV-006', 'cr_number' => 'CR-LIV-006', 'status' => 'active',
         ]);
+        Driver::create([
+            'user_id' => $this->driverUser->id, 'operator_id' => $this->tricycle->operator_id, 'tricycle_id' => $other->id,
+            'license_number' => 'LIC-LIVE-002', 'mobile_number' => '09170000082',
+            'is_online' => true, 'is_available' => true,
+        ]);
         $this->ping(5);
         TricycleLocation::create([
             'tricycle_id' => $other->id, 'latitude' => 14.07, 'longitude' => 120.63,
@@ -270,7 +278,7 @@ class LiveMonitoringOnlineStatusTest extends TestCase
 
         $this->assertSame('5 secs ago', $units->firstWhere('plate', 'LIV-0005')['last_update_label']);
         $this->assertSame('online', $units->firstWhere('plate', 'LIV-0005')['connection_status']);
-        // No Driver row for LIV-0006: judged by GPS age alone -> 120s old = No Signal.
+        // Online driver for LIV-0006: 120s telemetry age -> No Signal.
         $this->assertSame('2 mins ago', $units->firstWhere('plate', 'LIV-0006')['last_update_label']);
         $this->assertSame('no_signal', $units->firstWhere('plate', 'LIV-0006')['connection_status']);
     }

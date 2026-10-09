@@ -449,6 +449,7 @@ export default function Login() {
                                     <input
                                         id="password"
                                         type={showPassword ? 'text' : 'password'}
+                                        autoComplete="current-password"
                                         className="ol-input ol-input--password"
                                         placeholder="Enter your password"
                                         value={data.password}

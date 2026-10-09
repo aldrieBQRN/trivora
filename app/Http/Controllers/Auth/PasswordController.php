@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Services\AuditService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -20,9 +21,22 @@ class PasswordController extends Controller
             'password' => ['required', Password::defaults(), 'confirmed'],
         ]);
 
-        $request->user()->update([
+        $user = $request->user();
+
+        $user->update([
             'password' => Hash::make($validated['password']),
         ]);
+
+        AuditService::log(
+            module: 'profile',
+            action: 'profile.password_updated',
+            record: $user,
+            description: "User {$user->name} changed their account security credentials / password.",
+            metadata: [
+                'updated_at' => now()->toIso8601String(),
+            ],
+            actor: $user
+        );
 
         return back();
     }

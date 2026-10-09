@@ -8,14 +8,6 @@ import {
     Activity, Search, X, ShieldCheck, Calendar, MapPin
 } from 'lucide-react';
 
-const CODING_SCHEDULE = {
-    Monday:    { color: 'Red',    hex: '#EF4444', digits: '1, 2',  bg: '#FEF2F2', border: '#FECACA' },
-    Tuesday:   { color: 'Blue',   hex: '#3B82F6', digits: '3, 4',  bg: '#EFF6FF', border: '#BFDBFE' },
-    Wednesday: { color: 'Yellow', hex: '#D97706', digits: '5, 6',  bg: '#FFFBEB', border: '#FDE68A' },
-    Thursday:  { color: 'Green',  hex: '#10B981', digits: '7, 8',  bg: '#ECFDF5', border: '#A7F3D0' },
-    Friday:    { color: 'White',  hex: '#64748B', digits: '9, 0',  bg: '#F8FAFC', border: '#E2E8F0' },
-};
-
 // Live Monitoring refresh cadence (this page only). GPS itself arrives every 5s; the 10s
 // Online/Offline threshold is decided server-side (config/tracking.php).
 const LIVE_MONITORING_REFRESH_MS = 3000;
@@ -24,15 +16,16 @@ const WEEKDAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', '
 
 // Live Monitoring status badge per DashboardController connection_status.
 const CONNECTION_META = {
-    online:    { label: 'Online',    badge: 'bg-emerald-50 text-emerald-700 border border-emerald-200/60' },
-    no_signal: { label: 'No Signal', badge: 'bg-amber-50 text-amber-700 border border-amber-200/60' },
-    offline:   { label: 'Offline',   badge: 'bg-slate-100 text-slate-600 border border-slate-200' },
+    online:         { label: 'Online',         badge: 'bg-emerald-50 text-emerald-700 border border-emerald-200/60' },
+    no_signal:      { label: 'No Signal',      badge: 'bg-amber-50 text-amber-700 border border-amber-200/60' },
+    offline:        { label: 'Offline',        badge: 'bg-slate-100 text-slate-600 border border-slate-200' },
+    not_configured: { label: 'Not Configured', badge: 'bg-slate-100 text-slate-500 border border-slate-200' },
 };
 
 // Shared soft, layered shadow token — same elevation language used across TMO dashboards.
 const CARD_SHADOW = 'shadow-[0_1px_2px_0_rgba(15,23,42,0.04),0_8px_24px_-8px_rgba(15,23,42,0.10)]';
 
-export default function LiveMonitoring({ initialTricycles = [], stats = {} }) {
+export default function LiveMonitoring({ initialTricycles = [], stats = {}, activeCodingSchemes = [] }) {
     const [activeTab, setActiveTab] = useState('units'); // 'units' | 'alerts'
     const [selectedUnitId, setSelectedUnitId] = useState(null);
     const [unitSearch, setUnitSearch] = useState('');
@@ -62,7 +55,24 @@ export default function LiveMonitoring({ initialTricycles = [], stats = {} }) {
 
     const todayName = WEEKDAY_NAMES[new Date().getDay()] || 'Monday';
     const isWeekend = todayName === 'Saturday' || todayName === 'Sunday';
-    const todayCodingRule = !isWeekend ? CODING_SCHEDULE[todayName] : null;
+    
+    // Authoritative coding rule for today from database schemes
+    const todayCodingRule = useMemo(() => {
+        if (isWeekend) return null;
+        const scheme = (activeCodingSchemes || []).find((s) =>
+            Array.isArray(s.restricted_days) && s.restricted_days.includes(todayName)
+        );
+        if (!scheme || !scheme.restricted_digits || scheme.restricted_digits.length === 0) {
+            return null;
+        }
+        return {
+            color: scheme.name,
+            hex: scheme.color_hex,
+            digits: scheme.restricted_digits.join(', '),
+            bg: `${scheme.color_hex}15`,
+            border: `${scheme.color_hex}40`,
+        };
+    }, [activeCodingSchemes, todayName, isWeekend]);
 
     const registeredFleet = stats.active_fleet ?? realTricycles.length;
 
@@ -84,7 +94,7 @@ export default function LiveMonitoring({ initialTricycles = [], stats = {} }) {
     // Fleet connectivity for the KPI progress bar — straight from DashboardController's
     // connection_status (the same value the Units tab badge shows), refreshed by the background reload.
     const connectivity = useMemo(() => {
-        const c = { online: 0, no_signal: 0, offline: 0, total: realTricycles.length };
+        const c = { online: 0, no_signal: 0, offline: 0, not_configured: 0, total: realTricycles.length };
         realTricycles.forEach((t) => {
             if (c[t.connection_status] !== undefined) c[t.connection_status] += 1;
         });
@@ -103,14 +113,13 @@ export default function LiveMonitoring({ initialTricycles = [], stats = {} }) {
         );
     }, [realTricycles, unitSearch]);
 
-    // All / Online / No Signal / Offline status filter — the same server-side connection_status
-    // (DashboardController::index(): drivers.is_online first, then the 60s No Signal window from
-    // config/tracking.fleet_signal_lost_seconds) the badges and the map display. No client-side timing.
+    // All / Online / No Signal / Offline / Not Configured status filter
     const statusCounts = useMemo(() => ({
-        all:       searchFilteredUnits.length,
-        online:    searchFilteredUnits.filter(t => t.connection_status === 'online').length,
-        no_signal: searchFilteredUnits.filter(t => t.connection_status === 'no_signal').length,
-        offline:   searchFilteredUnits.filter(t => t.connection_status === 'offline').length,
+        all:            searchFilteredUnits.length,
+        online:         searchFilteredUnits.filter(t => t.connection_status === 'online').length,
+        no_signal:      searchFilteredUnits.filter(t => t.connection_status === 'no_signal').length,
+        offline:        searchFilteredUnits.filter(t => t.connection_status === 'offline').length,
+        not_configured: searchFilteredUnits.filter(t => t.connection_status === 'not_configured').length,
     }), [searchFilteredUnits]);
 
     const filteredUnits = useMemo(() => {
@@ -389,6 +398,7 @@ export default function LiveMonitoring({ initialTricycles = [], stats = {} }) {
                                             <option value="online">Online ({statusCounts.online})</option>
                                             <option value="no_signal">No Signal ({statusCounts.no_signal})</option>
                                             <option value="offline">Offline ({statusCounts.offline})</option>
+                                            <option value="not_configured">Not Configured ({statusCounts.not_configured})</option>
                                         </select>
                                     </div>
                                 </div>
@@ -399,18 +409,22 @@ export default function LiveMonitoring({ initialTricycles = [], stats = {} }) {
                                         filteredUnits.map((unit) => {
                                             const isSelected = selectedUnitId === unit.db_id;
                                             const isOffline = !unit.is_online;
+                                            const isNotConfigured = unit.connection_status === 'not_configured';
                                             const connection = CONNECTION_META[unit.connection_status] || CONNECTION_META.offline;
-                                            // Every listed unit has real GPS history (units without any are excluded server-side).
                                             const lastUpdateLabel = unit.last_update_label || '—';
 
                                             return (
                                                 <div
-                                                    // db_id (the tricycle's primary key) is the row identity, not `id` —
-                                                    // `id` is the display Sticker Number, which legitimately repeats
-                                                    // across units (see DashboardController::index()).
+                                                    // db_id (the tricycle's primary key) is the row identity, not `id`
                                                     key={unit.db_id}
-                                                    onClick={() => setSelectedUnitId(unit.db_id)}
-                                                    className={`p-2.5 rounded-xl border transition-all cursor-pointer ${
+                                                    onClick={() => {
+                                                        if (unit.hasRealGPS && unit.lat && unit.lng) {
+                                                            setSelectedUnitId(unit.db_id);
+                                                        }
+                                                    }}
+                                                    className={`p-2.5 rounded-xl border transition-all ${
+                                                        !unit.hasRealGPS ? 'cursor-default opacity-80' : 'cursor-pointer'
+                                                    } ${
                                                         isSelected
                                                             ? 'border-[#1D2542] bg-slate-50 shadow-xs'
                                                             : 'border-transparent hover:border-slate-200 hover:bg-slate-50/60'
@@ -437,28 +451,32 @@ export default function LiveMonitoring({ initialTricycles = [], stats = {} }) {
                                                             {unit.operator}
                                                         </span>
                                                         <span className="text-[10px] font-medium text-slate-400 font-mono">
-                                                            GPS Acquired
+                                                            {unit.hasRealGPS ? 'GPS Acquired' : 'No GPS Setup'}
                                                         </span>
                                                     </div>
 
                                                     <div className="mt-2 flex items-center justify-between text-[10.5px] border-t border-slate-100 pt-1.5">
                                                         <span className="flex items-center gap-1.5 font-semibold text-slate-700">
                                                             <span className={`h-1.5 w-1.5 rounded-full ${
-                                                                isOffline
-                                                                    ? 'bg-slate-400'
-                                                                    : unit.status === 'violator'
-                                                                        ? 'bg-rose-500'
-                                                                        : unit.status === 'coding_no_operation'
-                                                                            ? 'bg-amber-500'
-                                                                            : 'bg-emerald-500'
+                                                                isNotConfigured
+                                                                    ? 'bg-slate-300'
+                                                                    : isOffline
+                                                                        ? 'bg-slate-400'
+                                                                        : unit.status === 'violator'
+                                                                            ? 'bg-rose-500'
+                                                                            : unit.status === 'coding_no_operation'
+                                                                                ? 'bg-amber-500'
+                                                                                : 'bg-emerald-500'
                                                             }`} />
-                                                            {isOffline
-                                                                ? connection.label
-                                                                : unit.status === 'violator'
-                                                                    ? 'Coding Violation'
-                                                                    : unit.status === 'coding_no_operation'
-                                                                        ? 'Restricted Today'
-                                                                        : 'Compliant'}
+                                                            {isNotConfigured
+                                                                ? 'Not Configured'
+                                                                : isOffline
+                                                                    ? connection.label
+                                                                    : unit.status === 'violator'
+                                                                        ? 'Coding Violation'
+                                                                        : unit.status === 'coding_no_operation'
+                                                                            ? 'Restricted Today'
+                                                                            : 'Compliant'}
                                                         </span>
                                                         <span className="text-slate-400 font-medium font-mono text-[10px]">
                                                             {lastUpdateLabel}

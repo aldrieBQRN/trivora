@@ -11,6 +11,7 @@ use App\Models\ApplicationDriver;
 use App\Models\Inspection;
 use App\Models\Payment;
 use App\Models\FranchiseScheme;
+use App\Services\AuditService;
 use Illuminate\Validation\Rule;
 
 class MTOPController extends Controller
@@ -82,6 +83,23 @@ class MTOPController extends Controller
         // when the owner is NOT the driver.
         $ownerIsDriver = $request->boolean('owner_is_driver', true);
 
+        $predefinedColors = [
+            'Black', 'White', 'Gray', 'Silver', 'Red', 'Blue', 'Green',
+            'Yellow', 'Orange', 'Brown', 'Beige', 'Gold', 'Maroon', 'Violet', 'Pink',
+        ];
+
+        $predefinedBodyTypes = [
+            'Standard Side Car',
+            'Pass-Thru Sidecar',
+            'Passenger Tricycle',
+            // Also preserve existing/legacy database terminology
+            'Standard',
+            'Standard Tricycle',
+            'Sidecar',
+            'Extended',
+            'Extended Sidecar',
+        ];
+
         // Same vehicle-field rules as Public Registration (RegistrationController::store()),
         // plus the same canonical document vocabulary — enforced server-side here, not just via
         // the wizard's client-side step gates. Xerox Prangkisa is required only for a renewal;
@@ -90,15 +108,17 @@ class MTOPController extends Controller
             'application_type' => 'required|in:new,renewal',
             'owner_is_driver'  => 'nullable|boolean',
 
-            'plate_number'   => 'required|string|max:20',
-            'make_model'     => 'required|string|max:100',
-            'year_model'     => 'required|integer|min:1980|max:' . ($currentYear + 1),
-            'body_color'     => 'required|string|max:50',
-            'body_type'      => 'required|string|max:100',
-            'engine_number'  => 'required|string|max:50',
-            'chassis_number' => 'required|string|max:50',
-            'or_number'      => 'required|string|max:50',
-            'cr_number'      => 'required|string|max:50',
+            'plate_number'     => 'required|string|max:20',
+            'make_model'       => 'required|string|max:100',
+            'year_model'       => 'required|integer|min:2000|max:' . $currentYear,
+            'body_color'       => ['required', 'string', 'max:50', Rule::in(array_merge($predefinedColors, ['Other']))],
+            'body_color_other' => 'required_if:body_color,Other|nullable|string|max:50',
+            'body_type'        => ['required', 'string', 'max:100', Rule::in(array_merge($predefinedBodyTypes, ['Other']))],
+            'body_type_other'  => 'required_if:body_type,Other|nullable|string|max:100',
+            'engine_number'    => 'required|string|max:50',
+            'chassis_number'   => 'required|string|max:50',
+            'or_number'        => 'required|string|max:50',
+            'cr_number'        => 'required|string|max:50',
 
             'documents'                         => 'required|array',
             'documents.police_clearance'        => 'required|array|min:1',
@@ -136,12 +156,20 @@ class MTOPController extends Controller
                 'driver_first_name' => 'required|string|max:100',
                 'driver_last_name'  => 'required|string|max:100',
                 'driver_birthday'   => 'required|date|before_or_equal:today',
-                'driver_contact'    => 'required|string|max:20',
+                'driver_contact'    => ['required', 'string', 'regex:/^09\d{9}$/'],
                 'driver_barangay'   => ['required', 'string', Rule::in(\App\Support\NasugbuBarangays::values())],
             ]);
         }
 
-        $request->validate($rules);
+        $messages = [
+            'driver_contact.regex'         => 'The driver mobile number must be an 11-digit Philippine mobile number starting with 09 (e.g. 09171234567).',
+            'year_model.min'               => 'Year model cannot be earlier than 2000.',
+            'year_model.max'               => 'Year model cannot be in the future.',
+            'body_color_other.required_if' => 'Please specify the custom body color.',
+            'body_type_other.required_if'  => 'Please specify the custom body type.',
+        ];
+
+        $request->validate($rules, $messages);
 
         // For a renewal, resolve and authorize the tricycle, and enforce the SAME server-side
         // eligibility rule the tracker UI uses to decide whether to show the "Renew" button —
@@ -204,6 +232,14 @@ class MTOPController extends Controller
                 $make = $parts[0] ?? $makeModel;
                 $model = $parts[1] ?? '';
 
+                $bodyColor = $request->input('body_color') === 'Other'
+                    ? trim($request->input('body_color_other', ''))
+                    : $request->input('body_color');
+
+                $bodyType = $request->input('body_type') === 'Other'
+                    ? trim($request->input('body_type_other', ''))
+                    : $request->input('body_type');
+
                 $tricycle = \App\Models\Tricycle::create([
                     'operator_id'    => $operator->id,
                     'toda_zone_id'   => null,
@@ -213,8 +249,8 @@ class MTOPController extends Controller
                     'make'           => $make,
                     'model'          => $model,
                     'year_model'     => $request->input('year_model'),
-                    'body_color'     => $request->input('body_color'),
-                    'body_type'      => $request->input('body_type'),
+                    'body_color'     => $bodyColor,
+                    'body_type'      => $bodyType,
                     'or_number'      => $request->input('or_number'),
                     'cr_number'      => $request->input('cr_number'),
                     'status'         => 'unregistered',
@@ -297,6 +333,24 @@ class MTOPController extends Controller
                     : 'New Unit Registration application submitted. Phase 1: Document Review.',
                 'created_at'     => now(),
             ]);
+
+            AuditService::log(
+                module: 'application',
+                action: 'driver.application_submitted',
+                record: $application,
+                description: "Driver submitted {$application->application_type} application {$application->reference_number}",
+                oldValues: null,
+                newValues: [
+                    'status'           => 'pending_review',
+                    'current_step'     => 1,
+                    'application_type' => $application->application_type,
+                    'reference_number' => $application->reference_number,
+                ],
+                metadata: [
+                    'tricycle_id'  => $tricycle->id,
+                    'plate_number' => $tricycle->plate_number,
+                ]
+            );
 
             // TMO: a new unit / renewal application is waiting for Document Review.
             \App\Services\StaffNotifier::applicationStatusChanged($application, 'draft', 'pending_review', $user->id);
@@ -802,6 +856,22 @@ class MTOPController extends Controller
                     'notes'          => 'Driver confirmed vehicle is ready for reinspection (all inspection issues addressed).',
                     'created_at'     => now(),
                 ]);
+
+                AuditService::log(
+                    module: 'inspection',
+                    action: 'driver.reinspection_requested',
+                    record: $app,
+                    description: "Driver requested reinspection for Application {$app->reference_number}",
+                    oldValues: [
+                        'status' => $fromStatus,
+                    ],
+                    newValues: [
+                        'status' => $toStatus,
+                    ],
+                    metadata: [
+                        'notes' => 'Driver confirmed vehicle is ready for reinspection after addressing inspection issues.',
+                    ]
+                );
             } else {
                 // Document review fix — same canonical vocabulary as store()/show()/fix(): the
                 // frontend key (from app.documents[].id, itself resolved via
@@ -834,6 +904,7 @@ class MTOPController extends Controller
                                     'file_size_kb'   => round($file->getSize() / 1024),
                                     'mime_type'      => $file->getMimeType(),
                                     'review_status'  => 'pending',
+                                    'review_notes'   => null,
                                 ]);
                             }
                         }
@@ -854,6 +925,22 @@ class MTOPController extends Controller
                     'to_status'      => $toStatus,
                     'notes'          => 'Operator submitted corrected/replacement documents.',
                 ]);
+
+                AuditService::log(
+                    module: 'document_review',
+                    action: 'driver.documents_resubmitted',
+                    record: $app,
+                    description: "Driver resubmitted replacement documents for Application {$app->reference_number}",
+                    oldValues: [
+                        'status' => $fromStatus,
+                    ],
+                    newValues: [
+                        'status' => $toStatus,
+                    ],
+                    metadata: [
+                        'documents_resubmitted' => array_keys($request->file('documents') ?? []),
+                    ]
+                );
             }
         });
 

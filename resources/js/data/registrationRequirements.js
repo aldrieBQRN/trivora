@@ -14,16 +14,61 @@
  *   import { VEHICLE_DETAIL_FIELDS, REGISTRATION_DOCUMENTS, getApplicableDocuments } from '@/data/registrationRequirements';
  */
 
+/**
+ * Centralized dynamic options for vehicle specifications.
+ * Ensures New Unit Registration and Renewal use the exact same option values without duplication.
+ */
+export const getVehicleYears = (minYear = 2000) => {
+    const currentYear = new Date().getFullYear();
+    const years = [];
+    for (let y = currentYear; y >= minYear; y--) {
+        years.push(y);
+    }
+    return years;
+};
+
+export const vehicleYears = getVehicleYears(2000);
+
+export const VEHICLE_BODY_COLORS = [
+    'Black',
+    'White',
+    'Gray',
+    'Silver',
+    'Red',
+    'Blue',
+    'Green',
+    'Yellow',
+    'Orange',
+    'Brown',
+    'Beige',
+    'Gold',
+    'Maroon',
+    'Violet',
+    'Pink',
+    'Other',
+];
+
+export const vehicleBodyColors = VEHICLE_BODY_COLORS;
+
+export const VEHICLE_BODY_TYPES = [
+    'Standard Side Car',
+    'Pass-Thru Sidecar',
+    'Passenger Tricycle',
+    'Other',
+];
+
+export const vehicleBodyTypes = VEHICLE_BODY_TYPES;
+
 export const VEHICLE_DETAIL_FIELDS = [
-    { id: 'plate_number', label: 'LTO Plate Number', placeholder: 'e.g. AAA-1234' },
-    { id: 'make_model', label: 'Motorcycle Make & Model', placeholder: 'e.g. Honda TMX 125' },
-    { id: 'year_model', label: 'Year Model', placeholder: 'e.g. 2024' },
-    { id: 'body_color', label: 'Body Color', placeholder: 'e.g. Black / Red' },
-    { id: 'body_type', label: 'Body Type', placeholder: 'e.g. Standard Sidecar' },
-    { id: 'engine_number', label: 'Engine Number', placeholder: 'e.g. ENG-123456' },
-    { id: 'chassis_number', label: 'Chassis Number', placeholder: 'e.g. CHS-123456' },
-    { id: 'or_number', label: 'LTO OR Number', placeholder: 'e.g. OR-12345678' },
-    { id: 'cr_number', label: 'LTO CR Number', placeholder: 'e.g. CR-12345678' },
+    { id: 'plate_number', label: 'LTO Plate Number', placeholder: 'e.g. AAA-1234', type: 'text' },
+    { id: 'make_model', label: 'Motorcycle Make & Model', placeholder: 'e.g. Honda TMX 125', type: 'text' },
+    { id: 'year_model', label: 'Year Model', placeholder: 'Select Year Model', type: 'select' },
+    { id: 'body_color', label: 'Body Color', placeholder: 'Select Body Color', type: 'select' },
+    { id: 'body_type', label: 'Body Type', placeholder: 'Select Body Type', type: 'select' },
+    { id: 'engine_number', label: 'Engine Number', placeholder: 'e.g. ENG-123456', type: 'text' },
+    { id: 'chassis_number', label: 'Chassis Number', placeholder: 'e.g. CHS-123456', type: 'text' },
+    { id: 'or_number', label: 'LTO OR Number', placeholder: 'e.g. OR-12345678', type: 'text' },
+    { id: 'cr_number', label: 'LTO CR Number', placeholder: 'e.g. CR-12345678', type: 'text' },
 ];
 
 // required: always required. conditional (required: false): situational, never blocks submission.

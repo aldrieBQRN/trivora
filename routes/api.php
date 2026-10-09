@@ -100,8 +100,11 @@ Route::prefix('v1/driver')->group(function () {
         Route::post('/qr-session/passengers/{booking}/remove', [DriverQrSessionController::class, 'remove']);
         Route::post('/qr-session/end', [DriverQrSessionController::class, 'end']);
 
-        // Driver Assigned QR Code — access to the driver's own assigned unit QR details
+        // Driver Assigned QR Code — access to the driver's own assigned unit QR details, and the
+        // driver's authoritative passenger-capacity configuration for that unit (moved here from
+        // TMO). The tricycle is resolved from the authenticated driver's own assignment.
         Route::get('/qr-code', [\App\Http\Controllers\Api\DriverQrCodeController::class, 'show']);
+        Route::post('/qr-code/capacity', [\App\Http\Controllers\Api\DriverQrCodeController::class, 'updateCapacity']);
 
         // Manual Ride — the driver adds a walk-in passenger with no app to the tricycle's one open
         // ride session (see ManualRideService); from there the qr-session routes above run the

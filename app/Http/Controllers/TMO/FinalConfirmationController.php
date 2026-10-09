@@ -8,6 +8,7 @@ use App\Models\ApplicationStatusHistory;
 use App\Models\FranchiseScheme;
 use App\Models\GpsDevice;
 use App\Models\Tricycle;
+use App\Services\AuditService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -364,6 +365,37 @@ class FinalConfirmationController extends Controller
                 'notes'          => $finalRemarks,
                 'created_at'     => now(),
             ]);
+
+            // 5. Record administrative audit log
+            $methodLabel = $trackingMethod === 'iot_device' ? "IoT Hardware Device #{$iotDeviceId}" : "Mobile App GPS";
+            $plateNo = $tricycle ? $tricycle->plate_number : 'N/A';
+            $trackingLabel = $trackingMethod === 'iot_device' ? 'IoT Hardware Device' : 'Mobile App GPS';
+            $oldValues = [
+                'status' => $fromStatus,
+            ];
+            $newValues = [
+                'status'          => $toStatus,
+                'tracking_method' => $trackingLabel,
+            ];
+            if ($trackingMethod === 'iot_device' && !empty($iotDeviceId)) {
+                $newValues['iot_device_id'] = "IoT #{$iotDeviceId}";
+            }
+
+            AuditService::log(
+                module: 'final_confirmation',
+                action: 'final_confirmation.completed',
+                record: $application,
+                description: "Completed final confirmation and activated franchise for unit {$plateNo} (Ref: {$application->reference_number}). Tracking: {$methodLabel}.",
+                oldValues: $oldValues,
+                newValues: $newValues,
+                metadata: [
+                    'tracking_method'    => $trackingMethod,
+                    'iot_device_id'      => $iotDeviceId,
+                    'imei'               => $imei,
+                    'sim_number'         => $simNumber,
+                    'officer_notes'      => $officerNotes,
+                ]
+            );
         });
 
         $methodLabel = $trackingMethod === 'iot_device' ? "IoT Hardware Device #{$iotDeviceId}" : "Mobile App GPS";

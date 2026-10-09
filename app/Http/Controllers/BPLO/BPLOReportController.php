@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Application;
 use App\Models\ApplicationStatusHistory;
 use App\Models\FranchiseScheme;
+use App\Services\AuditService;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
@@ -119,6 +120,24 @@ class BPLOReportController extends Controller
         );
 
         $filename = 'trivora_bplo_releasing_report_' . $from->toDateString() . '_to_' . $to->toDateString() . '.xlsx';
+
+        AuditService::log(
+            module: 'reports',
+            action: 'report.exported_excel',
+            record: null,
+            description: "Exported BPLO Releasing Analytics Excel Report ({$from->toDateString()} to {$to->toDateString()})",
+            oldValues: null,
+            newValues: null,
+            targetReference: $filename,
+            metadata: [
+                'report'        => 'bplo_releasing',
+                'filename'      => $filename,
+                'from'          => $from->toDateString(),
+                'to'            => $to->toDateString(),
+                'status'        => $status,
+                'total_records' => count($records),
+            ]
+        );
 
         return $this->streamExcel($spreadsheet, $filename);
     }

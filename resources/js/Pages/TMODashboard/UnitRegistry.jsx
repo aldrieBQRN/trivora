@@ -8,21 +8,13 @@ import {
     FileSpreadsheet
 } from 'lucide-react';
 
-const CODING_SCHEDULE = {
-    Monday:    { color: 'Red',    hex: '#EF4444', digits: '1, 2',  bg: '#FEF2F2', border: '#FECACA' },
-    Tuesday:   { color: 'Blue',   hex: '#3B82F6', digits: '3, 4',  bg: '#EFF6FF', border: '#BFDBFE' },
-    Wednesday: { color: 'Yellow', hex: '#D97706', digits: '5, 6',  bg: '#FFFBEB', border: '#FDE68A' },
-    Thursday:  { color: 'Green',  hex: '#10B981', digits: '7, 8',  bg: '#ECFDF5', border: '#A7F3D0' },
-    Friday:    { color: 'White',  hex: '#64748B', digits: '9, 0',  bg: '#F8FAFC', border: '#E2E8F0' },
-};
-
 const WEEKDAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
 // Shared soft, layered shadow token — same elevation language used across the redesigned TMO
 // pages (Dashboard.jsx, Index.jsx) so this page reads as part of the same product.
 const CARD_SHADOW = 'shadow-[0_1px_2px_0_rgba(15,23,42,0.04),0_8px_24px_-8px_rgba(15,23,42,0.10)]';
 
-export default function TricycleRegistry({ initialUnits = [] }) {
+export default function TricycleRegistry({ initialUnits = [], activeCodingSchemes = [] }) {
     const units = initialUnits || [];
 
     // Silent background refresh — a newly activated/suspended tricycle from another session
@@ -46,21 +38,41 @@ export default function TricycleRegistry({ initialUnits = [] }) {
     }, []);
 
     const isWeekend = todayName === 'Saturday' || todayName === 'Sunday';
-    const todayCodingRule = !isWeekend ? CODING_SCHEDULE[todayName] : null;
 
-    // Dynamic Coding Scheme options
+    // Authoritative coding rule for today from database schemes
+    const todayCodingRule = useMemo(() => {
+        if (isWeekend) return null;
+        const scheme = (activeCodingSchemes || []).find((s) =>
+            Array.isArray(s.restricted_days) && s.restricted_days.includes(todayName)
+        );
+        if (!scheme || !scheme.restricted_digits || scheme.restricted_digits.length === 0) {
+            return null;
+        }
+        return {
+            color: scheme.name,
+            hex: scheme.color_hex,
+            digits: scheme.restricted_digits.join(', '),
+            bg: `${scheme.color_hex}15`,
+            border: `${scheme.color_hex}40`,
+        };
+    }, [activeCodingSchemes, todayName, isWeekend]);
+
+    // Dynamic Coding Scheme options from database
     const codingOptions = useMemo(() => {
-        return Object.entries(CODING_SCHEDULE).map(([day, meta]) => {
-            const count = units.filter(u => u.coding_color === meta.color || (u.coding_day && u.coding_day.includes(day))).length;
-            return {
-                day,
-                color: meta.color,
-                hex: meta.hex,
-                digits: meta.digits,
-                count
-            };
-        });
-    }, [units]);
+        return (activeCodingSchemes || [])
+            .filter((s) => Array.isArray(s.restricted_days) && s.restricted_days.length > 0 && s.restricted_digits?.length > 0)
+            .map((s) => {
+                const day = s.restricted_days[0];
+                const count = units.filter((u) => u.coding_color === s.name || (u.coding_day && u.coding_day.includes(day))).length;
+                return {
+                    day,
+                    color: s.name,
+                    hex: s.color_hex,
+                    digits: s.restricted_digits.join(', '),
+                    count,
+                };
+            });
+    }, [activeCodingSchemes, units]);
 
     // Fast, immediate multi-dimensional filtering
     const filtered = useMemo(() => {

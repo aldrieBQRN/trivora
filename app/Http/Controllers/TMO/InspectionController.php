@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Application;
 use App\Models\ApplicationStatusHistory;
 use App\Models\Inspection;
+use App\Services\AuditService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -239,6 +240,26 @@ class InspectionController extends Controller
                 'notes'          => $notes,
                 'created_at'     => now(),
             ]);
+
+            // Record administrative audit log
+            $canonicalAction = $isApprove ? 'inspection.passed' : 'inspection.failed';
+            $auditDesc = $isApprove
+                ? "Passed physical inspection (Attempt #{$attemptNumber}) for application {$application->reference_number}."
+                : "Failed physical inspection (Attempt #{$attemptNumber}) for application {$application->reference_number}. Reason: {$rejectionReason}";
+
+            AuditService::log(
+                module: 'inspection',
+                action: $canonicalAction,
+                record: $application,
+                description: $auditDesc,
+                oldValues: ['status' => $fromStatus, 'current_step' => $fromStep],
+                newValues: ['status' => $toStatus, 'current_step' => $toStep, 'result' => $result],
+                metadata: [
+                    'attempt_number'   => $attemptNumber,
+                    'inspector_notes'  => $inspectorNotes,
+                    'rejection_reason' => $rejectionReason,
+                ]
+            );
         });
 
         // BPLO: a passed inspection is ready for sticker & plate release (a failed one waits on the
