@@ -157,6 +157,9 @@ html { scroll-behavior: smooth; }
   transform: translateY(-1px);
   box-shadow: 0 3px 8px rgba(0, 0, 0, 0.12);
 }
+@media (max-width: 960px) {
+  .wl-nav-login { display: none !important; }
+}
 
 .wl-nav-apply {
   display: none;
@@ -253,17 +256,16 @@ html { scroll-behavior: smooth; }
   border-top: 1px solid #E2E8F0;
   background: #F8FAFC;
 }
-.wl-mobile-apply, .wl-mobile-login {
+.wl-mobile-login {
   display: flex; align-items: center; justify-content: center; gap: 8px;
   height: 48px; border-radius: 11px; text-decoration: none;
-  font-family: 'Plus Jakarta Sans', sans-serif; font-size: 13.5px; font-weight: 700;
-}
-.wl-mobile-apply {
+  font-family: 'Plus Jakarta Sans', sans-serif; font-size: 14px; font-weight: 700;
   background: #25449B; color: #FFFFFF;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: background .18s, transform .15s;
 }
-.wl-mobile-login {
-  border: 1.5px solid #25449B; color: #25449B; background: #FFFFFF;
+.wl-mobile-login:hover {
+  background: #1B3377;
 }
 
 /* ── Constraint wrapper ──────────────────────────────────────────────── */
@@ -1727,14 +1729,6 @@ export default function Welcome() {
           ))}
         </nav>
         <div className="wl-drawer-foot">
-          <Link
-            href="/register-mtop"
-            className="wl-mobile-apply"
-            tabIndex={menuOpen ? 0 : -1}
-            onClick={() => setMenuOpen(false)}
-          >
-            Apply for a Permit <ArrowRight size={15} strokeWidth={2.4} />
-          </Link>
           <Link
             href={route('login')}
             className="wl-mobile-login"
