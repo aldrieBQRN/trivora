@@ -2,185 +2,470 @@ import React, { useState } from 'react';
 import { Head, Link, useForm } from '@inertiajs/react';
 import {
     ShieldCheck, User, KeyRound,
-    Banknote, Award, Bike, Shield,
-    Eye, EyeOff, AlertCircle, Loader2
+    Award, Bike, Shield, ArrowLeft,
+    Eye, EyeOff, AlertCircle, Loader2,
+    CheckCircle2, Sparkles, Building2
 } from 'lucide-react';
 
 /* ─────────────────────────────────────────────────────────────────────────
-   TRIVORA — Unified System Login (Split-Screen, With Demo Accounts)
-   Matches Welcome.jsx / PublicApply.jsx design system
-   Plus Jakarta Sans · Inter · DM Sans · Navy #1C2340 · Indigo #4F5BCB
+   TRIVORA — Unified System Login
+   Brand Primary: #25449B (Royal Nasugbu Blue)
+   Senior UI/UX Designer Redesign
+   Split-Screen Layout: Brand Identity & Municipal Context + Clean Auth Card
+   Path: resources/js/Pages/Login.jsx
 ───────────────────────────────────────────────────────────────────────── */
 const CSS = `
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600;700&family=DM+Sans:wght@500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700;800&family=DM+Sans:wght@500;600;700&display=swap');
 
-.ol-root *, .ol-root *::before, .ol-root *::after { box-sizing: border-box; margin: 0; padding: 0; }
+.ol-root *, .ol-root *::before, .ol-root *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
 
-/* ── Split layout — identity on one side, task on the other, exactly the
-   same navy/white contrast used for the landing page's own two-path split,
-   so this reads as the same system rather than a different screen style. ── */
 .ol-root {
-  font-family: 'Inter', sans-serif;
-  color: #1C2340;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  color: #0F172A;
   min-height: 100vh;
   display: flex;
+  background: #F8FAFC;
 }
-@media (max-width: 900px) { .ol-root { flex-direction: column; } }
 
-/* ── Brand side (photo + identity) ───────────────────────────────────── */
+@media (max-width: 960px) {
+  .ol-root {
+    flex-direction: column;
+  }
+}
+
+/* ── Brand Side (Left Column: Royal Blue + Backdrop Image) ───────────── */
 .ol-side {
-  flex: 0 0 42%;
+  flex: 0 0 46%;
   position: relative;
   overflow: hidden;
   display: flex;
-  padding: 48px 44px;
-  border-radius: 0 28px 28px 0;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 56px 52px;
+  background: #182F72;
 }
-@media (max-width: 900px) { .ol-side { flex: 0 0 auto; padding: 36px 28px; border-radius: 0 0 28px 28px; } }
+
+@media (max-width: 1120px) {
+  .ol-side {
+    padding: 44px 36px;
+    flex: 0 0 44%;
+  }
+}
+
+@media (max-width: 960px) {
+  .ol-side {
+    flex: 0 0 auto;
+    padding: 36px 24px;
+    border-radius: 0 0 28px 28px;
+  }
+}
 
 .ol-side-backdrop {
-  position: absolute; inset: 0;
+  position: absolute;
+  inset: 0;
   background-image:
-    linear-gradient(160deg, rgba(28, 35, 64, 0.88) 0%, rgba(28, 35, 64, 0.96) 100%),
+    linear-gradient(155deg, rgba(18, 40, 102, 0.94) 0%, rgba(37, 68, 155, 0.88) 55%, rgba(15, 33, 85, 0.96) 100%),
     url('/images/nasugbu-bg.jpg');
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
   z-index: 0;
 }
-.ol-side-backdrop::before {
+
+.ol-side-backdrop::after {
   content: '';
-  position: absolute; inset: 0;
-  background-image: radial-gradient(circle, rgba(255,255,255,.05) 1px, transparent 1px);
-  background-size: 28px 28px;
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(circle, rgba(255, 255, 255, 0.07) 1px, transparent 1px);
+  background-size: 24px 24px;
   pointer-events: none;
 }
 
 .ol-side-content {
-  position: relative; z-index: 1;
-  display: flex; flex-direction: column; justify-content: space-between;
-  width: 100%; min-height: 100%;
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 100%;
+  width: 100%;
 }
-@media (max-width: 900px) { .ol-side-content { min-height: auto; gap: 28px; } }
 
-.ol-logo { display: flex; align-items: center; gap: 14px; text-decoration: none; width: fit-content; }
-.ol-logo-img-wrap {
-  height: 42px; width: auto; border-radius: 10px;
-  background: #FFFFFF;
-  box-shadow: 0 2px 10px rgba(0,0,0,.15);
-  display: flex; align-items: center; justify-content: center;
-  padding: 6px 9px; flex-shrink: 0;
-  transition: box-shadow .2s;
+@media (max-width: 960px) {
+  .ol-side-content {
+    gap: 24px;
+  }
 }
-.ol-logo:hover .ol-logo-img-wrap { box-shadow: 0 4px 16px rgba(0,0,0,.22); }
-.ol-side-logo { height: 26px; width: auto; object-fit: contain; display: block; }
 
-.ol-side-bottom { color: #FFFFFF; }
+/* Clean transparent logo (No white box, no border) */
+.ol-brand-logo {
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+  width: fit-content;
+  transition: transform .2s ease;
+}
+
+.ol-brand-logo:hover {
+  transform: scale(1.02);
+}
+
+.ol-brand-logo-img {
+  height: 48px;
+  width: auto;
+  object-fit: contain;
+  display: block;
+}
+
+@media (max-width: 640px) {
+  .ol-brand-logo-img {
+    height: 40px;
+  }
+}
+
+.ol-side-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #FFFFFF;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  margin-top: 28px;
+  margin-bottom: 14px;
+  width: fit-content;
+}
+
 .ol-side-title {
   font-family: 'Plus Jakarta Sans', sans-serif;
-  font-size: clamp(26px, 2.6vw, 34px); font-weight: 800;
-  letter-spacing: -.02em; line-height: 1.15;
-  margin-top: 24px; margin-bottom: 12px;
+  font-size: clamp(26px, 2.5vw, 36px);
+  font-weight: 800;
+  letter-spacing: -.025em;
+  line-height: 1.2;
   color: #FFFFFF;
+  margin-bottom: 12px;
 }
-@media (max-width: 900px) { .ol-side-title { margin-top: 16px; } }
+
+.ol-side-tagline {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.ol-side-tagline-word {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 13.5px;
+  font-weight: 700;
+  letter-spacing: .04em;
+  color: #93C5FD;
+}
+
 .ol-side-desc {
   font-family: 'Inter', sans-serif;
-  font-size: 14px; font-weight: 400; line-height: 1.6;
-  color: rgba(255,255,255,.75);
-  max-width: 340px;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.65;
+  color: rgba(255, 255, 255, 0.82);
+  max-width: 440px;
 }
 
-.ol-role-list { display: flex; flex-direction: column; gap: 12px; margin-top: 28px; }
-@media (max-width: 900px) { .ol-role-list { display: none; } }
-.ol-role-item {
-  display: flex; align-items: center; gap: 12px;
-  font-family: 'Inter', sans-serif; font-size: 12.5px; font-weight: 500;
-  color: rgba(255,255,255,.8);
+/* Authorized Portals List */
+.ol-portals-box {
+  margin-top: 36px;
+  padding: 22px 24px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  backdrop-filter: blur(10px);
 }
-.ol-role-icon {
-  width: 30px; height: 30px; border-radius: 9px; flex-shrink: 0;
-  background: rgba(255,255,255,.08);
-  border: 1px solid rgba(255,255,255,.16);
-  display: flex; align-items: center; justify-content: center;
+
+@media (max-width: 960px) {
+  .ol-portals-box {
+    display: none;
+  }
+}
+
+.ol-portals-title {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.7);
+  margin-bottom: 14px;
+}
+
+.ol-portals-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  list-style: none;
+}
+
+.ol-portal-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
   color: #FFFFFF;
 }
 
-.ol-side-footnote {
-  margin-top: 28px; padding-top: 20px;
-  border-top: 1px solid rgba(255,255,255,.12);
+.ol-portal-icon {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #FFFFFF;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.ol-portal-name {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  color: #FFFFFF;
+}
+
+.ol-portal-role {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.72);
+  line-height: 1.4;
+}
+
+.ol-side-foot {
+  margin-top: 32px;
+  padding-top: 18px;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
   font-family: 'DM Sans', sans-serif;
-  font-size: 9px; font-weight: 700;
-  letter-spacing: .16em; text-transform: uppercase;
-  color: rgba(255,255,255,.45);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.5);
 }
-@media (max-width: 900px) { .ol-side-footnote { display: none; } }
 
-/* ── Form side ───────────────────────────────────────────────────────── */
+@media (max-width: 960px) {
+  .ol-side-foot {
+    display: none;
+  }
+}
+
+/* ── Form Side (Right Column: Clean White Authentication Card) ────────── */
 .ol-form-side {
-  position: relative;
   flex: 1;
+  position: relative;
   background: #FFFFFF;
-  display: flex; align-items: center; justify-content: center;
-  padding: 48px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 56px 40px;
 }
-@media (max-width: 900px) { .ol-form-side { padding: 40px 24px 56px; } }
 
-.ol-form-inner {
-  width: 100%; max-width: 380px;
-  animation: olFadeUp .5s cubic-bezier(.2,0,.2,1) both;
+@media (max-width: 960px) {
+  .ol-form-side {
+    padding: 36px 20px 48px;
+  }
 }
-@keyframes olFadeUp {
-  from { opacity: 0; transform: translateY(16px); }
+
+.ol-back-nav {
+  position: absolute;
+  top: 32px;
+  right: 40px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #475569;
+  text-decoration: none;
+  padding: 8px 14px;
+  border-radius: 9px;
+  background: #F8FAFC;
+  border: 1px solid #E2E8F0;
+  transition: all .18s ease;
+}
+
+.ol-back-nav:hover {
+  color: #25449B;
+  border-color: #25449B;
+  background: #EFF4FF;
+  transform: translateX(-2px);
+}
+
+@media (max-width: 960px) {
+  .ol-back-nav {
+    top: 20px;
+    right: 20px;
+  }
+}
+
+.ol-form-card {
+  width: 100%;
+  max-width: 420px;
+  animation: olFadeIn .4s cubic-bezier(.2, 0, .2, 1) both;
+}
+
+@keyframes olFadeIn {
+  from { opacity: 0; transform: translateY(14px); }
   to   { opacity: 1; transform: translateY(0); }
 }
 
-.ol-form-heading { margin-bottom: 28px; }
+.ol-form-header {
+  margin-bottom: 28px;
+}
+
+.ol-form-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: #25449B;
+  margin-bottom: 8px;
+}
+
 .ol-form-title {
   font-family: 'Plus Jakarta Sans', sans-serif;
-  font-size: 25px; font-weight: 800;
-  letter-spacing: -.02em; color: #1C2340;
-  line-height: 1.2; margin-bottom: 6px;
+  font-size: clamp(24px, 2.2vw, 28px);
+  font-weight: 800;
+  letter-spacing: -.025em;
+  color: #0F172A;
+  line-height: 1.25;
+  margin-bottom: 6px;
 }
+
 .ol-form-sub {
   font-family: 'Inter', sans-serif;
-  font-size: 13.5px; font-weight: 400;
-  color: #4A5578;
+  font-size: 14px;
+  color: #64748B;
+  line-height: 1.5;
 }
 
-/* ── Fields ──────────────────────────────────────────────────────────── */
-.ol-fields { display: flex; flex-direction: column; gap: 20px; margin-bottom: 24px; }
+/* Alert Box */
+.ol-alert {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  background: #FEF2F2;
+  border: 1px solid #FCA5A5;
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin-bottom: 24px;
+  animation: olFadeIn .25s ease both;
+}
+
+.ol-alert-icon {
+  color: #DC2626;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.ol-alert-text {
+  font-size: 13px;
+  font-weight: 600;
+  color: #991B1B;
+  line-height: 1.45;
+}
+
+/* Fields */
+.ol-field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  margin-bottom: 22px;
+}
+
+.ol-field {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
 
 .ol-label {
-  display: block;
-  font-family: 'DM Sans', sans-serif;
-  font-size: 9.5px; font-weight: 700;
-  letter-spacing: .16em; text-transform: uppercase;
-  color: #5A6488; margin-bottom: 8px; padding-left: 2px;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #334155;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
-.ol-input-wrap { position: relative; }
+
+.ol-input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
 .ol-input-icon {
-  position: absolute; left: 16px; top: 50%; transform: translateY(-50%);
-  color: #8A96BC; pointer-events: none;
-  display: flex; align-items: center;
+  position: absolute;
+  left: 16px;
+  color: #94A3B8;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  transition: color .18s ease;
 }
+
 .ol-input {
-  width: 100%; height: 52px;
-  border: 1.5px solid rgba(28,35,64,.12);
-  border-radius: 12px; background: #FAFAFA;
+  width: 100%;
+  height: 50px;
+  border: 1.5px solid #E2E8F0;
+  border-radius: 12px;
+  background: #F8FAFC;
   padding: 0 16px 0 46px;
   font-family: 'Inter', sans-serif;
-  font-size: 14px; font-weight: 500; color: #1C2340;
-  outline: none; transition: border-color .2s, box-shadow .2s, background .2s;
+  font-size: 14px;
+  font-weight: 500;
+  color: #0F172A;
+  outline: none;
+  transition: border-color .18s, background .18s, box-shadow .18s;
 }
-.ol-input:hover { border-color: rgba(28,35,64,.2); background: #FFFFFF; }
-.ol-input:focus {
-  border-color: rgba(79,91,203,.45);
-  box-shadow: 0 0 0 3px rgba(79,91,203,.1);
+
+.ol-input:hover {
+  border-color: #CBD5E1;
   background: #FFFFFF;
 }
-.ol-input::placeholder { color: #9AA3CC; font-weight: 400; }
-.ol-input--password { padding-right: 46px; }
+
+.ol-input:focus {
+  border-color: #25449B;
+  background: #FFFFFF;
+  box-shadow: 0 0 0 3px rgba(37, 68, 155, 0.12);
+}
+
+.ol-input-wrap:focus-within .ol-input-icon {
+  color: #25449B;
+}
+
+.ol-input::placeholder {
+  color: #94A3B8;
+  font-weight: 400;
+}
+
+.ol-input--password {
+  padding-right: 48px;
+}
+
 .ol-input--password::-ms-reveal,
 .ol-input--password::-ms-clear,
 .ol-input::-ms-reveal,
@@ -191,138 +476,199 @@ input[type="password"]::-ms-clear {
   width: 0 !important;
   height: 0 !important;
 }
+
 .ol-input-toggle {
-  position: absolute; right: 6px; top: 50%; transform: translateY(-50%);
-  width: 34px; height: 34px; border-radius: 8px;
-  border: none; background: transparent; cursor: pointer;
-  color: #8A96BC; display: flex; align-items: center; justify-content: center;
+  position: absolute;
+  right: 8px;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  color: #94A3B8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
   transition: color .15s, background .15s;
 }
-.ol-input-toggle:hover { color: #4F5BCB; background: rgba(79,91,203,.08); }
-.ol-error {
-  font-family: 'DM Sans', sans-serif;
-  font-size: 8.5px; font-weight: 700;
-  letter-spacing: .13em; text-transform: uppercase;
-  color: #DC2626; margin-top: 6px; padding-left: 2px;
+
+.ol-input-toggle:hover {
+  color: #25449B;
+  background: #EFF4FF;
 }
 
-/* ── Auth failure banner — one clear, visible callout at the top of the
-   form instead of relying only on the small field-level error text. ── */
-.ol-alert {
-  display: flex; align-items: flex-start; gap: 10px;
-  background: #FEF2F2; border: 1px solid rgba(220,38,38,.18);
-  border-radius: 12px; padding: 12px 14px;
-  margin-bottom: 20px;
-  animation: olFadeUp .3s cubic-bezier(.2,0,.2,1) both;
-}
-.ol-alert-icon { color: #DC2626; flex-shrink: 0; margin-top: 1px; }
-.ol-alert-text {
-  font-family: 'Inter', sans-serif;
-  font-size: 12.5px; font-weight: 500; line-height: 1.5;
-  color: #991B1B;
+.ol-field-hint {
+  font-size: 12px;
+  color: #64748B;
+  padding-left: 2px;
 }
 
-/* ── Options row ─────────────────────────────────────────────────────── */
-.ol-options {
-  display: flex; align-items: center; justify-content: space-between;
-  margin-bottom: 32px;
+.ol-field-error {
+  font-size: 12px;
+  font-weight: 600;
+  color: #DC2626;
+  padding-left: 2px;
 }
+
+/* Options Row */
+.ol-options-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 26px;
+  font-size: 13px;
+}
+
 .ol-remember {
-  display: flex; align-items: center; gap: 8px; cursor: pointer;
-}
-.ol-remember input[type="checkbox"] {
-  width: 16px; height: 16px; border-radius: 5px;
-  border: 1.5px solid rgba(28,35,64,.2);
-  accent-color: #1C2340; cursor: pointer;
-}
-.ol-remember-label {
-  font-family: 'DM Sans', sans-serif;
-  font-size: 9.5px; font-weight: 700;
-  letter-spacing: .12em; text-transform: uppercase;
-  color: #5A6488; cursor: pointer; transition: color .18s;
-}
-.ol-remember:hover .ol-remember-label { color: #1C2340; }
-.ol-forgot {
-  font-family: 'DM Sans', sans-serif;
-  font-size: 9.5px; font-weight: 700;
-  letter-spacing: .12em; text-transform: uppercase;
-  color: #5A6488; text-decoration: none; transition: color .18s;
-}
-.ol-forgot:hover { color: #4F5BCB; }
-
-/* ── Submit button ───────────────────────────────────────────────────── */
-.ol-btn {
-  width: 100%; height: 54px; border-radius: 12px;
-  border: none; background: #1C2340; color: #FFFFFF;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   cursor: pointer;
-  font-family: 'DM Sans', sans-serif;
-  font-size: 11px; font-weight: 700;
-  letter-spacing: .15em; text-transform: uppercase;
-  display: flex; align-items: center; justify-content: center; gap: 10px;
-  transition: background .18s, box-shadow .18s, transform .12s;
-  box-shadow: 0 4px 16px rgba(28,35,64,.2);
+  user-select: none;
+  color: #475569;
+  font-weight: 500;
 }
-.ol-btn:hover:not(:disabled) {
-  background: #2E3A9E;
-  box-shadow: 0 6px 22px rgba(28,35,64,.28);
+
+.ol-remember input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  border: 1.5px solid #CBD5E1;
+  accent-color: #25449B;
+  cursor: pointer;
+}
+
+.ol-forgot-link {
+  color: #25449B;
+  font-weight: 700;
+  text-decoration: none;
+  transition: color .15s;
+}
+
+.ol-forgot-link:hover {
+  color: #1B3377;
+  text-decoration: underline;
+}
+
+/* Primary Button */
+.ol-submit-btn {
+  width: 100%;
+  height: 52px;
+  border-radius: 12px;
+  border: none;
+  background: #25449B;
+  color: #FFFFFF;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 14.5px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  cursor: pointer;
+  box-shadow: 0 4px 14px -2px rgba(37, 68, 155, 0.35), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+  transition: background .18s, transform .15s, box-shadow .18s;
+}
+
+.ol-submit-btn:hover:not(:disabled) {
+  background: #1B3377;
   transform: translateY(-1px);
+  box-shadow: 0 8px 20px -4px rgba(37, 68, 155, 0.45);
 }
-.ol-btn:disabled {
-  background: #2E3A9E;
-  opacity: .75;
-  box-shadow: none; cursor: not-allowed; transform: none;
-}
-.ol-spin { animation: olSpin .8s linear infinite; }
-@keyframes olSpin { to { transform: rotate(360deg); } }
 
-/* ── Back link ──────────────────────────────────────────────────────── */
-/* Same "Cancel & Return Home" affordance as Public Registration — an Inertia <Link>
-   that always navigates to "/" (never browser history), sitting top-right of the
-   form side so it doesn't compete with the form's own actions. */
-.ol-back-link {
-  position: absolute; top: 28px; right: 36px;
-  display: inline-flex; align-items: center; gap: 6px;
-  font-family: 'DM Sans', sans-serif; font-size: 10px; font-weight: 700;
-  letter-spacing: .1em; text-transform: uppercase;
-  color: #8A96BC; text-decoration: none; transition: color .18s;
+.ol-submit-btn:disabled {
+  background: #25449B;
+  opacity: 0.75;
+  cursor: not-allowed;
+  transform: none;
 }
-.ol-back-link:hover { color: #1C2340; }
-@media (max-width: 900px) { .ol-back-link { top: 18px; right: 20px; } }
 
-/* ── Demo Accounts Section ───────────────────────────────────────────── */
-.ol-demo-wrap {
+.ol-spin {
+  animation: olSpin .75s linear infinite;
+}
+
+@keyframes olSpin {
+  to { transform: rotate(360deg); }
+}
+
+/* Quick Demo Access */
+.ol-demo-section {
   margin-top: 28px;
   padding-top: 24px;
-  border-top: 1px dashed rgba(28,35,64,.1);
+  border-top: 1px solid #F1F5F9;
 }
-.ol-demo-title {
+
+.ol-demo-label {
   font-family: 'DM Sans', sans-serif;
-  font-size: 9px; font-weight: 700;
-  letter-spacing: .15em; text-transform: uppercase;
-  color: #8A96BC; margin-bottom: 12px; text-align: center;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: #94A3B8;
+  margin-bottom: 12px;
+  text-align: center;
 }
+
 .ol-demo-grid {
-  display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
 }
+
 @media (max-width: 480px) {
-  .ol-demo-grid { grid-template-columns: 1fr; }
+  .ol-demo-grid {
+    grid-template-columns: 1fr;
+  }
 }
+
 .ol-demo-btn {
-  background: #FAFAFC; border: 1px solid rgba(28,35,64,.08);
-  border-radius: 8px; padding: 10px 12px;
-  font-family: 'Inter', sans-serif; font-size: 11px; font-weight: 600;
-  color: #5A6488; cursor: pointer; transition: all .15s;
-  display: flex; align-items: center; justify-content: center; gap: 8px;
+  background: #F8FAFC;
+  border: 1px solid #E2E8F0;
+  border-radius: 10px;
+  padding: 10px 8px;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  color: #475569;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  transition: all .18s ease;
 }
+
 .ol-demo-btn:hover {
-  background: #FFFFFF; box-shadow: 0 2px 8px rgba(0,0,0,.06);
+  background: #FFFFFF;
+  border-color: #25449B;
+  color: #25449B;
   transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
 }
-/* Role-tinted accents — each demo account gets its own icon color instead of
-   one flat gray, so the roles are distinguishable at a glance. */
-.ol-demo-btn--tmo:hover      { border-color: #1C2340; color: #1C2340; }
-.ol-demo-btn--bplo:hover     { border-color: #B45309; color: #B45309; }
-.ol-demo-btn--operator:hover { border-color: #059669; color: #059669; }
+
+.ol-demo-btn--active {
+  background: #EFF4FF;
+  border-color: #25449B;
+  color: #25449B;
+}
+
+.ol-register-hint {
+  margin-top: 24px;
+  text-align: center;
+  font-size: 13px;
+  color: #64748B;
+}
+
+.ol-register-link {
+  color: #25449B;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.ol-register-link:hover {
+  text-decoration: underline;
+}
 `;
 
 export default function Login() {
@@ -332,15 +678,14 @@ export default function Login() {
         remember: false,
     });
     const [showPassword, setShowPassword] = useState(false);
+    const [selectedRole, setSelectedRole] = useState(null);
 
     const submit = (e) => {
         e.preventDefault();
         post('/login');
     };
 
-    // Auto-fill form fields for quick demo access — login accepts either an account's
-    // registered email address or its registered mobile number; demo accounts use their
-    // registered email here (see database/seeders/UsersSeeder.php for the matching records).
+    // Quick demo accounts for review and testing
     const setDemoAccount = (role) => {
         const credentials = {
             tmo: { login_id: 'tmo.jdelacruz@trivora.gov.ph', password: 'TmoUser@123' },
@@ -349,6 +694,7 @@ export default function Login() {
         };
 
         if (credentials[role]) {
+            setSelectedRole(role);
             setData({
                 login_id: credentials[role].login_id,
                 password: credentials[role].password,
@@ -359,92 +705,137 @@ export default function Login() {
 
     return (
         <div className="ol-root">
-            <Head title="System Login | TRIVORA" />
+            <Head title="Sign In | TRIVORA — Nasugbu, Batangas" />
             <style dangerouslySetInnerHTML={{ __html: CSS }} />
 
-            {/* ── Brand side ── */}
+            {/* ── Brand Side (Left Column: Royal Blue + Backdrop) ── */}
             <div className="ol-side">
                 <div className="ol-side-backdrop" aria-hidden="true" />
                 <div className="ol-side-content">
-                    <div className="ol-side-top">
-                        <Link href="/" className="ol-logo">
-                            <div className="ol-logo-img-wrap">
-                                <img src="/images/logo.png" alt="TRIVORA" className="ol-side-logo" />
-                            </div>
+                    <div>
+                        {/* Logo without background or border */}
+                        <Link href="/" className="ol-brand-logo" title="TRIVORA — Back to Home">
+                            <img src="/images/logo.png" alt="TRIVORA" className="ol-brand-logo-img" />
                         </Link>
-                        <h1 className="ol-side-title">Smart Tricycle Management System</h1>
+
+                        <div className="ol-side-badge">
+                            <ShieldCheck size={13} strokeWidth={2.4} /> Nasugbu, Batangas
+                        </div>
+
+                        <h1 className="ol-side-title">
+                            Smart Tricycle<br />Management System
+                        </h1>
+
+                        <div className="ol-side-tagline" aria-label="Tagline: Track, Protect, Connect">
+                            <span className="ol-side-tagline-word">Track.</span>
+                            <span className="ol-side-tagline-word">Protect.</span>
+                            <span className="ol-side-tagline-word">Connect.</span>
+                        </div>
+
                         <p className="ol-side-desc">
-                            The unified back-office for the Nasugbu Municipal Government —
-                            permits, franchise verification, fleet monitoring, and regulation in
-                            one secure system.
+                            The central municipal platform connecting local operators, drivers, and municipal offices for streamlined franchise processing, inspections, and road management.
                         </p>
                     </div>
 
-                    <div className="ol-side-bottom">
-                        <div className="ol-role-list">
-                            <div className="ol-role-item">
-                                <span className="ol-role-icon" aria-hidden="true"><Shield size={14} strokeWidth={2} /></span>
-                                Traffic Management Office (TMO)
-                            </div>
-                            <div className="ol-role-item">
-                                <span className="ol-role-icon" aria-hidden="true"><Award size={14} strokeWidth={2} /></span>
-                                Business Permits &amp; Licensing Office (BPLO)
-                            </div>
-                            <div className="ol-role-item">
-                                <span className="ol-role-icon" aria-hidden="true"><Bike size={14} strokeWidth={2} /></span>
-                                Tricycle Drivers &amp; Operators
-                            </div>
-                        </div>
-
-                        <p className="ol-side-footnote">Authorized LGU Personnel &amp; Operators Only</p>
+                    {/* Authorized Portals Overview */}
+                    <div className="ol-portals-box">
+                        <p className="ol-portals-title">Authorized Portals</p>
+                        <ul className="ol-portals-list">
+                            <li className="ol-portal-item">
+                                <span className="ol-portal-icon" aria-hidden="true">
+                                    <Shield size={15} strokeWidth={2.2} />
+                                </span>
+                                <div>
+                                    <div className="ol-portal-name">Traffic Management Office (TMO)</div>
+                                    <div className="ol-portal-role">Roadworthiness inspection, route scheduling &amp; verification</div>
+                                </div>
+                            </li>
+                            <li className="ol-portal-item">
+                                <span className="ol-portal-icon" aria-hidden="true">
+                                    <Award size={15} strokeWidth={2.2} />
+                                </span>
+                                <div>
+                                    <div className="ol-portal-name">Business Permits &amp; Licensing Office (BPLO)</div>
+                                    <div className="ol-portal-role">Franchise application validation &amp; sticker issuance</div>
+                                </div>
+                            </li>
+                            <li className="ol-portal-item">
+                                <span className="ol-portal-icon" aria-hidden="true">
+                                    <Bike size={15} strokeWidth={2.2} />
+                                </span>
+                                <div>
+                                    <div className="ol-portal-name">Tricycle Drivers &amp; Operators</div>
+                                    <div className="ol-portal-role">Franchise filing, renewal tracker &amp; color-coding guide</div>
+                                </div>
+                            </li>
+                        </ul>
                     </div>
+
+                    <p className="ol-side-foot">
+                        Pamahalaang Bayan ng Nasugbu &bull; Modern Transport Portal
+                    </p>
                 </div>
             </div>
 
-            {/* ── Form side ── */}
+            {/* ── Form Side (Right Column: Clean Authentication Card) ── */}
             <div className="ol-form-side">
-                {/* Same wording/behavior as Public Registration's back link */}
-                <Link href="/" className="ol-back-link">Cancel &amp; Return Home</Link>
-                <div className="ol-form-inner">
-                    <div className="ol-form-heading">
-                        <p className="ol-form-title">Welcome back</p>
-                        <p className="ol-form-sub">Sign in with your registered email or mobile number.</p>
+                {/* Back to Home Link */}
+                <Link href="/" className="ol-back-nav">
+                    <ArrowLeft size={14} strokeWidth={2.4} /> Back to Home
+                </Link>
+
+                <div className="ol-form-card">
+                    <div className="ol-form-header">
+                        <div className="ol-form-eyebrow">
+                            <Sparkles size={12} strokeWidth={2.4} /> Sign In to Portal
+                        </div>
+                        <h2 className="ol-form-title">Welcome back</h2>
+                        <p className="ol-form-sub">
+                            Sign in with your registered email or mobile number to access your account.
+                        </p>
                     </div>
 
+                    {/* Auth Error Banner */}
                     {errors.login_id && (
                         <div className="ol-alert" role="alert">
-                            <AlertCircle size={16} strokeWidth={2} className="ol-alert-icon" />
+                            <AlertCircle size={17} strokeWidth={2.2} className="ol-alert-icon" />
                             <p className="ol-alert-text">{errors.login_id}</p>
                         </div>
                     )}
 
                     <form onSubmit={submit}>
-                        <div className="ol-fields">
-                            {/* Email or Mobile Number — either of the account's existing registered identifiers */}
-                            <div>
-                                <label className="ol-label" htmlFor="login_id">Email or Mobile Number</label>
+                        <div className="ol-field-group">
+                            {/* Email or Mobile Number */}
+                            <div className="ol-field">
+                                <label className="ol-label" htmlFor="login_id">
+                                    <span>Email or Mobile Number</span>
+                                </label>
                                 <div className="ol-input-wrap">
                                     <span className="ol-input-icon" aria-hidden="true">
-                                        <User size={16} strokeWidth={2} />
+                                        <User size={16} strokeWidth={2.2} />
                                     </span>
                                     <input
                                         id="login_id"
                                         type="text"
                                         autoComplete="username"
                                         className="ol-input"
-                                        placeholder="e.g. juan@email.com or 0917 123 4567"
+                                        placeholder="e.g. juan@email.com or 09171234567"
                                         value={data.login_id}
                                         onChange={e => setData('login_id', e.target.value)}
+                                        required
                                     />
                                 </div>
+                                <span className="ol-field-hint">Accepts your registered email or 11-digit mobile number.</span>
                             </div>
 
                             {/* Password */}
-                            <div>
-                                <label className="ol-label" htmlFor="password">Password</label>
+                            <div className="ol-field">
+                                <label className="ol-label" htmlFor="password">
+                                    <span>Password</span>
+                                </label>
                                 <div className="ol-input-wrap">
                                     <span className="ol-input-icon" aria-hidden="true">
-                                        <KeyRound size={16} strokeWidth={2} />
+                                        <KeyRound size={16} strokeWidth={2.2} />
                                     </span>
                                     <input
                                         id="password"
@@ -454,6 +845,7 @@ export default function Login() {
                                         placeholder="Enter your password"
                                         value={data.password}
                                         onChange={e => setData('password', e.target.value)}
+                                        required
                                     />
                                     <button
                                         type="button"
@@ -465,53 +857,75 @@ export default function Login() {
                                         {showPassword ? <EyeOff size={16} strokeWidth={2} /> : <Eye size={16} strokeWidth={2} />}
                                     </button>
                                 </div>
-                                {errors.password && <p className="ol-error">{errors.password}</p>}
+                                {errors.password && <p className="ol-field-error">{errors.password}</p>}
                             </div>
                         </div>
 
-                        {/* Remember + Forgot */}
-                        <div className="ol-options">
+                        {/* Options: Remember Me & Forgot Password */}
+                        <div className="ol-options-row">
                             <label className="ol-remember">
                                 <input
                                     type="checkbox"
                                     checked={data.remember}
                                     onChange={e => setData('remember', e.target.checked)}
                                 />
-                                <span className="ol-remember-label">Remember me</span>
+                                <span>Remember me</span>
                             </label>
-                            <Link href="#" className="ol-forgot">Forgot Password?</Link>
+                            <Link href="#" className="ol-forgot-link">
+                                Forgot password?
+                            </Link>
                         </div>
 
-                        {/* Submit */}
-                        <button type="submit" className="ol-btn" disabled={processing}>
+                        {/* Submit Button */}
+                        <button type="submit" className="ol-submit-btn" disabled={processing}>
                             {processing ? (
                                 <>
-                                    <Loader2 size={16} strokeWidth={2} className="ol-spin" />
-                                    Signing In…
+                                    <Loader2 size={16} strokeWidth={2.5} className="ol-spin" />
+                                    <span>Signing in...</span>
                                 </>
                             ) : (
                                 <>
-                                    <ShieldCheck size={16} strokeWidth={2} />
-                                    Secure Login
+                                    <ShieldCheck size={17} strokeWidth={2.4} />
+                                    <span>Sign In to Portal</span>
                                 </>
                             )}
                         </button>
                     </form>
 
-                    {/* ── Quick Demo Access ── */}
-                    <div className="ol-demo-wrap">
-                        <p className="ol-demo-title">Quick Demo Access</p>
+                    {/* Quick Demo Access for Testing */}
+                    <div className="ol-demo-section">
+                        <p className="ol-demo-label">Quick Demo Access</p>
                         <div className="ol-demo-grid">
-                            <button type="button" className="ol-demo-btn ol-demo-btn--tmo" onClick={() => setDemoAccount('tmo')}>
-                                <Shield size={14} strokeWidth={2} /> TMO
+                            <button
+                                type="button"
+                                className={`ol-demo-btn ${selectedRole === 'tmo' ? 'ol-demo-btn--active' : ''}`}
+                                onClick={() => setDemoAccount('tmo')}
+                            >
+                                <Shield size={14} strokeWidth={2.2} /> TMO
                             </button>
-                            <button type="button" className="ol-demo-btn ol-demo-btn--bplo" onClick={() => setDemoAccount('bplo')}>
-                                <Award size={14} strokeWidth={2} /> BPLO
+                            <button
+                                type="button"
+                                className={`ol-demo-btn ${selectedRole === 'bplo' ? 'ol-demo-btn--active' : ''}`}
+                                onClick={() => setDemoAccount('bplo')}
+                            >
+                                <Award size={14} strokeWidth={2.2} /> BPLO
                             </button>
-                            <button type="button" className="ol-demo-btn ol-demo-btn--operator" onClick={() => setDemoAccount('operator')}>
-                                <Bike size={14} strokeWidth={2} /> Driver
+                            <button
+                                type="button"
+                                className={`ol-demo-btn ${selectedRole === 'operator' ? 'ol-demo-btn--active' : ''}`}
+                                onClick={() => setDemoAccount('operator')}
+                            >
+                                <Bike size={14} strokeWidth={2.2} /> Driver
                             </button>
                         </div>
+                    </div>
+
+                    {/* Don't have an MTOP yet? */}
+                    <div className="ol-register-hint">
+                        Don't have an MTOP permit yet?{' '}
+                        <Link href="/register-mtop" className="ol-register-link">
+                            Apply online &rarr;
+                        </Link>
                     </div>
                 </div>
             </div>
