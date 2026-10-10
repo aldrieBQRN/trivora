@@ -1326,36 +1326,36 @@ html { scroll-behavior: smooth; }
 `;
 
 const STEPS = [
-  { icon: FileText, title: 'Apply Online', desc: 'Submit your MTOP application, tricycle details, and required documents digitally without waiting in long queues.' },
-  { icon: ClipboardCheck, title: 'TMO Verification', desc: 'The Traffic Management Office reviews your submitted requirements and conducts the physical tricycle inspection.' },
-  { icon: Wallet, title: 'Settle Fees', desc: 'Pay official franchise fees at the Municipal Treasurer’s Office or through accredited channels using your Order of Payment.' },
-  { icon: Award, title: 'Get Your Permit', desc: 'Receive your official MTOP sticker and digital franchise certificate, fully activated in the municipal database.' },
+  { icon: FileText, title: 'Submit Papers Online', desc: 'Fill in your details and upload your tricycle papers and clearances from your phone or computer—no need to line up early.' },
+  { icon: ClipboardCheck, title: 'TMO Review & Inspection', desc: 'The Traffic Management Office reviews your papers and checks your tricycle’s road safety and roadworthiness.' },
+  { icon: Wallet, title: 'Pay at the Municipal Hall', desc: 'Pay standard municipal franchise fees at the Municipal Treasurer’s Office using your official Order of Payment.' },
+  { icon: Award, title: 'Claim Sticker & Permit', desc: 'Receive your official MTOP windshield sticker and digital franchise permit. You’re ready to drive with peace of mind.' },
 ];
 
 const FAQS = [
   {
-    q: 'What are the required documents to apply for or renew an MTOP franchise?',
-    a: 'Key requirements include: (1) Valid LTO Official Receipt (OR) and Certificate of Registration (CR) under the applicant’s name, (2) Professional Driver’s License with valid restriction code, (3) Barangay Clearance of residence within Nasugbu, (4) Police or NBI Clearance, and (5) Certificate of TODA Membership endorsed by your TODA President.'
+    q: 'What papers do I need to apply for or renew an MTOP franchise?',
+    a: 'You will need: (1) LTO Official Receipt (OR) and Certificate of Registration (CR) of the tricycle, (2) Professional Driver’s License, (3) Barangay Clearance within Nasugbu, (4) Police or NBI Clearance, and (5) Certificate of TODA Membership endorsed by your TODA President.'
   },
   {
-    q: 'How can the public verify if a tricycle is legally franchised in Nasugbu?',
-    a: 'Simply use the public verification box on this page or scan the official TRIVORA QR code displayed on the tricycle windshield. Enter the 4-digit municipal plate number to check if the unit holds an Active MTOP franchise.'
+    q: 'How can passengers check if a tricycle has an official permit?',
+    a: 'You can use the plate check tool on this page or scan the official TRIVORA QR code displayed on the tricycle windshield. It instantly shows if the unit has an active and valid municipal franchise.'
   },
   {
-    q: 'How does the smart GPS tracking and coding day compliance work?',
-    a: 'Each authorized tricycle transmits periodic GPS pings through mobile devices or telemetry units. The system automatically cross-references active units against Nasugbu’s official coding schedules and designated TODA route boundaries, alerting operators proactively.'
+    q: 'How does daily color-coding and route monitoring work?',
+    a: 'The system helps operators and drivers keep track of their weekly color-coding schedules and designated TODA routes, preventing accidental violations and helping traffic flow smoothly.'
   },
   {
     q: 'Where and how do I pay my franchise fees?',
-    a: 'After TMO document inspection, an official Order of Payment is generated on your portal account. Fees can be paid directly at the Municipal Treasurer’s Office at Pamahalaang Bayan ng Nasugbu.'
+    a: 'Once your documents and tricycle inspection are approved, your Order of Payment is ready in your account. You can pay the official municipal fee directly at the Municipal Treasurer’s Office in the Municipal Hall.'
   },
   {
-    q: 'How long does the digital MTOP application process take?',
-    a: 'With online submission and pre-verification, the typical review and inspection process takes 2 to 3 working days once physical inspection is completed, compared to several weeks in traditional manual systems.'
+    q: 'How long does the online application process take?',
+    a: 'Most applications are completed in 2 to 3 working days once your tricycle’s physical inspection is done—saving you multiple trips and hours of waiting.'
   },
   {
-    q: 'What should I do if my franchise has expired?',
-    a: 'Log into your operator account, navigate to the Renewal section, upload your updated OR/CR and clearances, and schedule a physical reinspection at TMO before operating to prevent coding and expired penalties.'
+    q: 'What should I do if my franchise has already expired?',
+    a: 'Log into your operator account, go to Renewal, upload your updated OR/CR and clearances, and bring your unit to the TMO for a quick inspection. Renewing right away keeps you authorized to operate.'
   }
 ];
 
@@ -1757,9 +1757,7 @@ export default function Welcome() {
               </div>
 
               <p className={`wl-hero-sub ${FADE}`} style={delay(160)}>
-                The official portal of the Nasugbu Municipal Government for applying,
-                renewing, and verifying tricycle franchises (MTOP)—backed by real-time GPS fleet monitoring
-                and automated compliance tracking.
+                The official online portal of the Municipal Government of Nasugbu. Apply for or renew your tricycle franchise (MTOP), check daily color-coding schedules, and ensure safe, reliable rides across town.
               </p>
 
               <div className={`wl-hero-cta ${FADE}`} style={delay(220)}>
@@ -1782,7 +1780,7 @@ export default function Welcome() {
                 </div>
                 <div className="wl-hero-feat-item">
                   <span className="wl-feat-check">&#10003;</span>
-                  <span>Live GPS Telemetry</span>
+                  <span>Daily Color-Coding Guide</span>
                 </div>
               </div>
             </div>
@@ -1809,7 +1807,7 @@ export default function Welcome() {
               </div>
               <h2 className="wl-sec-title" id="about-heading">Modernizing Tricycle Transport in Nasugbu</h2>
               <p className="wl-sec-sub">
-                An official municipal initiative combining smart cloud services and GPS telematics to support local operators, TODAs, and commuters.
+                An official municipal initiative connecting local drivers, TODA associations, and commuters with simple, modern public service.
               </p>
             </div>
 
@@ -1820,13 +1818,13 @@ export default function Welcome() {
                   <Award size={13} strokeWidth={2.4} /> Official Nasugbu LGU Initiative
                 </div>
                 <h3 style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: 20, fontWeight: 800, color: '#0F172A', marginBottom: 12, lineHeight: 1.35 }}>
-                  Empowering Nasugbu’s Transport Community Through Modern Digital Governance
+                  Making Tricycle Services Faster, Safer, and More Organized for Nasugbu
                 </h3>
                 <p style={{ fontSize: 14, color: '#475569', lineHeight: 1.7, marginBottom: 14 }}>
-                  Established under the municipal transport modernization agenda of Nasugbu, Batangas, TRIVORA serves as the unified digital hub for the Traffic Management Office (TMO), Business Permits &amp; Licensing Office (BPLO), and accredited TODA chapters.
+                  Created for the people of Nasugbu, Batangas, TRIVORA brings the Traffic Management Office (TMO), the Business Permits &amp; Licensing Office (BPLO), and our local TODA chapters together on one convenient website.
                 </p>
                 <p style={{ fontSize: 14, color: '#475569', lineHeight: 1.7 }}>
-                  By transitioning from paper ledgers to automated verification and live telemetry, TRIVORA protects commuters from unauthorized fares, eliminates administrative delays for drivers, and maintains disciplined traffic order across municipal thoroughfares.
+                  No more lost paperwork or whole days spent waiting in line at the munisipyo. Operators can apply and renew from home, commuters can check standard fares and verify drivers, and our town keeps traffic moving smoothly.
                 </p>
               </div>
 
@@ -1834,19 +1832,19 @@ export default function Welcome() {
               <div className="wl-about-stats-grid">
                 <div className="wl-about-stat-card">
                   <div className="wl-about-stat-num">100%</div>
-                  <div className="wl-about-stat-lbl">Digital MTOP Filing</div>
+                  <div className="wl-about-stat-lbl">Online Filing</div>
                 </div>
                 <div className="wl-about-stat-card">
                   <div className="wl-about-stat-num">3,000+</div>
-                  <div className="wl-about-stat-lbl">Authorized Units</div>
+                  <div className="wl-about-stat-lbl">Registered Units</div>
                 </div>
                 <div className="wl-about-stat-card">
                   <div className="wl-about-stat-num">28</div>
-                  <div className="wl-about-stat-lbl">Accredited TODAs</div>
+                  <div className="wl-about-stat-lbl">Local TODA Chapters</div>
                 </div>
                 <div className="wl-about-stat-card">
                   <div className="wl-about-stat-num">24/7</div>
-                  <div className="wl-about-stat-lbl">QR Safety &amp; Lookup</div>
+                  <div className="wl-about-stat-lbl">Plate &amp; QR Check</div>
                 </div>
               </div>
             </div>
@@ -1858,9 +1856,9 @@ export default function Welcome() {
                   <FileText size={24} strokeWidth={2} />
                 </div>
                 <div>
-                  <h3 className="wl-about-card-title">Paperless MTOP Franchising</h3>
+                  <h3 className="wl-about-card-title">Online MTOP Franchise Filing</h3>
                   <p className="wl-about-card-desc">
-                    Replaces physical logbooks and queues with a transparent digital portal. Operators submit requirements online, track review stages, and receive verified digital permits.
+                    Submit your requirements online without waiting in early morning lines. Track the review step-by-step and receive your approved permit faster.
                   </p>
                 </div>
               </div>
@@ -1870,9 +1868,9 @@ export default function Welcome() {
                   <Satellite size={24} strokeWidth={2} />
                 </div>
                 <div>
-                  <h3 className="wl-about-card-title">GPS Telemetry &amp; Coding Adherence</h3>
+                  <h3 className="wl-about-card-title">Daily Color-Coding &amp; Route Guide</h3>
                   <p className="wl-about-card-desc">
-                    Smart GPS coordinates check active units automatically against municipal coding days and designated routes, maintaining road order without manual checkpoint friction.
+                    Helps drivers easily check their allowed operating days and assigned routes, preventing honest mistakes and keeping traffic orderly.
                   </p>
                 </div>
               </div>
@@ -1882,9 +1880,9 @@ export default function Welcome() {
                   <ShieldCheck size={24} strokeWidth={2} />
                 </div>
                 <div>
-                  <h3 className="wl-about-card-title">Passenger Safety &amp; QR Rides</h3>
+                  <h3 className="wl-about-card-title">Passenger Safety &amp; QR Code Lookup</h3>
                   <p className="wl-about-card-desc">
-                    Every authorized unit displays an official QR code. Commuters can verify franchise validity, driver identity, and recover lost property quickly.
+                    Every authorized tricycle carries an official QR code. Passengers can scan it with any smartphone to confirm driver identity, check standard fares, or report lost items.
                   </p>
                 </div>
               </div>
@@ -1894,9 +1892,9 @@ export default function Welcome() {
                   <Users size={24} strokeWidth={2} />
                 </div>
                 <div>
-                  <h3 className="wl-about-card-title">Unified LGU &amp; TODA Coordination</h3>
+                  <h3 className="wl-about-card-title">Direct TODA &amp; Municipal Support</h3>
                   <p className="wl-about-card-desc">
-                    Integrates the Traffic Management Office (TMO), BPLO, and Municipal Treasurer with accredited TODA associations for organized fleet management and renewal reminders.
+                    The Traffic Management Office works directly with TODA officers to keep driver rosters current, provide renewal reminders, and address member questions.
                   </p>
                 </div>
               </div>
@@ -1912,7 +1910,7 @@ export default function Welcome() {
                 <Search size={12} strokeWidth={2.4} /> Quick Action
               </div>
               <h2 className="wl-sec-title" id="verify-heading">Verify a Franchise</h2>
-              <p className="wl-sec-sub">Check if a tricycle has an official municipal franchise before boarding or settling disputes.</p>
+              <p className="wl-sec-sub">Check if a tricycle has an active municipal permit before riding or when resolving an issue.</p>
             </div>
 
             <div className="wl-verify-card">
@@ -1921,8 +1919,8 @@ export default function Welcome() {
                   <Search size={24} strokeWidth={2.2} />
                 </div>
                 <div>
-                  <h3 className="wl-verify-title">Public Plate Verification</h3>
-                  <p className="wl-verify-desc">Enter any registered tricycle plate number to inspect its MTOP validity instantly.</p>
+                  <h3 className="wl-verify-title">Public Plate &amp; Permit Check</h3>
+                  <p className="wl-verify-desc">Enter any Nasugbu tricycle plate number to check its franchise status right away.</p>
                 </div>
               </div>
               <form
@@ -1953,7 +1951,7 @@ export default function Welcome() {
                 <ClipboardCheck size={12} strokeWidth={2.4} /> 4-Step Process
               </div>
               <h2 className="wl-sec-title" id="how-it-works-heading">How It Works</h2>
-              <p className="wl-sec-sub">From online application to franchise approval — a modern paperless system designed for operators.</p>
+              <p className="wl-sec-sub">From application to approved franchise sticker — a simple 4-step process designed for drivers and operators.</p>
             </div>
 
             <div className="wl-steps-grid">
@@ -1973,38 +1971,38 @@ export default function Welcome() {
           </div>
         </section>
 
-        {/* ── Band 4: Technology Bento Grid (White) ── */}
+        {/* ── Band 4: Helpful Features Bento Grid (White) ── */}
         <section className="wl-band wl-band-white" id="technology" aria-labelledby="technology-heading">
           <div className="wl-wrap">
             <div className="wl-sec-head">
               <div className="wl-sec-eyebrow">
-                <Cpu size={12} strokeWidth={2.4} /> Smart Mobility
+                <Cpu size={12} strokeWidth={2.4} /> Helpful Features
               </div>
-              <h2 className="wl-sec-title" id="technology-heading">Powered by Modern Technology</h2>
-              <p className="wl-sec-sub">Combining smart telemetry, cloud records, and automated compliance for an organized Nasugbu transit fleet.</p>
+              <h2 className="wl-sec-title" id="technology-heading">Built for Nasugbu's Roads</h2>
+              <p className="wl-sec-sub">Practical, everyday tools designed to make tricycle operations safer and more convenient for our town.</p>
             </div>
 
             <div className="wl-bento">
               <FeatureCard
                 large
                 icon={Cpu}
-                title="Automated Violation Detection"
-                desc="Smart GPS tracking automatically checks units against active municipal coding schedules and zone boundaries, maintaining transport discipline in real-time without constant manual checkpoints."
+                title="Smart Color-Coding Guide"
+                desc="Helps drivers stay on top of their designated color-coding days and routes, preventing accidental violations and keeping our streets organized."
               />
               <FeatureCard
                 icon={Satellite}
-                title="GPS Fleet Telemetry"
-                desc="Active tricycles transmit periodic coordinates, giving the Traffic Management Office clear, data-driven operational visibility across Nasugbu roads."
+                title="Live Route Overview"
+                desc="Provides the Traffic Management Office with a clear view of road activity to manage traffic buildup and ensure enough rides for all barangays."
               />
               <FeatureCard
                 icon={ShieldCheck}
-                title="Real-Time Permit Tracking"
-                desc="Track your MTOP application stage by stage — from document verification to payment and sticker issuance — right from your mobile device."
+                title="Step-by-Step Status Tracker"
+                desc="See exactly where your application is—from document check to payment and sticker pickup—right on your mobile screen."
               />
               <FeatureCard
                 icon={Calendar}
-                title="Proactive Renewal Alerts"
-                desc="Automated notifications notify operators and drivers well before franchise expiry, eliminating late penalties and unexpected operational halts."
+                title="Friendly Renewal Reminders"
+                desc="Receive helpful notifications well before your franchise expires, giving you plenty of time to renew without paying late fees."
               />
             </div>
           </div>
@@ -2018,7 +2016,7 @@ export default function Welcome() {
                 <HelpCircle size={12} strokeWidth={2.4} /> Got Questions?
               </div>
               <h2 className="wl-sec-title" id="faq-heading">Frequently Asked Questions</h2>
-              <p className="wl-sec-sub">Everything you need to know about Nasugbu’s MTOP franchise procedures, requirements, and compliance.</p>
+              <p className="wl-sec-sub">Quick answers to common questions about MTOP franchise applications, requirements, and rules in Nasugbu.</p>
             </div>
 
             <div className="wl-faq-list">
@@ -2173,7 +2171,7 @@ export default function Welcome() {
 
                   <button type="submit" className="wl-form-submit-btn" disabled={sendingMsg}>
                     <Send size={15} strokeWidth={2.2} />
-                    {sendingMsg ? 'Transmitting...' : 'Submit Message'}
+                    {sendingMsg ? 'Sending message...' : 'Send Message'}
                   </button>
                 </form>
               </div>
@@ -2185,10 +2183,9 @@ export default function Welcome() {
         <section className="wl-cta-band">
           <div className="wl-wrap">
             <div className="wl-cta-inner">
-              <h2 className="wl-cta-title">Ready to manage your tricycle franchise?</h2>
+              <h2 className="wl-cta-title">Ready to apply or renew your tricycle franchise?</h2>
               <p className="wl-cta-sub">
-                Join thousands of operators utilizing Nasugbu's digital MTOP portal.
-                Apply online in minutes with fast verification and transparent status tracking.
+                Join thousands of operators across Nasugbu using the official online portal. Apply in minutes, track your approval status, and avoid waiting in long lines.
               </p>
               <div className="wl-cta-actions">
                 <Link href="/register-mtop" className="wl-cta-btn-main">
