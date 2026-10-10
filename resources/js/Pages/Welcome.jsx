@@ -137,22 +137,25 @@ html { scroll-behavior: smooth; }
   align-items: center;
   gap: 8px;
   height: 42px;
-  padding: 0 18px;
+  padding: 0 20px;
   border-radius: 10px;
-  border: 1.5px solid #25449B;
-  background: transparent;
-  color: #25449B;
+  border: 1px solid #25449B;
+  background: #25449B;
+  color: #FFFFFF;
   text-decoration: none;
   font-family: 'Plus Jakarta Sans', sans-serif;
-  font-size: 13px;
+  font-size: 13.5px;
   font-weight: 700;
   letter-spacing: .02em;
-  transition: background .18s, color .18s, transform .15s;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  transition: background .18s, border-color .18s, transform .15s, box-shadow .15s;
 }
 .wl-nav-login:hover {
-  background: #EFF4FF;
-  color: #1A347D;
+  background: #1B3377;
+  border-color: #1B3377;
+  color: #FFFFFF;
   transform: translateY(-1px);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.12);
 }
 
 .wl-nav-apply {
@@ -1659,9 +1662,6 @@ export default function Welcome() {
             <div className="wl-header-actions">
               <Link href={route('login')} className="wl-nav-login">
                 <LogIn size={15} strokeWidth={2.4} /> Log In
-              </Link>
-              <Link href="/register-mtop" className="wl-nav-apply">
-                Apply Now <ArrowRight size={14} strokeWidth={2.4} />
               </Link>
               <button
                 type="button"
