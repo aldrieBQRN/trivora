@@ -5,8 +5,7 @@ import {
   FileText, LogIn, ShieldCheck,
   Search, Cpu, Satellite,
   Phone, Wallet,
-  ClipboardCheck, Award, ArrowRight, Calendar, Menu, X,
-  CheckCircle2, MapPin, Activity, Sparkles
+  ClipboardCheck, Award, ArrowRight, Calendar, Menu, X
 } from 'lucide-react';
 
 const FADE = 'wl-fade';
@@ -83,7 +82,7 @@ html { scroll-behavior: smooth; }
   border-radius: 10px;
   background: #FFFFFF;
   border: 1px solid #E2E8F0;
-  box-shadow: 0 2px 8px rgba(37, 68, 155, 0.08);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -93,7 +92,7 @@ html { scroll-behavior: smooth; }
 }
 .wl-logo:hover .wl-logo-img-wrap {
   transform: translateY(-1px);
-  box-shadow: 0 4px 14px rgba(37, 68, 155, 0.16);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 }
 .wl-logo-img { height: 30px; width: auto; object-fit: contain; display: block; }
 
@@ -164,14 +163,14 @@ html { scroll-behavior: smooth; }
   font-size: 13px;
   font-weight: 700;
   letter-spacing: .02em;
-  box-shadow: 0 4px 14px rgba(37, 68, 155, 0.28);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
   transition: background .18s, transform .15s, box-shadow .15s;
 }
 @media (min-width: 561px) { .wl-nav-apply { display: inline-flex; } }
 .wl-nav-apply:hover {
   background: #1B3377;
   transform: translateY(-1px);
-  box-shadow: 0 6px 20px rgba(37, 68, 155, 0.36);
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.12);
 }
 
 /* In-page scroll target margin */
@@ -250,7 +249,7 @@ html { scroll-behavior: smooth; }
 }
 .wl-mobile-apply {
   background: #25449B; color: #FFFFFF;
-  box-shadow: 0 4px 14px rgba(37, 68, 155, 0.28);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 .wl-mobile-login {
   border: 1.5px solid #25449B; color: #25449B; background: #FFFFFF;
@@ -268,23 +267,9 @@ html { scroll-behavior: smooth; }
 .wl-fade { animation: wlFadeUp .65s cubic-bezier(.16,1,.3,1) both; }
 @media (prefers-reduced-motion: reduce) { .wl-fade { animation: none; } }
 
-/* ── Pulsing live dot ────────────────────────────────────────────────── */
-@keyframes wlPulseDot {
-  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
-  70% { transform: scale(1); box-shadow: 0 0 0 7px rgba(16, 185, 129, 0); }
-  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
-}
-.wl-live-dot {
-  width: 8px; height: 8px; border-radius: 50%;
-  background: #10B981;
-  display: inline-block;
-  animation: wlPulseDot 2s infinite;
-  flex-shrink: 0;
-}
-
 /* ════════════════════════════════════════════════════════════════════════
-   HERO SECTION — 50/50 SPLIT LAYOUT WITH CENTER WHITE BLEND
-   Left: Text on pure white background
+   HERO SECTION — 50/50 SPLIT LAYOUT WITH SEAMLESS CENTER BLEND
+   Left: Text on pure white background, balanced centered spacing
    Right: Nasugbu LGU photo with multi-stop seamless gradient fade
 ════════════════════════════════════════════════════════════════════════ */
 .wl-hero-section {
@@ -296,32 +281,32 @@ html { scroll-behavior: smooth; }
 
 .wl-hero-grid {
   display: grid;
-  grid-template-columns: 1.08fr 0.92fr;
+  grid-template-columns: 1fr 1fr;
   min-height: calc(100vh - 76px);
   min-height: calc(100svh - 76px);
   position: relative;
 }
 
-/* Left Hero Column: Pure White Background */
+/* Left Hero Column: Pure White Background, Balanced Placement */
 .wl-hero-left {
   display: flex;
   align-items: center;
-  justify-content: flex-end;
-  padding: 60px 48px 64px 32px;
+  justify-content: center;
+  padding: 64px 48px 64px 48px;
   background: #FFFFFF;
   position: relative;
   z-index: 10;
 }
 .wl-hero-left-inner {
-  max-width: 590px;
+  max-width: 560px;
   width: 100%;
 }
 
 .wl-hero-badge {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 16px;
+  gap: 7px;
+  padding: 6px 14px;
   border-radius: 9999px;
   background: #EFF4FF;
   border: 1px solid #D6E4FF;
@@ -331,7 +316,6 @@ html { scroll-behavior: smooth; }
   font-weight: 700;
   letter-spacing: .02em;
   margin-bottom: 24px;
-  box-shadow: 0 1px 3px rgba(37, 68, 155, 0.06);
 }
 
 .wl-hero-title {
@@ -369,6 +353,7 @@ html { scroll-behavior: smooth; }
   margin-bottom: 38px;
 }
 
+/* Primary Button: Solid #25449B, Clean Shadow, No Glow */
 .wl-hero-btn-primary {
   display: inline-flex;
   align-items: center;
@@ -384,15 +369,16 @@ html { scroll-behavior: smooth; }
   font-size: 13.5px;
   font-weight: 700;
   letter-spacing: .02em;
-  box-shadow: 0 6px 20px rgba(37, 68, 155, 0.28);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
   transition: transform .18s ease, box-shadow .18s ease, background .18s ease;
 }
 .wl-hero-btn-primary:hover {
   background: #1B3377;
   transform: translateY(-2px);
-  box-shadow: 0 10px 28px rgba(37, 68, 155, 0.38);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15), 0 2px 4px rgba(0, 0, 0, 0.08);
 }
 
+/* Secondary Button: Clean Crisp Border, Standard Shadow */
 .wl-hero-btn-outline {
   display: inline-flex;
   align-items: center;
@@ -408,14 +394,15 @@ html { scroll-behavior: smooth; }
   font-size: 13.5px;
   font-weight: 700;
   letter-spacing: .02em;
-  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.04);
-  transition: transform .18s ease, border-color .18s ease, color .18s ease, background .18s ease;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  transition: transform .18s ease, border-color .18s ease, color .18s ease, background .18s ease, box-shadow .18s ease;
 }
 .wl-hero-btn-outline:hover {
   border-color: #25449B;
   color: #25449B;
   background: #EFF4FF;
   transform: translateY(-2px);
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.08);
 }
 
 /* Quick feature trust pills under hero */
@@ -498,61 +485,6 @@ html { scroll-behavior: smooth; }
   pointer-events: none;
 }
 
-/* Dynamic floating glass widgets on right split */
-.wl-glass-card {
-  position: absolute;
-  z-index: 15;
-  background: rgba(255, 255, 255, 0.92);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.9);
-  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.12), 0 2px 6px rgba(37, 68, 155, 0.08);
-  border-radius: 14px;
-  padding: 12px 18px;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  animation: wlFadeUp .8s cubic-bezier(.16,1,.3,1) both;
-}
-.wl-glass-card--top {
-  top: 40px;
-  right: 40px;
-  animation-delay: 350ms;
-}
-.wl-glass-card--bottom {
-  bottom: 44px;
-  left: 36px;
-  animation-delay: 500ms;
-}
-.wl-glass-icon {
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
-  background: #EFF4FF;
-  border: 1px solid #D6E4FF;
-  color: #25449B;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-.wl-glass-label {
-  display: block;
-  font-family: 'DM Sans', sans-serif;
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: .08em;
-  text-transform: uppercase;
-  color: #64748B;
-}
-.wl-glass-val {
-  display: block;
-  font-family: 'Plus Jakarta Sans', sans-serif;
-  font-size: 13px;
-  font-weight: 700;
-  color: #0F172A;
-}
-
 @media (max-width: 1040px) {
   .wl-hero-grid {
     grid-template-columns: 1fr;
@@ -585,14 +517,6 @@ html { scroll-behavior: smooth; }
       rgba(255, 255, 255, 0) 80%
     );
   }
-  .wl-glass-card--top {
-    top: 24px;
-    right: 24px;
-  }
-  .wl-glass-card--bottom {
-    bottom: 24px;
-    left: 24px;
-  }
 }
 
 @media (max-width: 640px) {
@@ -601,8 +525,6 @@ html { scroll-behavior: smooth; }
   .wl-hero-btn-primary, .wl-hero-btn-outline { width: 100%; justify-content: center; }
   .wl-hero-features { flex-direction: column; align-items: center; gap: 12px; }
   .wl-hero-right { height: 320px; min-height: 320px; }
-  .wl-glass-card { padding: 10px 14px; }
-  .wl-glass-card--top { display: none; }
 }
 
 /* ── Section Bands & Headings ─────────────────────────────────────────── */
@@ -648,22 +570,23 @@ html { scroll-behavior: smooth; }
   margin: 0 auto;
 }
 
-/* ── Section 1: Verification Card ─────────────────────────────────────── */
+/* ── Section 1: Verification Card (Deep Shadow Effect) ─────────────────── */
 .wl-verify-card {
   background: #FFFFFF;
-  border: 1.5px solid #E2E8F0;
+  border: 1px solid #E2E8F0;
   border-radius: 20px;
   padding: 36px 40px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 32px;
-  box-shadow: 0 10px 30px -4px rgba(15, 23, 42, 0.05), 0 2px 8px rgba(37, 68, 155, 0.04);
-  transition: border-color .2s, box-shadow .2s;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.04);
+  transition: transform .2s ease, border-color .2s ease, box-shadow .2s ease;
 }
 .wl-verify-card:hover {
+  transform: translateY(-2px);
   border-color: #CBD5E1;
-  box-shadow: 0 14px 40px -4px rgba(37, 68, 155, 0.1);
+  box-shadow: 0 20px 30px -10px rgba(0, 0, 0, 0.12), 0 10px 15px -5px rgba(0, 0, 0, 0.06);
 }
 .wl-verify-left {
   display: flex;
@@ -736,13 +659,13 @@ html { scroll-behavior: smooth; }
   font-weight: 700;
   cursor: pointer;
   white-space: nowrap;
-  box-shadow: 0 4px 14px rgba(37, 68, 155, 0.25);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
   transition: background .18s, transform .15s, box-shadow .15s;
 }
 .wl-verify-btn:hover {
   background: #1B3377;
   transform: translateY(-1px);
-  box-shadow: 0 6px 18px rgba(37, 68, 155, 0.35);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }
 
 @media (max-width: 860px) {
@@ -752,7 +675,7 @@ html { scroll-behavior: smooth; }
   .wl-verify-btn { width: 100%; }
 }
 
-/* ── Section 2: How It Works Steps ─────────────────────────────────────── */
+/* ── Section 2: How It Works Steps (Refined Card Shadow) ───────────────── */
 .wl-steps-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -764,10 +687,11 @@ html { scroll-behavior: smooth; }
 
 .wl-step-card {
   background: #FFFFFF;
-  border: 1.5px solid #E2E8F0;
+  border: 1px solid #E2E8F0;
   border-radius: 18px;
   padding: 32px 24px;
   position: relative;
+  box-shadow: 0 8px 20px -4px rgba(0, 0, 0, 0.06), 0 4px 8px -4px rgba(0, 0, 0, 0.04);
   transition: transform .2s ease, border-color .2s ease, box-shadow .2s ease;
   display: flex;
   flex-direction: column;
@@ -775,7 +699,7 @@ html { scroll-behavior: smooth; }
 .wl-step-card:hover {
   transform: translateY(-4px);
   border-color: #25449B;
-  box-shadow: 0 12px 30px rgba(37, 68, 155, 0.08);
+  box-shadow: 0 16px 28px -6px rgba(0, 0, 0, 0.12), 0 8px 12px -4px rgba(0, 0, 0, 0.06);
 }
 .wl-step-top {
   display: flex;
@@ -822,7 +746,7 @@ html { scroll-behavior: smooth; }
   line-height: 1.6;
 }
 
-/* ── Section 3: Technology Bento Grid ─────────────────────────────────── */
+/* ── Section 3: Technology Bento Grid (Elevated Card Shadow) ──────────── */
 .wl-bento {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -837,16 +761,16 @@ html { scroll-behavior: smooth; }
 
 .wl-bento-card {
   background: #FFFFFF;
-  border: 1.5px solid #E2E8F0;
+  border: 1px solid #E2E8F0;
   border-radius: 20px;
   padding: 32px 28px;
-  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.03);
+  box-shadow: 0 8px 20px -4px rgba(0, 0, 0, 0.06), 0 4px 8px -4px rgba(0, 0, 0, 0.04);
   transition: transform .2s ease, border-color .2s ease, box-shadow .2s ease;
 }
 .wl-bento-card:hover {
   transform: translateY(-3px);
   border-color: rgba(37, 68, 155, 0.35);
-  box-shadow: 0 12px 32px rgba(37, 68, 155, 0.08);
+  box-shadow: 0 16px 28px -6px rgba(0, 0, 0, 0.12), 0 8px 12px -4px rgba(0, 0, 0, 0.06);
 }
 .wl-bento-card--lg {
   display: flex;
@@ -950,12 +874,12 @@ html { scroll-behavior: smooth; }
   font-family: 'Plus Jakarta Sans', sans-serif;
   font-size: 14px;
   font-weight: 800;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
   transition: transform .18s, box-shadow .18s, background .18s;
 }
 .wl-cta-btn-main:hover {
   transform: translateY(-2px);
-  box-shadow: 0 12px 32px rgba(0,0,0,0.28);
+  box-shadow: 0 6px 16px rgba(0,0,0,0.2);
   background: #F8FAFC;
 }
 .wl-cta-btn-ghost {
@@ -1300,9 +1224,8 @@ export default function Welcome() {
           <div className="wl-hero-left">
             <div className="wl-hero-left-inner">
               <div className={`wl-hero-badge ${FADE}`} style={delay(0)}>
-                <span className="wl-live-dot" />
                 <ShieldCheck size={14} strokeWidth={2.4} />
-                <span>Nasugbu, Batangas &bull; Official MTOP Portal</span>
+                <span>Nasugbu, Batangas</span>
               </div>
 
               <h1 className={`wl-hero-title ${FADE}`} style={delay(80)}>
@@ -1346,27 +1269,6 @@ export default function Welcome() {
           <div className="wl-hero-right" aria-hidden="true">
             <div className="wl-hero-image-bg" />
             <div className="wl-hero-blend-gradient" />
-
-            {/* Floating Live Telemetry Cards */}
-            <div className="wl-glass-card wl-glass-card--top">
-              <div className="wl-glass-icon">
-                <Satellite size={18} strokeWidth={2.2} />
-              </div>
-              <div>
-                <span className="wl-glass-label">Transit Command</span>
-                <span className="wl-glass-val">Active GPS Telemetry</span>
-              </div>
-            </div>
-
-            <div className="wl-glass-card wl-glass-card--bottom">
-              <div className="wl-glass-icon" style={{ background: '#F0FDF4', color: '#10B981', borderColor: '#BBF7D0' }}>
-                <Activity size={18} strokeWidth={2.2} />
-              </div>
-              <div>
-                <span className="wl-glass-label">Pamahalaang Bayan</span>
-                <span className="wl-glass-val">Official MTOP Authority</span>
-              </div>
-            </div>
           </div>
 
         </div>
