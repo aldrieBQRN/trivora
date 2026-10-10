@@ -455,19 +455,25 @@ export const REGISTRATION_CSS = `
   box-shadow: 0 6px 20px rgba(37,68,155,.35);
   transform: translateY(-1px);
 }
+.pa-btn-submit,
 .pa-btn-success {
   flex: 2; height: 52px; border-radius: 12px;
-  border: none; background: #059669; color: #FFFFFF;
+  border: none; background: #25449B; color: #FFFFFF;
   cursor: pointer;
   font-family: 'Plus Jakarta Sans', sans-serif; font-size: 14px; font-weight: 700;
   display: flex; align-items: center; justify-content: center; gap: 9px;
   transition: background .18s, box-shadow .18s, transform .12s;
-  box-shadow: 0 4px 14px rgba(5,150,105,.28);
+  box-shadow: 0 4px 14px rgba(37,68,155,.28);
 }
+.pa-btn-submit:hover,
 .pa-btn-success:hover {
-  background: #047857;
-  box-shadow: 0 6px 20px rgba(5,150,105,.35);
+  background: #1B3377;
+  box-shadow: 0 6px 20px rgba(37,68,155,.38);
   transform: translateY(-1px);
+}
+.pa-btn-submit:active,
+.pa-btn-success:active {
+  transform: translateY(0);
 }
 .pa-btn-ghost {
   flex: 1; height: 52px; border-radius: 12px;
@@ -480,17 +486,69 @@ export const REGISTRATION_CSS = `
 }
 .pa-btn-ghost:hover { border-color: #94A3B8; color: #0F172A; background: #F8FAFC; transform: translateY(-1px); }
 
-/* ── File upload grid ────────────────────────────────────────────────── */
-.pa-docs-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 24px; }
-@media (max-width: 640px) { .pa-docs-grid { grid-template-columns: 1fr; } }
+/* ── Live Requirements Progress Card ── */
+.pa-req-progress-card {
+  background: #F8FAFC; border: 1.5px solid #E2E8F0;
+  border-radius: 14px; padding: 16px 20px; margin-bottom: 24px;
+  display: flex; flex-direction: column; gap: 12px;
+}
+.pa-req-progress-info {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+}
+.pa-req-progress-title {
+  display: block; font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 13.5px; font-weight: 800; color: #0F172A;
+}
+.pa-req-progress-sub {
+  display: block; font-family: 'Inter', sans-serif;
+  font-size: 12px; font-weight: 500; color: #64748B; margin-top: 2px;
+}
+.pa-req-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-family: 'Plus Jakarta Sans', sans-serif; font-size: 11.5px; font-weight: 700;
+  padding: 5px 12px; border-radius: 9999px; white-space: nowrap;
+}
+.pa-req-badge--ready {
+  background: #EFF6FF; color: #25449B; border: 1.5px solid #BFDBFE;
+}
+.pa-req-badge--pending {
+  background: #FFFFFF; color: #475569; border: 1.5px solid #CBD5E1;
+}
+.pa-req-progress-bar {
+  width: 100%; height: 8px; border-radius: 9999px; background: #E2E8F0; overflow: hidden;
+}
+.pa-req-progress-fill {
+  height: 100%; border-radius: 9999px;
+  background: linear-gradient(90deg, #25449B 0%, #3B82F6 100%);
+  transition: width .35s ease;
+}
 
-/* ── Required-docs progress readout ── */
+/* Legacy progress fallback */
 .pa-req-progress { display: flex; align-items: center; gap: 12px; margin-bottom: 22px; }
-.pa-req-progress-bar { flex: 1; height: 8px; border-radius: 6px; background: #E2E8F0; overflow: hidden; }
-.pa-req-progress-fill { height: 100%; border-radius: 6px; background: #059669; transition: width .3s ease; }
 .pa-req-progress-text {
   font-family: 'Plus Jakarta Sans', sans-serif; font-size: 11.5px; font-weight: 700;
   color: #475569; white-space: nowrap;
+}
+
+/* ── Sectioning ── */
+.pa-docs-section { margin-bottom: 24px; }
+.pa-docs-section-header { margin-bottom: 14px; }
+.pa-docs-section-title {
+  display: flex; align-items: center; gap: 8px;
+  font-family: 'Plus Jakarta Sans', sans-serif; font-size: 14px; font-weight: 800;
+  color: #0F172A;
+}
+.pa-docs-section-icon { color: #25449B; }
+.pa-docs-count-pill {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 6px;
+  background: #EFF6FF; color: #25449B; border: 1px solid #DBEAFE;
+}
+.pa-docs-count-pill--opt {
+  background: #F1F5F9; color: #64748B; border: 1px solid #E2E8F0;
+}
+.pa-docs-section-sub {
+  font-family: 'Inter', sans-serif; font-size: 12.5px; color: #64748B; margin: 3px 0 0;
 }
 
 .pa-docs-subhead {
@@ -500,48 +558,51 @@ export const REGISTRATION_CSS = `
   margin: 28px 0 14px; padding-top: 24px; border-top: 1px dashed #CBD5E1;
 }
 
-/* ── File upload tile ── */
+/* ── File upload grid ── */
+.pa-docs-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 12px; }
+@media (max-width: 680px) { .pa-docs-grid { grid-template-columns: 1fr; } }
+
+/* ── File upload tags & chips ── */
 .pa-file-chip {
-  width: 36px; height: 36px; border-radius: 10px; flex-shrink: 0;
-  background: #EFF6FF;
-  border: 1px solid #BFDBFE;
+  width: 38px; height: 38px; border-radius: 10px; flex-shrink: 0;
+  background: #F1F5F9; border: 1.5px solid #E2E8F0;
   display: flex; align-items: center; justify-content: center;
-  color: #25449B; transition: all .18s;
+  color: #64748B; transition: all .18s;
 }
 .pa-file-tile-container.done .pa-file-chip {
-  background: #ECFDF5;
-  border-color: #A7F3D0; color: #059669;
+  background: #EFF6FF; border-color: #BFDBFE; color: #25449B;
 }
-.pa-file-tags { display: flex; gap: 6px; flex-wrap: wrap; }
+.pa-file-tags { display: flex; gap: 6px; flex-shrink: 0; }
 .pa-tag-req {
-  font-family: 'Plus Jakarta Sans', sans-serif; font-size: 10px; font-weight: 700;
-  letter-spacing: .06em; text-transform: uppercase;
-  color: #DC2626; background: #FEF2F2;
-  border: 1px solid #FECACA; border-radius: 6px; padding: 2px 8px;
+  font-family: 'Plus Jakarta Sans', sans-serif; font-size: 10.5px; font-weight: 700;
+  color: #475569; background: #F1F5F9;
+  border: 1px solid #CBD5E1; border-radius: 6px; padding: 2px 8px;
 }
 .pa-tag-opt {
-  font-family: 'Plus Jakarta Sans', sans-serif; font-size: 10px; font-weight: 700;
-  letter-spacing: .06em; text-transform: uppercase;
-  color: #475569; background: #F1F5F9;
+  font-family: 'Plus Jakarta Sans', sans-serif; font-size: 10.5px; font-weight: 600;
+  color: #64748B; background: #F8FAFC;
   border: 1px solid #E2E8F0; border-radius: 6px; padding: 2px 8px;
 }
 .pa-tag-done {
-  font-family: 'Plus Jakarta Sans', sans-serif; font-size: 10px; font-weight: 700;
-  letter-spacing: .06em; text-transform: uppercase;
-  color: #047857; background: #ECFDF5;
-  border: 1px solid #A7F3D0; border-radius: 6px; padding: 2px 8px;
+  font-family: 'Plus Jakarta Sans', sans-serif; font-size: 10.5px; font-weight: 700;
+  color: #25449B; background: #EFF6FF;
+  border: 1px solid #BFDBFE; border-radius: 6px; padding: 2px 8px;
 }
 
-/* ── Info notice ─────────────────────────────────────────────────────── */
+/* ── Inspection reminder notice ────────────────────────────────────────── */
 .pa-notice {
   display: flex; gap: 14px; align-items: flex-start;
-  background: #FFFBEB; border: 1.5px solid #FDE68A;
-  border-radius: 14px; padding: 18px 20px; margin-bottom: 28px;
+  background: #F8FAFC; border: 1.5px solid #E2E8F0; border-left: 4px solid #25449B;
+  border-radius: 12px; padding: 16px 20px; margin-top: 8px; margin-bottom: 26px;
 }
-.pa-notice-icon { color: #D97706; flex-shrink: 0; margin-top: 2px; }
+.pa-notice-icon { color: #25449B; flex-shrink: 0; margin-top: 2px; }
+.pa-notice-title {
+  display: block; font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 13px; font-weight: 700; color: #0F172A; margin-bottom: 2px;
+}
 .pa-notice-text {
-  font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 500;
-  color: #92400E; line-height: 1.6;
+  font-family: 'Inter', sans-serif; font-size: 12.5px; font-weight: 500;
+  color: #475569; line-height: 1.55; margin: 0;
 }
 
 /* ── Success card ────────────────────────────────────────────────────── */
@@ -593,31 +654,32 @@ export const REGISTRATION_CSS = `
 
 /* ── Multi-file uploads style overrides ── */
 .pa-file-tile-container {
-  display: flex; flex-direction: column; gap: 8px;
+  display: flex; flex-direction: column; justify-content: space-between; gap: 10px;
   background: #FFFFFF; border: 1.5px solid #E2E8F0;
-  box-shadow: 0 1px 3px 0 rgba(0,0,0,0.03);
-  border-radius: 14px; padding: 16px 18px; min-height: 96px;
+  box-shadow: 0 1px 3px 0 rgba(15, 23, 42, 0.03);
+  border-radius: 14px; padding: 16px 18px; min-height: 102px;
   transition: all .2s ease;
 }
 .pa-file-tile-container:hover {
-  border-color: #CBD5E1; box-shadow: 0 3px 8px -1px rgba(0,0,0,0.06);
+  border-color: #CBD5E1; box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06); transform: translateY(-1px);
 }
 .pa-file-tile-container.done {
   border-style: solid;
-  border-color: #86EFAC; background: #F0FDF4;
+  border-color: #25449B; background: #FAFCFF;
+  box-shadow: 0 2px 8px rgba(37, 68, 155, 0.06);
 }
 .pa-file-tile-header {
-  display: flex; align-items: center; justify-content: space-between;
-  width: 100%; margin-bottom: 6px;
+  display: flex; align-items: flex-start; justify-content: space-between; gap: 12px;
+  width: 100%;
 }
-.pa-file-title-group { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.pa-file-title-group { display: flex; align-items: flex-start; gap: 12px; min-width: 0; }
 .pa-file-title-text {
   display: block;
   font-family: 'Plus Jakarta Sans', sans-serif;
   font-size: 13px; font-weight: 700; color: #0F172A;
   line-height: 1.35;
 }
-.pa-file-tile-container.done .pa-file-title-text { color: #065F46; }
+.pa-file-tile-container.done .pa-file-title-text { color: #0F172A; }
 .pa-file-hint {
   display: block;
   font-family: 'Inter', sans-serif;
@@ -640,20 +702,27 @@ export const REGISTRATION_CSS = `
 
 /* ── Empty-state dropzone ── */
 .pa-upload-dropzone {
-  display: flex; align-items: center; gap: 12px; width: 100%;
-  padding: 12px 14px; border-radius: 10px;
-  border: 1.5px dashed #93C5FD; background: #EFF6FF;
-  cursor: pointer; transition: all .18s; text-align: left;
+  display: flex; align-items: center; gap: 11px; width: 100%;
+  padding: 10px 14px; border-radius: 10px;
+  border: 1.5px dashed #CBD5E1; background: #F8FAFC;
+  cursor: pointer; transition: all .18s ease; text-align: left;
 }
-.pa-upload-dropzone:hover { background: #DBEAFE; border-color: #3B82F6; }
+.pa-upload-dropzone:hover { background: #EFF6FF; border-color: #25449B; }
 .pa-upload-dropzone-icon {
-  width: 32px; height: 32px; border-radius: 8px; flex-shrink: 0;
-  background: #DBEAFE; color: #25449B;
+  width: 30px; height: 30px; border-radius: 8px; flex-shrink: 0;
+  background: #FFFFFF; border: 1px solid #E2E8F0; color: #64748B;
   display: flex; align-items: center; justify-content: center;
+  transition: all .18s ease;
+}
+.pa-upload-dropzone:hover .pa-upload-dropzone-icon {
+  background: #25449B; color: #FFFFFF; border-color: #25449B;
 }
 .pa-upload-dropzone-text {
   font-family: 'Plus Jakarta Sans', sans-serif; font-size: 12.5px; font-weight: 700;
-  color: #25449B; line-height: 1.4;
+  color: #334155; line-height: 1.4; transition: color .18s ease;
+}
+.pa-upload-dropzone:hover .pa-upload-dropzone-text {
+  color: #25449B;
 }
 
 /* ── Inline thumbnails ── */
@@ -1422,7 +1491,7 @@ export function FileUpload({ id, label, hint, required, conditional, files = [],
                                     transition: 'all .15s'
                                 }}
                             >
-                                <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'rgba(5,150,105,.1)', color: '#059669', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: '#EFF6FF', color: '#25449B', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                     <Camera size={18} />
                                 </div>
                                 <div style={{ textAlign: 'left' }}>
@@ -1454,7 +1523,7 @@ export function FileUpload({ id, label, hint, required, conditional, files = [],
                     >
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 20px', borderBottom: '1px solid #E5E7EB' }}>
                             <span style={{ fontSize: '14px', fontWeight: 800, color: '#1C2340', fontFamily: "'Plus Jakarta Sans', sans-serif", display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                <Camera size={18} color="#059669" /> Capture Photo ({label})
+                                <Camera size={18} color="#25449B" /> Capture Photo ({label})
                             </span>
                             <button type="button" onClick={stopCamera} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9CA3AF' }}>
                                 <X size={20} />
@@ -1512,9 +1581,9 @@ export function FileUpload({ id, label, hint, required, conditional, files = [],
                                     type="button"
                                     onClick={capturePhoto}
                                     style={{
-                                        padding: '12px 28px', borderRadius: '12px', background: '#059669', color: '#FFFFFF',
+                                        padding: '12px 28px', borderRadius: '12px', background: '#25449B', color: '#FFFFFF',
                                         border: 'none', fontWeight: 800, cursor: 'pointer', fontSize: '13px',
-                                        display: 'flex', alignItems: 'center', gap: '8px', boxShadow: '0 4px 14px rgba(5,150,105,.3)'
+                                        display: 'flex', alignItems: 'center', gap: '8px', boxShadow: '0 4px 14px rgba(37,68,155,.28)'
                                     }}
                                 >
                                     <Camera size={16} /> Snap Photo

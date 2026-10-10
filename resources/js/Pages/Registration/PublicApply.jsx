@@ -771,10 +771,10 @@ export default function PublicApply() {
 
                     {/* ── STEP 4: DOCUMENTS & SUBMIT ── */}
                     {step === 4 && (
-                        <div className="pa-card" style={{ maxWidth: 900 }}>
+                        <div className="pa-card" style={{ maxWidth: 880 }}>
                             <div className="pa-card-top">
                                 <div className="pa-card-top-text">
-                                    <div className="pa-card-icon"><Upload size={20} strokeWidth={1.8} /></div>
+                                    <div className="pa-card-icon"><Upload size={20} strokeWidth={2} /></div>
                                     <div>
                                         <h2 className="pa-card-title">Requirements</h2>
                                         <p className="pa-card-sub">Take a clear photo or upload scanned copies of each document</p>
@@ -782,35 +782,73 @@ export default function PublicApply() {
                                 </div>
                             </div>
 
-                            {/* Live progress instead of only finding out what's missing on Submit. */}
-                            <div className="pa-req-progress">
+                            {/* Live Requirements Progress Card */}
+                            <div className="pa-req-progress-card">
+                                <div className="pa-req-progress-info">
+                                    <div>
+                                        <span className="pa-req-progress-title">Mandatory Requirements</span>
+                                        <span className="pa-req-progress-sub">
+                                            {uploadedRequiredCount} of {requiredDocs.length} mandatory documents attached
+                                        </span>
+                                    </div>
+                                    <div className="pa-req-progress-badge">
+                                        {hasAllRequired ? (
+                                            <span className="pa-req-badge pa-req-badge--ready">
+                                                <Check size={13} strokeWidth={3} /> Ready to Submit
+                                            </span>
+                                        ) : (
+                                            <span className="pa-req-badge pa-req-badge--pending">
+                                                {missingRequiredDocs.length} Remaining
+                                            </span>
+                                        )}
+                                    </div>
+                                </div>
                                 <div className="pa-req-progress-bar">
                                     <div
                                         className="pa-req-progress-fill"
                                         style={{ width: `${requiredDocs.length > 0 ? (uploadedRequiredCount / requiredDocs.length) * 100 : 100}%` }}
                                     />
                                 </div>
-                                <span className="pa-req-progress-text">{uploadedRequiredCount} of {requiredDocs.length} required uploaded</span>
                             </div>
 
-                            <div className="pa-docs-grid">
-                                {requiredDocs.map(doc => (
-                                    <FileUpload
-                                        key={doc.id}
-                                        id={doc.id}
-                                        label={doc.label}
-                                        required={doc.required}
-                                        conditional={!doc.required}
-                                        files={data.documents[doc.id] || []}
-                                        onUpload={files => handleFileUpload(doc.id, files)}
-                                        onRemove={idx => handleRemoveFile(doc.id, idx)}
-                                    />
-                                ))}
+                            {/* Section 1: Mandatory Requirements */}
+                            <div className="pa-docs-section">
+                                <div className="pa-docs-section-header">
+                                    <div className="pa-docs-section-title">
+                                        <ShieldCheck size={16} strokeWidth={2.4} className="pa-docs-section-icon" />
+                                        <span>Mandatory Documents</span>
+                                        <span className="pa-docs-count-pill">{requiredDocs.length} required</span>
+                                    </div>
+                                    <p className="pa-docs-section-sub">Required by Nasugbu TMO for official permit evaluation</p>
+                                </div>
+                                <div className="pa-docs-grid">
+                                    {requiredDocs.map(doc => (
+                                        <FileUpload
+                                            key={doc.id}
+                                            id={doc.id}
+                                            label={doc.label}
+                                            hint={doc.hint}
+                                            required={doc.required}
+                                            conditional={!doc.required}
+                                            files={data.documents[doc.id] || []}
+                                            onUpload={files => handleFileUpload(doc.id, files)}
+                                            onRemove={idx => handleRemoveFile(doc.id, idx)}
+                                        />
+                                    ))}
+                                </div>
                             </div>
 
+                            {/* Section 2: Conditional / Supporting Documents */}
                             {applicableConditionalDocs.length > 0 && (
-                                <>
-                                    <p className="pa-docs-subhead">You may also need to attach</p>
+                                <div className="pa-docs-section" style={{ marginTop: 24 }}>
+                                    <div className="pa-docs-section-header">
+                                        <div className="pa-docs-section-title">
+                                            <FileText size={16} strokeWidth={2.4} className="pa-docs-section-icon" />
+                                            <span>Supporting Documents</span>
+                                            <span className="pa-docs-count-pill pa-docs-count-pill--opt">Optional</span>
+                                        </div>
+                                        <p className="pa-docs-section-sub">Attach only if applicable to your application type or vehicle status</p>
+                                    </div>
                                     <div className="pa-docs-grid">
                                         {applicableConditionalDocs.map(doc => (
                                             <FileUpload
@@ -826,24 +864,40 @@ export default function PublicApply() {
                                             />
                                         ))}
                                     </div>
-                                </>
+                                </div>
                             )}
 
+                            {/* Physical Inspection Notice */}
                             <div className="pa-notice">
-                                <Info size={17} className="pa-notice-icon" />
-                                <p className="pa-notice-text">
-                                    Bago isumite ang mga dokumento, siguraduhing maayos ang ilaw, busina,
-                                    side mirrors, baterya, at plaka (LTO/GSO) para sa physical inspection ng TMO.
-                                </p>
+                                <Info size={18} className="pa-notice-icon" />
+                                <div>
+                                    <strong className="pa-notice-title">Paalala sa Physical Inspection</strong>
+                                    <p className="pa-notice-text">
+                                        Bago isumite ang mga dokumento, siguraduhing maayos ang ilaw, busina,
+                                        side mirrors, baterya, at plaka (LTO/GSO) para sa nakatakdang physical inspection ng TMO.
+                                    </p>
+                                </div>
                             </div>
 
+                            {/* Form Actions */}
                             <div className="pa-actions">
-                                <button className="pa-btn-ghost" onClick={back}>
+                                <button type="button" className="pa-btn-ghost" onClick={back}>
+                                    <ArrowLeft size={16} strokeWidth={2.2} />
                                     Back
                                 </button>
-                                <button className="pa-btn-success" onClick={submitApplication} disabled={isSubmitting} style={{ opacity: isSubmitting ? .75 : 1, cursor: isSubmitting ? 'not-allowed' : 'pointer' }}>
-                                    {isSubmitting ? <Loader2 size={15} strokeWidth={2.5} style={{ animation: 'paSpin .8s linear infinite' }} /> : null}
-                                    {isSubmitting ? 'Submitting...' : 'Submit'}
+                                <button
+                                    type="button"
+                                    className="pa-btn-submit"
+                                    onClick={submitApplication}
+                                    disabled={isSubmitting}
+                                    style={{ opacity: isSubmitting ? .8 : 1, cursor: isSubmitting ? 'not-allowed' : 'pointer' }}
+                                >
+                                    {isSubmitting ? (
+                                        <Loader2 size={16} strokeWidth={2.4} style={{ animation: 'paSpin .8s linear infinite' }} />
+                                    ) : (
+                                        <ShieldCheck size={18} strokeWidth={2.4} />
+                                    )}
+                                    <span>{isSubmitting ? 'Submitting Application...' : 'Submit Application'}</span>
                                 </button>
                             </div>
                         </div>
