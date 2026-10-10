@@ -4,7 +4,7 @@ import Swal from 'sweetalert2';
 import {
     Upload, Info, CheckCircle2, MapPin, Check, Camera, Eye, X,
     FileText, User, Bike, Mail, Lock, Phone, Loader2, CalendarDays,
-    ShieldCheck, ArrowLeft
+    ShieldCheck, ArrowLeft, LogIn
 } from 'lucide-react';
 import { VEHICLE_DETAIL_FIELDS, getApplicableDocuments } from '@/data/registrationRequirements';
 import { NASUGBU_BARANGAYS } from '@/data/nasugbuBarangays';
@@ -470,8 +470,9 @@ export default function PublicApply() {
                             </div>
 
                             <div className="pa-actions">
-                                <Link href="/" className="pa-btn-ghost">
-                                    Cancel
+                                <Link href={route('login')} className="pa-btn-ghost">
+                                    <LogIn size={15} strokeWidth={2.2} />
+                                    Log In
                                 </Link>
                                 <button
                                     className="pa-btn-primary"
@@ -479,7 +480,7 @@ export default function PublicApply() {
                                     disabled={!scrolledTerms || !agreed}
                                     style={{ opacity: (!scrolledTerms || !agreed) ? 0.45 : 1, cursor: (!scrolledTerms || !agreed) ? 'not-allowed' : 'pointer' }}
                                 >
-                                    {!scrolledTerms ? 'Scroll to Read' : !agreed ? 'Agree to Continue' : 'Continue'}
+                                    Agree to Continue
                                 </button>
                             </div>
                         </div>
