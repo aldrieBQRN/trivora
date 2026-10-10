@@ -2,40 +2,36 @@ import React, { useState, useEffect } from 'react';
 import { Head, Link } from '@inertiajs/react';
 import Swal from 'sweetalert2';
 import {
-    FileText, LogIn, ShieldCheck,
-    Search, Cpu, Satellite,
-    Phone, Wallet,
-    ClipboardCheck, Award, ArrowRight, Calendar, Menu, X
+  FileText, LogIn, ShieldCheck,
+  Search, Cpu, Satellite,
+  Phone, Wallet,
+  ClipboardCheck, Award, ArrowRight, Calendar, Menu, X,
+  CheckCircle2, MapPin, Activity, Sparkles
 } from 'lucide-react';
 
 const FADE = 'wl-fade';
 const delay = (ms) => ({ animationDelay: `${ms}ms` });
 
 /* ─────────────────────────────────────────────────────────────────────────
-   TRIVORA — Public Welcome / Landing Page
-   Shares TrivoraLayout's slate-indigo token system
+   TRIVORA — Public Welcome / Landing Page Redesign
+   Brand Primary: #25449B (Royal Nasugbu Blue)
+   Senior UI/UX Designer Redesign
    Path: resources/js/Pages/Welcome.jsx
 ───────────────────────────────────────────────────────────────────────── */
 const CSS = `
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600;700&family=DM+Sans:wght@500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700;800&family=DM+Sans:wght@500;600;700;800&display=swap');
 
-/* Smooth in-page scroll for the nav's section anchors — scoped to when this
-   page is mounted, since the style tag unmounts with it. */
 html { scroll-behavior: smooth; }
 @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
 
 /* ── Base ────────────────────────────────────────────────────────────── */
 .wl-root {
-  font-family: 'Inter', sans-serif;
-  background: #EDEEF4;
-  color: #1C2340;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: #F8FAFC;
+  color: #1E293B;
   min-height: 100vh;
-  display: flex; flex-direction: column;
-  /* No overflow-x here: setting only one overflow axis makes the browser
-     compute the other as "auto" too, turning this into a scroll container —
-     which breaks position:sticky on the navbar below. The hero's own glow
-     orbs are already clipped by .wl-hero-backdrop's own overflow:hidden,
-     so nothing here needs this. */
+  display: flex;
+  flex-direction: column;
 }
 .wl-root *, .wl-root *::before, .wl-root *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -48,923 +44,1506 @@ html { scroll-behavior: smooth; }
 .wl-root a:focus-visible,
 .wl-root button:focus-visible,
 .wl-root input:focus-visible {
-  outline: 2px solid #4F5BCB;
+  outline: 2px solid #25449B;
   outline-offset: 2px;
-  border-radius: 6px;
+  border-radius: 8px;
 }
 
-/* ── Sticky navbar — stays pinned at the top of the viewport the whole
-   scroll (position: sticky, not static), but starts fully transparent
-   over the photo hero and only picks up the blurred dark panel once the
-   page has scrolled past it, so it never fights the hero image. ── */
+/* ── Sticky Navbar (Crisp White Background) ─────────────────────────── */
 .wl-navbar {
-  position: sticky; top: 0; z-index: 50;
-  background: transparent;
-  border-bottom: 1px solid transparent;
-  backdrop-filter: none; -webkit-backdrop-filter: none;
-  transition: background .25s ease, border-color .25s ease;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: #FFFFFF;
+  border-bottom: 1px solid #E2E8F0;
+  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.04);
+  transition: box-shadow .2s ease, border-color .2s ease;
 }
-.wl-navbar--solid {
-  background: rgba(20, 26, 51, .94);
-  backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
-  border-bottom: 1px solid rgba(255,255,255,.08);
+.wl-navbar--scrolled {
+  box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.08);
+  border-bottom-color: #CBD5E1;
 }
 .wl-header {
   height: 76px;
-  display: flex; align-items: center; justify-content: space-between;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   gap: 24px;
 }
-.wl-logo { display: flex; align-items: center; text-decoration: none; flex-shrink: 0; }
-.wl-logo-img-wrap {
-  height: 42px; width: auto; border-radius: 10px;
-  background: #FFFFFF;
-  box-shadow: 0 2px 10px rgba(0,0,0,.15);
-  display: flex; align-items: center; justify-content: center;
-  padding: 5px 9px; flex-shrink: 0;
-  transition: box-shadow .2s;
+.wl-logo {
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+  flex-shrink: 0;
+  gap: 12px;
 }
-.wl-logo:hover .wl-logo-img-wrap { box-shadow: 0 4px 16px rgba(0,0,0,.22); }
-.wl-logo-img { height: 28px; width: auto; object-fit: contain; display: block; }
+.wl-logo-img-wrap {
+  height: 44px;
+  width: auto;
+  border-radius: 10px;
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  box-shadow: 0 2px 8px rgba(37, 68, 155, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 5px 10px;
+  flex-shrink: 0;
+  transition: transform .2s, box-shadow .2s;
+}
+.wl-logo:hover .wl-logo-img-wrap {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(37, 68, 155, 0.16);
+}
+.wl-logo-img { height: 30px; width: auto; object-fit: contain; display: block; }
 
 .wl-nav { display: flex; align-items: center; gap: 32px; }
-@media (max-width: 860px) { .wl-nav { display: none; } }
+@media (max-width: 900px) { .wl-nav { display: none; } }
+
 .wl-nav-link {
-  font-family: 'DM Sans', sans-serif;
-  font-size: 11px; font-weight: 700;
-  letter-spacing: .1em; text-transform: uppercase;
-  color: rgba(255,255,255,.72);
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #334155;
   text-decoration: none;
-  transition: color .18s;
+  position: relative;
+  padding: 6px 0;
+  transition: color .18s ease;
 }
-.wl-nav-link:hover { color: #FFFFFF; }
-.wl-header-actions { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+.wl-nav-link:hover { color: #25449B; }
+.wl-nav-link::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 0;
+  height: 2px;
+  background: #25449B;
+  border-radius: 2px;
+  transition: width .2s ease;
+}
+.wl-nav-link:hover::after { width: 100%; }
+
+.wl-header-actions { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
+
 .wl-nav-login {
-  display: inline-flex; align-items: center; gap: 7px;
-  height: 38px; padding: 0 18px; border-radius: 9px;
-  border: 1.5px solid rgba(255,255,255,.28);
-  color: #FFFFFF; text-decoration: none;
-  font-family: 'DM Sans', sans-serif; font-size: 10px; font-weight: 700;
-  letter-spacing: .12em; text-transform: uppercase;
-  transition: border-color .18s, background .18s;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 42px;
+  padding: 0 20px;
+  border-radius: 10px;
+  border: 1.5px solid #25449B;
+  background: transparent;
+  color: #25449B;
+  text-decoration: none;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: .02em;
+  transition: background .18s, color .18s, transform .15s;
 }
-.wl-nav-login:hover { border-color: #FFFFFF; background: rgba(255,255,255,.08); }
+.wl-nav-login:hover {
+  background: #EFF4FF;
+  color: #1A347D;
+  transform: translateY(-1px);
+}
+
 .wl-nav-apply {
   display: none;
-  align-items: center; gap: 7px;
-  height: 38px; padding: 0 18px; border-radius: 9px;
-  border: none; background: #FFFFFF; color: #1C2340;
+  align-items: center;
+  gap: 8px;
+  height: 42px;
+  padding: 0 22px;
+  border-radius: 10px;
+  border: none;
+  background: #25449B;
+  color: #FFFFFF;
   text-decoration: none;
-  font-family: 'DM Sans', sans-serif; font-size: 10px; font-weight: 800;
-  letter-spacing: .12em; text-transform: uppercase;
-  box-shadow: 0 3px 12px rgba(0,0,0,.18);
-  transition: transform .15s, box-shadow .15s;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: .02em;
+  box-shadow: 0 4px 14px rgba(37, 68, 155, 0.28);
+  transition: background .18s, transform .15s, box-shadow .15s;
 }
 @media (min-width: 561px) { .wl-nav-apply { display: inline-flex; } }
-.wl-nav-apply:hover { transform: translateY(-1px); box-shadow: 0 5px 16px rgba(0,0,0,.24); }
+.wl-nav-apply:hover {
+  background: #1B3377;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(37, 68, 155, 0.36);
+}
 
-/* In-page links land below the sticky header instead of under it. */
-#verify, #how-it-works, #technology { scroll-margin-top: 84px; }
+/* In-page scroll target margin */
+#verify, #how-it-works, #technology { scroll-margin-top: 96px; }
 
-/* ── Mobile / tablet menu (the inline nav is hidden below 860px) ── */
+/* ── Mobile Drawer ───────────────────────────────────────────────────── */
 .wl-menu-btn {
   display: none;
-  width: 38px; height: 38px; border-radius: 9px;
-  align-items: center; justify-content: center;
-  border: 1.5px solid rgba(255,255,255,.28); background: transparent; color: #FFFFFF;
-  cursor: pointer; transition: border-color .18s, background .18s;
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
+  align-items: center;
+  justify-content: center;
+  border: 1.5px solid #E2E8F0;
+  background: #F8FAFC;
+  color: #25449B;
+  cursor: pointer;
+  transition: border-color .18s, background .18s;
 }
-.wl-menu-btn:hover { border-color: #FFFFFF; background: rgba(255,255,255,.08); }
-@media (max-width: 860px) { .wl-menu-btn { display: inline-flex; } }
+.wl-menu-btn:hover { border-color: #25449B; background: #EFF4FF; }
+@media (max-width: 900px) { .wl-menu-btn { display: inline-flex; } }
+
 .wl-drawer-overlay {
   position: fixed; inset: 0; z-index: 90;
-  background: rgba(10, 14, 30, .55);
+  background: rgba(15, 23, 42, 0.5);
+  backdrop-filter: blur(4px);
   opacity: 0; visibility: hidden;
   transition: opacity .25s ease, visibility .25s ease;
 }
 .wl-drawer {
   position: fixed; top: 0; right: 0; bottom: 0; z-index: 100;
-  width: min(300px, 84vw);
+  width: min(320px, 86vw);
   display: flex; flex-direction: column;
-  background: #141A33;
-  border-left: 1px solid rgba(255,255,255,.08);
-  box-shadow: -18px 0 40px rgba(0,0,0,.35);
+  background: #FFFFFF;
+  border-left: 1px solid #E2E8F0;
+  box-shadow: -16px 0 36px rgba(15, 23, 42, 0.15);
   transform: translateX(100%); visibility: hidden;
   transition: transform .28s cubic-bezier(.4,0,.2,1), visibility .28s;
 }
 .wl-drawer.is-open { transform: translateX(0); visibility: visible; }
 .wl-drawer-overlay.is-open { opacity: 1; visibility: visible; }
-@media (min-width: 861px) { .wl-drawer, .wl-drawer-overlay { display: none; } }
+@media (min-width: 901px) { .wl-drawer, .wl-drawer-overlay { display: none; } }
+
 .wl-drawer-head {
   height: 76px; flex-shrink: 0;
   display: flex; align-items: center; justify-content: space-between;
-  padding: 0 18px;
-  border-bottom: 1px solid rgba(255,255,255,.08);
+  padding: 0 20px;
+  border-bottom: 1px solid #E2E8F0;
 }
 .wl-drawer-head .wl-menu-btn { display: inline-flex; }
-.wl-drawer nav { display: flex; flex-direction: column; padding: 10px 18px; flex: 1; overflow-y: auto; }
+.wl-drawer nav { display: flex; flex-direction: column; padding: 16px 20px; flex: 1; overflow-y: auto; }
 .wl-drawer-label {
-  padding: 10px 2px 6px;
-  font-family: 'DM Sans', sans-serif; font-size: 10px; font-weight: 700;
-  letter-spacing: .14em; text-transform: uppercase; color: rgba(255,255,255,.45);
+  padding: 8px 4px;
+  font-family: 'DM Sans', sans-serif; font-size: 11px; font-weight: 700;
+  letter-spacing: .12em; text-transform: uppercase; color: #64748B;
 }
 .wl-mobile-link {
   display: flex; align-items: center; justify-content: space-between;
-  padding: 15px 2px;
-  border-bottom: 1px solid rgba(255,255,255,.07);
-  color: rgba(255,255,255,.88); text-decoration: none;
-  font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 700;
-  letter-spacing: .1em; text-transform: uppercase;
+  padding: 14px 4px;
+  border-bottom: 1px solid #F1F5F9;
+  color: #1E293B; text-decoration: none;
+  font-family: 'Plus Jakarta Sans', sans-serif; font-size: 14px; font-weight: 600;
+  transition: color .15s;
 }
-.wl-mobile-link:hover { color: #FFFFFF; }
+.wl-mobile-link:hover { color: #25449B; }
 .wl-drawer-foot {
-  flex-shrink: 0; padding: 16px 18px 22px;
-  display: flex; flex-direction: column; gap: 10px;
-  border-top: 1px solid rgba(255,255,255,.08);
+  flex-shrink: 0; padding: 20px;
+  display: flex; flex-direction: column; gap: 12px;
+  border-top: 1px solid #E2E8F0;
+  background: #F8FAFC;
 }
 .wl-mobile-apply, .wl-mobile-login {
   display: flex; align-items: center; justify-content: center; gap: 8px;
-  height: 46px; border-radius: 11px; text-decoration: none;
-  font-family: 'DM Sans', sans-serif; font-size: 10.5px; font-weight: 800;
-  letter-spacing: .12em; text-transform: uppercase;
+  height: 48px; border-radius: 11px; text-decoration: none;
+  font-family: 'Plus Jakarta Sans', sans-serif; font-size: 13.5px; font-weight: 700;
 }
-.wl-mobile-apply { background: #FFFFFF; color: #1C2340; }
-.wl-mobile-login { border: 1.5px solid rgba(255,255,255,.28); color: #FFFFFF; }
-.wl-mobile-login:hover { border-color: #FFFFFF; background: rgba(255,255,255,.08); }
-@media (max-width: 400px) {
-  .wl-nav-login { padding: 0 12px; }
-  .wl-logo-img-wrap { height: 38px; padding: 4px 8px; }
-  .wl-logo-img { height: 25px; }
+.wl-mobile-apply {
+  background: #25449B; color: #FFFFFF;
+  box-shadow: 0 4px 14px rgba(37, 68, 155, 0.28);
 }
-
-/* ── Hero Backdrop (PHOTO BACKGROUND) ────────────────────────────────── */
-/* Full-screen hero — fills the viewport below the sticky navbar (76px)
-   so the first thing a visitor sees is one uninterrupted, immersive scene
-   instead of a short banner strip. */
-.wl-hero-backdrop {
-  position: absolute; top: 0; left: 0; width: 100%;
-  height: calc(100vh - 76px); height: calc(100svh - 76px); min-height: 560px;
-  background-image:
-    linear-gradient(160deg, rgba(20, 26, 51, 0.82) 0%, rgba(20, 26, 51, 0.96) 100%),
-    url('/images/nasugbu-bg.jpg');
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-  border-bottom-left-radius: 44px;
-  border-bottom-right-radius: 44px;
-  z-index: 0;
-  overflow: hidden;
+.wl-mobile-login {
+  border: 1.5px solid #25449B; color: #25449B; background: #FFFFFF;
 }
-.wl-hero-glow {
-  position: absolute; border-radius: 50%; pointer-events: none;
-  filter: blur(70px); z-index: 0;
-}
-.wl-hero-glow--1 {
-  top: -140px; right: -100px; width: 460px; height: 460px;
-  background: radial-gradient(circle, rgba(79,91,203,.4), transparent 70%);
-}
-.wl-hero-glow--2 {
-  bottom: -160px; left: -120px; width: 420px; height: 420px;
-  background: radial-gradient(circle, rgba(255,255,255,.14), transparent 70%);
-}
-
-/* ── Entrance animation ─────────────────────────────────────────────── */
-@keyframes wlFadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
-.wl-fade { animation: wlFadeUp .6s cubic-bezier(.16,1,.3,1) both; }
-@media (prefers-reduced-motion: reduce) { .wl-fade { animation: none; } }
 
 /* ── Constraint wrapper ──────────────────────────────────────────────── */
-.wl-wrap { max-width: 1200px; margin: 0 auto; padding: 0 32px; width: 100%; }
+.wl-wrap { max-width: 1240px; margin: 0 auto; padding: 0 32px; width: 100%; }
 @media (max-width: 640px) { .wl-wrap { padding: 0 20px; } }
 
-.wl-band { position: relative; z-index: 10; padding-top: 80px; }
-.wl-band-white { background: #FFFFFF; padding-top: 80px; }
-.wl-band-neutral { padding-top: 80px; }
-@media (max-width: 640px) {
-  .wl-band, .wl-band-white, .wl-band-neutral { padding-top: 56px; }
+/* ── Entrance animation ─────────────────────────────────────────────── */
+@keyframes wlFadeUp {
+  from { opacity: 0; transform: translateY(18px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.wl-fade { animation: wlFadeUp .65s cubic-bezier(.16,1,.3,1) both; }
+@media (prefers-reduced-motion: reduce) { .wl-fade { animation: none; } }
+
+/* ── Pulsing live dot ────────────────────────────────────────────────── */
+@keyframes wlPulseDot {
+  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+  70% { transform: scale(1); box-shadow: 0 0 0 7px rgba(16, 185, 129, 0); }
+  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+}
+.wl-live-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: #10B981;
+  display: inline-block;
+  animation: wlPulseDot 2s infinite;
+  flex-shrink: 0;
 }
 
-/* ── Hero — full viewport height, content vertically centered ────────── */
-.wl-hero {
-  position: relative; z-index: 10;
-  min-height: calc(100vh - 76px);
-  display: flex; flex-direction: column; align-items: center; justify-content: center;
-  text-align: center;
-  padding-top: 48px;
-  padding-bottom: 64px;
+/* ════════════════════════════════════════════════════════════════════════
+   HERO SECTION — 50/50 SPLIT LAYOUT WITH CENTER WHITE BLEND
+   Left: Text on pure white background
+   Right: Nasugbu LGU photo with multi-stop seamless gradient fade
+════════════════════════════════════════════════════════════════════════ */
+.wl-hero-section {
+  position: relative;
+  background: #FFFFFF;
+  border-bottom: 1px solid #E2E8F0;
+  overflow: hidden;
 }
-@media (max-width: 640px) {
-  .wl-hero { padding-top: 32px; padding-bottom: 48px; min-height: calc(100vh - 76px); min-height: calc(100svh - 76px); }
-  .wl-hero-cta { flex-direction: column; align-items: stretch; width: 100%; max-width: 360px; margin-left: auto; margin-right: auto; }
-  .wl-hero-btn-primary, .wl-hero-btn-outline { justify-content: center; width: 100%; }
+
+.wl-hero-grid {
+  display: grid;
+  grid-template-columns: 1.08fr 0.92fr;
+  min-height: calc(100vh - 76px);
+  min-height: calc(100svh - 76px);
+  position: relative;
+}
+
+/* Left Hero Column: Pure White Background */
+.wl-hero-left {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 60px 48px 64px 32px;
+  background: #FFFFFF;
+  position: relative;
+  z-index: 10;
+}
+.wl-hero-left-inner {
+  max-width: 590px;
+  width: 100%;
 }
 
 .wl-hero-badge {
-  display: inline-flex; align-items: center; gap: 7px;
-  padding: 7px 16px; border-radius: 20px;
-  background: rgba(255,255,255,.08);
-  border: 1px solid rgba(255,255,255,.2);
-  color: rgba(255,255,255,.88);
-  font-family: 'DM Sans', sans-serif; font-size: 10px; font-weight: 700;
-  letter-spacing: .1em; text-transform: uppercase;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-radius: 9999px;
+  background: #EFF4FF;
+  border: 1px solid #D6E4FF;
+  color: #25449B;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .02em;
   margin-bottom: 24px;
+  box-shadow: 0 1px 3px rgba(37, 68, 155, 0.06);
 }
+
 .wl-hero-title {
   font-family: 'Plus Jakarta Sans', sans-serif;
-  font-size: clamp(38px, 6.4vw, 68px);
-  font-weight: 800; letter-spacing: -.03em;
-  color: #FFFFFF; line-height: 1.04;
-  margin-bottom: 20px;
+  font-size: clamp(38px, 4.2vw, 56px);
+  font-weight: 800;
+  letter-spacing: -.03em;
+  color: #0F172A;
+  line-height: 1.1;
+  margin-bottom: 22px;
 }
 .wl-hero-title-accent {
-  background: linear-gradient(100deg, #8B93E8 0%, #C7CBF5 50%, #FFFFFF 100%);
-  -webkit-background-clip: text; background-clip: text;
+  color: #25449B;
+  display: inline-block;
+  background: linear-gradient(135deg, #25449B 0%, #1A3680 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
 }
+
 .wl-hero-sub {
   font-family: 'Inter', sans-serif;
-  font-size: clamp(14px, 1.6vw, 16.5px); font-weight: 400;
-  color: rgba(255,255,255,.82);
-  max-width: 540px; margin: 0 auto;
-  line-height: 1.65;
+  font-size: clamp(15px, 1.3vw, 17px);
+  font-weight: 400;
+  color: #334155;
+  line-height: 1.7;
+  margin-bottom: 34px;
 }
-.wl-hero-cta {
-  display: flex; align-items: center; justify-content: center;
-  gap: 14px; flex-wrap: wrap;
-  margin-top: 34px;
-}
-.wl-hero-btn-primary, .wl-hero-btn-outline {
-  display: inline-flex; align-items: center; gap: 8px;
-  height: 52px; padding: 0 28px; border-radius: 12px;
-  text-decoration: none; cursor: pointer;
-  font-family: 'DM Sans', sans-serif; font-size: 10.5px; font-weight: 800;
-  letter-spacing: .12em; text-transform: uppercase;
-  transition: transform .18s, box-shadow .18s, background .18s, border-color .18s, color .18s;
-}
-.wl-hero-btn-primary {
-  border: none; background: #FFFFFF; color: #1C2340;
-  box-shadow: 0 8px 24px rgba(0,0,0,.22);
-}
-.wl-hero-btn-primary:hover { transform: translateY(-2px); box-shadow: 0 12px 32px rgba(0,0,0,.3); }
-.wl-hero-btn-outline {
-  border: 1.5px solid rgba(255,255,255,.32); background: rgba(255,255,255,.04); color: #FFFFFF;
-}
-.wl-hero-btn-outline:hover { border-color: #FFFFFF; background: rgba(255,255,255,.1); transform: translateY(-2px); }
 
-/* ── Section container / heading ─────────────────────────────────────── */
-.wl-section { padding-bottom: 84px; }
-@media (max-width: 640px) { .wl-section { padding-bottom: 56px; } }
+.wl-hero-cta {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-bottom: 38px;
+}
+
+.wl-hero-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  height: 52px;
+  padding: 0 28px;
+  border-radius: 12px;
+  border: none;
+  background: #25449B;
+  color: #FFFFFF;
+  text-decoration: none;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 13.5px;
+  font-weight: 700;
+  letter-spacing: .02em;
+  box-shadow: 0 6px 20px rgba(37, 68, 155, 0.28);
+  transition: transform .18s ease, box-shadow .18s ease, background .18s ease;
+}
+.wl-hero-btn-primary:hover {
+  background: #1B3377;
+  transform: translateY(-2px);
+  box-shadow: 0 10px 28px rgba(37, 68, 155, 0.38);
+}
+
+.wl-hero-btn-outline {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  height: 52px;
+  padding: 0 26px;
+  border-radius: 12px;
+  border: 1.5px solid #CBD5E1;
+  background: #FFFFFF;
+  color: #1E293B;
+  text-decoration: none;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 13.5px;
+  font-weight: 700;
+  letter-spacing: .02em;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.04);
+  transition: transform .18s ease, border-color .18s ease, color .18s ease, background .18s ease;
+}
+.wl-hero-btn-outline:hover {
+  border-color: #25449B;
+  color: #25449B;
+  background: #EFF4FF;
+  transform: translateY(-2px);
+}
+
+/* Quick feature trust pills under hero */
+.wl-hero-features {
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  flex-wrap: wrap;
+  padding-top: 24px;
+  border-top: 1px solid #F1F5F9;
+}
+.wl-hero-feat-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #475569;
+}
+.wl-feat-check {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #EFF4FF;
+  color: #25449B;
+  font-weight: 800;
+  font-size: 11px;
+}
+
+/* Right Hero Column: Photo + Seamless Center Blend */
+.wl-hero-right {
+  position: relative;
+  overflow: hidden;
+  min-height: 480px;
+  background: #FFFFFF;
+}
+
+.wl-hero-image-bg {
+  position: absolute;
+  inset: 0;
+  background-image: url('/images/nasugbu-bg.jpg');
+  background-size: cover;
+  background-position: center 35%;
+  background-repeat: no-repeat;
+  transition: transform .8s ease;
+}
+
+/* The magic center blend gradient — feathers smoothly into pure white on the left split */
+.wl-hero-blend-gradient {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to right,
+    #FFFFFF 0%,
+    rgba(255, 255, 255, 0.96) 8%,
+    rgba(255, 255, 255, 0.8) 20%,
+    rgba(255, 255, 255, 0.45) 40%,
+    rgba(255, 255, 255, 0.1) 68%,
+    rgba(255, 255, 255, 0) 88%
+  );
+  pointer-events: none;
+}
+
+/* Subtle vertical vignettes for photo richness */
+.wl-hero-right::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.3) 0%,
+    transparent 15%,
+    transparent 85%,
+    rgba(255, 255, 255, 0.4) 100%
+  );
+  pointer-events: none;
+}
+
+/* Dynamic floating glass widgets on right split */
+.wl-glass-card {
+  position: absolute;
+  z-index: 15;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.12), 0 2px 6px rgba(37, 68, 155, 0.08);
+  border-radius: 14px;
+  padding: 12px 18px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  animation: wlFadeUp .8s cubic-bezier(.16,1,.3,1) both;
+}
+.wl-glass-card--top {
+  top: 40px;
+  right: 40px;
+  animation-delay: 350ms;
+}
+.wl-glass-card--bottom {
+  bottom: 44px;
+  left: 36px;
+  animation-delay: 500ms;
+}
+.wl-glass-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: #EFF4FF;
+  border: 1px solid #D6E4FF;
+  color: #25449B;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.wl-glass-label {
+  display: block;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: #64748B;
+}
+.wl-glass-val {
+  display: block;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  color: #0F172A;
+}
+
+@media (max-width: 1040px) {
+  .wl-hero-grid {
+    grid-template-columns: 1fr;
+    min-height: auto;
+  }
+  .wl-hero-left {
+    justify-content: center;
+    padding: 52px 24px 44px;
+  }
+  .wl-hero-left-inner {
+    max-width: 620px;
+    text-align: center;
+  }
+  .wl-hero-cta {
+    justify-content: center;
+  }
+  .wl-hero-features {
+    justify-content: center;
+  }
+  .wl-hero-right {
+    height: 420px;
+    min-height: 420px;
+  }
+  .wl-hero-blend-gradient {
+    background: linear-gradient(
+      to bottom,
+      #FFFFFF 0%,
+      rgba(255, 255, 255, 0.95) 12%,
+      rgba(255, 255, 255, 0.4) 40%,
+      rgba(255, 255, 255, 0) 80%
+    );
+  }
+  .wl-glass-card--top {
+    top: 24px;
+    right: 24px;
+  }
+  .wl-glass-card--bottom {
+    bottom: 24px;
+    left: 24px;
+  }
+}
+
+@media (max-width: 640px) {
+  .wl-hero-left { padding: 40px 20px 36px; }
+  .wl-hero-cta { flex-direction: column; width: 100%; }
+  .wl-hero-btn-primary, .wl-hero-btn-outline { width: 100%; justify-content: center; }
+  .wl-hero-features { flex-direction: column; align-items: center; gap: 12px; }
+  .wl-hero-right { height: 320px; min-height: 320px; }
+  .wl-glass-card { padding: 10px 14px; }
+  .wl-glass-card--top { display: none; }
+}
+
+/* ── Section Bands & Headings ─────────────────────────────────────────── */
+.wl-band { position: relative; z-index: 10; padding: 84px 0; }
+.wl-band-white { background: #FFFFFF; }
+.wl-band-slate { background: #F8FAFC; border-top: 1px solid #E2E8F0; border-bottom: 1px solid #E2E8F0; }
+
+@media (max-width: 640px) { .wl-band { padding: 60px 0; } }
 
 .wl-sec-eyebrow {
-  font-family: 'DM Sans', sans-serif;
-  font-size: 9.5px; font-weight: 700;
-  letter-spacing: .18em; text-transform: uppercase;
-  color: #4F5BCB;
-  display: flex; align-items: center; gap: 8px;
-  justify-content: center; margin-bottom: 10px;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: #25449B;
+  background: #EFF4FF;
+  border: 1px solid #D6E4FF;
+  padding: 5px 14px;
+  border-radius: 9999px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 14px;
 }
-.wl-sec-eyebrow::before, .wl-sec-eyebrow::after { content: ''; flex: 0 0 18px; height: 1.5px; background: #4F5BCB; border-radius: 2px; }
+.wl-sec-head { text-align: center; margin-bottom: 48px; }
 .wl-sec-title {
   font-family: 'Plus Jakarta Sans', sans-serif;
-  font-size: clamp(24px, 3.2vw, 32px); font-weight: 800;
-  letter-spacing: -.025em; color: #1C2340;
-  text-align: center; line-height: 1.15; margin-bottom: 10px;
+  font-size: clamp(26px, 3.2vw, 36px);
+  font-weight: 800;
+  letter-spacing: -.025em;
+  color: #0F172A;
+  line-height: 1.2;
+  margin-bottom: 12px;
 }
 .wl-sec-sub {
   font-family: 'Inter', sans-serif;
-  font-size: 14px; font-weight: 400;
-  color: #4A5578; text-align: center; line-height: 1.55;
-  max-width: 560px; margin: 0 auto 40px;
+  font-size: 15.5px;
+  font-weight: 400;
+  color: #475569;
+  line-height: 1.6;
+  max-width: 600px;
+  margin: 0 auto;
 }
 
-/* ── Verify tool ─────────────────────────────────────────────────────── */
-.wl-verify {
+/* ── Section 1: Verification Card ─────────────────────────────────────── */
+.wl-verify-card {
   background: #FFFFFF;
-  border: 1px solid rgba(28,35,64,.08);
-  border-radius: 18px;
-  padding: 28px 32px;
-  display: flex; align-items: center; justify-content: space-between;
-  gap: 24px; flex-wrap: wrap;
-  box-shadow: 0 1px 6px rgba(28,35,64,.05);
-}
-.wl-verify-left { display: flex; align-items: center; gap: 18px; }
-.wl-verify-icon {
-  width: 48px; height: 48px; border-radius: 12px; flex-shrink: 0;
-  background: linear-gradient(135deg, rgba(79,91,203,.16), rgba(79,91,203,.02));
-  border: 1px solid rgba(79,91,203,.15);
-  display: flex; align-items: center; justify-content: center;
-  color: #4F5BCB;
-}
-.wl-verify-title { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 16px; font-weight: 800; letter-spacing: -.02em; color: #1C2340; margin-bottom: 4px; }
-.wl-verify-sub { font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 400; color: #4A5578; }
-.wl-verify-right { display: flex; gap: 10px; flex: 1; justify-content: flex-end; flex-wrap: wrap; }
-.wl-verify-input {
-  height: 44px; border-radius: 10px;
-  border: 1px solid rgba(28,35,64,.12);
-  background: #FAFAFA;
-  padding: 0 16px;
-  font-family: 'Inter', sans-serif; font-size: 13.5px; font-weight: 500;
-  color: #1C2340; outline: none;
-  width: 240px; min-width: 180px;
+  border: 1.5px solid #E2E8F0;
+  border-radius: 20px;
+  padding: 36px 40px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 32px;
+  box-shadow: 0 10px 30px -4px rgba(15, 23, 42, 0.05), 0 2px 8px rgba(37, 68, 155, 0.04);
   transition: border-color .2s, box-shadow .2s;
 }
-.wl-verify-input:focus { border-color: rgba(79,91,203,.4); box-shadow: 0 0 0 3px rgba(79,91,203,.09); background: #FFFFFF; }
-.wl-verify-input::placeholder { color: #9AA3CC; font-weight: 400; }
-.wl-verify-btn {
-  height: 44px; padding: 0 22px; border-radius: 10px;
-  border: none; background: #1C2340; color: #FFFFFF;
-  cursor: pointer;
-  font-family: 'DM Sans', sans-serif; font-size: 10px; font-weight: 700;
-  letter-spacing: .12em; text-transform: uppercase;
-  transition: background .18s;
-  white-space: nowrap;
+.wl-verify-card:hover {
+  border-color: #CBD5E1;
+  box-shadow: 0 14px 40px -4px rgba(37, 68, 155, 0.1);
 }
-.wl-verify-btn:hover { background: #2E3A9E; }
-@media (max-width: 640px) {
-  .wl-verify { flex-direction: column; align-items: stretch; padding: 24px; }
-  .wl-verify-right { justify-content: stretch; }
-  .wl-verify-input { width: 100%; min-width: 0; flex: 1 1 auto; }
-  .wl-verify-btn { flex: 1 1 100%; height: 46px; }
-  .wl-verify-left { align-items: flex-start; }
+.wl-verify-left {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex: 1;
+}
+.wl-verify-icon-wrap {
+  width: 56px;
+  height: 56px;
+  border-radius: 14px;
+  background: #EFF4FF;
+  border: 1px solid #D6E4FF;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #25449B;
+  flex-shrink: 0;
+}
+.wl-verify-title {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: -.02em;
+  color: #0F172A;
+  margin-bottom: 4px;
+}
+.wl-verify-desc {
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  color: #475569;
+}
+.wl-verify-form {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+.wl-verify-input {
+  height: 48px;
+  width: 260px;
+  border-radius: 11px;
+  border: 1.5px solid #CBD5E1;
+  background: #F8FAFC;
+  padding: 0 18px;
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  color: #0F172A;
+  outline: none;
+  transition: border-color .18s, box-shadow .18s, background .18s;
+}
+.wl-verify-input:focus {
+  border-color: #25449B;
+  box-shadow: 0 0 0 3px rgba(37, 68, 155, 0.12);
+  background: #FFFFFF;
+}
+.wl-verify-input::placeholder { color: #94A3B8; }
+
+.wl-verify-btn {
+  height: 48px;
+  padding: 0 24px;
+  border-radius: 11px;
+  border: none;
+  background: #25449B;
+  color: #FFFFFF;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 13.5px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  box-shadow: 0 4px 14px rgba(37, 68, 155, 0.25);
+  transition: background .18s, transform .15s, box-shadow .15s;
+}
+.wl-verify-btn:hover {
+  background: #1B3377;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(37, 68, 155, 0.35);
 }
 
-/* ── How It Works — real 4-step applicant journey, not decorative
-   filler: mirrors the actual Apply → Review → Pay → Active pipeline. ── */
-.wl-steps {
-  position: relative;
+@media (max-width: 860px) {
+  .wl-verify-card { flex-direction: column; align-items: stretch; padding: 28px; gap: 24px; }
+  .wl-verify-form { flex-direction: column; width: 100%; gap: 12px; }
+  .wl-verify-input { width: 100%; }
+  .wl-verify-btn { width: 100%; }
+}
+
+/* ── Section 2: How It Works Steps ─────────────────────────────────────── */
+.wl-steps-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 28px;
+  gap: 24px;
+  position: relative;
 }
-.wl-steps-line {
-  position: absolute; top: 31px; left: 12%; right: 12%; height: 2px;
-  background-image: linear-gradient(to right, rgba(79,91,203,.28) 0 10px, transparent 10px 18px);
-  background-size: 18px 2px;
-  z-index: 0;
-}
-@media (max-width: 860px) {
-  .wl-steps { grid-template-columns: 1fr 1fr; row-gap: 36px; }
-  .wl-steps-line { display: none; }
-}
-@media (max-width: 560px) { .wl-steps { grid-template-columns: 1fr; } }
+@media (max-width: 992px) { .wl-steps-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 560px) { .wl-steps-grid { grid-template-columns: 1fr; } }
 
-.wl-step { position: relative; z-index: 1; text-align: center; }
-.wl-step-icon-wrap {
-  position: relative; width: 64px; height: 64px; margin: 0 auto 18px;
-  background: #FFFFFF; border-radius: 18px;
+.wl-step-card {
+  background: #FFFFFF;
+  border: 1.5px solid #E2E8F0;
+  border-radius: 18px;
+  padding: 32px 24px;
+  position: relative;
+  transition: transform .2s ease, border-color .2s ease, box-shadow .2s ease;
+  display: flex;
+  flex-direction: column;
+}
+.wl-step-card:hover {
+  transform: translateY(-4px);
+  border-color: #25449B;
+  box-shadow: 0 12px 30px rgba(37, 68, 155, 0.08);
+}
+.wl-step-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 22px;
 }
 .wl-step-icon {
-  width: 64px; height: 64px; border-radius: 18px;
-  background: linear-gradient(135deg, rgba(79,91,203,.15), rgba(79,91,203,.02));
-  border: 1px solid rgba(79,91,203,.14);
-  display: flex; align-items: center; justify-content: center;
-  color: #4F5BCB;
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  background: #EFF4FF;
+  border: 1px solid #D6E4FF;
+  color: #25449B;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
-.wl-step-badge {
-  position: absolute; top: -6px; left: -6px;
-  width: 22px; height: 22px; border-radius: 50%;
-  background: #1C2340; color: #FFFFFF;
-  font-family: 'DM Sans', sans-serif; font-size: 10px; font-weight: 800;
-  display: flex; align-items: center; justify-content: center;
-  border: 2px solid #EDEEF4;
+.wl-step-num {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 13px;
+  font-weight: 800;
+  color: #25449B;
+  background: #EFF4FF;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
-.wl-step-title { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 14.5px; font-weight: 800; letter-spacing: -.015em; color: #1C2340; margin-bottom: 7px; }
-.wl-step-desc { font-family: 'Inter', sans-serif; font-size: 12.5px; font-weight: 400; color: #4A5578; line-height: 1.55; max-width: 220px; margin: 0 auto; }
+.wl-step-title {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 16px;
+  font-weight: 800;
+  color: #0F172A;
+  margin-bottom: 8px;
+}
+.wl-step-desc {
+  font-family: 'Inter', sans-serif;
+  font-size: 13.5px;
+  font-weight: 400;
+  color: #475569;
+  line-height: 1.6;
+}
 
-/* ── Feature bento grid — the highlighted feature runs the full width as
-   its own row, then the remaining features tile evenly in three equal
-   columns below, so the grid always resolves clean instead of leaving a
-   gap when an odd number of cards can't fill a 2+1 split. ── */
-.wl-bento { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
-.wl-feature--lg { grid-column: 1 / -1; }
-@media (max-width: 1024px) { .wl-bento { grid-template-columns: repeat(2, 1fr); } }
-@media (min-width: 641px) and (max-width: 1024px) {
-  .wl-bento > .wl-feature:last-child:nth-child(even) { grid-column: 1 / -1; }
+/* ── Section 3: Technology Bento Grid ─────────────────────────────────── */
+.wl-bento {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
 }
-@media (max-width: 640px) {
-  .wl-bento { grid-template-columns: 1fr; }
-  .wl-feature--lg { flex-direction: column; }
-  .wl-feature--lg .wl-feature-icon { margin-bottom: 14px; }
+.wl-bento-card--lg { grid-column: 1 / -1; }
+@media (max-width: 960px) {
+  .wl-bento { grid-template-columns: repeat(2, 1fr); }
+  .wl-bento > .wl-bento-card:last-child:nth-child(even) { grid-column: 1 / -1; }
 }
+@media (max-width: 640px) { .wl-bento { grid-template-columns: 1fr; } }
 
-.wl-feature {
+.wl-bento-card {
   background: #FFFFFF;
-  border: 1px solid rgba(28,35,64,.08);
-  border-radius: 18px; padding: 30px 28px;
-  transition: box-shadow .2s, border-color .2s;
-  box-shadow: 0 1px 6px rgba(28,35,64,.05);
+  border: 1.5px solid #E2E8F0;
+  border-radius: 20px;
+  padding: 32px 28px;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.03);
+  transition: transform .2s ease, border-color .2s ease, box-shadow .2s ease;
 }
-.wl-feature:hover { border-color: rgba(79,91,203,.2); box-shadow: 0 8px 28px rgba(28,35,64,.1); }
-.wl-feature--lg { display: flex; align-items: flex-start; gap: 22px; }
-.wl-feature--lg .wl-feature-icon { margin-bottom: 0; flex-shrink: 0; width: 54px; height: 54px; }
-.wl-feature-icon {
-  width: 44px; height: 44px; border-radius: 12px;
-  background: linear-gradient(135deg, rgba(79,91,203,.16), rgba(79,91,203,.02));
-  border: 1px solid rgba(79,91,203,.14);
-  display: flex; align-items: center; justify-content: center;
-  color: #4F5BCB; margin-bottom: 18px;
-  transition: background .2s;
+.wl-bento-card:hover {
+  transform: translateY(-3px);
+  border-color: rgba(37, 68, 155, 0.35);
+  box-shadow: 0 12px 32px rgba(37, 68, 155, 0.08);
 }
-.wl-feature:hover .wl-feature-icon { background: linear-gradient(135deg, rgba(79,91,203,.24), rgba(79,91,203,.04)); }
-.wl-feature-title { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 15.5px; font-weight: 800; letter-spacing: -.015em; color: #1C2340; margin-bottom: 8px; }
-.wl-feature-desc { font-family: 'Inter', sans-serif; font-size: 13.5px; font-weight: 400; color: #4A5578; line-height: 1.58; }
+.wl-bento-card--lg {
+  display: flex;
+  align-items: flex-start;
+  gap: 24px;
+}
+.wl-bento-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: #EFF4FF;
+  border: 1px solid #D6E4FF;
+  color: #25449B;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 20px;
+  flex-shrink: 0;
+}
+.wl-bento-card--lg .wl-bento-icon {
+  width: 58px;
+  height: 58px;
+  margin-bottom: 0;
+}
+.wl-bento-title {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 16.5px;
+  font-weight: 800;
+  letter-spacing: -.015em;
+  color: #0F172A;
+  margin-bottom: 8px;
+}
+.wl-bento-desc {
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  color: #475569;
+  line-height: 1.6;
+}
 
-
-/* ── Closing CTA band — full-bleed, distinct from every other section,
-   the "ready to act" close every modern landing page ends on. ── */
+/* ── Section 4: Closing CTA Band ───────────────────────────────────────── */
 .wl-cta-band {
-  position: relative; overflow: hidden;
-  background: #1C2340;
-  padding: 76px 0;
+  background: linear-gradient(135deg, #182F72 0%, #25449B 50%, #1A347D 100%);
+  padding: 84px 0;
   text-align: center;
+  position: relative;
+  overflow: hidden;
 }
-.wl-cta-inner { position: relative; z-index: 1; }
+.wl-cta-band::before {
+  content: '';
+  position: absolute;
+  top: -120px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 700px;
+  height: 400px;
+  background: radial-gradient(ellipse at center, rgba(255,255,255,0.18), transparent 70%);
+  pointer-events: none;
+}
+.wl-cta-inner {
+  position: relative;
+  z-index: 1;
+  max-width: 680px;
+  margin: 0 auto;
+}
 .wl-cta-title {
   font-family: 'Plus Jakarta Sans', sans-serif;
-  font-size: clamp(24px, 3.6vw, 36px); font-weight: 800;
-  color: #FFFFFF; letter-spacing: -.02em; margin-bottom: 14px;
+  font-size: clamp(28px, 3.8vw, 42px);
+  font-weight: 800;
+  color: #FFFFFF;
+  letter-spacing: -.025em;
+  margin-bottom: 16px;
+  line-height: 1.2;
 }
 .wl-cta-sub {
-  font-family: 'Inter', sans-serif; font-size: 14.5px; font-weight: 400;
-  color: rgba(255,255,255,.8); max-width: 480px; margin: 0 auto 30px; line-height: 1.6;
+  font-family: 'Inter', sans-serif;
+  font-size: 16px;
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.92);
+  line-height: 1.65;
+  margin-bottom: 34px;
 }
-.wl-cta-actions { display: flex; align-items: center; justify-content: center; gap: 14px; flex-wrap: wrap; }
-.wl-cta-btn {
-  display: inline-flex; align-items: center; gap: 8px;
-  height: 52px; padding: 0 30px; border-radius: 12px;
-  background: #FFFFFF; color: #1C2340; text-decoration: none;
-  font-family: 'DM Sans', sans-serif; font-size: 10.5px; font-weight: 800;
-  letter-spacing: .12em; text-transform: uppercase;
-  box-shadow: 0 8px 24px rgba(0,0,0,.2);
-  transition: transform .18s, box-shadow .18s;
+.wl-cta-actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  flex-wrap: wrap;
 }
-.wl-cta-btn:hover { transform: translateY(-2px); box-shadow: 0 12px 32px rgba(0,0,0,.28); }
-.wl-cta-btn-ghost {
-  display: inline-flex; align-items: center; gap: 8px;
-  height: 52px; padding: 0 30px; border-radius: 12px;
-  border: 1.5px solid rgba(255,255,255,.3); background: transparent; color: #FFFFFF;
+.wl-cta-btn-main {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  height: 52px;
+  padding: 0 32px;
+  border-radius: 12px;
+  border: none;
+  background: #FFFFFF;
+  color: #25449B;
   text-decoration: none;
-  font-family: 'DM Sans', sans-serif; font-size: 10.5px; font-weight: 800;
-  letter-spacing: .12em; text-transform: uppercase;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 14px;
+  font-weight: 800;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+  transition: transform .18s, box-shadow .18s, background .18s;
+}
+.wl-cta-btn-main:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 32px rgba(0,0,0,0.28);
+  background: #F8FAFC;
+}
+.wl-cta-btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  height: 52px;
+  padding: 0 30px;
+  border-radius: 12px;
+  border: 1.5px solid rgba(255, 255, 255, 0.5);
+  background: transparent;
+  color: #FFFFFF;
+  text-decoration: none;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
   transition: border-color .18s, background .18s, transform .18s;
 }
-.wl-cta-btn-ghost:hover { border-color: #FFFFFF; background: rgba(255,255,255,.08); transform: translateY(-2px); }
+.wl-cta-btn-ghost:hover {
+  border-color: #FFFFFF;
+  background: rgba(255, 255, 255, 0.12);
+  transform: translateY(-2px);
+}
 @media (max-width: 640px) {
-  .wl-cta-band { padding: 56px 0; }
-  .wl-cta-actions { flex-direction: column; align-items: stretch; max-width: 360px; margin: 0 auto; }
-  .wl-cta-btn, .wl-cta-btn-ghost { justify-content: center; width: 100%; }
+  .wl-cta-actions { flex-direction: column; }
+  .wl-cta-btn-main, .wl-cta-btn-ghost { width: 100%; justify-content: center; }
 }
 
 /* ── Footer ──────────────────────────────────────────────────────────── */
-.wl-footer { background: #FFFFFF; border-top: 1px solid rgba(28,35,64,.07); margin-top: auto; }
-.wl-footer-inner { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 24px 0; flex-wrap: wrap; }
-.wl-footer-copy-col { display: flex; flex-direction: column; gap: 3px; }
-.wl-footer-copy { font-family: 'DM Sans', sans-serif; font-size: 9px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: #9AA3CC; }
-.wl-footer-tagline { font-family: 'Inter', sans-serif; font-size: 11.5px; font-weight: 400; color: #B7BEDA; }
-.wl-footer-links { display: flex; align-items: center; gap: 20px; }
-.wl-footer-item { display: inline-flex; align-items: center; gap: 5px; font-family: 'DM Sans', sans-serif; font-size: 9px; font-weight: 700; letter-spacing: .13em; text-transform: uppercase; color: #9AA3CC; }
-.wl-footer-sep { color: rgba(28,35,64,.15); font-size: 12px; }
+.wl-footer {
+  background: #FFFFFF;
+  border-top: 1px solid #E2E8F0;
+  margin-top: auto;
+}
+.wl-footer-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 28px 0;
+  flex-wrap: wrap;
+}
+.wl-footer-copy {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  color: #1E293B;
+  margin-bottom: 2px;
+}
+.wl-footer-tagline {
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  font-weight: 400;
+  color: #64748B;
+}
+.wl-footer-links {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+.wl-footer-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  color: #475569;
+  text-decoration: none;
+}
+.wl-footer-item--highlight {
+  color: #25449B;
+  font-weight: 700;
+}
+.wl-footer-sep { color: #CBD5E1; }
 `;
 
 const STEPS = [
-    { icon: FileText,       title: 'Apply Online',       desc: 'Submit your MTOP application and documents through this portal — no queuing required.' },
-    { icon: ClipboardCheck, title: 'TMO Verification',   desc: 'The Traffic Management Office reviews your documents and inspects your tricycle.' },
-    { icon: Wallet,         title: 'Settle Fees',        desc: 'Pay your franchise fees at the Municipal Treasurer’s Office using the generated order of payment.' },
-    { icon: Award,          title: 'Get Your Permit',    desc: 'Receive your official MTOP sticker and secure digital permit, ready to use.' },
+  { icon: FileText, title: 'Apply Online', desc: 'Submit your MTOP application, tricycle details, and required documents digitally without waiting in long queues.' },
+  { icon: ClipboardCheck, title: 'TMO Verification', desc: 'The Traffic Management Office reviews your submitted requirements and conducts the physical tricycle inspection.' },
+  { icon: Wallet, title: 'Settle Fees', desc: 'Pay official franchise fees at the Municipal Treasurer’s Office or through accredited channels using your Order of Payment.' },
+  { icon: Award, title: 'Get Your Permit', desc: 'Receive your official MTOP sticker and digital franchise certificate, fully activated in the municipal database.' },
 ];
 
 export default function Welcome() {
-    const [plateQuery, setPlateQuery] = useState('');
-    const [scrolled, setScrolled] = useState(false);
-    const [menuOpen, setMenuOpen] = useState(false);
+  const [plateQuery, setPlateQuery] = useState('');
+  const [scrolled, setScrolled] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
 
-    // Mobile sidebar: closes on Escape and when the window grows back to the desktop nav.
-    useEffect(() => {
-        if (!menuOpen) return undefined;
-        const onKey = (e) => { if (e.key === 'Escape') setMenuOpen(false); };
-        const onResize = () => { if (window.innerWidth > 860) setMenuOpen(false); };
-        window.addEventListener('keydown', onKey);
-        window.addEventListener('resize', onResize);
-        // Keep the page behind the sidebar from scrolling.
-        const prevOverflow = document.body.style.overflow;
-        document.body.style.overflow = 'hidden';
-        return () => {
-            document.body.style.overflow = prevOverflow;
-            window.removeEventListener('keydown', onKey);
-            window.removeEventListener('resize', onResize);
-        };
-    }, [menuOpen]);
-
-    // Navbar goes from transparent (over the hero photo) to a solid blurred
-    // panel once the page has scrolled past the top of the hero.
-    useEffect(() => {
-        const onScroll = () => setScrolled(window.scrollY > 24);
-        onScroll();
-        window.addEventListener('scroll', onScroll, { passive: true });
-        return () => window.removeEventListener('scroll', onScroll);
-    }, []);
-
-    // Public Verification Function — calls real API
-    const handleVerify = async () => {
-        if (!plateQuery.trim()) {
-            Swal.fire({
-                title: 'Input Required',
-                text: 'Please enter a Plate Number to check.',
-                icon: 'warning',
-                confirmButtonColor: '#1C2340',
-                customClass: { title: 'font-jakarta', popup: 'font-inter' }
-            });
-            return;
-        }
-
-        Swal.fire({
-            title: 'Checking...',
-            text: 'Looking up franchise record.',
-            allowOutsideClick: false,
-            didOpen: () => Swal.showLoading(),
-        });
-
-        try {
-            const res = await fetch(`/api/public/verify-plate?plate=${encodeURIComponent(plateQuery.trim())}`);
-            const data = await res.json();
-
-            if (!data.found && data.ambiguous) {
-                Swal.fire({
-                    title: 'Enter the Full Plate Number',
-                    text: `More than one unit matches "${plateQuery.trim().toUpperCase()}". Please enter the complete plate number.`,
-                    icon: 'info',
-                    confirmButtonColor: '#1C2340',
-                    customClass: { title: 'font-jakarta', popup: 'font-inter' }
-                });
-                return;
-            }
-
-            if (!data.found) {
-                Swal.fire({
-                    title: 'Record Not Found',
-                    text: `No official franchise record found for Plate No. "${plateQuery.trim().toUpperCase()}".`,
-                    icon: 'question',
-                    confirmButtonColor: '#1C2340',
-                    customClass: { title: 'font-jakarta', popup: 'font-inter' }
-                });
-                return;
-            }
-
-            // The franchise state drives the headline; the application status line below
-            // always shows plain public language (never an internal status code).
-            const appStatus = data.application_status || '';
-            const isActive = data.status === 'Active';
-            const isExpired = data.status === 'Expired';
-            const isUnregistered = data.status === 'Unregistered';
-            const isSuspended = data.status === 'Suspended';
-            const isRevoked = data.status === 'Revoked';
-            const hasIssue = isSuspended || isRevoked || /Rejected|Reinspection|Cancelled/i.test(appStatus);
-            const inProcess = /In Process/i.test(appStatus);
-
-            // A unit whose application is still in progress or has a blocking issue cannot be presented as an active franchise.
-            const isTrulyActive = isActive && !inProcess && !hasIssue;
-
-            const statusColor = isTrulyActive ? '#059669'
-                              : isExpired ? '#D97706'
-                              : hasIssue ? '#DC2626'
-                              : inProcess ? '#4F5BCB'
-                              : (isUnregistered && !appStatus) ? '#6B7280'
-                              : '#6B7280';
-
-            const statusIcon = isTrulyActive ? 'success'
-                             : (isExpired || hasIssue) ? 'warning'
-                             : 'info';
-
-            const statusLabel = isTrulyActive ? '✓ ACTIVE — Valid MTOP Franchise'
-                              : isRevoked ? '⊗ REVOKED — Franchise Revoked'
-                              : isSuspended ? '⊗ SUSPENDED — Not Authorized to Operate'
-                              : isExpired ? '⚠ EXPIRED — Renewal Required'
-                              : appStatus ? ((hasIssue ? '⊗ ' : '○ ') + appStatus)
-                              : isUnregistered ? '○ UNREGISTERED — No Permit Issued'
-                              : '○ Pending';
-
-            const statusTitle = isTrulyActive ? 'Valid Franchise Found'
-                              : (isExpired || hasIssue) ? 'Franchise Issue Detected'
-                              : inProcess ? 'Application In Progress'
-                              : 'Franchise Record Found';
-
-            const panelBg = isTrulyActive ? '#F0FDF4'
-                          : (isExpired || hasIssue) ? '#FEF2F2'
-                          : '#EEF2FF';
-
-            // Stored values (plate, operator, make/model — some entered on the public form) are
-            // escaped before they go into the popup's HTML.
-            const esc = (v) => String(v ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-
-            Swal.fire({
-                title: statusTitle,
-                html: `
-                    <div style="text-align:left;padding:12px 10px;background:${panelBg};border-radius:10px;margin-top:8px;font-size:13px;line-height:1.8">
-                        <b>Plate No:</b> ${esc(data.plate)}<br/>
-                        ${!inProcess && data.franchise_number ? `<b>Franchise Number:</b> ${esc(data.franchise_number)}<br/>` : ''}
-                        ${!inProcess && data.sticker_number ? `<b>Sticker Number:</b> ${esc(data.sticker_number)}<br/>` : ''}
-                        <b>Operator:</b> ${esc(data.operator)}<br/>
-                        <b>Unit:</b> ${esc(data.make_model)}<br/>
-                        ${data.expiry ? `<b>Franchise Expiry:</b> ${esc(data.expiry)}<br/>` : ''}
-                        ${appStatus ? `<b>Application Status:</b> ${esc(appStatus)}<br/>` : ''}
-                        <br/><span style="color:${statusColor};font-weight:800;font-size:13px">${statusLabel}</span>
-                    </div>
-                `,
-                icon: statusIcon,
-                confirmButtonColor: isTrulyActive ? '#059669' : '#1C2340',
-                customClass: { title: 'font-jakarta', popup: 'font-inter' }
-            });
-        } catch {
-            Swal.fire({
-                title: 'Error',
-                text: 'Could not reach the verification server. Please try again.',
-                icon: 'error',
-                confirmButtonColor: '#1C2340',
-            });
-        }
+  // Mobile sidebar keyboard & resize listeners
+  useEffect(() => {
+    if (!menuOpen) return undefined;
+    const onKey = (e) => { if (e.key === 'Escape') setMenuOpen(false); };
+    const onResize = () => { if (window.innerWidth > 900) setMenuOpen(false); };
+    window.addEventListener('keydown', onKey);
+    window.addEventListener('resize', onResize);
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = prevOverflow;
+      window.removeEventListener('keydown', onKey);
+      window.removeEventListener('resize', onResize);
     };
+  }, [menuOpen]);
 
-    return (
-        <div className="wl-root">
-            <Head title="TRIVORA | Nasugbu LGU" />
-            <style dangerouslySetInnerHTML={{ __html: CSS }} />
+  // Navbar elevation shadow on scroll
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 20);
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
 
-            {/* ══════ STICKY NAV ══════════════════════════════════════ */}
-            <div className={`wl-navbar ${scrolled ? 'wl-navbar--solid' : ''}`}>
-                <div className="wl-wrap">
-                    <div className="wl-header">
-                        <Link href="/" className="wl-logo">
-                            <div className="wl-logo-img-wrap">
-                                <img src="/images/logo.png" alt="TRIVORA" className="wl-logo-img" />
-                            </div>
-                        </Link>
+  // Public Verification Function — calls real API with SweetAlert2
+  const handleVerify = async () => {
+    if (!plateQuery.trim()) {
+      Swal.fire({
+        title: 'Plate Number Required',
+        text: 'Please enter a Plate Number to check franchise status.',
+        icon: 'warning',
+        confirmButtonColor: '#25449B',
+        customClass: { title: 'font-jakarta', popup: 'font-inter' }
+      });
+      return;
+    }
 
-                        {/* Ordered to match the actual page sequence below (Verify →
-                            How It Works → Technology), not an arbitrary order. */}
-                        <nav className="wl-nav" aria-label="Primary">
-                            <a href="#verify" className="wl-nav-link">Verify Permit</a>
-                            <a href="#how-it-works" className="wl-nav-link">How It Works</a>
-                            <a href="#technology" className="wl-nav-link">Technology</a>
-                        </nav>
+    Swal.fire({
+      title: 'Searching Records...',
+      text: 'Looking up official franchise record.',
+      allowOutsideClick: false,
+      didOpen: () => Swal.showLoading(),
+    });
 
-                        <div className="wl-header-actions">
-                            <Link href={route('login')} className="wl-nav-login">
-                                <LogIn size={13} strokeWidth={2.2} /> Log In
-                            </Link>
-                            <Link href="/register-mtop" className="wl-nav-apply">
-                                Apply Now
-                            </Link>
-                            <button
-                                type="button"
-                                className="wl-menu-btn"
-                                aria-label="Open menu"
-                                aria-expanded={menuOpen}
-                                aria-controls="wl-mobile-menu"
-                                onClick={() => setMenuOpen(true)}
-                            >
-                                <Menu size={18} strokeWidth={2.2} />
-                            </button>
-                        </div>
-                    </div>
-                </div>
+    try {
+      const res = await fetch(`/api/public/verify-plate?plate=${encodeURIComponent(plateQuery.trim())}`);
+      const data = await res.json();
 
+      if (!data.found && data.ambiguous) {
+        Swal.fire({
+          title: 'Ambiguous Plate Number',
+          text: `More than one unit matches "${plateQuery.trim().toUpperCase()}". Please enter the complete plate number.`,
+          icon: 'info',
+          confirmButtonColor: '#25449B',
+          customClass: { title: 'font-jakarta', popup: 'font-inter' }
+        });
+        return;
+      }
+
+      if (!data.found) {
+        Swal.fire({
+          title: 'Record Not Found',
+          text: `No official franchise record found for Plate No. "${plateQuery.trim().toUpperCase()}".`,
+          icon: 'question',
+          confirmButtonColor: '#25449B',
+          customClass: { title: 'font-jakarta', popup: 'font-inter' }
+        });
+        return;
+      }
+
+      const appStatus = data.application_status || '';
+      const isActive = data.status === 'Active';
+      const isExpired = data.status === 'Expired';
+      const isUnregistered = data.status === 'Unregistered';
+      const isSuspended = data.status === 'Suspended';
+      const isRevoked = data.status === 'Revoked';
+      const hasIssue = isSuspended || isRevoked || /Rejected|Reinspection|Cancelled/i.test(appStatus);
+      const inProcess = /In Process/i.test(appStatus);
+
+      const isTrulyActive = isActive && !inProcess && !hasIssue;
+
+      const statusColor = isTrulyActive ? '#059669'
+        : isExpired ? '#D97706'
+          : hasIssue ? '#DC2626'
+            : inProcess ? '#25449B'
+              : (isUnregistered && !appStatus) ? '#475569'
+                : '#475569';
+
+      const statusIcon = isTrulyActive ? 'success'
+        : (isExpired || hasIssue) ? 'warning'
+          : 'info';
+
+      const statusLabel = isTrulyActive ? '✓ ACTIVE — Valid MTOP Franchise'
+        : isRevoked ? '⊗ REVOKED — Franchise Revoked'
+          : isSuspended ? '⊗ SUSPENDED — Not Authorized to Operate'
+            : isExpired ? '⚠ EXPIRED — Renewal Required'
+              : appStatus ? ((hasIssue ? '⊗ ' : '○ ') + appStatus)
+                : isUnregistered ? '○ UNREGISTERED — No Permit Issued'
+                  : '○ Pending';
+
+      const statusTitle = isTrulyActive ? 'Valid Franchise Verified'
+        : (isExpired || hasIssue) ? 'Franchise Issue Detected'
+          : inProcess ? 'Application In Progress'
+            : 'Franchise Record Found';
+
+      const panelBg = isTrulyActive ? '#F0FDF4'
+        : (isExpired || hasIssue) ? '#FEF2F2'
+          : '#EFF4FF';
+
+      const esc = (v) => String(v ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+      Swal.fire({
+        title: statusTitle,
+        html: `
+          <div style="text-align:left;padding:14px 14px;background:${panelBg};border-radius:12px;margin-top:10px;font-size:13.5px;line-height:1.8;border:1px solid rgba(0,0,0,0.06)">
+            <b>Plate No:</b> ${esc(data.plate)}<br/>
+            ${!inProcess && data.franchise_number ? `<b>Franchise Number:</b> ${esc(data.franchise_number)}<br/>` : ''}
+            ${!inProcess && data.sticker_number ? `<b>Sticker Number:</b> ${esc(data.sticker_number)}<br/>` : ''}
+            <b>Operator:</b> ${esc(data.operator)}<br/>
+            <b>Unit:</b> ${esc(data.make_model)}<br/>
+            ${data.expiry ? `<b>Franchise Expiry:</b> ${esc(data.expiry)}<br/>` : ''}
+            ${appStatus ? `<b>Application Status:</b> ${esc(appStatus)}<br/>` : ''}
+            <br/><span style="color:${statusColor};font-weight:800;font-size:13.5px">${statusLabel}</span>
+          </div>
+        `,
+        icon: statusIcon,
+        confirmButtonColor: isTrulyActive ? '#059669' : '#25449B',
+        customClass: { title: 'font-jakarta', popup: 'font-inter' }
+      });
+    } catch {
+      Swal.fire({
+        title: 'Connection Error',
+        text: 'Could not reach the verification server. Please try again.',
+        icon: 'error',
+        confirmButtonColor: '#25449B',
+      });
+    }
+  };
+
+  return (
+    <div className="wl-root">
+      <Head title="TRIVORA | Smart Tricycle Management System — Nasugbu LGU" />
+      <style dangerouslySetInnerHTML={{ __html: CSS }} />
+
+      {/* ══════ STICKY NAVBAR (CRISP WHITE BACKGROUND) ══════════ */}
+      <header className={`wl-navbar ${scrolled ? 'wl-navbar--scrolled' : ''}`}>
+        <div className="wl-wrap">
+          <div className="wl-header">
+            <Link href="/" className="wl-logo">
+              <div className="wl-logo-img-wrap">
+                <img src="/images/logo.png" alt="TRIVORA" className="wl-logo-img" />
+              </div>
+            </Link>
+
+            <nav className="wl-nav" aria-label="Primary Navigation">
+              <a href="#verify" className="wl-nav-link">Verify Permit</a>
+              <a href="#how-it-works" className="wl-nav-link">How It Works</a>
+              <a href="#technology" className="wl-nav-link">Technology</a>
+            </nav>
+
+            <div className="wl-header-actions">
+              <Link href={route('login')} className="wl-nav-login">
+                <LogIn size={15} strokeWidth={2.4} /> Log In
+              </Link>
+              <Link href="/register-mtop" className="wl-nav-apply">
+                Apply Now <ArrowRight size={14} strokeWidth={2.4} />
+              </Link>
+              <button
+                type="button"
+                className="wl-menu-btn"
+                aria-label="Open mobile menu"
+                aria-expanded={menuOpen}
+                aria-controls="wl-mobile-menu"
+                onClick={() => setMenuOpen(true)}
+              >
+                <Menu size={20} strokeWidth={2.2} />
+              </button>
             </div>
-
-            {/* Phone / tablet sidebar — same destinations as the desktop nav. Rendered outside
-                the navbar: its backdrop-filter would otherwise trap position: fixed. */}
-            <div className={`wl-drawer-overlay ${menuOpen ? 'is-open' : ''}`} onClick={() => setMenuOpen(false)} aria-hidden="true" />
-            <aside
-                id="wl-mobile-menu"
-                className={`wl-drawer ${menuOpen ? 'is-open' : ''}`}
-                aria-label="Menu"
-                aria-hidden={!menuOpen}
-            >
-                <div className="wl-drawer-head">
-                    <Link href="/" className="wl-logo" onClick={() => setMenuOpen(false)}>
-                        <div className="wl-logo-img-wrap">
-                            <img src="/images/logo.png" alt="TRIVORA" className="wl-logo-img" />
-                        </div>
-                    </Link>
-                    <button type="button" className="wl-menu-btn" aria-label="Close menu" onClick={() => setMenuOpen(false)}>
-                        <X size={18} strokeWidth={2.2} />
-                    </button>
-                </div>
-                <nav aria-label="Mobile">
-                    <span className="wl-drawer-label">Menu</span>
-                    {[['#verify', 'Verify Permit'], ['#how-it-works', 'How It Works'], ['#technology', 'Technology']].map(([href, label]) => (
-                        <a key={href} href={href} className="wl-mobile-link" tabIndex={menuOpen ? 0 : -1} onClick={() => setMenuOpen(false)}>
-                            {label} <ArrowRight size={14} strokeWidth={2.2} />
-                        </a>
-                    ))}
-                </nav>
-                <div className="wl-drawer-foot">
-                    <Link href="/register-mtop" className="wl-mobile-apply" tabIndex={menuOpen ? 0 : -1} onClick={() => setMenuOpen(false)}>
-                        Apply for a Permit <ArrowRight size={14} strokeWidth={2.4} />
-                    </Link>
-                    <Link href={route('login')} className="wl-mobile-login" tabIndex={menuOpen ? 0 : -1} onClick={() => setMenuOpen(false)}>
-                        <LogIn size={13} strokeWidth={2.2} /> Log In
-                    </Link>
-                </div>
-            </aside>
-
-            {/* ── Dark hero backdrop with photo — decorative, same info already in text. ── */}
-            <div className="wl-hero-backdrop" aria-hidden="true">
-                <div className="wl-hero-glow wl-hero-glow--1" />
-                <div className="wl-hero-glow wl-hero-glow--2" />
-            </div>
-
-            {/* ══════ HERO ═══════════════════════════════════════════ */}
-            <div className="wl-wrap">
-                <div className="wl-hero">
-                    <p className={`wl-hero-badge ${FADE}`} style={delay(0)}>
-                        <ShieldCheck size={12} strokeWidth={2.4} /> Nasugbu, Batangas
-                    </p>
-                    <h1 className={`wl-hero-title ${FADE}`} style={delay(80)}>
-                        Smart Tricycle<br /><span className="wl-hero-title-accent">Management System</span>
-                    </h1>
-                    <p className={`wl-hero-sub ${FADE}`} style={delay(160)}>
-                        The official portal of the Nasugbu Municipal Government for applying and
-                        renewing tricycle permits (MTOP), with smart GPS-based fleet monitoring.
-                    </p>
-                    <div className={`wl-hero-cta ${FADE}`} style={delay(220)}>
-                        <Link href="/register-mtop" className="wl-hero-btn-primary">
-                            Apply for a Permit <ArrowRight size={14} strokeWidth={2.4} />
-                        </Link>
-                        <a href="#verify" className="wl-hero-btn-outline">
-                            <Search size={14} strokeWidth={2.2} /> Verify a Plate
-                        </a>
-                    </div>
-                </div>
-            </div>
-
-            {/* ══════ MAIN CONTENT ════════════════════════════════════ */}
-            <main style={{ flex: 1 }}>
-
-                {/* ── Band 1: Public plate verification ── */}
-                <div className="wl-band">
-                    <div className="wl-wrap">
-
-                        <section className="wl-section" id="verify" aria-labelledby="verify-heading">
-                            <p className="wl-sec-eyebrow">Quick Action</p>
-                            <h2 className="wl-sec-title" id="verify-heading">Verify a Franchise</h2>
-                            <p className="wl-sec-sub">Check if a tricycle has a valid municipal permit before boarding.</p>
-                            <div className="wl-verify">
-                                <div className="wl-verify-left">
-                                    <div className="wl-verify-icon" aria-hidden="true">
-                                        <Search size={20} strokeWidth={2} />
-                                    </div>
-                                    <div>
-                                        <p className="wl-verify-title">Public Plate Verification</p>
-                                        <p className="wl-verify-sub">Enter a plate number to check its status instantly.</p>
-                                    </div>
-                                </div>
-                                <form
-                                    className="wl-verify-right"
-                                    onSubmit={(e) => { e.preventDefault(); handleVerify(); }}
-                                >
-                                    <label htmlFor="plate-verify-input" className="wl-sr-only">Plate number</label>
-                                    <input
-                                        id="plate-verify-input"
-                                        name="plate"
-                                        type="text"
-                                        className="wl-verify-input"
-                                        placeholder="Enter Plate No. (e.g. 8812)"
-                                        value={plateQuery}
-                                        onChange={e => setPlateQuery(e.target.value)}
-                                    />
-                                    <button type="submit" className="wl-verify-btn">Check Status</button>
-                                </form>
-                            </div>
-                        </section>
-
-                    </div>
-                </div>
-
-                {/* ── Band 2: How It Works (white) — the real 4-step applicant journey ── */}
-                <div className="wl-band wl-band-white">
-                    <div className="wl-wrap">
-                        <section className="wl-section" id="how-it-works" aria-labelledby="how-it-works-heading">
-                            <p className="wl-sec-eyebrow">Process</p>
-                            <h2 className="wl-sec-title" id="how-it-works-heading">How It Works</h2>
-                            <p className="wl-sec-sub">From application to an active franchise — four steps, entirely trackable online.</p>
-
-                            <div className="wl-steps">
-                                <div className="wl-steps-line" aria-hidden="true" />
-                                {STEPS.map((s, i) => (
-                                    <div className="wl-step" key={s.title}>
-                                        <div className="wl-step-icon-wrap">
-                                            <div className="wl-step-icon">
-                                                <s.icon size={26} strokeWidth={1.8} />
-                                            </div>
-                                            <span className="wl-step-badge" aria-hidden="true">{i + 1}</span>
-                                        </div>
-                                        <h3 className="wl-step-title">{s.title}</h3>
-                                        <p className="wl-step-desc">{s.desc}</p>
-                                    </div>
-                                ))}
-                            </div>
-                        </section>
-                    </div>
-                </div>
-
-                {/* ── Band 3: Technology (neutral, alternating) ── */}
-                <div className="wl-band wl-band-neutral">
-                    <div className="wl-wrap">
-                        <section className="wl-section" id="technology" aria-labelledby="technology-heading">
-                            <p className="wl-sec-eyebrow">Technology</p>
-                            <h2 className="wl-sec-title" id="technology-heading">Powered by Modern Technology</h2>
-                            <p className="wl-sec-sub">Smart trackers and online tools working together for a safer, more organized Nasugbu.</p>
-
-                            <div className="wl-bento">
-                                <FeatureCard
-                                    large
-                                    icon={Cpu}
-                                    title="Automatic Violation Check"
-                                    desc="Smart GPS tracking flags coding-day violations automatically, keeping the fleet disciplined without manual monitoring — every active unit is checked in real time, all day."
-                                />
-                                <FeatureCard
-                                    icon={Satellite}
-                                    title="GPS Fleet Tracking"
-                                    desc="Every active unit reports its location every minute via Mobile GPS or IoT hardware, giving TMO and drivers reliable visibility into fleet operations."
-                                />
-                                <FeatureCard
-                                    icon={ShieldCheck}
-                                    title="Real-Time Permit Tracking"
-                                    desc="Monitor your application's status, from document review to franchise activation, anytime through the Driver Portal — no office visit needed to check."
-                                />
-                                <FeatureCard
-                                    icon={Calendar}
-                                    title="Renewal Reminders"
-                                    desc="The system tracks every franchise's expiry date and flags upcoming renewals before they lapse."
-                                />
-                            </div>
-                        </section>
-                    </div>
-                </div>
-
-                {/* ── Band 5: Closing CTA — full-bleed navy, the page's final call to act ── */}
-                <div className="wl-cta-band">
-                    <div className="wl-wrap">
-                        <div className="wl-cta-inner">
-                            <h2 className="wl-cta-title">Ready to get your permit?</h2>
-                            <p className="wl-cta-sub">
-                                Join the operators already managing their MTOP franchise online — no queues,
-                                no lost paperwork, just a straightforward digital process.
-                            </p>
-                            <div className="wl-cta-actions">
-                                <Link href="/register-mtop" className="wl-cta-btn">
-                                    Apply for a Permit <ArrowRight size={14} strokeWidth={2.4} />
-                                </Link>
-                                <Link href={route('login')} className="wl-cta-btn-ghost">
-                                    <LogIn size={14} strokeWidth={2.2} /> Log In
-                                </Link>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-            </main>
-
-            {/* ══════ FOOTER ══════════════════════════════════════════ */}
-            <footer className="wl-footer">
-                <div className="wl-wrap">
-                    <div className="wl-footer-inner">
-                        <div className="wl-footer-copy-col">
-                            <p className="wl-footer-copy">
-                                &copy; 2026 TRIVORA Fleet Operations &bull; Nasugbu Batangas
-                            </p>
-                            <p className="wl-footer-tagline">A digital service of the Municipal Government of Nasugbu.</p>
-                        </div>
-                        {/* Plain text, not links — neither a hotline number nor a Privacy Policy
-                            page exists yet in this app, so these are presented as informational
-                            labels rather than dead "#" links. */}
-                        <div className="wl-footer-links">
-                            <span className="wl-footer-item">
-                                <Phone size={11} strokeWidth={2} /> TMO Hotline
-                            </span>
-                            <span className="wl-footer-sep">&bull;</span>
-                            <span className="wl-footer-item">
-                                Privacy Policy
-                            </span>
-                        </div>
-                    </div>
-                </div>
-            </footer>
+          </div>
         </div>
-    );
+      </header>
+
+      {/* ── Mobile Sidebar Drawer ──────────────────────────────────────── */}
+      <div
+        className={`wl-drawer-overlay ${menuOpen ? 'is-open' : ''}`}
+        onClick={() => setMenuOpen(false)}
+        aria-hidden="true"
+      />
+      <aside
+        id="wl-mobile-menu"
+        className={`wl-drawer ${menuOpen ? 'is-open' : ''}`}
+        aria-label="Mobile Menu"
+        aria-hidden={!menuOpen}
+      >
+        <div className="wl-drawer-head">
+          <Link href="/" className="wl-logo" onClick={() => setMenuOpen(false)}>
+            <div className="wl-logo-img-wrap">
+              <img src="/images/logo.png" alt="TRIVORA" className="wl-logo-img" />
+            </div>
+          </Link>
+          <button
+            type="button"
+            className="wl-menu-btn"
+            aria-label="Close menu"
+            onClick={() => setMenuOpen(false)}
+          >
+            <X size={20} strokeWidth={2.2} />
+          </button>
+        </div>
+        <nav aria-label="Mobile Navigation">
+          <span className="wl-drawer-label">Quick Navigation</span>
+          {[
+            ['#verify', 'Verify Permit'],
+            ['#how-it-works', 'How It Works'],
+            ['#technology', 'Technology']
+          ].map(([href, label]) => (
+            <a
+              key={href}
+              href={href}
+              className="wl-mobile-link"
+              tabIndex={menuOpen ? 0 : -1}
+              onClick={() => setMenuOpen(false)}
+            >
+              {label} <ArrowRight size={15} strokeWidth={2.2} />
+            </a>
+          ))}
+        </nav>
+        <div className="wl-drawer-foot">
+          <Link
+            href="/register-mtop"
+            className="wl-mobile-apply"
+            tabIndex={menuOpen ? 0 : -1}
+            onClick={() => setMenuOpen(false)}
+          >
+            Apply for a Permit <ArrowRight size={15} strokeWidth={2.4} />
+          </Link>
+          <Link
+            href={route('login')}
+            className="wl-mobile-login"
+            tabIndex={menuOpen ? 0 : -1}
+            onClick={() => setMenuOpen(false)}
+          >
+            <LogIn size={15} strokeWidth={2.2} /> Log In to Portal
+          </Link>
+        </div>
+      </aside>
+
+      {/* ══════ HERO SECTION (50/50 SPLIT WITH SEAMLESS CENTER BLEND) ══════ */}
+      <section className="wl-hero-section">
+        <div className="wl-hero-grid">
+
+          {/* Left Column: Pure White Background + Content */}
+          <div className="wl-hero-left">
+            <div className="wl-hero-left-inner">
+              <div className={`wl-hero-badge ${FADE}`} style={delay(0)}>
+                <span className="wl-live-dot" />
+                <ShieldCheck size={14} strokeWidth={2.4} />
+                <span>Nasugbu, Batangas &bull; Official MTOP Portal</span>
+              </div>
+
+              <h1 className={`wl-hero-title ${FADE}`} style={delay(80)}>
+                Smart Tricycle<br />
+                <span className="wl-hero-title-accent">Management System</span>
+              </h1>
+
+              <p className={`wl-hero-sub ${FADE}`} style={delay(160)}>
+                The official portal of the Nasugbu Municipal Government for applying,
+                renewing, and verifying tricycle franchises (MTOP)—backed by real-time GPS fleet monitoring
+                and automated compliance tracking.
+              </p>
+
+              <div className={`wl-hero-cta ${FADE}`} style={delay(220)}>
+                <Link href="/register-mtop" className="wl-hero-btn-primary">
+                  Apply for a Permit <ArrowRight size={15} strokeWidth={2.4} />
+                </Link>
+                <a href="#verify" className="wl-hero-btn-outline">
+                  <Search size={15} strokeWidth={2.2} /> Verify a Plate
+                </a>
+              </div>
+
+              <div className={`wl-hero-features ${FADE}`} style={delay(280)}>
+                <div className="wl-hero-feat-item">
+                  <span className="wl-feat-check">&#10003;</span>
+                  <span>100% Online Filing</span>
+                </div>
+                <div className="wl-hero-feat-item">
+                  <span className="wl-feat-check">&#10003;</span>
+                  <span>Instant Franchise Lookup</span>
+                </div>
+                <div className="wl-hero-feat-item">
+                  <span className="wl-feat-check">&#10003;</span>
+                  <span>Live GPS Telemetry</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Right Column: Background Image with Seamless Center White Blend */}
+          <div className="wl-hero-right" aria-hidden="true">
+            <div className="wl-hero-image-bg" />
+            <div className="wl-hero-blend-gradient" />
+
+            {/* Floating Live Telemetry Cards */}
+            <div className="wl-glass-card wl-glass-card--top">
+              <div className="wl-glass-icon">
+                <Satellite size={18} strokeWidth={2.2} />
+              </div>
+              <div>
+                <span className="wl-glass-label">Transit Command</span>
+                <span className="wl-glass-val">Active GPS Telemetry</span>
+              </div>
+            </div>
+
+            <div className="wl-glass-card wl-glass-card--bottom">
+              <div className="wl-glass-icon" style={{ background: '#F0FDF4', color: '#10B981', borderColor: '#BBF7D0' }}>
+                <Activity size={18} strokeWidth={2.2} />
+              </div>
+              <div>
+                <span className="wl-glass-label">Pamahalaang Bayan</span>
+                <span className="wl-glass-val">Official MTOP Authority</span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      {/* ══════ MAIN CONTENT ════════════════════════════════════ */}
+      <main style={{ flex: 1 }}>
+
+        {/* ── Band 1: Public Plate Verification (Light Slate) ── */}
+        <section className="wl-band wl-band-slate" id="verify" aria-labelledby="verify-heading">
+          <div className="wl-wrap">
+            <div className="wl-sec-head">
+              <div className="wl-sec-eyebrow">
+                <Search size={12} strokeWidth={2.4} /> Quick Action
+              </div>
+              <h2 className="wl-sec-title" id="verify-heading">Verify a Franchise</h2>
+              <p className="wl-sec-sub">Check if a tricycle has an official municipal franchise before boarding or settling disputes.</p>
+            </div>
+
+            <div className="wl-verify-card">
+              <div className="wl-verify-left">
+                <div className="wl-verify-icon-wrap" aria-hidden="true">
+                  <Search size={24} strokeWidth={2.2} />
+                </div>
+                <div>
+                  <h3 className="wl-verify-title">Public Plate Verification</h3>
+                  <p className="wl-verify-desc">Enter any registered tricycle plate number to inspect its MTOP validity instantly.</p>
+                </div>
+              </div>
+              <form
+                className="wl-verify-form"
+                onSubmit={(e) => { e.preventDefault(); handleVerify(); }}
+              >
+                <label htmlFor="plate-verify-input" className="wl-sr-only">Plate number</label>
+                <input
+                  id="plate-verify-input"
+                  name="plate"
+                  type="text"
+                  className="wl-verify-input"
+                  placeholder="Enter Plate No. (e.g. 8812)"
+                  value={plateQuery}
+                  onChange={e => setPlateQuery(e.target.value)}
+                />
+                <button type="submit" className="wl-verify-btn">Check Status</button>
+              </form>
+            </div>
+          </div>
+        </section>
+
+        {/* ── Band 2: How It Works (White) ── */}
+        <section className="wl-band wl-band-white" id="how-it-works" aria-labelledby="how-it-works-heading">
+          <div className="wl-wrap">
+            <div className="wl-sec-head">
+              <div className="wl-sec-eyebrow">
+                <ClipboardCheck size={12} strokeWidth={2.4} /> 4-Step Process
+              </div>
+              <h2 className="wl-sec-title" id="how-it-works-heading">How It Works</h2>
+              <p className="wl-sec-sub">From online application to franchise approval — a modern paperless system designed for operators.</p>
+            </div>
+
+            <div className="wl-steps-grid">
+              {STEPS.map((s, i) => (
+                <div className="wl-step-card" key={s.title}>
+                  <div className="wl-step-top">
+                    <div className="wl-step-icon">
+                      <s.icon size={24} strokeWidth={2} />
+                    </div>
+                    <span className="wl-step-num">{i + 1}</span>
+                  </div>
+                  <h3 className="wl-step-title">{s.title}</h3>
+                  <p className="wl-step-desc">{s.desc}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* ── Band 3: Technology Bento Grid (Slate) ── */}
+        <section className="wl-band wl-band-slate" id="technology" aria-labelledby="technology-heading">
+          <div className="wl-wrap">
+            <div className="wl-sec-head">
+              <div className="wl-sec-eyebrow">
+                <Cpu size={12} strokeWidth={2.4} /> Smart Mobility
+              </div>
+              <h2 className="wl-sec-title" id="technology-heading">Powered by Modern Technology</h2>
+              <p className="wl-sec-sub">Combining smart telemetry, cloud records, and automated compliance for an organized Nasugbu transit fleet.</p>
+            </div>
+
+            <div className="wl-bento">
+              <FeatureCard
+                large
+                icon={Cpu}
+                title="Automated Violation Detection"
+                desc="Smart GPS tracking automatically checks units against active municipal coding schedules and zone boundaries, maintaining transport discipline in real-time without constant manual checkpoints."
+              />
+              <FeatureCard
+                icon={Satellite}
+                title="GPS Fleet Telemetry"
+                desc="Active tricycles transmit periodic coordinates, giving the Traffic Management Office clear, data-driven operational visibility across Nasugbu roads."
+              />
+              <FeatureCard
+                icon={ShieldCheck}
+                title="Real-Time Permit Tracking"
+                desc="Track your MTOP application stage by stage — from document verification to payment and sticker issuance — right from your mobile device."
+              />
+              <FeatureCard
+                icon={Calendar}
+                title="Proactive Renewal Alerts"
+                desc="Automated notifications notify operators and drivers well before franchise expiry, eliminating late penalties and unexpected operational halts."
+              />
+            </div>
+          </div>
+        </section>
+
+        {/* ── Band 4: Closing CTA (Royal #25449B Full Bleed) ── */}
+        <section className="wl-cta-band">
+          <div className="wl-wrap">
+            <div className="wl-cta-inner">
+              <h2 className="wl-cta-title">Ready to manage your tricycle franchise?</h2>
+              <p className="wl-cta-sub">
+                Join thousands of operators utilizing Nasugbu's digital MTOP portal.
+                Apply online in minutes with fast verification and transparent status tracking.
+              </p>
+              <div className="wl-cta-actions">
+                <Link href="/register-mtop" className="wl-cta-btn-main">
+                  Apply for a Permit <ArrowRight size={15} strokeWidth={2.4} />
+                </Link>
+                <Link href={route('login')} className="wl-cta-btn-ghost">
+                  <LogIn size={15} strokeWidth={2.2} /> Operator Log In
+                </Link>
+              </div>
+            </div>
+          </div>
+        </section>
+
+      </main>
+
+      {/* ══════ FOOTER (CRISP WHITE BACKGROUND) ══════════════════ */}
+      <footer className="wl-footer">
+        <div className="wl-wrap">
+          <div className="wl-footer-inner">
+            <div>
+              <p className="wl-footer-copy">
+                &copy; {new Date().getFullYear()} TRIVORA &bull; Smart Tricycle Management System
+              </p>
+              <p className="wl-footer-tagline">
+                Pamahalaang Bayan ng Nasugbu &bull; Traffic Management Office (TMO)
+              </p>
+            </div>
+
+            <div className="wl-footer-links">
+              <span className="wl-footer-item wl-footer-item--highlight">
+                <Phone size={13} strokeWidth={2.2} /> TMO Helpline Available
+              </span>
+              <span className="wl-footer-sep">&bull;</span>
+              <span className="wl-footer-item">
+                Nasugbu, Batangas
+              </span>
+            </div>
+          </div>
+        </div>
+      </footer>
+    </div>
+  );
 }
 
-/* ── Sub-components ──────────────────────────────────────────────────── */
-
+/* ── Bento Sub-Component ──────────────────────────────────────────────── */
 function FeatureCard({ icon: Icon, title, desc, large }) {
-    return (
-        <div className={`wl-feature ${large ? 'wl-feature--lg' : ''}`}>
-            <div className="wl-feature-icon" aria-hidden="true">
-                <Icon size={20} strokeWidth={2} />
-            </div>
-            <div>
-                <h3 className="wl-feature-title">{title}</h3>
-                <p className="wl-feature-desc">{desc}</p>
-            </div>
-        </div>
-    );
+  return (
+    <div className={`wl-bento-card ${large ? 'wl-bento-card--lg' : ''}`}>
+      <div className="wl-bento-icon" aria-hidden="true">
+        <Icon size={22} strokeWidth={2.2} />
+      </div>
+      <div>
+        <h3 className="wl-bento-title">{title}</h3>
+        <p className="wl-bento-desc">{desc}</p>
+      </div>
+    </div>
+  );
 }
