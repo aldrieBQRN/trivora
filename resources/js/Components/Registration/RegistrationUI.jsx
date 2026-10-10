@@ -177,13 +177,12 @@ export const REGISTRATION_CSS = `
 }
 
 .pa-back-link {
-  display: inline-flex; align-items: center; gap: 6px;
-  font-family: 'Plus Jakarta Sans', sans-serif; font-size: 12.5px; font-weight: 700;
-  color: #475569; text-decoration: none; transition: all .18s;
-  padding: 8px 16px; border-radius: 10px; border: 1.5px solid #E2E8F0; background: #FFFFFF;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+  display: inline-flex; align-items: center; gap: 7px;
+  font-family: 'Plus Jakarta Sans', sans-serif; font-size: 13px; font-weight: 700;
+  color: #64748B; text-decoration: none; transition: color .18s ease, transform .18s ease;
+  padding: 6px 0; background: transparent; border: none; box-shadow: none;
 }
-.pa-back-link:hover { color: #25449B; border-color: #25449B; background: #EFF6FF; transform: translateX(-2px); }
+.pa-back-link:hover { color: #25449B; transform: translateX(-3px); }
 
 .pa-content-center { display: flex; align-items: safe center; justify-content: center; padding: 28px 24px; overflow-y: auto; }
 .pa-content-inner { width: 100%; max-width: 640px; }

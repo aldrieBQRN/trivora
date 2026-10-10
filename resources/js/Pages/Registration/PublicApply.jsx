@@ -4,7 +4,7 @@ import Swal from 'sweetalert2';
 import {
     Upload, Info, CheckCircle2, MapPin, Check, Camera, Eye, X,
     FileText, User, Bike, Mail, Lock, Phone, Loader2, CalendarDays,
-    ShieldCheck
+    ShieldCheck, ArrowLeft
 } from 'lucide-react';
 import { VEHICLE_DETAIL_FIELDS, getApplicableDocuments } from '@/data/registrationRequirements';
 import { NASUGBU_BARANGAYS } from '@/data/nasugbuBarangays';
@@ -377,7 +377,8 @@ export default function PublicApply() {
                             <img src="/images/logo.png" alt="TRIVORA" className="pa-topbar-logo-img" />
                         </Link>
                         <Link href="/" className="pa-back-link" onClick={() => clearSavedDraft()}>
-                            Cancel &amp; Return Home
+                            <ArrowLeft size={16} strokeWidth={2.4} />
+                            Back to Home
                         </Link>
                     </div>
                 )}
