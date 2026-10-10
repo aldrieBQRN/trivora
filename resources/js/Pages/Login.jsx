@@ -101,39 +101,21 @@ const CSS = `
   transition: transform .2s ease;
 }
 
-.ol-brand-logo:hover {
-  transform: scale(1.02);
-}
-
-.ol-brand-logo-img {
-  height: 48px;
-  width: auto;
-  object-fit: contain;
-  display: block;
-}
-
-@media (max-width: 640px) {
-  .ol-brand-logo-img {
-    height: 40px;
-  }
-}
-
 .ol-side-badge {
   display: inline-flex;
   align-items: center;
   gap: 7px;
-  padding: 5px 12px;
+  padding: 6px 14px;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.12);
   border: 1px solid rgba(255, 255, 255, 0.2);
   color: #FFFFFF;
   font-family: 'DM Sans', sans-serif;
-  font-size: 11px;
+  font-size: 11.5px;
   font-weight: 700;
   letter-spacing: .08em;
   text-transform: uppercase;
-  margin-top: 28px;
-  margin-bottom: 14px;
+  margin-bottom: 20px;
   width: fit-content;
 }
 
@@ -311,6 +293,35 @@ const CSS = `
   width: 100%;
   max-width: 420px;
   animation: olFadeIn .4s cubic-bezier(.2, 0, .2, 1) both;
+}
+
+/* Logo inside white form card — blends 100% seamlessly on #FFFFFF */
+.ol-form-logo-wrap {
+  margin-bottom: 28px;
+}
+
+.ol-form-logo {
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+  transition: transform .2s ease;
+}
+
+.ol-form-logo:hover {
+  transform: scale(1.02);
+}
+
+.ol-form-logo-img {
+  height: 52px;
+  width: auto;
+  object-fit: contain;
+  display: block;
+}
+
+@media (max-width: 640px) {
+  .ol-form-logo-img {
+    height: 44px;
+  }
 }
 
 @keyframes olFadeIn {
@@ -704,11 +715,6 @@ export default function Login() {
                 <div className="ol-side-backdrop" aria-hidden="true" />
                 <div className="ol-side-content">
                     <div>
-                        {/* Logo without background or border */}
-                        <Link href="/" className="ol-brand-logo" title="TRIVORA — Back to Home">
-                            <img src="/images/logo.png" alt="TRIVORA" className="ol-brand-logo-img" />
-                        </Link>
-
                         <div className="ol-side-badge">
                             <ShieldCheck size={13} strokeWidth={2.4} /> Nasugbu, Batangas
                         </div>
@@ -776,10 +782,14 @@ export default function Login() {
                 </Link>
 
                 <div className="ol-form-card">
+                    {/* Logo placed on white card where its white background blends seamlessly */}
+                    <div className="ol-form-logo-wrap">
+                        <Link href="/" className="ol-form-logo" title="TRIVORA — Return to Home">
+                            <img src="/images/logo.png" alt="TRIVORA" className="ol-form-logo-img" />
+                        </Link>
+                    </div>
+
                     <div className="ol-form-header">
-                        <div className="ol-form-eyebrow">
-                            <Sparkles size={12} strokeWidth={2.4} /> Sign In to Portal
-                        </div>
                         <h2 className="ol-form-title">Welcome back</h2>
                         <p className="ol-form-sub">
                             Sign in with your registered email or mobile number to access your account.
