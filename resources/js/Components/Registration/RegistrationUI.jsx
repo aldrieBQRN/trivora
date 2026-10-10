@@ -147,7 +147,7 @@ export const REGISTRATION_CSS = `
 .pa-step-v-desc { font-family: 'Inter', sans-serif; font-size: 12px; color: rgba(255,255,255,.6); line-height: 1.5; max-width: 220px; }
 
 /* ── Content pane (right) ────────────────────────────────────────────── */
-.pa-content { flex: 1; display: grid; grid-template-rows: auto 1fr auto; min-width: 0; background: #FFFFFF; overflow: hidden; }
+.pa-content { flex: 1; display: grid; grid-template-rows: auto 1fr; min-width: 0; background: #FFFFFF; overflow: hidden; }
 @media (max-width: 900px) { .pa-content { overflow: visible; } }
 .pa-content-topbar {
   display: flex; align-items: center; justify-content: space-between;

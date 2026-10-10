@@ -364,7 +364,7 @@ export default function PublicApply() {
                     </div>
 
                     <div className="pa-side-bottom">
-                        <p className="pa-side-note">Authorized LGU Franchise Portal &bull; Nasugbu, Batangas</p>
+                        <p className="pa-side-note">&copy; 2026 TRIVORA Fleet Operations &bull; Nasugbu, Batangas</p>
                     </div>
                 </aside>
             )}
@@ -903,12 +903,6 @@ export default function PublicApply() {
 
                 </div>
                 </div>
-
-                {/* Footer sits in its own grid row, so it never fights the
-                    centered content above it for vertical space. */}
-                <footer className="pa-footer">
-                    <p className="pa-footer-copy">&copy; 2026 TRIVORA Fleet Operations &bull; Nasugbu Batangas</p>
-                </footer>
             </main>
         </div>
     );
