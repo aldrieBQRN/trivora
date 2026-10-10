@@ -115,7 +115,7 @@ export default function StaffManagement({
                     title: 'Account Created',
                     text: 'New TMO staff account created successfully.',
                     icon: 'success',
-                    confirmButtonColor: '#1D2542',
+                    confirmButtonColor: '#182B62',
                     timer: 2000,
                     showConfirmButton: false
                 });
@@ -136,7 +136,7 @@ export default function StaffManagement({
                     title: 'Account Updated',
                     text: 'Staff profile updated successfully.',
                     icon: 'success',
-                    confirmButtonColor: '#1D2542',
+                    confirmButtonColor: '#182B62',
                     timer: 2000,
                     showConfirmButton: false
                 });
@@ -151,7 +151,7 @@ export default function StaffManagement({
                 title: 'Action Restricted',
                 text: 'You cannot deactivate your own logged-in account.',
                 icon: 'warning',
-                confirmButtonColor: '#1D2542'
+                confirmButtonColor: '#182B62'
             });
             return;
         }
@@ -181,7 +181,7 @@ export default function StaffManagement({
                 title: 'Action Restricted',
                 text: 'You cannot delete your own logged-in account.',
                 icon: 'warning',
-                confirmButtonColor: '#1D2542'
+                confirmButtonColor: '#182B62'
             });
             return;
         }
@@ -241,7 +241,7 @@ export default function StaffManagement({
                 <button
                     type="button"
                     onClick={() => setAddModalOpen(true)}
-                    className="inline-flex h-9 items-center gap-2 rounded-lg bg-[#1D2542] hover:bg-[#283256] px-3.5 text-xs font-semibold text-white shadow-sm transition-all self-start sm:self-center shrink-0 active:scale-[0.99]"
+                    className="inline-flex h-9 items-center gap-2 rounded-lg bg-[#182B62] hover:bg-[#25449B] px-3.5 text-xs font-semibold text-white shadow-sm transition-all self-start sm:self-center shrink-0 active:scale-[0.99]"
                 >
                     <UserPlus size={14} strokeWidth={2.2} />
                     <span>Add Staff Member</span>
@@ -254,7 +254,7 @@ export default function StaffManagement({
             <div className="mb-5 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
                 <div className={`group rounded-2xl border border-slate-200/70 bg-white p-4 sm:p-5 ${CARD_SHADOW} transition-all hover:border-slate-300`}>
                     <div className="flex items-center justify-between">
-                        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-[#1D2542]/[0.10] to-[#1D2542]/[0.02] text-[#1D2542]">
+                        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-[#182B62]/[0.10] to-[#182B62]/[0.02] text-[#182B62]">
                             <Users size={16} strokeWidth={2.2} />
                         </div>
                         <span className="text-[11px] font-semibold text-slate-400">All-Time</span>
@@ -582,7 +582,7 @@ export default function StaffManagement({
                             type="checkbox"
                             checked={addForm.data.is_active}
                             onChange={(e) => addForm.setData('is_active', e.target.checked)}
-                            className="h-4 w-4 accent-[#1D2542]"
+                            className="h-4 w-4 accent-[#182B62]"
                         />
                         Activate account immediately upon creation
                     </label>
@@ -710,7 +710,7 @@ export default function StaffManagement({
                                     type="checkbox"
                                     checked={editForm.data.is_active}
                                     onChange={(e) => editForm.setData('is_active', e.target.checked)}
-                                    className="h-4 w-4 accent-[#1D2542]"
+                                    className="h-4 w-4 accent-[#182B62]"
                                 />
                                 Account is active
                             </label>
@@ -759,7 +759,7 @@ function DesktopStaffRow({ user, onEdit, onToggleStatus, onDelete }) {
             {/* Column 1: Staff Member */}
             <td className="py-3.5 pl-5 pr-3 align-middle">
                 <div className="flex items-center gap-2.5">
-                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#1D2542] text-[11px] font-bold text-white">
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#182B62] text-[11px] font-bold text-white">
                         {initials}
                     </div>
                     <div className="min-w-0">
@@ -768,7 +768,7 @@ function DesktopStaffRow({ user, onEdit, onToggleStatus, onDelete }) {
                                 {user.name}
                             </p>
                             {user.is_current_user && (
-                                <span className="rounded bg-[#1D2542] px-1.5 py-0.2 text-[9px] font-bold uppercase tracking-wide text-white">
+                                <span className="rounded bg-[#182B62] px-1.5 py-0.2 text-[9px] font-bold uppercase tracking-wide text-white">
                                     You
                                 </span>
                             )}
@@ -797,7 +797,7 @@ function DesktopStaffRow({ user, onEdit, onToggleStatus, onDelete }) {
             <td className="py-3.5 px-4 align-middle">
                 <div className="flex flex-col">
                     {user.contact_number ? (
-                        <a href={`tel:${user.contact_number}`} className="text-xs font-semibold text-slate-800 hover:text-[#1D2542]">
+                        <a href={`tel:${user.contact_number}`} className="text-xs font-semibold text-slate-800 hover:text-[#182B62]">
                             {user.contact_number}
                         </a>
                     ) : (
@@ -859,14 +859,14 @@ function MobileStaffCard({ user, onEdit, onToggleStatus, onDelete }) {
             {/* Top Row: Staff & Status */}
             <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-2">
                 <div className="flex items-center gap-2 min-w-0">
-                    <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#1D2542] text-[10px] font-bold text-white">
+                    <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#182B62] text-[10px] font-bold text-white">
                         {initials}
                     </div>
                     <div className="min-w-0">
                         <div className="flex items-center gap-1.5">
                             <p className="truncate text-xs font-semibold text-slate-900">{user.name}</p>
                             {user.is_current_user && (
-                                <span className="rounded bg-[#1D2542] px-1.5 py-0.2 text-[9px] font-bold uppercase tracking-wide text-white shrink-0">
+                                <span className="rounded bg-[#182B62] px-1.5 py-0.2 text-[9px] font-bold uppercase tracking-wide text-white shrink-0">
                                     You
                                 </span>
                             )}

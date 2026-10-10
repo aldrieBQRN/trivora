@@ -154,12 +154,12 @@ export default function Violations({ initialViolations = [], summaryStats = null
                             <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
                                 Total Violations
                             </span>
-                            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-[#1D2542]/[0.10] to-[#1D2542]/[0.02] text-[#1D2542]">
+                            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-[#182B62]/[0.10] to-[#182B62]/[0.02] text-[#182B62]">
                                 <ShieldAlert size={14} />
                             </span>
                         </div>
                         <div className="mt-2 flex items-baseline gap-2">
-                            <span className="text-2xl sm:text-3xl font-extrabold tracking-tight tabular-nums text-[#1D2542]">
+                            <span className="text-2xl sm:text-3xl font-extrabold tracking-tight tabular-nums text-[#182B62]">
                                 {totalCount}
                             </span>
                             <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
@@ -250,14 +250,14 @@ export default function Violations({ initialViolations = [], summaryStats = null
                             <span className={`flex h-7 w-7 items-center justify-center rounded-lg ${
                                 stats.appeals_pending > 0
                                     ? 'bg-gradient-to-br from-indigo-500/[0.14] to-indigo-500/[0.02] text-indigo-700'
-                                    : 'bg-gradient-to-br from-[#1D2542]/[0.10] to-[#1D2542]/[0.02] text-[#1D2542]'
+                                    : 'bg-gradient-to-br from-[#182B62]/[0.10] to-[#182B62]/[0.02] text-[#182B62]'
                             }`}>
                                 <Scale size={14} />
                             </span>
                         </div>
                         <div className="mt-2 flex items-baseline gap-2">
                             <span className={`text-2xl sm:text-3xl font-extrabold tracking-tight tabular-nums ${
-                                stats.appeals_pending > 0 ? 'text-indigo-700' : 'text-[#1D2542]'
+                                stats.appeals_pending > 0 ? 'text-indigo-700' : 'text-[#182B62]'
                             }`}>
                                 {stats.appeals_pending}
                             </span>
@@ -678,11 +678,11 @@ function DesktopViolationRow({ record }) {
                 <StatusPill record={record} />
             </td>
 
-            {/* Column 7: Action (Styled in #1D2542 with rounded-full pill radius) */}
+            {/* Column 7: Action (Styled in #182B62 with rounded-full pill radius) */}
             <td className="py-3.5 pl-3 pr-5 text-right align-middle">
                 <Link
                     href={`/violations/${record.db_id}`}
-                    className="inline-flex items-center gap-1 rounded-full bg-[#1D2542] hover:bg-[#283256] text-white px-3.5 py-1.5 text-xs font-semibold shadow-2xs transition-all active:scale-[0.98]"
+                    className="inline-flex items-center gap-1 rounded-full bg-[#182B62] hover:bg-[#25449B] text-white px-3.5 py-1.5 text-xs font-semibold shadow-2xs transition-all active:scale-[0.98]"
                 >
                     <span>Details</span>
                     <ChevronRight size={13} strokeWidth={2.5} className="text-slate-300" />
@@ -749,11 +749,11 @@ function MobileViolationCard({ record }) {
                 </span>
             </div>
 
-            {/* Action Button: #1D2542 with rounded-full radius */}
+            {/* Action Button: #182B62 with rounded-full radius */}
             <div className="mt-2.5 pt-2 border-t border-slate-100">
                 <Link
                     href={`/violations/${record.db_id}`}
-                    className="flex w-full items-center justify-center gap-1.5 rounded-full bg-[#1D2542] hover:bg-[#283256] text-white py-2 text-xs font-bold shadow-2xs transition-all active:scale-[0.98]"
+                    className="flex w-full items-center justify-center gap-1.5 rounded-full bg-[#182B62] hover:bg-[#25449B] text-white py-2 text-xs font-bold shadow-2xs transition-all active:scale-[0.98]"
                 >
                     <span>View Details</span>
                     <ChevronRight size={13} strokeWidth={2.5} className="text-slate-300" />

@@ -63,7 +63,7 @@ const MAP_THEMES = {
         url: 'https://mt{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}',
         attribution: '&copy; <a href="https://maps.google.com" target="_blank" rel="noopener noreferrer">Google Maps Imagery</a>',
         subdomains: '0123',
-        bg: '#1D2542',
+        bg: '#182B62',
     },
     carto: {
         label: 'CARTO',
@@ -238,9 +238,9 @@ export default function TricycleMap({
                     type="button"
                     onClick={resetToNasugbuView}
                     title="Focus Default Nasugbu View"
-                    className="pointer-events-auto inline-flex items-center gap-1.5 rounded-xl bg-white px-2 sm:px-3 py-1.5 text-xs font-bold text-[#1D2542] shadow-sm border border-slate-200 hover:bg-slate-50 transition-colors cursor-pointer"
+                    className="pointer-events-auto inline-flex items-center gap-1.5 rounded-xl bg-white px-2 sm:px-3 py-1.5 text-xs font-bold text-[#182B62] shadow-sm border border-slate-200 hover:bg-slate-50 transition-colors cursor-pointer"
                 >
-                    <Compass size={13} className="text-[#1D2542]" />
+                    <Compass size={13} className="text-[#182B62]" />
                     <span className="hidden sm:inline">Nasugbu View</span>
                 </button>
 
@@ -250,7 +250,7 @@ export default function TricycleMap({
                         onClick={() => setMapType('roadmap')}
                         className={`rounded-lg px-2 sm:px-2.5 py-1 text-xs font-bold transition-all ${
                             mapType === 'roadmap'
-                                ? 'bg-[#1D2542] text-white shadow-xs'
+                                ? 'bg-[#182B62] text-white shadow-xs'
                                 : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
                         }`}
                     >
@@ -262,7 +262,7 @@ export default function TricycleMap({
                         title="Satellite"
                         className={`rounded-lg px-2 sm:px-2.5 py-1 text-xs font-bold transition-all ${
                             mapType === 'satellite'
-                                ? 'bg-[#1D2542] text-white shadow-xs'
+                                ? 'bg-[#182B62] text-white shadow-xs'
                                 : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
                         }`}
                     >
@@ -274,7 +274,7 @@ export default function TricycleMap({
                         onClick={() => setMapType('carto')}
                         className={`rounded-lg px-2 sm:px-2.5 py-1 text-xs font-bold transition-all ${
                             mapType === 'carto'
-                                ? 'bg-[#1D2542] text-white shadow-xs'
+                                ? 'bg-[#182B62] text-white shadow-xs'
                                 : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
                         }`}
                     >
@@ -286,9 +286,9 @@ export default function TricycleMap({
                     type="button"
                     onClick={toggleFullscreen}
                     title={isFullscreen ? 'Exit Full View' : 'Full View'}
-                    className="pointer-events-auto inline-flex items-center gap-1.5 rounded-xl bg-white px-2 sm:px-3.5 py-1.5 text-xs font-bold text-[#1D2542] shadow-sm border border-slate-200 hover:bg-slate-50 transition-colors"
+                    className="pointer-events-auto inline-flex items-center gap-1.5 rounded-xl bg-white px-2 sm:px-3.5 py-1.5 text-xs font-bold text-[#182B62] shadow-sm border border-slate-200 hover:bg-slate-50 transition-colors"
                 >
-                    {isFullscreen ? <Minimize2 size={13} className="text-[#1D2542]" /> : <Maximize2 size={13} className="text-[#1D2542]" />}
+                    {isFullscreen ? <Minimize2 size={13} className="text-[#182B62]" /> : <Maximize2 size={13} className="text-[#182B62]" />}
                     <span className="hidden sm:inline">{isFullscreen ? 'Exit Full View' : 'Full View'}</span>
                 </button>
             </div>
@@ -335,7 +335,7 @@ export default function TricycleMap({
                             }}
                         >
                             <Popup className="trivora-popup" closeButton={false}>
-                                <div style={{ padding: '8px', minWidth: '190px', fontFamily: "'Inter', sans-serif", color: '#1D2542', fontSize: '12px', backgroundColor: '#FFFFFF', borderRadius: '8px', position: 'relative' }}>
+                                <div style={{ padding: '8px', minWidth: '190px', fontFamily: "'Inter', sans-serif", color: '#182B62', fontSize: '12px', backgroundColor: '#FFFFFF', borderRadius: '8px', position: 'relative' }}>
 
                                     <button
                                         type="button"
@@ -346,7 +346,7 @@ export default function TricycleMap({
                                     </button>
 
                                     <div style={{ marginBottom: '8px', paddingBottom: '6px', borderBottom: '1px solid #F1F5F9', paddingRight: '16px' }}>
-                                        <span style={{ fontSize: '16px', fontWeight: '800', color: '#1D2542', letterSpacing: '0.04em', display: 'block', marginBottom: '2px' }}>
+                                        <span style={{ fontSize: '16px', fontWeight: '800', color: '#182B62', letterSpacing: '0.04em', display: 'block', marginBottom: '2px' }}>
                                             {trike.plate}
                                         </span>
                                         <span style={{ fontSize: '10.5px', fontWeight: 'bold', color: '#64748B', display: 'block', marginBottom: '2px' }}>
@@ -417,7 +417,7 @@ export default function TricycleMap({
                 doesn't dominate a shorter mobile map viewport; unchanged from the original at
                 sm+ breakpoints. */}
             <div className="pointer-events-auto absolute bottom-2 left-2 sm:bottom-4 sm:left-4 z-[9999] min-w-[150px] sm:min-w-[200px] rounded-xl border border-slate-200 bg-white/95 p-2.5 sm:p-3.5 shadow-[0_4px_12px_rgba(15,23,42,0.08)] backdrop-blur-[6px]">
-                <p className="mb-1.5 sm:mb-2 border-b border-slate-200 pb-1 sm:pb-1 text-[9px] sm:text-[10px] font-extrabold uppercase tracking-[0.06em] text-[#1D2542]">
+                <p className="mb-1.5 sm:mb-2 border-b border-slate-200 pb-1 sm:pb-1 text-[9px] sm:text-[10px] font-extrabold uppercase tracking-[0.06em] text-[#182B62]">
                     Status Legend
                 </p>
 

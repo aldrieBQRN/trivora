@@ -68,7 +68,7 @@ function MiniStat({ icon: Icon, label, value, tone = 'default' }) {
     };
     return (
         <div className="flex items-center gap-2.5">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-[#1D2542]/[0.10] to-[#1D2542]/[0.02] text-[#1D2542]">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-[#182B62]/[0.10] to-[#182B62]/[0.02] text-[#182B62]">
                 <Icon size={16} strokeWidth={2} />
             </div>
             <div className="min-w-0">
@@ -209,7 +209,7 @@ export default function LiveTracking({ tricycle, pathCoordinates = [], auth }) {
                         {/* UI Overlay: Coordinates */}
                         <div className="pointer-events-none absolute inset-x-5 top-5 z-[1000] flex justify-between">
                             <div className={`pointer-events-auto flex items-center gap-3 rounded-xl border border-slate-200/70 bg-white/95 px-4 py-3 backdrop-blur ${CARD_SHADOW}`}>
-                                <MapPin size={16} className="text-[#1D2542]" />
+                                <MapPin size={16} className="text-[#182B62]" />
                                 <div className="text-[10px] font-bold tracking-wide text-slate-500">
                                     LAT: <strong className="font-mono text-xs font-semibold tabular-nums text-slate-900">{position[0].toFixed(5)}&deg; N</strong> &nbsp;|&nbsp; LNG: <strong className="font-mono text-xs font-semibold tabular-nums text-slate-900">{position[1].toFixed(5)}&deg; E</strong>
                                 </div>
@@ -220,7 +220,7 @@ export default function LiveTracking({ tricycle, pathCoordinates = [], auth }) {
                         <div className="pointer-events-auto absolute bottom-5 left-5 z-[1000] flex flex-col gap-2.5">
                             <button
                                 className={`flex h-11 w-11 items-center justify-center rounded-xl border shadow-sm transition-colors ${
-                                    isFollowing ? 'border-[#1D2542]/20 bg-[#1D2542]/[0.06] text-[#1D2542]' : 'border-slate-200 bg-white text-slate-900 hover:border-[#1D2542] hover:text-[#1D2542]'
+                                    isFollowing ? 'border-[#182B62]/20 bg-[#182B62]/[0.06] text-[#182B62]' : 'border-slate-200 bg-white text-slate-900 hover:border-[#182B62] hover:text-[#182B62]'
                                 }`}
                                 title="Lock Camera to Tricycle"
                                 onClick={handleRecenter}

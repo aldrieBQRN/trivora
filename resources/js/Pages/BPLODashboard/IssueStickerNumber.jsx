@@ -81,7 +81,7 @@ export default function IssueStickerNumber({ application, codingSchemes = [] }) 
                 title: 'Sticker Number Required',
                 text: 'Please provide the 4-digit Sticker / Coding Scheme Number to be released.',
                 icon: 'warning',
-                confirmButtonColor: '#1D2542'
+                confirmButtonColor: '#182B62'
             });
             return;
         }
@@ -91,7 +91,7 @@ export default function IssueStickerNumber({ application, codingSchemes = [] }) 
                 title: 'Franchise Number Required',
                 text: 'Please provide the Franchise Number to be released to the operator.',
                 icon: 'warning',
-                confirmButtonColor: '#1D2542'
+                confirmButtonColor: '#182B62'
             });
             return;
         }
@@ -106,7 +106,7 @@ export default function IssueStickerNumber({ application, codingSchemes = [] }) 
                     </div>
                     <div class="flex justify-between pb-1.5 border-b border-slate-200/60">
                         <span class="text-slate-400 font-bold uppercase tracking-wider text-[10px]">Sticker Number:</span>
-                        <span class="font-mono font-bold text-[#1D2542] text-sm">${data.coding_scheme_number}</span>
+                        <span class="font-mono font-bold text-[#182B62] text-sm">${data.coding_scheme_number}</span>
                     </div>
                     <div class="flex justify-between pb-1.5 border-b border-slate-200/60">
                         <span class="text-slate-400 font-bold uppercase tracking-wider text-[10px]">Franchise Number:</span>
@@ -123,7 +123,7 @@ export default function IssueStickerNumber({ application, codingSchemes = [] }) 
             `,
             icon: 'question',
             showCancelButton: true,
-            confirmButtonColor: '#1D2542',
+            confirmButtonColor: '#182B62',
             cancelButtonColor: '#8A96BC',
             confirmButtonText: 'Yes, Release Franchise Number & Plate',
             cancelButtonText: 'Cancel'
@@ -146,7 +146,7 @@ export default function IssueStickerNumber({ application, codingSchemes = [] }) 
                             title: 'Release Failed',
                             html: messages || 'Failed to release franchise. Please check the sticker number or try again.',
                             icon: 'error',
-                            confirmButtonColor: '#1D2542'
+                            confirmButtonColor: '#182B62'
                         });
                     }
                 });
@@ -174,7 +174,7 @@ export default function IssueStickerNumber({ application, codingSchemes = [] }) 
 
                     <div className="flex items-center gap-2">
                         {application.reference && (
-                            <span className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-mono font-bold text-[#1D2542] shadow-2xs">
+                            <span className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-mono font-bold text-[#182B62] shadow-2xs">
                                 {application.reference}
                             </span>
                         )}
@@ -198,7 +198,7 @@ export default function IssueStickerNumber({ application, codingSchemes = [] }) 
                             </p>
                         </div>
 
-                        <span className="inline-flex items-center gap-1.5 self-start sm:self-center px-3 py-1 rounded-full text-xs font-bold bg-indigo-50 text-[#1D2542] border border-indigo-200/80 shadow-2xs shrink-0">
+                        <span className="inline-flex items-center gap-1.5 self-start sm:self-center px-3 py-1 rounded-full text-xs font-bold bg-indigo-50 text-[#182B62] border border-indigo-200/80 shadow-2xs shrink-0">
                             <Bike size={13} strokeWidth={2.2} />
                             <span>Ready for Plate Issuance</span>
                         </span>
@@ -217,7 +217,7 @@ export default function IssueStickerNumber({ application, codingSchemes = [] }) 
                         <div className={`overflow-hidden rounded-2xl border border-slate-200/70 bg-white ${CARD_SHADOW}`}>
                             <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50/75 px-5 py-3.5">
                                 <div className="flex items-center gap-2">
-                                    <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-[#1D2542]/[0.10] to-[#1D2542]/[0.02] text-[#1D2542]">
+                                    <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-[#182B62]/[0.10] to-[#182B62]/[0.02] text-[#182B62]">
                                         <User size={15} strokeWidth={2.2} />
                                     </div>
                                     <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700">
@@ -236,7 +236,7 @@ export default function IssueStickerNumber({ application, codingSchemes = [] }) 
                                         <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Tricycle Owner</span>
                                         <span className="text-sm font-bold text-slate-900 mt-0.5 block">{application.operator || '—'}</span>
                                     </div>
-                                    <div className="h-8 w-8 rounded-full bg-gradient-to-br from-[#1D2542] to-[#2A3560] text-white flex items-center justify-center text-xs font-bold shadow-2xs shrink-0">
+                                    <div className="h-8 w-8 rounded-full bg-gradient-to-br from-[#182B62] to-[#2A3560] text-white flex items-center justify-center text-xs font-bold shadow-2xs shrink-0">
                                         {application.operator ? application.operator.charAt(0).toUpperCase() : 'O'}
                                     </div>
                                 </div>
@@ -340,7 +340,7 @@ export default function IssueStickerNumber({ application, codingSchemes = [] }) 
                                 {/* Terminal Header */}
                                 <div className="flex items-center justify-between border-b border-slate-100 pb-4">
                                     <div className="flex items-center gap-2.5">
-                                        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-[#1D2542]/[0.10] to-[#1D2542]/[0.02] text-[#1D2542] shadow-2xs">
+                                        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-[#182B62]/[0.10] to-[#182B62]/[0.02] text-[#182B62] shadow-2xs">
                                             <Hash size={18} strokeWidth={2.4} />
                                         </div>
                                         <div>
@@ -361,7 +361,7 @@ export default function IssueStickerNumber({ application, codingSchemes = [] }) 
                                 <div className="space-y-1.5 pt-1">
                                     <label htmlFor="coding_scheme_number" className="flex items-center justify-between text-xs font-bold text-slate-700">
                                         <span className="flex items-center gap-1.5">
-                                            <Hash size={14} className="text-[#1D2542]" />
+                                            <Hash size={14} className="text-[#182B62]" />
                                             <span>Sticker Number (Municipal Coding Scheme)</span>
                                         </span>
                                         <span className="text-[11px] font-semibold text-slate-500">
@@ -379,7 +379,7 @@ export default function IssueStickerNumber({ application, codingSchemes = [] }) 
                                             }}
                                             maxLength={4}
                                             placeholder="e.g. 0842"
-                                            className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 font-mono text-base font-bold text-[#1D2542] shadow-2xs focus:border-[#1D2542] focus:ring-1 focus:ring-[#1D2542]"
+                                            className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 font-mono text-base font-bold text-[#182B62] shadow-2xs focus:border-[#182B62] focus:ring-1 focus:ring-[#182B62]"
                                         />
                                         <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs font-mono text-slate-400">
                                             4-DIGIT
@@ -485,7 +485,7 @@ export default function IssueStickerNumber({ application, codingSchemes = [] }) 
                                         type="button"
                                         onClick={handleFinalize}
                                         disabled={processing}
-                                        className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-[#1D2542] px-6 py-2.5 text-xs font-bold text-white hover:bg-[#2A3B5C] shadow-sm active:scale-[0.98] transition-all disabled:opacity-50"
+                                        className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-[#182B62] px-6 py-2.5 text-xs font-bold text-white hover:bg-[#2A3B5C] shadow-sm active:scale-[0.98] transition-all disabled:opacity-50"
                                     >
                                         {processing ? (
                                             <>

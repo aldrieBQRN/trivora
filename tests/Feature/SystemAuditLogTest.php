@@ -288,6 +288,36 @@ class SystemAuditLogTest extends TestCase
         $this->assertEquals($this->tmoUser->name, $exportLog->actor_name);
     }
 
+    public function test_export_activity_logs_pdf_csv_and_json(): void
+    {
+        AuditService::log(
+            module: 'franchise',
+            action: 'franchise.issued',
+            record: null,
+            description: 'Issued test franchise',
+            targetReference: 'MTOP-999',
+            actor: $this->tmoUser
+        );
+
+        // PDF export (landscape municipal document)
+        $pdfResponse = $this->actingAs($this->tmoUser)
+            ->get(route('tmo.activity-logs.export', ['format' => 'pdf']));
+        $pdfResponse->assertStatus(200);
+        $this->assertStringContainsString('application/pdf', (string) $pdfResponse->headers->get('content-type'));
+
+        // CSV export
+        $csvResponse = $this->actingAs($this->tmoUser)
+            ->get(route('tmo.activity-logs.export', ['format' => 'csv']));
+        $csvResponse->assertStatus(200);
+        $this->assertStringContainsString('text/csv', (string) $csvResponse->headers->get('content-type'));
+
+        // JSON export
+        $jsonResponse = $this->actingAs($this->tmoUser)
+            ->get(route('tmo.activity-logs.export', ['format' => 'json']));
+        $jsonResponse->assertStatus(200);
+        $this->assertStringContainsString('application/json', (string) $jsonResponse->headers->get('content-type'));
+    }
+
     public function test_mobile_api_requests_are_guarded_against_accidental_web_logging(): void
     {
         // Simulate a request pointing to an API path

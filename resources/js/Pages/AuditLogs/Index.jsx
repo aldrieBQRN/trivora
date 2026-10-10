@@ -1,14 +1,40 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Head, router, usePage } from '@inertiajs/react';
 import TrivoraLayout from '@/Layouts/TrivoraLayout';
 import { Modal, Button, Pagination } from '@/Components/TMO';
 import {
     ScrollText, Search, X, RotateCcw, Eye, ShieldCheck,
     Users, Clock, Activity, FileSpreadsheet, ArrowRight,
-    Filter, Calendar, ChevronRight, Loader2, Check
+    Filter, Calendar, ChevronRight, Loader2, Check,
+    Download, ChevronDown, FileText, Printer
 } from 'lucide-react';
 
 const CARD_SHADOW = 'shadow-[0_1px_2px_0_rgba(15,23,42,0.04),0_8px_24px_-8px_rgba(15,23,42,0.10)]';
+
+const FORMAT_META = {
+    excel: {
+        id: 'excel',
+        label: 'Excel Spreadsheet',
+        ext: '.xlsx',
+        mime: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        desc: 'Official municipal workbook with non-sticky table header',
+        badge: '.XLSX',
+        badgeColor: 'text-emerald-700 bg-emerald-50 border-emerald-200',
+        iconColor: 'text-emerald-600 bg-emerald-50 border-emerald-200',
+        icon: FileSpreadsheet,
+    },
+    pdf: {
+        id: 'pdf',
+        label: 'Landscape PDF Report',
+        ext: '.pdf',
+        mime: 'application/pdf',
+        desc: 'Official municipal document formatted in landscape A4 table',
+        badge: '.PDF',
+        badgeColor: 'text-rose-700 bg-rose-50 border-rose-200',
+        iconColor: 'text-rose-600 bg-rose-50 border-rose-200',
+        icon: FileText,
+    },
+};
 
 export default function Index({
     logs = { data: [], current_page: 1, last_page: 1, total: 0, per_page: 15 },
@@ -25,9 +51,12 @@ export default function Index({
     const layoutProps = { title: 'System Activity Logs', role: 'TMO Personnel' };
 
     const [selectedLog, setSelectedLog] = useState(null);
+    const [exportOptionsModalOpen, setExportOptionsModalOpen] = useState(false);
+    const [selectedFormat, setSelectedFormat] = useState('excel');
     const [exportModalOpen, setExportModalOpen] = useState(false);
     const [exportStatus, setExportStatus] = useState('idle'); // 'idle' | 'loading' | 'success' | 'error'
     const [exportProgress, setExportProgress] = useState(0);
+    const [exportFormat, setExportFormat] = useState('excel'); // 'excel' | 'pdf' | 'csv' | 'json'
 
     // Filters state
     const [search, setSearch] = useState(filters.search || '');
@@ -111,14 +140,15 @@ export default function Index({
         }, 300);
     };
 
-    const handleExportExcel = async () => {
+    const handleExport = async (format = 'excel') => {
+        setExportFormat(format);
         if (exportStatus === 'loading') return;
 
         setExportProgress(12);
         setExportStatus('loading');
         setExportModalOpen(true);
 
-        // Smooth simulated progress increments while server prepares spreadsheet
+        // Smooth simulated progress increments while server prepares export
         const interval = setInterval(() => {
             setExportProgress((prev) => {
                 if (prev >= 88) return prev;
@@ -128,6 +158,7 @@ export default function Index({
 
         try {
             const params = new URLSearchParams();
+            params.set('format', format);
             if (search) params.set('search', search);
             if (module) params.set('module', module);
             if (role) params.set('role', role);
@@ -135,11 +166,12 @@ export default function Index({
             if (to) params.set('to', to);
 
             const url = `${exportUrl}?${params.toString()}`;
+            const meta = FORMAT_META[format] || FORMAT_META.excel;
 
             const response = await fetch(url, {
                 method: 'GET',
                 headers: {
-                    Accept: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                    Accept: meta.mime,
                 },
             });
 
@@ -150,7 +182,7 @@ export default function Index({
             clearInterval(interval);
             setExportProgress(100);
 
-            let filename = 'trivora_system_activity_logs.xlsx';
+            let filename = `trivora_system_activity_logs${meta.ext}`;
             const disposition = response.headers.get('content-disposition');
             if (disposition && disposition.includes('filename=')) {
                 const matches = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/.exec(disposition);
@@ -172,7 +204,7 @@ export default function Index({
             setExportStatus('success');
         } catch (err) {
             clearInterval(interval);
-            console.error('Failed to export Excel report:', err);
+            console.error('Failed to export report:', err);
             setExportStatus('error');
         }
     };
@@ -251,9 +283,16 @@ export default function Index({
             'application.approved': 'Application Approved',
             'profile.updated': 'Profile Updated',
             'profile.password_updated': 'Password Changed',
-            'report.exported_excel': 'Excel Report Downloaded',
+            'report.exported_excel': 'Excel Report Exported',
+            'report.exported_pdf': 'PDF Report Exported',
+            'report.exported_csv': 'CSV Report Exported',
+            'report.exported_json': 'JSON Report Exported',
         };
         if (labels[action]) return labels[action];
+        if (action.startsWith('report.exported_')) {
+            const fmt = action.replace('report.exported_', '').toUpperCase();
+            return `${fmt} Report Exported`;
+        }
         return action.replace(/[._]/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase());
     };
 
@@ -408,15 +447,15 @@ export default function Index({
                     </p>
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div>
                     <button
                         type="button"
-                        onClick={handleExportExcel}
-                        className="inline-flex h-9 shrink-0 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 shadow-2xs transition-all hover:bg-slate-50 hover:text-slate-900 cursor-pointer"
-                        title="Download activities to Excel (.xlsx)"
+                        onClick={() => setExportOptionsModalOpen(true)}
+                        className="inline-flex h-9 shrink-0 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3.5 text-xs font-semibold text-slate-700 shadow-2xs transition-all hover:bg-slate-50 hover:text-slate-900 hover:border-slate-300 cursor-pointer"
+                        title="Export activity logs"
                     >
-                        <FileSpreadsheet size={14} className="text-emerald-600 shrink-0" />
-                        <span>Export to Excel</span>
+                        <Download size={14} className="text-[#182B62] shrink-0" />
+                        <span>Export</span>
                     </button>
                 </div>
             </div>
@@ -424,11 +463,11 @@ export default function Index({
             {/* ══════════════════════════════════════════════════════════════
                 2. FLOATING MINIMAL METRIC CARDS (Consistent with Dashboard)
                 ══════════════════════════════════════════════════════════════ */}
-            <div className="mb-5 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+            <div className="mb-5 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4 print:hidden">
                 {/* Total Events */}
                 <div className={`group rounded-2xl border border-slate-200/70 bg-white p-4 sm:p-5 ${CARD_SHADOW} transition-all hover:border-slate-300`}>
                     <div className="flex items-center justify-between">
-                        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-[#1D2542]/[0.10] to-[#1D2542]/[0.02] text-[#1D2542]">
+                        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-[#182B62]/[0.10] to-[#182B62]/[0.02] text-[#182B62]">
                             <ScrollText size={16} strokeWidth={2.2} />
                         </div>
                         <span className="text-[11px] font-semibold text-slate-400">All-Time</span>
@@ -512,7 +551,7 @@ export default function Index({
             {/* ══════════════════════════════════════════════════════════════
                 3. COMMAND & FILTER DECK (Consistent with Unit Registry)
                 ══════════════════════════════════════════════════════════════ */}
-            <div className={`mb-4 rounded-2xl border border-slate-200/70 bg-white p-3 sm:p-3.5 ${CARD_SHADOW}`}>
+            <div className={`mb-4 rounded-2xl border border-slate-200/70 bg-white p-3 sm:p-3.5 ${CARD_SHADOW} print:hidden`}>
                 <div className="flex flex-col lg:flex-row lg:items-center gap-2.5">
                     {/* Primary Search Bar */}
                     <div className="relative flex-1 min-w-[220px]">
@@ -641,7 +680,7 @@ export default function Index({
                                     <th scope="col" className="py-3 px-4 text-[11px] font-bold uppercase tracking-wider text-slate-500">
                                         Summary
                                     </th>
-                                    <th scope="col" className="py-3 pr-5 pl-3 text-right text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                                    <th scope="col" className="py-3 pr-5 pl-3 text-right text-[11px] font-bold uppercase tracking-wider text-slate-500 print:hidden">
                                         View
                                     </th>
                                 </tr>
@@ -680,12 +719,12 @@ export default function Index({
                                             {/* Record Reference */}
                                             <td className="py-3.5 px-4 whitespace-nowrap">
                                                 <span className="font-mono text-xs font-bold text-slate-900">
-                                                    {log.action === 'report.exported_excel'
+                                                    {log.action?.startsWith('report.exported')
                                                         ? (log.actor_email || (log.target_reference && log.target_reference.includes('@') ? log.target_reference : (log.actor_email || '—')))
                                                         : (log.target_reference || '—')}
                                                 </span>
                                                 <div className="text-[10.5px] text-slate-400">
-                                                    {log.action === 'report.exported_excel' ? 'Excel Report' : (log.target_type || null)}
+                                                    {log.target_type || null}
                                                 </div>
                                             </td>
 
@@ -697,7 +736,7 @@ export default function Index({
                                             </td>
 
                                             {/* View Details Button */}
-                                            <td className="py-3.5 pr-5 pl-3 text-right whitespace-nowrap">
+                                            <td className="py-3.5 pr-5 pl-3 text-right whitespace-nowrap print:hidden">
                                                 <button
                                                     type="button"
                                                     onClick={() => setSelectedLog(log)}
@@ -717,13 +756,15 @@ export default function Index({
 
                     {/* Integrated Pagination Footer */}
                     {logs.total > 0 && (
-                        <Pagination
-                            page={logs.current_page}
-                            totalPages={logs.last_page}
-                            totalItems={logs.total}
-                            pageSize={logs.per_page}
-                            onPageChange={handlePageChange}
-                        />
+                        <div className="print:hidden">
+                            <Pagination
+                                page={logs.current_page}
+                                totalPages={logs.last_page}
+                                totalItems={logs.total}
+                                pageSize={logs.per_page}
+                                onPageChange={handlePageChange}
+                            />
+                        </div>
                     )}
                 </div>
             )}
@@ -1023,7 +1064,107 @@ export default function Index({
             </Modal>
 
             {/* ══════════════════════════════════════════════════════════════
-                6. EXPORT PROGRESS MODAL
+                6. EXPORT FORMAT SELECTION MODAL
+                ══════════════════════════════════════════════════════════════ */}
+            <Modal
+                show={exportOptionsModalOpen}
+                onClose={() => setExportOptionsModalOpen(false)}
+                title="Export Activity Logs"
+                description={`Choose a file format to export ${logs.total ?? 0} activity records.`}
+                maxWidth="lg"
+                footer={
+                    <div className="flex w-full items-center justify-between gap-3">
+                        <Button
+                            variant="secondary"
+                            onClick={() => setExportOptionsModalOpen(false)}
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            variant="primary"
+                            onClick={() => {
+                                setExportOptionsModalOpen(false);
+                                handleExport(selectedFormat);
+                            }}
+                            className="inline-flex items-center gap-2"
+                        >
+                            <Download size={14} />
+                            <span>Export as {FORMAT_META[selectedFormat]?.badge || 'File'}</span>
+                        </Button>
+                    </div>
+                }
+            >
+                <div className="space-y-4 py-1">
+                    {/* Active Filters Context */}
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 rounded-xl border border-slate-200/80 bg-slate-50/70 p-3 text-xs">
+                        <div className="flex items-center gap-2 text-slate-700">
+                            <Filter size={14} className="text-slate-400 shrink-0" />
+                            <span className="font-medium">
+                                Export Scope: <span className="font-bold text-slate-900">{logs.total ?? 0} matching records</span>
+                            </span>
+                        </div>
+                        {isFiltering ? (
+                            <span className="inline-flex items-center self-start sm:self-auto rounded-md bg-amber-50 px-2 py-0.5 text-[10.5px] font-bold text-amber-700 border border-amber-200/70">
+                                Current Filters Applied
+                            </span>
+                        ) : (
+                            <span className="inline-flex items-center self-start sm:self-auto rounded-md bg-slate-100 px-2 py-0.5 text-[10.5px] font-semibold text-slate-600">
+                                Entire Activity Log
+                            </span>
+                        )}
+                    </div>
+
+                    {/* Format Options Grid */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        {Object.values(FORMAT_META).map((item) => {
+                            const isSelected = selectedFormat === item.id;
+                            const IconComponent = item.icon;
+                            return (
+                                <div
+                                    key={item.id}
+                                    onClick={() => setSelectedFormat(item.id)}
+                                    className={`relative flex flex-col justify-between rounded-xl border p-3.5 cursor-pointer transition-all ${
+                                        isSelected
+                                            ? 'border-[#182B62] bg-[#182B62]/[0.02] ring-2 ring-[#182B62]/20 shadow-sm'
+                                            : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50/50'
+                                    }`}
+                                >
+                                    <div>
+                                        <div className="flex items-center justify-between mb-2">
+                                            <div className={`flex h-8 w-8 items-center justify-center rounded-lg border ${item.iconColor}`}>
+                                                <IconComponent size={16} strokeWidth={2.2} />
+                                            </div>
+                                            <span className={`inline-flex items-center rounded-md border px-1.5 py-0.5 text-[10px] font-bold ${item.badgeColor}`}>
+                                                {item.badge}
+                                            </span>
+                                        </div>
+                                        <h4 className="text-xs font-bold text-slate-900">
+                                            {item.label}
+                                        </h4>
+                                        <p className="mt-1 text-[11px] text-slate-500 leading-relaxed">
+                                            {item.desc}
+                                        </p>
+                                    </div>
+
+                                    <div className="mt-3 flex items-center justify-between border-t border-slate-100 pt-2.5">
+                                        <span className="text-[10.5px] font-medium text-slate-400">
+                                            {isSelected ? 'Selected' : 'Click to select'}
+                                        </span>
+                                        <div className={`h-4 w-4 rounded-full border flex items-center justify-center transition-all ${
+                                            isSelected ? 'border-[#182B62] bg-[#182B62]' : 'border-slate-300'
+                                        }`}>
+                                            {isSelected && <span className="h-1.5 w-1.5 rounded-full bg-white" />}
+                                        </div>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+            </Modal>
+
+            {/* ══════════════════════════════════════════════════════════════
+                7. EXPORT PROGRESS MODAL
                 ══════════════════════════════════════════════════════════════ */}
             <Modal
                 show={exportModalOpen}
@@ -1035,14 +1176,14 @@ export default function Index({
                         ? 'Download Ready'
                         : exportStatus === 'error'
                         ? 'Export Failed'
-                        : 'Exporting to Excel'
+                        : `Exporting to ${FORMAT_META[exportFormat]?.label || 'File'}`
                 }
                 description={
                     exportStatus === 'success'
-                        ? 'Your Excel file has been downloaded successfully.'
+                        ? `Your ${FORMAT_META[exportFormat]?.label || 'file'} has been downloaded successfully.`
                         : exportStatus === 'error'
                         ? 'An error occurred while preparing your export.'
-                        : 'Please wait while we gather and prepare your activity records.'
+                        : `Please wait while we gather and prepare your activity records in ${FORMAT_META[exportFormat]?.label || 'file'} format.`
                 }
                 footer={
                     exportStatus !== 'loading' && (
@@ -1061,21 +1202,21 @@ export default function Index({
                     {exportStatus === 'loading' && (
                         <div className="space-y-4">
                             <div className="flex items-center gap-3">
-                                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-100">
+                                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-[#182B62] border border-slate-200">
                                     <Loader2 size={20} className="animate-spin" />
                                 </div>
                                 <div className="min-w-0 flex-1">
                                     <div className="flex items-center justify-between">
                                         <span className="text-xs font-semibold text-slate-700">
-                                            Generating spreadsheet...
+                                            Preparing {FORMAT_META[exportFormat]?.label || 'file'}...
                                         </span>
-                                        <span className="text-xs font-bold text-emerald-700 tabular-nums">
+                                        <span className="text-xs font-bold text-[#182B62] tabular-nums">
                                             {exportProgress}%
                                         </span>
                                     </div>
                                     <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-slate-100">
                                         <div
-                                            className="h-full rounded-full bg-emerald-600 transition-all duration-300 ease-out"
+                                            className="h-full rounded-full bg-[#182B62] transition-all duration-300 ease-out"
                                             style={{ width: `${exportProgress}%` }}
                                         />
                                     </div>
@@ -1095,7 +1236,7 @@ export default function Index({
                             <div>
                                 <h4 className="text-xs font-bold text-emerald-900">Download Complete</h4>
                                 <p className="mt-0.5 text-[11px] text-emerald-700 leading-relaxed">
-                                    Your Excel spreadsheet has been saved to your downloads folder.
+                                    Your {FORMAT_META[exportFormat]?.label || 'file'} has been saved to your downloads folder.
                                 </p>
                             </div>
                         </div>

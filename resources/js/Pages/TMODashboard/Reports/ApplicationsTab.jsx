@@ -49,7 +49,7 @@ export default function ApplicationsTab({ from, to, data }) {
                                     <XAxis dataKey="label" tick={{ fontSize: 10 }} tickLine={false} axisLine={{ stroke: '#EEF0F5' }} />
                                     <YAxis allowDecimals={false} tick={{ fontSize: 10 }} tickLine={false} axisLine={false} width={28} />
                                     <Tooltip content={<ChartTooltip />} />
-                                    <Bar dataKey="count" name="Applications" fill="#1D2542" radius={[4, 4, 0, 0]} barSize={granularity === 'day' ? 16 : 32} />
+                                    <Bar dataKey="count" name="Applications" fill="#182B62" radius={[4, 4, 0, 0]} barSize={granularity === 'day' ? 16 : 32} />
                                 </BarChart>
                             </ResponsiveContainer>
                         </ReportCard>

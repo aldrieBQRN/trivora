@@ -10,7 +10,7 @@ import {
 
 /* ─────────────────────────────────────────────────────────────────────────
    Driver / Operator Panel shell — sidebar + header chrome matching TMO & BPLO.
-   Brand token: `#1D2542` (solid deep brand navy).
+   Brand token: `#182B62` (Deep Royal Navy).
 ───────────────────────────────────────────────────────────────────────── */
 
 function getInitials(name) {
@@ -207,7 +207,7 @@ export default function OperatorLayout({
 
             {/* ══════ SIDEBAR ══════════════════════════════════════ */}
             <aside
-                className={`fixed inset-y-0 left-0 z-50 flex w-[260px] flex-col bg-[#1D2542] transition-transform duration-300 print:hidden lg:static lg:translate-x-0 ${
+                className={`fixed inset-y-0 left-0 z-50 flex w-[260px] flex-col bg-[#182B62] transition-transform duration-300 print:hidden lg:static lg:translate-x-0 ${
                     sidebarOpen ? 'translate-x-0' : '-translate-x-full'
                 }`}
             >
@@ -221,7 +221,7 @@ export default function OperatorLayout({
                             <span className="text-sm font-black tracking-wider text-white leading-tight">
                                 TRIVORA
                             </span>
-                            <span className="text-[9.5px] font-bold uppercase tracking-[0.14em] text-white/50 leading-tight mt-0.5">
+                            <span className="text-[9.5px] font-bold uppercase tracking-[0.14em] text-white/60 leading-tight mt-0.5">
                                 Driver Portal
                             </span>
                         </div>
@@ -255,7 +255,7 @@ export default function OperatorLayout({
                                             href={link.path}
                                             className={`mb-1 flex items-center gap-3 rounded-lg px-3 py-2.5 text-[13.5px] font-medium transition-colors ${
                                                 isActive
-                                                    ? 'bg-white font-semibold text-[#1D2542]'
+                                                    ? 'bg-white font-semibold text-[#182B62]'
                                                     : 'text-white/80 hover:bg-white/10 hover:text-white'
                                             }`}
                                         >
@@ -322,7 +322,7 @@ export default function OperatorLayout({
                                         {crumb.href && !isLast ? (
                                             <Link
                                                 href={crumb.href}
-                                                className="text-slate-500 hover:text-[#1D2542] transition-colors shrink-0 font-medium"
+                                                className="text-slate-500 hover:text-[#182B62] transition-colors shrink-0 font-medium"
                                             >
                                                 {crumb.label}
                                             </Link>
@@ -330,7 +330,7 @@ export default function OperatorLayout({
                                             <span
                                                 className={`truncate ${
                                                     isLast
-                                                        ? 'text-[#1D2542] font-bold'
+                                                        ? 'text-[#182B62] font-bold'
                                                         : 'text-slate-500 font-medium'
                                                 }`}
                                             >
@@ -355,7 +355,7 @@ export default function OperatorLayout({
                                 className="flex items-center gap-2.5 rounded-full py-1 pl-1 pr-3 hover:bg-slate-100"
                                 onClick={() => setProfileOpen(p => !p)}
                             >
-                                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#1D2542] text-[11px] font-bold tracking-wide text-white">
+                                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#182B62] text-[11px] font-bold tracking-wide text-white">
                                     {initials}
                                 </div>
 

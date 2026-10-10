@@ -140,7 +140,7 @@ export default function Violations({ violations = [], auth }) {
                     <div className="mt-3.5 flex items-center justify-between border-t border-slate-100 pt-2.5 text-[11px]">
                         <span className="text-slate-400">Detection</span>
                         <span className="flex items-center gap-1.5 font-semibold text-slate-700">
-                            <span className="h-1.5 w-1.5 rounded-full bg-[#1D2542] animate-pulse" />
+                            <span className="h-1.5 w-1.5 rounded-full bg-[#182B62] animate-pulse" />
                             {detectionCounts.mobile_gps} Mobile GPS · {detectionCounts.iot_gps} IoT GPS
                         </span>
                     </div>
@@ -148,7 +148,7 @@ export default function Violations({ violations = [], auth }) {
 
                 <div className={`group rounded-2xl border border-slate-200/70 bg-white p-4 ${CARD_SHADOW} transition-all hover:border-slate-300 sm:p-5`}>
                     <div className="flex items-center justify-between">
-                        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-[#1D2542]/[0.10] to-[#1D2542]/[0.02] text-[#1D2542] transition-colors group-hover:from-[#1D2542]/[0.16]">
+                        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-[#182B62]/[0.10] to-[#182B62]/[0.02] text-[#182B62] transition-colors group-hover:from-[#182B62]/[0.16]">
                             <Bike size={16} strokeWidth={2.2} />
                         </div>
                         <span className="text-[11px] font-semibold text-slate-400">Flagged</span>
@@ -199,7 +199,7 @@ export default function Violations({ violations = [], auth }) {
                             value={query}
                             onChange={(e) => { setQuery(e.target.value); setCurrentPage(1); }}
                             placeholder="Search by ticket ID, unit, or location…"
-                            className="h-10 w-full rounded-lg border border-slate-200 bg-slate-50/50 pl-10 pr-9 text-xs text-slate-900 placeholder:text-slate-400 shadow-2xs transition-all focus:border-[#1D2542] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#1D2542]/10 sm:text-sm"
+                            className="h-10 w-full rounded-lg border border-slate-200 bg-slate-50/50 pl-10 pr-9 text-xs text-slate-900 placeholder:text-slate-400 shadow-2xs transition-all focus:border-[#182B62] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#182B62]/10 sm:text-sm"
                         />
                         {query && (
                             <button
@@ -216,7 +216,7 @@ export default function Violations({ violations = [], auth }) {
                         <select
                             value={statusFilter}
                             onChange={(e) => { setStatusFilter(e.target.value); setCurrentPage(1); }}
-                            className="h-10 w-full cursor-pointer rounded-lg border border-slate-200 bg-white px-3 pr-8 text-xs font-semibold text-slate-700 shadow-2xs transition-colors focus:border-[#1D2542] focus:outline-none focus:ring-2 focus:ring-[#1D2542]/10 sm:w-48"
+                            className="h-10 w-full cursor-pointer rounded-lg border border-slate-200 bg-white px-3 pr-8 text-xs font-semibold text-slate-700 shadow-2xs transition-colors focus:border-[#182B62] focus:outline-none focus:ring-2 focus:ring-[#182B62]/10 sm:w-48"
                         >
                             <option value="all">All Statuses ({activeCount})</option>
                             <option value="unpaid">Unpaid ({unpaidCount})</option>
@@ -227,7 +227,7 @@ export default function Violations({ violations = [], auth }) {
                         <select
                             value={detectionFilter}
                             onChange={(e) => { setDetectionFilter(e.target.value); setCurrentPage(1); }}
-                            className="h-10 w-full cursor-pointer rounded-lg border border-slate-200 bg-white px-3 pr-8 text-xs font-semibold text-slate-700 shadow-2xs transition-colors focus:border-[#1D2542] focus:outline-none focus:ring-2 focus:ring-[#1D2542]/10 sm:w-48"
+                            className="h-10 w-full cursor-pointer rounded-lg border border-slate-200 bg-white px-3 pr-8 text-xs font-semibold text-slate-700 shadow-2xs transition-colors focus:border-[#182B62] focus:outline-none focus:ring-2 focus:ring-[#182B62]/10 sm:w-48"
                         >
                             <option value="all">All Detection Methods ({activeCount})</option>
                             <option value="mobile_gps">Mobile GPS ({detectionCounts.mobile_gps})</option>
@@ -343,7 +343,7 @@ function PaginationFooter({ activePage, totalPages, totalItems, onPageChange, no
                                         type="button"
                                         onClick={() => onPageChange(p)}
                                         className={`flex h-8 w-8 items-center justify-center rounded-md text-xs font-bold transition-all ${
-                                            activePage === p ? 'bg-[#1D2542] text-white shadow-sm' : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
+                                            activePage === p ? 'bg-[#182B62] text-white shadow-sm' : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
                                         }`}
                                     >
                                         {p}
@@ -362,7 +362,7 @@ function PaginationFooter({ activePage, totalPages, totalItems, onPageChange, no
 
 function DetectionTag({ label }) {
     return (
-        <span className="inline-flex items-center gap-1 rounded bg-[#1D2542]/[0.08] px-1.5 py-0.5 text-[9px] font-extrabold uppercase text-[#1D2542]">
+        <span className="inline-flex items-center gap-1 rounded bg-[#182B62]/[0.08] px-1.5 py-0.5 text-[9px] font-extrabold uppercase text-[#182B62]">
             <Activity size={8} /> {label}
         </span>
     );
@@ -370,7 +370,7 @@ function DetectionTag({ label }) {
 
 const STATUS_PILL = {
     unpaid: { label: 'Unpaid', dot: 'bg-red-500 animate-pulse', className: 'border-red-200/90 bg-red-50 text-red-700' },
-    appeal_pending: { label: 'Appeal Pending', dot: 'bg-[#1D2542]', className: 'border-[#1D2542]/25 bg-[#1D2542]/[0.08] text-[#1D2542]' },
+    appeal_pending: { label: 'Appeal Pending', dot: 'bg-[#182B62]', className: 'border-[#182B62]/25 bg-[#182B62]/[0.08] text-[#182B62]' },
     appeal_rejected: { label: 'Appeal Rejected', dot: 'bg-red-500', className: 'border-red-200/90 bg-red-50 text-red-700' },
 };
 
@@ -418,7 +418,7 @@ function DesktopViolationRow({ v }) {
             <td className="py-3.5 pl-3 pr-5 text-right align-middle">
                 <Link
                     href={route('operator.violations.ticket', { id: v.db_id })}
-                    className="inline-flex items-center gap-1 rounded-full bg-[#1D2542] px-3.5 py-1.5 text-xs font-semibold text-white shadow-2xs transition-all hover:bg-[#283256] active:scale-[0.98]"
+                    className="inline-flex items-center gap-1 rounded-full bg-[#182B62] px-3.5 py-1.5 text-xs font-semibold text-white shadow-2xs transition-all hover:bg-[#25449B] active:scale-[0.98]"
                 >
                     <span>View Details</span>
                     <ChevronRight size={13} strokeWidth={2.5} className="text-slate-300" />
@@ -460,7 +460,7 @@ function MobileViolationCard({ v }) {
             <div className="mt-2.5 border-t border-slate-100 pt-2">
                 <Link
                     href={route('operator.violations.ticket', { id: v.db_id })}
-                    className="flex w-full items-center justify-center gap-1.5 rounded-full bg-[#1D2542] py-2 text-xs font-bold text-white shadow-2xs transition-all hover:bg-[#283256] active:scale-[0.98]"
+                    className="flex w-full items-center justify-center gap-1.5 rounded-full bg-[#182B62] py-2 text-xs font-bold text-white shadow-2xs transition-all hover:bg-[#25449B] active:scale-[0.98]"
                 >
                     <span>View Details</span>
                     <ChevronRight size={13} strokeWidth={2.5} className="text-slate-300" />

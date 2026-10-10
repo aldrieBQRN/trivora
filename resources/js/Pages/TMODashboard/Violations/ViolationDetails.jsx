@@ -175,7 +175,7 @@ export default function ViolationDetails({ violationId = 'VIO-26-0001', initialR
             </div>
 
             {/* ══════════════════════════════════════════════════════════════
-                2. HEADER BANNER (Clean #1D2542 Brand Language)
+                2. HEADER BANNER (Clean #182B62 Brand Language)
                ══════════════════════════════════════════════════════════════ */}
             <div className="mb-6 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between border-b border-slate-200/80 pb-5">
                 <div>
@@ -266,7 +266,7 @@ export default function ViolationDetails({ violationId = 'VIO-26-0001', initialR
                     <div className={`flex flex-1 flex-col overflow-hidden rounded-2xl border border-slate-200/70 bg-white ${CARD_SHADOW}`}>
                         <div className="flex shrink-0 items-center justify-between border-b border-slate-100 px-5 py-3.5">
                             <div className="flex items-center gap-2">
-                                <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-[#1D2542]/[0.10] to-[#1D2542]/[0.02] text-[#1D2542]">
+                                <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-[#182B62]/[0.10] to-[#182B62]/[0.02] text-[#182B62]">
                                     <Map size={15} strokeWidth={2.2} />
                                 </div>
                                 <h2 className="text-sm font-bold text-slate-900">
@@ -335,7 +335,7 @@ export default function ViolationDetails({ violationId = 'VIO-26-0001', initialR
                     <div className={`rounded-2xl border border-slate-200/70 bg-white p-5 ${CARD_SHADOW}`}>
                         <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                             <div className="flex items-center gap-2">
-                                <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-[#1D2542]/[0.10] to-[#1D2542]/[0.02] text-[#1D2542]">
+                                <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-[#182B62]/[0.10] to-[#182B62]/[0.02] text-[#182B62]">
                                     <Bike size={15} strokeWidth={2.2} />
                                 </div>
                                 <h3 className="text-sm font-bold text-slate-900">
@@ -401,7 +401,7 @@ export default function ViolationDetails({ violationId = 'VIO-26-0001', initialR
                                         Tricycle Owner
                                     </p>
                                     <div className="flex items-center gap-3">
-                                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#1D2542] text-xs font-bold text-white shadow-2xs">
+                                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#182B62] text-xs font-bold text-white shadow-2xs">
                                             {initials}
                                         </div>
                                         <div className="min-w-0 flex-1">
@@ -454,7 +454,7 @@ export default function ViolationDetails({ violationId = 'VIO-26-0001', initialR
                     <div className={`rounded-2xl border border-slate-200/70 bg-white p-5 ${CARD_SHADOW}`}>
                         <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                             <div className="flex items-center gap-2">
-                                <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-[#1D2542]/[0.10] to-[#1D2542]/[0.02] text-[#1D2542]">
+                                <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-[#182B62]/[0.10] to-[#182B62]/[0.02] text-[#182B62]">
                                     <FileText size={15} strokeWidth={2.2} />
                                 </div>
                                 <h3 className="text-sm font-bold text-slate-900">

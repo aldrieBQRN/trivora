@@ -13,7 +13,7 @@ const STATUS_COLORS = {
     open: '#CBD5E1',
     acknowledged: '#94A3B8',
     contested: '#64748B',
-    resolved: '#1D2542',
+    resolved: '#182B62',
     dismissed: '#E2E8F0',
 };
 
@@ -74,7 +74,7 @@ export default function ViolationsTab({ from, to, data }) {
                                     <XAxis dataKey="label" tick={{ fontSize: 10 }} tickLine={false} axisLine={{ stroke: '#EEF0F5' }} />
                                     <YAxis allowDecimals={false} tick={{ fontSize: 10 }} tickLine={false} axisLine={false} width={28} />
                                     <Tooltip content={<ChartTooltip />} />
-                                    <Bar dataKey="count" name="Violations" fill="#1D2542" radius={[4, 4, 0, 0]} barSize={granularity === 'day' ? 16 : 32} />
+                                    <Bar dataKey="count" name="Violations" fill="#182B62" radius={[4, 4, 0, 0]} barSize={granularity === 'day' ? 16 : 32} />
                                 </BarChart>
                             </ResponsiveContainer>
                         </ReportCard>
@@ -92,7 +92,7 @@ export default function ViolationsTab({ from, to, data }) {
                         <ReportCard icon={Radio} title="Detection Method" subtitle="How the violation was recorded">
                             <ProfileRow
                                 items={[
-                                    { name: 'Automated', count: data.detection_split.automated || 0, color: '#1D2542' },
+                                    { name: 'Automated', count: data.detection_split.automated || 0, color: '#182B62' },
                                     { name: 'Manual', count: data.detection_split.manual || 0, color: '#94A3B8' },
                                 ]}
                             />

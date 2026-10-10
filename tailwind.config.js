@@ -19,8 +19,8 @@ export default {
                 // TMO Panel brand tokens — additive only, doesn't touch stock Tailwind
                 // colors used by BPLO/Operator/Treasurer dashboards.
                 tmo: {
-                    primary: '#1D2542',
-                    primaryHover: '#2A3454',
+                    primary: '#182B62',
+                    primaryHover: '#25449B',
                     primarySoft: '#EEF0F5',
                     ink: '#111827',
                     muted: '#6B7280',

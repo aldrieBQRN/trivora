@@ -24,7 +24,7 @@ const DOC_STATUS_CLASSES = {
     na: 'text-slate-500 bg-slate-50',
 };
 
-const BRAND_ICON_CHIP = 'bg-gradient-to-br from-[#1D2542]/[0.10] to-[#1D2542]/[0.02] text-[#1D2542]';
+const BRAND_ICON_CHIP = 'bg-gradient-to-br from-[#182B62]/[0.10] to-[#182B62]/[0.02] text-[#182B62]';
 
 function Card({ icon: Icon, title, headerTone, children, className = '' }) {
     return (
@@ -144,12 +144,12 @@ const BPLOCard = ({ bplo, stickerNumber, fullWidth = false }) => {
     return (
         <Card icon={Stamp} title="BPLO Issuance & Coding" headerTone={BRAND_ICON_CHIP}>
             <div className="space-y-5">
-                <div className="flex items-center justify-between gap-4 rounded-xl border border-dashed border-[#1D2542]/25 bg-[#1D2542]/[0.05] p-4">
+                <div className="flex items-center justify-between gap-4 rounded-xl border border-dashed border-[#182B62]/25 bg-[#182B62]/[0.05] p-4">
                     <div>
-                        <span className="block text-[10px] font-bold uppercase leading-tight text-[#1D2542]/70">
+                        <span className="block text-[10px] font-bold uppercase leading-tight text-[#182B62]/70">
                             Assigned Sticker<br />Number
                         </span>
-                        <span className="text-2xl font-black tracking-tight text-[#1D2542]">{bplo.assignedStickerNumber}</span>
+                        <span className="text-2xl font-black tracking-tight text-[#182B62]">{bplo.assignedStickerNumber}</span>
                     </div>
                     {bplo.colorCoding && (
                         <div className="flex flex-col items-end gap-1">
@@ -186,10 +186,10 @@ const BPLOCard = ({ bplo, stickerNumber, fullWidth = false }) => {
 
                     {stickerNumber && (
                         <div className="flex items-start gap-3">
-                            <ShieldCheck size={16} className="mt-0.5 shrink-0 text-[#1D2542]" />
+                            <ShieldCheck size={16} className="mt-0.5 shrink-0 text-[#182B62]" />
                             <div>
                                 <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Franchise Number</p>
-                                <p className="mt-0.5 font-mono text-sm font-bold text-[#1D2542]">{stickerNumber}</p>
+                                <p className="mt-0.5 font-mono text-sm font-bold text-[#182B62]">{stickerNumber}</p>
                             </div>
                         </div>
                     )}
@@ -221,7 +221,7 @@ const CodingSchemeEmptyState = () => (
 const HERO_TONES = {
     error:   { border: 'border-red-200',        bg: 'bg-red-50',           iconBg: 'bg-white',  iconColor: 'text-red-600',     title: 'text-red-900' },
     warn:    { border: 'border-amber-200',      bg: 'bg-amber-50',         iconBg: 'bg-white',  iconColor: 'text-amber-700',   title: 'text-amber-900' },
-    info:    { border: 'border-[#1D2542]/20',   bg: 'bg-[#1D2542]/[0.06]', iconBg: 'bg-white',  iconColor: 'text-[#1D2542]',   title: 'text-[#1D2542]' },
+    info:    { border: 'border-[#182B62]/20',   bg: 'bg-[#182B62]/[0.06]', iconBg: 'bg-white',  iconColor: 'text-[#182B62]',   title: 'text-[#182B62]' },
     success: { border: 'border-emerald-200',    bg: 'bg-emerald-50',       iconBg: 'bg-white',  iconColor: 'text-emerald-700', title: 'text-emerald-900' },
 };
 
@@ -289,7 +289,7 @@ function HorizontalTracker({ steps, phaseIdx, stepDates = {} }) {
                             <div className="flex flex-col items-center gap-1.5">
                                 <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-2 bg-white transition-colors ${
                                     state === 'done' ? 'border-emerald-600 text-emerald-600' :
-                                    state === 'current' ? 'border-[#1D2542] text-[#1D2542] ring-4 ring-[#1D2542]/15' :
+                                    state === 'current' ? 'border-[#182B62] text-[#182B62] ring-4 ring-[#182B62]/15' :
                                     'border-slate-200 text-slate-400'
                                 }`}>
                                     {state === 'done' ? <Check size={14} strokeWidth={3} /> : <Icon size={12} />}
@@ -368,7 +368,7 @@ export default function MTOPDetails({ application }) {
             <div className="mx-auto max-w-[1400px] pb-10">
                 <div className="mb-2 flex items-center justify-between">
                     <BackLink href={route('operator.mtop')}>Back to Applications</BackLink>
-                    <span className="rounded-md border border-[#1D2542]/20 bg-[#1D2542]/[0.06] px-3 py-1 font-mono text-[11px] font-bold uppercase tracking-wide text-[#1D2542]">
+                    <span className="rounded-md border border-[#182B62]/20 bg-[#182B62]/[0.06] px-3 py-1 font-mono text-[11px] font-bold uppercase tracking-wide text-[#182B62]">
                         {app.id}
                     </span>
                 </div>

@@ -177,7 +177,7 @@ export default function TricycleRegistry({ initialUnits = [], activeCodingScheme
                             <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
                                 Total Units
                             </span>
-                            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-[#1D2542]/[0.10] to-[#1D2542]/[0.02] text-[#1D2542]">
+                            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-[#182B62]/[0.10] to-[#182B62]/[0.02] text-[#182B62]">
                                 <Bike size={14} />
                             </span>
                         </div>
@@ -207,7 +207,7 @@ export default function TricycleRegistry({ initialUnits = [], activeCodingScheme
                             <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
                                 Active
                             </span>
-                            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-[#1D2542]/[0.10] to-[#1D2542]/[0.02] text-[#1D2542]">
+                            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-[#182B62]/[0.10] to-[#182B62]/[0.02] text-[#182B62]">
                                 <ShieldCheck size={14} />
                             </span>
                         </div>
@@ -237,7 +237,7 @@ export default function TricycleRegistry({ initialUnits = [], activeCodingScheme
                             <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
                                 Suspended
                             </span>
-                            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-[#1D2542]/[0.10] to-[#1D2542]/[0.02] text-[#1D2542]">
+                            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-[#182B62]/[0.10] to-[#182B62]/[0.02] text-[#182B62]">
                                 <ShieldAlert size={14} />
                             </span>
                         </div>
@@ -267,7 +267,7 @@ export default function TricycleRegistry({ initialUnits = [], activeCodingScheme
                             <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
                                 Restricted Today
                             </span>
-                            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-[#1D2542]/[0.10] to-[#1D2542]/[0.02] text-[#1D2542]">
+                            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-[#182B62]/[0.10] to-[#182B62]/[0.02] text-[#182B62]">
                                 <Calendar size={14} />
                             </span>
                         </div>
@@ -691,11 +691,11 @@ function DesktopTableRow({ unit, todayName, isWeekend }) {
                 <StatusPill status={unit.status} />
             </td>
 
-            {/* Column 6: Actions (Styled button in #1D2542 with rounded-full pill radius) */}
+            {/* Column 6: Actions (Styled button in #182B62 with rounded-full pill radius) */}
             <td className="py-3.5 pl-3 pr-5 text-right align-middle">
                 <Link
                     href={route('tricycle.details', unit.id)}
-                    className="inline-flex items-center gap-1 rounded-full bg-[#1D2542] hover:bg-[#283256] text-white px-3.5 py-1.5 text-xs font-semibold shadow-2xs transition-all active:scale-[0.98]"
+                    className="inline-flex items-center gap-1 rounded-full bg-[#182B62] hover:bg-[#25449B] text-white px-3.5 py-1.5 text-xs font-semibold shadow-2xs transition-all active:scale-[0.98]"
                 >
                     <span>Profile</span>
                     <ChevronRight size={13} strokeWidth={2.5} className="text-slate-300" />
@@ -770,11 +770,11 @@ function MobileUnitCard({ unit, todayName, isWeekend }) {
                 </div>
             </div>
 
-            {/* Action Button: #1D2542 with rounded-full radius */}
+            {/* Action Button: #182B62 with rounded-full radius */}
             <div className="mt-2.5 pt-2 border-t border-slate-100">
                 <Link
                     href={route('tricycle.details', unit.id)}
-                    className="flex w-full items-center justify-center gap-1.5 rounded-full bg-[#1D2542] hover:bg-[#283256] text-white py-2 text-xs font-bold shadow-2xs transition-all active:scale-[0.98]"
+                    className="flex w-full items-center justify-center gap-1.5 rounded-full bg-[#182B62] hover:bg-[#25449B] text-white py-2 text-xs font-bold shadow-2xs transition-all active:scale-[0.98]"
                 >
                     <span>View Profile</span>
                     <ChevronRight size={13} strokeWidth={2.5} className="text-slate-300" />

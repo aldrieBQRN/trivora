@@ -92,7 +92,7 @@ export default function PhysicalInspection({ application }) {
                             title: 'Inspection Approved!',
                             text: 'Physical inspection passed. Application moved to BPLO Releasing. Applicant notified.',
                             icon: 'success',
-                            confirmButtonColor: '#1D2542',
+                            confirmButtonColor: '#182B62',
                             timer: 2000,
                             showConfirmButton: false,
                         });
@@ -230,7 +230,7 @@ export default function PhysicalInspection({ application }) {
                     <div className={`overflow-hidden rounded-2xl border border-slate-200/70 bg-white ${CARD_SHADOW}`}>
                         <div className="border-b border-slate-100 bg-slate-50/60 px-5 py-4">
                             <div className="flex items-center gap-2.5">
-                                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-[#1D2542]/[0.10] to-[#1D2542]/[0.02] text-[#1D2542]">
+                                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-[#182B62]/[0.10] to-[#182B62]/[0.02] text-[#182B62]">
                                     <ShieldCheck size={18} strokeWidth={2.2} />
                                 </div>
                                 <div>
@@ -423,7 +423,7 @@ export default function PhysicalInspection({ application }) {
                     <div className={`rounded-2xl border border-slate-200/70 bg-white p-5 ${CARD_SHADOW}`}>
                         <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-3.5">
                             <div className="flex items-center gap-2">
-                                <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-[#1D2542]/[0.10] to-[#1D2542]/[0.02] text-[#1D2542]">
+                                <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-[#182B62]/[0.10] to-[#182B62]/[0.02] text-[#182B62]">
                                     <Bike size={15} strokeWidth={2.2} />
                                 </div>
                                 <h3 className="text-sm font-bold text-slate-900">Applicant Details</h3>
@@ -431,7 +431,7 @@ export default function PhysicalInspection({ application }) {
                         </div>
 
                         <div className="flex items-center gap-3 pb-3 border-b border-slate-100">
-                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#1D2542] to-[#2A3560] text-xs font-bold text-white shadow-2xs">
+                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#182B62] to-[#2A3560] text-xs font-bold text-white shadow-2xs">
                                 {operatorInitials}
                             </div>
                             <div className="min-w-0 flex-1">
@@ -505,7 +505,7 @@ export default function PhysicalInspection({ application }) {
                     <div className={`rounded-2xl border border-slate-200/70 bg-white p-5 ${CARD_SHADOW}`}>
                         <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
                             <div className="flex items-center gap-2">
-                                <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-[#1D2542]/[0.10] to-[#1D2542]/[0.02] text-[#1D2542]">
+                                <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-[#182B62]/[0.10] to-[#182B62]/[0.02] text-[#182B62]">
                                     <Bike size={15} strokeWidth={2.2} />
                                 </div>
                                 <div>

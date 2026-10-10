@@ -31,7 +31,7 @@ export default function QrRidePrint({ unit, qrRide }) {
                             <Download size={14} /> Download PNG
                         </button>
                         <button type="button" onClick={() => window.print()}
-                            className="inline-flex items-center gap-1.5 rounded-lg bg-[#1D2542] px-3 py-2 text-xs font-bold text-white hover:opacity-90">
+                            className="inline-flex items-center gap-1.5 rounded-lg bg-[#182B62] px-3 py-2 text-xs font-bold text-white hover:opacity-90">
                             <Printer size={14} /> Print
                         </button>
                     </div>
@@ -49,7 +49,7 @@ export default function QrRidePrint({ unit, qrRide }) {
             {/* The sheet (A6) */}
             <div className="qr-sheet mx-auto my-8 flex w-[105mm] min-h-[148mm] flex-col items-center justify-between border border-slate-200 bg-white px-[9mm] py-[10mm] text-center shadow-sm print:my-0">
                 <div>
-                    <p className="text-[15pt] font-black tracking-[0.28em] text-[#1D2542]">TRIVORA</p>
+                    <p className="text-[15pt] font-black tracking-[0.28em] text-[#182B62]">TRIVORA</p>
                     <p className="mt-[2mm] text-[20pt] font-black leading-none tracking-tight text-slate-900">SCAN TO RIDE</p>
                 </div>
 

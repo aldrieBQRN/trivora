@@ -54,7 +54,7 @@ export default function NotificationBell() {
             >
                 <Bell size={18} strokeWidth={1.8} />
                 {unread > 0 && (
-                    <span className="absolute right-1 top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#1D2542] px-1 text-[9px] font-bold leading-none text-white ring-2 ring-white">
+                    <span className="absolute right-1 top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#182B62] px-1 text-[9px] font-bold leading-none text-white ring-2 ring-white">
                         {unread > 9 ? '9+' : unread}
                     </span>
                 )}
@@ -75,7 +75,7 @@ export default function NotificationBell() {
                             <button
                                 type="button"
                                 onClick={markAllRead}
-                                className="text-[11.5px] font-semibold text-[#1D2542] hover:underline"
+                                className="text-[11.5px] font-semibold text-[#182B62] hover:underline"
                             >
                                 Mark all as read
                             </button>
@@ -94,7 +94,7 @@ export default function NotificationBell() {
                                 <li key={n.id} className={n.read ? 'bg-white' : 'bg-slate-50/70'}>
                                     <div className="flex items-start gap-3 px-4 py-3">
                                         <span
-                                            className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${n.read ? 'bg-transparent' : 'bg-[#1D2542]'}`}
+                                            className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${n.read ? 'bg-transparent' : 'bg-[#182B62]'}`}
                                             aria-hidden="true"
                                         />
                                         <button

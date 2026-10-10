@@ -1,7 +1,7 @@
 import Swal from 'sweetalert2';
 
 const TONE_COLORS = {
-    primary: '#1D2542',
+    primary: '#182B62',
     success: '#059669',
     danger: '#DC2626',
     warning: '#D97706',

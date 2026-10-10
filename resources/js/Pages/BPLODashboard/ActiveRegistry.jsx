@@ -105,12 +105,12 @@ export default function ActiveRegistry({
                             <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
                                 Total Issued Units
                             </span>
-                            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-[#1D2542]/[0.10] to-[#1D2542]/[0.02] text-[#1D2542]">
+                            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-[#182B62]/[0.10] to-[#182B62]/[0.02] text-[#182B62]">
                                 <Hash size={14} />
                             </span>
                         </div>
                         <div className="mt-2 flex items-baseline gap-2">
-                            <span className="text-2xl sm:text-3xl font-extrabold tracking-tight tabular-nums text-[#1D2542]">
+                            <span className="text-2xl sm:text-3xl font-extrabold tracking-tight tabular-nums text-[#182B62]">
                                 {totalCount}
                             </span>
                             <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
@@ -124,7 +124,7 @@ export default function ActiveRegistry({
 
                     <div className="mt-3 rounded-xl bg-slate-50 p-2.5 flex items-center justify-between text-xs">
                         <span className="text-[11px] font-medium text-slate-500">Registry:</span>
-                        <span className="text-xs font-bold text-[#1D2542]">Synced</span>
+                        <span className="text-xs font-bold text-[#182B62]">Synced</span>
                     </div>
                 </div>
 
@@ -197,7 +197,7 @@ export default function ActiveRegistry({
                             <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
                                 Jurisdiction
                             </span>
-                            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-[#1D2542]/[0.10] to-[#1D2542]/[0.02] text-[#1D2542]">
+                            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-[#182B62]/[0.10] to-[#182B62]/[0.02] text-[#182B62]">
                                 <MapPin size={14} />
                             </span>
                         </div>
@@ -238,7 +238,7 @@ export default function ActiveRegistry({
                             placeholder="Search by Sticker Number, Plate No, or Operator..."
                             value={query}
                             onChange={(e) => setQuery(e.target.value)}
-                            className="h-10 w-full rounded-lg border border-slate-200 bg-slate-50/50 pl-10 pr-9 text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 shadow-2xs transition-all focus:border-[#1D2542] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#1D2542]/10"
+                            className="h-10 w-full rounded-lg border border-slate-200 bg-slate-50/50 pl-10 pr-9 text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 shadow-2xs transition-all focus:border-[#182B62] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#182B62]/10"
                         />
                         {query && (
                             <button
@@ -257,7 +257,7 @@ export default function ActiveRegistry({
                         <select
                             value={statusFilter}
                             onChange={(e) => setStatusFilter(e.target.value)}
-                            className="h-10 w-full sm:w-44 rounded-lg border border-slate-200 bg-white px-3 pr-8 text-xs font-semibold text-slate-700 shadow-2xs transition-colors focus:border-[#1D2542] focus:outline-none focus:ring-2 focus:ring-[#1D2542]/10 cursor-pointer"
+                            className="h-10 w-full sm:w-44 rounded-lg border border-slate-200 bg-white px-3 pr-8 text-xs font-semibold text-slate-700 shadow-2xs transition-colors focus:border-[#182B62] focus:outline-none focus:ring-2 focus:ring-[#182B62]/10 cursor-pointer"
                         >
                             <option value="all">All Statuses</option>
                             <option value="active">Active Only</option>
@@ -387,7 +387,7 @@ export default function ActiveRegistry({
                                                         onClick={() => setCurrentPage(p)}
                                                         className={`flex h-8 w-8 items-center justify-center rounded-md text-xs font-bold transition-all ${
                                                             activePage === p
-                                                                ? 'bg-[#1D2542] text-white shadow-sm'
+                                                                ? 'bg-[#182B62] text-white shadow-sm'
                                                                 : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
                                                         }`}
                                                     >
@@ -549,7 +549,7 @@ function DesktopRegistryRow({ unit }) {
             <td className="py-3.5 pl-3 pr-5 text-right align-middle">
                 <Link
                     href={`/bplo/registry/${unit.plate_no}`}
-                    className="inline-flex items-center gap-1 rounded-full bg-[#1D2542] hover:bg-[#283256] text-white px-3.5 py-1.5 text-xs font-semibold shadow-2xs transition-all active:scale-[0.98]"
+                    className="inline-flex items-center gap-1 rounded-full bg-[#182B62] hover:bg-[#25449B] text-white px-3.5 py-1.5 text-xs font-semibold shadow-2xs transition-all active:scale-[0.98]"
                 >
                     <span>View Details</span>
                     <ChevronRight size={13} strokeWidth={2.5} className="text-slate-300" />
@@ -605,7 +605,7 @@ function MobileRegistryCard({ unit }) {
             <div className="mt-2.5 pt-2 border-t border-slate-100">
                 <Link
                     href={`/bplo/registry/${unit.plate_no}`}
-                    className="flex w-full items-center justify-center gap-1.5 rounded-full bg-[#1D2542] hover:bg-[#283256] text-white py-2 text-xs font-bold shadow-2xs transition-all active:scale-[0.98]"
+                    className="flex w-full items-center justify-center gap-1.5 rounded-full bg-[#182B62] hover:bg-[#25449B] text-white py-2 text-xs font-bold shadow-2xs transition-all active:scale-[0.98]"
                 >
                     <span>View Details</span>
                     <ChevronRight size={13} strokeWidth={2.5} className="text-slate-300" />

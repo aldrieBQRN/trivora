@@ -155,7 +155,7 @@ export default function LiveMonitoring({ initialTricycles = [], stats = {}, acti
                 <div className={`flex flex-col justify-between rounded-2xl border border-slate-200/70 bg-white p-4 sm:p-5 ${CARD_SHADOW} md:col-span-12 xl:col-span-6`}>
                     <div className="flex items-center justify-between gap-3 pb-3 border-b border-slate-100">
                         <div className="flex items-center gap-3">
-                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#1D2542]/[0.10] to-[#1D2542]/[0.02] text-[#1D2542]">
+                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#182B62]/[0.10] to-[#182B62]/[0.02] text-[#182B62]">
                                 <Bike size={20} strokeWidth={2.2} />
                             </div>
                             <div>
@@ -220,13 +220,13 @@ export default function LiveMonitoring({ initialTricycles = [], stats = {}, acti
                             <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
                                 Ordinance Enforcement
                             </span>
-                            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-[#1D2542]/[0.10] to-[#1D2542]/[0.02] text-[#1D2542]">
+                            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-[#182B62]/[0.10] to-[#182B62]/[0.02] text-[#182B62]">
                                 <Calendar size={14} />
                             </span>
                         </div>
 
                         <div className="mt-2 flex items-center gap-2">
-                            <span className="text-base sm:text-lg font-extrabold text-[#1D2542]">{todayName}</span>
+                            <span className="text-base sm:text-lg font-extrabold text-[#182B62]">{todayName}</span>
                             {!isWeekend && todayCodingRule && (
                                 <span
                                     className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-bold text-slate-800"
@@ -268,14 +268,14 @@ export default function LiveMonitoring({ initialTricycles = [], stats = {}, acti
                             <span className={`flex h-7 w-7 items-center justify-center rounded-lg ${
                                 realViolations.length > 0
                                     ? 'bg-gradient-to-br from-rose-500/[0.12] to-rose-500/[0.02] text-rose-600'
-                                    : 'bg-gradient-to-br from-[#1D2542]/[0.10] to-[#1D2542]/[0.02] text-[#1D2542]'
+                                    : 'bg-gradient-to-br from-[#182B62]/[0.10] to-[#182B62]/[0.02] text-[#182B62]'
                             }`}>
                                 <ShieldAlert size={14} />
                             </span>
                         </div>
                         <div className="mt-2 flex items-baseline gap-2">
                             <span className={`text-2xl sm:text-3xl font-extrabold tracking-tight tabular-nums ${
-                                realViolations.length > 0 ? 'text-rose-600' : 'text-[#1D2542]'
+                                realViolations.length > 0 ? 'text-rose-600' : 'text-[#182B62]'
                             }`}>
                                 {realViolations.length}
                             </span>
@@ -325,7 +325,7 @@ export default function LiveMonitoring({ initialTricycles = [], stats = {}, acti
                                 onClick={() => setActiveTab('units')}
                                 className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-2.5 rounded-lg text-xs font-bold transition-all ${
                                     activeTab === 'units'
-                                        ? 'bg-[#1D2542] text-white shadow-xs'
+                                        ? 'bg-[#182B62] text-white shadow-xs'
                                         : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/70'
                                 }`}
                             >
@@ -343,7 +343,7 @@ export default function LiveMonitoring({ initialTricycles = [], stats = {}, acti
                                 onClick={() => setActiveTab('alerts')}
                                 className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-2.5 rounded-lg text-xs font-bold transition-all ${
                                     activeTab === 'alerts'
-                                        ? 'bg-[#1D2542] text-white shadow-xs'
+                                        ? 'bg-[#182B62] text-white shadow-xs'
                                         : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/70'
                                 }`}
                             >
@@ -372,7 +372,7 @@ export default function LiveMonitoring({ initialTricycles = [], stats = {}, acti
                                                 placeholder="Filter by plate, sticker number, or driver..."
                                                 value={unitSearch}
                                                 onChange={(e) => setUnitSearch(e.target.value)}
-                                                className="w-full h-8 rounded-lg border border-slate-200 bg-slate-50 pl-9 pr-8 text-xs font-medium text-slate-800 placeholder:text-slate-400 focus:bg-white focus:outline-none focus:border-[#1D2542] focus:ring-1 focus:ring-[#1D2542]"
+                                                className="w-full h-8 rounded-lg border border-slate-200 bg-slate-50 pl-9 pr-8 text-xs font-medium text-slate-800 placeholder:text-slate-400 focus:bg-white focus:outline-none focus:border-[#182B62] focus:ring-1 focus:ring-[#182B62]"
                                             />
                                             {unitSearch && (
                                                 <button
@@ -392,7 +392,7 @@ export default function LiveMonitoring({ initialTricycles = [], stats = {}, acti
                                             value={unitStatusFilter}
                                             onChange={(e) => setUnitStatusFilter(e.target.value)}
                                             aria-label="Filter units by status"
-                                            className="h-8 min-w-[108px] shrink-0 rounded-lg border border-slate-200 bg-slate-50 pl-2.5 pr-7 text-xs font-semibold text-slate-700 focus:border-[#1D2542] focus:outline-none focus:ring-1 focus:ring-[#1D2542]"
+                                            className="h-8 min-w-[108px] shrink-0 rounded-lg border border-slate-200 bg-slate-50 pl-2.5 pr-7 text-xs font-semibold text-slate-700 focus:border-[#182B62] focus:outline-none focus:ring-1 focus:ring-[#182B62]"
                                         >
                                             <option value="all">All ({statusCounts.all})</option>
                                             <option value="online">Online ({statusCounts.online})</option>
@@ -426,7 +426,7 @@ export default function LiveMonitoring({ initialTricycles = [], stats = {}, acti
                                                         !unit.hasRealGPS ? 'cursor-default opacity-80' : 'cursor-pointer'
                                                     } ${
                                                         isSelected
-                                                            ? 'border-[#1D2542] bg-slate-50 shadow-xs'
+                                                            ? 'border-[#182B62] bg-slate-50 shadow-xs'
                                                             : 'border-transparent hover:border-slate-200 hover:bg-slate-50/60'
                                                     }`}
                                                 >
@@ -524,7 +524,7 @@ export default function LiveMonitoring({ initialTricycles = [], stats = {}, acti
                                                 <button
                                                     type="button"
                                                     onClick={() => setSelectedUnitId(v.db_id)}
-                                                    className="font-bold text-[#1D2542] hover:underline inline-flex items-center gap-0.5"
+                                                    className="font-bold text-[#182B62] hover:text-[#25449B] hover:underline inline-flex items-center gap-0.5"
                                                 >
                                                     Locate on Map <ChevronRight size={11} />
                                                 </button>
@@ -533,7 +533,7 @@ export default function LiveMonitoring({ initialTricycles = [], stats = {}, acti
                                     ))
                                 ) : (
                                     <div className="flex flex-col items-center justify-center flex-1 py-16 text-center">
-                                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 text-[#1D2542] mb-3">
+                                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 text-[#182B62] mb-3">
                                             <ShieldCheck size={24} />
                                         </div>
                                         <h4 className="text-sm font-bold text-slate-900">All Units Compliant</h4>
@@ -562,7 +562,7 @@ export default function LiveMonitoring({ initialTricycles = [], stats = {}, acti
                 <div className={`rounded-2xl border border-slate-200/70 bg-white p-5 ${CARD_SHADOW} lg:col-span-8 flex flex-col h-full`}>
                     <div className="mb-4 flex items-center justify-between gap-3 border-b border-slate-100 pb-3.5">
                         <div className="flex min-w-0 items-center gap-2.5">
-                            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#1D2542]/[0.10] to-[#1D2542]/[0.02] text-[#1D2542]">
+                            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#182B62]/[0.10] to-[#182B62]/[0.02] text-[#182B62]">
                                 <BarChart3 size={16} strokeWidth={2.2} />
                             </div>
                             <div className="min-w-0">
@@ -616,7 +616,7 @@ export default function LiveMonitoring({ initialTricycles = [], stats = {}, acti
                 <div className={`rounded-2xl border border-slate-200/70 bg-white p-5 ${CARD_SHADOW} lg:col-span-4 flex flex-col justify-between h-full`}>
                     <div>
                         <div className="flex items-center gap-2 border-b border-slate-100 pb-3 mb-4">
-                            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-[#1D2542]">
+                            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-[#182B62]">
                                 <Activity size={16} strokeWidth={2.2} />
                             </div>
                             <div>
@@ -635,7 +635,7 @@ export default function LiveMonitoring({ initialTricycles = [], stats = {}, acti
                                         <Bike size={14} />
                                     </div>
                                     <div>
-                                        <div className="text-xs font-bold text-slate-900 group-hover:text-indigo-600 transition-colors">
+                                        <div className="text-xs font-bold text-slate-900 group-hover:text-[#25449B] transition-colors">
                                             Active Tricycle Registry
                                         </div>
                                         <div className="text-[10.5px] text-slate-500">{registeredFleet} units officially authorized</div>

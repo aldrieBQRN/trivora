@@ -110,7 +110,7 @@ export function ProfileRow({ icon: Icon, label, items }) {
                                     <span className="text-tmo-muted">{i.count} ({pct}%)</span>
                                 </div>
                                 <div className="h-1.5 overflow-hidden rounded-full bg-tmo-bg">
-                                    <div className="h-full rounded-full" style={{ width: `${pct}%`, background: i.color || '#1D2542' }} />
+                                    <div className="h-full rounded-full" style={{ width: `${pct}%`, background: i.color || '#182B62' }} />
                                 </div>
                             </div>
                         );

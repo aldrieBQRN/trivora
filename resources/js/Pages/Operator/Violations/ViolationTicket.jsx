@@ -25,7 +25,7 @@ function Card({ icon: Icon, title, children }) {
     return (
         <div className={`overflow-hidden rounded-2xl border border-slate-200/70 bg-white ${CARD_SHADOW}`}>
             <div className="flex items-center gap-3 border-b border-slate-100 bg-slate-50/60 px-5 py-4">
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-[#1D2542]/[0.10] to-[#1D2542]/[0.02] text-[#1D2542]">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-[#182B62]/[0.10] to-[#182B62]/[0.02] text-[#182B62]">
                     <Icon size={16} />
                 </div>
                 <h2 className="text-[15px] font-bold text-slate-900">{title}</h2>
@@ -164,7 +164,7 @@ function AppealForm({ appealUrl }) {
     return (
         <div className={`mb-6 rounded-2xl border border-slate-200/70 bg-white p-5 sm:p-6 ${CARD_SHADOW}`}>
             <div className="mb-4 flex items-center gap-2.5">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-[#1D2542]/[0.10] to-[#1D2542]/[0.02] text-[#1D2542]">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-[#182B62]/[0.10] to-[#182B62]/[0.02] text-[#182B62]">
                     <Scale size={16} />
                 </div>
                 <div>
@@ -208,7 +208,7 @@ function AppealForm({ appealUrl }) {
                                 <button
                                     type="button"
                                     onClick={() => galleryInputRef.current?.click()}
-                                    className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 transition-colors hover:border-[#1D2542] hover:text-[#1D2542]"
+                                    className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 transition-colors hover:border-[#182B62] hover:text-[#182B62]"
                                 >
                                     <ImagePlus size={14} /> Upload Photo
                                 </button>
@@ -274,7 +274,7 @@ export default function ViolationTicket({ violation }) {
             <div className="mx-auto max-w-[1400px] pb-10">
                 <div className="mb-2 flex items-center justify-between">
                     <BackLink href={route('operator.violations')}>Back to Active Violations</BackLink>
-                    <span className="rounded-md border border-[#1D2542]/20 bg-[#1D2542]/[0.06] px-3 py-1 font-mono text-[11px] font-bold uppercase tracking-wide text-[#1D2542]">
+                    <span className="rounded-md border border-[#182B62]/20 bg-[#182B62]/[0.06] px-3 py-1 font-mono text-[11px] font-bold uppercase tracking-wide text-[#182B62]">
                         {violation.id}
                     </span>
                 </div>

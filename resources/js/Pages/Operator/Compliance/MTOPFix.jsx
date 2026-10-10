@@ -76,7 +76,7 @@ export default function MTOPFix({ application }) {
                 : 'Confirm that you have uploaded the correct replacement documents.',
             icon: 'question',
             showCancelButton: true,
-            confirmButtonColor: '#1D2542',
+            confirmButtonColor: '#182B62',
             cancelButtonColor: '#6B7280',
             confirmButtonText: 'Yes, Confirm',
         }).then((result) => {
@@ -210,7 +210,7 @@ export default function MTOPFix({ application }) {
                                                     <XCircle size={22} className="shrink-0 text-red-600" strokeWidth={2} />
                                                 </div>
 
-                                                <label className={`m-6 block cursor-pointer rounded-xl border-2 border-dashed p-8 text-center transition-colors ${hasFiles ? 'border-emerald-300 bg-emerald-50/60' : 'border-[#1D2542]/25 bg-slate-50 hover:border-[#1D2542]/50 hover:bg-[#1D2542]/[0.04]'}`}>
+                                                <label className={`m-6 block cursor-pointer rounded-xl border-2 border-dashed p-8 text-center transition-colors ${hasFiles ? 'border-emerald-300 bg-emerald-50/60' : 'border-[#182B62]/25 bg-slate-50 hover:border-[#182B62]/50 hover:bg-[#182B62]/[0.04]'}`}>
                                                     <input
                                                         type="file"
                                                         multiple
@@ -222,7 +222,7 @@ export default function MTOPFix({ application }) {
                                                             }
                                                         }}
                                                     />
-                                                    <div className="mx-auto mb-3.5 flex h-12 w-12 items-center justify-center rounded-lg bg-gradient-to-br from-[#1D2542]/[0.10] to-[#1D2542]/[0.02] text-[#1D2542]">
+                                                    <div className="mx-auto mb-3.5 flex h-12 w-12 items-center justify-center rounded-lg bg-gradient-to-br from-[#182B62]/[0.10] to-[#182B62]/[0.02] text-[#182B62]">
                                                         {hasFiles ? <Check size={22} /> : <UploadCloud size={22} />}
                                                     </div>
                                                     <p className="text-sm font-bold text-slate-900">
@@ -250,8 +250,8 @@ export default function MTOPFix({ application }) {
                         )}
 
                         {isPhysFix && (
-                            <label className="mt-8 flex cursor-pointer items-center gap-3.5 rounded-xl border border-[#1D2542]/20 bg-[#1D2542]/[0.06] p-5 transition-colors hover:border-[#1D2542]/40">
-                                <input type="checkbox" checked={repairsConfirmed} onChange={(e) => setRepairsConfirmed(e.target.checked)} className="h-5 w-5 cursor-pointer accent-[#1D2542]" />
+                            <label className="mt-8 flex cursor-pointer items-center gap-3.5 rounded-xl border border-[#182B62]/20 bg-[#182B62]/[0.06] p-5 transition-colors hover:border-[#182B62]/40">
+                                <input type="checkbox" checked={repairsConfirmed} onChange={(e) => setRepairsConfirmed(e.target.checked)} className="h-5 w-5 cursor-pointer accent-[#182B62]" />
                                 <span className="cursor-pointer select-none text-sm font-semibold leading-relaxed text-slate-900">
                                     I have addressed the inspection issues and the vehicle is ready for reinspection.
                                 </span>

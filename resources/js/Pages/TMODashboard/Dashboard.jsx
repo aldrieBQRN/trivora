@@ -114,7 +114,7 @@ export default function Dashboard({
                 <div className="relative flex flex-col gap-8 lg:flex-row lg:items-center lg:justify-between">
                     <div className="max-w-lg">
                         <div className="flex items-center gap-3">
-                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#1D2542] to-[#2A3560] text-[11px] font-bold text-white shadow-sm">
+                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#182B62] to-[#25449B] text-[11px] font-bold text-white shadow-sm">
                                 {initials}
                             </div>
                             <span className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-1 text-[10.5px] font-bold uppercase tracking-widest text-slate-500">
@@ -127,7 +127,7 @@ export default function Dashboard({
                         </h1>
                         <p className="mt-2.5 text-[13px] sm:text-sm text-slate-500 leading-relaxed">
                             {actionableTotal > 0 ? (
-                                <>You have <strong className="font-bold text-[#1D2542]">{actionableTotal}</strong> application{actionableTotal === 1 ? '' : 's'} across the pipeline waiting on your review.</>
+                                <>You have <strong className="font-bold text-[#182B62]">{actionableTotal}</strong> application{actionableTotal === 1 ? '' : 's'} across the pipeline waiting on your review.</>
                             ) : (
                                 "You're all caught up — nothing is waiting on your review right now."
                             )}
@@ -210,7 +210,7 @@ export default function Dashboard({
                     href="/tmo/docs" icon={FileSearch} count={toCount(pipeline.document_review)} label="Document Review"
                     total={actionableTotal}
                     segments={[
-                        { label: 'New', value: toCount(pipelineBreakdown.document_review.new), color: '#1D2542' },
+                        { label: 'New', value: toCount(pipelineBreakdown.document_review.new), color: '#182B62' },
                         { label: 'Resubmission', value: toCount(pipelineBreakdown.document_review.resubmission), color: '#F43F5E' },
                     ]}
                     oldest={pipelineBreakdown.document_review.oldest}
@@ -219,7 +219,7 @@ export default function Dashboard({
                     href="/tmo/physical" icon={ClipboardCheck} count={toCount(pipeline.physical)} label="Physical Inspection"
                     total={actionableTotal}
                     segments={[
-                        { label: 'Scheduled', value: toCount(pipelineBreakdown.physical.scheduled), color: '#1D2542' },
+                        { label: 'Scheduled', value: toCount(pipelineBreakdown.physical.scheduled), color: '#182B62' },
                         { label: 'Re-inspection', value: toCount(pipelineBreakdown.physical.reinspection), color: '#F43F5E' },
                     ]}
                     oldest={pipelineBreakdown.physical.oldest}
@@ -242,7 +242,7 @@ export default function Dashboard({
                 <div className={`rounded-2xl border border-slate-200/70 bg-white p-5 ${CARD_SHADOW} transition-shadow ${CARD_SHADOW_HOVER}`}>
                     <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-3.5">
                         <div className="flex min-w-0 items-center gap-2.5">
-                            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#1D2542]/[0.09] to-[#1D2542]/[0.02] text-[#1D2542]">
+                            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#182B62]/[0.09] to-[#182B62]/[0.02] text-[#182B62]">
                                 <Landmark size={16} strokeWidth={2.2} />
                             </div>
                             <h3 className="truncate text-[13.5px] font-bold text-slate-900">Sticker Release (BPLO)</h3>
@@ -258,12 +258,12 @@ export default function Dashboard({
                 <Link href="/violations" className={`group rounded-2xl border border-slate-200/70 bg-white p-5 ${CARD_SHADOW} transition-all hover:-translate-y-0.5 hover:border-slate-300 ${CARD_SHADOW_HOVER}`}>
                     <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-3.5">
                         <div className="flex min-w-0 items-center gap-2.5">
-                            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#1D2542]/[0.09] to-[#1D2542]/[0.02] text-[#1D2542]">
+                            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#182B62]/[0.09] to-[#182B62]/[0.02] text-[#182B62]">
                                 <Bike size={16} strokeWidth={2.2} />
                             </div>
                             <h3 className="truncate text-[13.5px] font-bold text-slate-900">Fleet &amp; Violations</h3>
                         </div>
-                        <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-400 transition-all group-hover:bg-[#1D2542] group-hover:text-white">
+                        <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-400 transition-all group-hover:bg-[#182B62] group-hover:text-white">
                             <ArrowUpRight size={13} strokeWidth={2.4} />
                         </span>
                     </div>
@@ -294,7 +294,7 @@ export default function Dashboard({
                 <div className={`lg:col-span-7 flex flex-col rounded-2xl border border-slate-200/70 bg-white ${CARD_SHADOW}`}>
                     <div className="flex items-center justify-between gap-2 border-b border-slate-100 px-5 py-4">
                         <div className="flex min-w-0 items-center gap-2.5">
-                            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-[#1D2542]/[0.09] to-[#1D2542]/[0.02] text-[#1D2542]">
+                            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-[#182B62]/[0.09] to-[#182B62]/[0.02] text-[#182B62]">
                                 <Clock size={15} strokeWidth={2.2} />
                             </div>
                             <h3 className="truncate text-[13.5px] font-bold text-slate-900">Recent Activity</h3>
@@ -340,7 +340,7 @@ export default function Dashboard({
                 {/* ── Your activity today: recharts radial gauges ── */}
                 <div className={`lg:col-span-5 flex flex-col rounded-2xl border border-slate-200/70 bg-white p-5 ${CARD_SHADOW}`}>
                     <div className="flex items-center gap-2.5 border-b border-slate-100 pb-3.5">
-                        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-[#1D2542]/[0.09] to-[#1D2542]/[0.02] text-[#1D2542]">
+                        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-[#182B62]/[0.09] to-[#182B62]/[0.02] text-[#182B62]">
                             <CheckCircle2 size={15} strokeWidth={2.2} />
                         </div>
                         <h3 className="text-[13.5px] font-bold text-slate-900">Your Activity Today</h3>
@@ -399,19 +399,19 @@ function PipelineCard({ href, icon: Icon, count, label, segments, oldest, note, 
             <div className="flex items-center justify-between">
                 <div className={`flex h-10 w-10 items-center justify-center rounded-xl transition-colors ${
                     active
-                        ? 'bg-gradient-to-br from-[#1D2542]/[0.10] to-[#1D2542]/[0.02] text-[#1D2542]'
+                        ? 'bg-gradient-to-br from-[#182B62]/[0.10] to-[#182B62]/[0.02] text-[#182B62]'
                         : 'bg-slate-100 text-slate-400'
                 }`}>
                     <Icon size={18} strokeWidth={2.2} />
                 </div>
-                <span className="flex h-7 w-7 items-center justify-center rounded-full text-slate-300 transition-all group-hover:bg-[#1D2542] group-hover:text-white">
+                <span className="flex h-7 w-7 items-center justify-center rounded-full text-slate-300 transition-all group-hover:bg-[#182B62] group-hover:text-white">
                     <ChevronRight size={15} strokeWidth={2.4} className="transition-transform group-hover:translate-x-0.5" />
                 </span>
             </div>
 
             <div className="mt-4">
                 <div className="flex items-baseline gap-2">
-                    <span className={`text-[32px] font-extrabold tracking-tight tabular-nums leading-none ${active ? 'text-[#1D2542]' : 'text-slate-900'}`}>
+                    <span className={`text-[32px] font-extrabold tracking-tight tabular-nums leading-none ${active ? 'text-[#182B62]' : 'text-slate-900'}`}>
                         {safeCount}
                     </span>
                     {active && total > 0 && (
@@ -445,7 +445,7 @@ function PipelineCard({ href, icon: Icon, count, label, segments, oldest, note, 
 
             <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3 text-[11px]">
                 <span className="text-slate-400">{oldest ? `Oldest: ${oldest} waiting` : 'All clear'}</span>
-                <span className="font-semibold text-[#1D2542]">Review Now</span>
+                <span className="font-semibold text-[#182B62] transition-colors group-hover:text-[#25449B]">Review Now</span>
             </div>
         </Link>
     );

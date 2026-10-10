@@ -8,7 +8,7 @@ import { KpiTile, ChartTooltip, StatusDonut, ProfileRow, GranularityToggle, aggr
 // semantic amber/red (real compliance signals, not decoration); unregistered — the pre-franchise
 // holding status most tricycles sit in while an application is mid-pipeline — stays neutral gray.
 const STATUS_COLORS = {
-    active: '#1D2542',
+    active: '#182B62',
     unregistered: '#94A3B8',
     suspended: '#D97706',
     revoked: '#DC2626',
@@ -62,7 +62,7 @@ export default function FleetTab({ from, to, data }) {
                                 <XAxis dataKey="label" tick={{ fontSize: 10 }} tickLine={false} axisLine={{ stroke: '#EEF0F5' }} />
                                 <YAxis allowDecimals={false} tick={{ fontSize: 10 }} tickLine={false} axisLine={false} width={28} />
                                 <Tooltip content={<ChartTooltip />} />
-                                <Bar dataKey="count" name="Registrations" fill="#1D2542" radius={[4, 4, 0, 0]} barSize={granularity === 'day' ? 16 : 32} />
+                                <Bar dataKey="count" name="Registrations" fill="#182B62" radius={[4, 4, 0, 0]} barSize={granularity === 'day' ? 16 : 32} />
                             </BarChart>
                         </ResponsiveContainer>
                     )}
@@ -95,7 +95,7 @@ export default function FleetTab({ from, to, data }) {
                 <ReportCard icon={Satellite} title="Tracking Method Adoption" subtitle="How active units report their location">
                     <ProfileRow
                         items={[
-                            { name: 'IoT GPS Device', count: data.tracking_split.iot, color: '#1D2542' },
+                            { name: 'IoT GPS Device', count: data.tracking_split.iot, color: '#182B62' },
                             { name: 'Mobile Driver App', count: data.tracking_split.mobile, color: '#94A3B8' },
                         ]}
                     />

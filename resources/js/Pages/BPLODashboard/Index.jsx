@@ -79,12 +79,12 @@ export default function BPLODashboard({ stats }) {
                             <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
                                 Active Registry
                             </span>
-                            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-[#1D2542]/[0.10] to-[#1D2542]/[0.02] text-[#1D2542]">
+                            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-[#182B62]/[0.10] to-[#182B62]/[0.02] text-[#182B62]">
                                 <Hash size={14} />
                             </span>
                         </div>
                         <div className="mt-2 flex items-baseline gap-2">
-                            <span className="text-2xl sm:text-3xl font-extrabold tracking-tight tabular-nums text-[#1D2542]">
+                            <span className="text-2xl sm:text-3xl font-extrabold tracking-tight tabular-nums text-[#182B62]">
                                 {activeRegistry}
                             </span>
                             <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
@@ -98,7 +98,7 @@ export default function BPLODashboard({ stats }) {
 
                     <div className="mt-3 rounded-xl bg-slate-50 p-2.5 flex items-center justify-between text-xs">
                         <span className="text-[11px] font-medium text-slate-500">Registry:</span>
-                        <span className="text-xs font-bold text-[#1D2542] group-hover:text-indigo-600 flex items-center gap-0.5 transition-colors">
+                        <span className="text-xs font-bold text-[#182B62] group-hover:text-indigo-600 flex items-center gap-0.5 transition-colors">
                             View <ArrowUpRight size={12} />
                         </span>
                     </div>
@@ -218,7 +218,7 @@ export default function BPLODashboard({ stats }) {
                 <div className={`lg:col-span-2 rounded-2xl border border-slate-200/70 bg-white p-5 sm:p-6 ${CARD_SHADOW}`}>
                     <div className="flex items-center justify-between mb-4">
                         <div className="flex items-center gap-2">
-                            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-[#1D2542]/[0.10] to-[#1D2542]/[0.02] text-[#1D2542]">
+                            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-[#182B62]/[0.10] to-[#182B62]/[0.02] text-[#182B62]">
                                 <TrendingUp size={16} strokeWidth={2.2} />
                             </div>
                             <div>
@@ -234,8 +234,8 @@ export default function BPLODashboard({ stats }) {
                             <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                                 <defs>
                                     <linearGradient id="colorIssued" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="5%" stopColor="#1D2542" stopOpacity={0.25}/>
-                                        <stop offset="95%" stopColor="#1D2542" stopOpacity={0}/>
+                                        <stop offset="5%" stopColor="#182B62" stopOpacity={0.25}/>
+                                        <stop offset="95%" stopColor="#182B62" stopOpacity={0}/>
                                     </linearGradient>
                                 </defs>
                                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F1F5F9" />
@@ -266,7 +266,7 @@ export default function BPLODashboard({ stats }) {
                                     type="monotone"
                                     dataKey="issued"
                                     name="MTOPs Issued"
-                                    stroke="#1D2542"
+                                    stroke="#182B62"
                                     strokeWidth={2.5}
                                     fillOpacity={1}
                                     fill="url(#colorIssued)"
@@ -360,7 +360,7 @@ export default function BPLODashboard({ stats }) {
                     href="/bplo/releasing"
                     className={`group rounded-2xl border border-slate-200/70 bg-white p-4 ${CARD_SHADOW} hover:border-slate-300 transition-all flex items-center gap-3.5`}
                 >
-                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-[#1D2542]/[0.10] to-[#1D2542]/[0.02] text-[#1D2542] group-hover:scale-105 transition-transform">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-[#182B62]/[0.10] to-[#182B62]/[0.02] text-[#182B62] group-hover:scale-105 transition-transform">
                         <Bike size={18} strokeWidth={2.2} />
                     </div>
                     <div className="flex-1 min-w-0">

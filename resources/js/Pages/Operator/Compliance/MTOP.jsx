@@ -60,7 +60,7 @@ function Pipeline({ phase, status }) {
                     toneClass = 'text-emerald-600';
                     isFilled = true;
                 } else if (index === currentIndex) {
-                    toneClass = status === 'action-req' ? 'rounded-full bg-amber-50 px-2.5 py-1 text-amber-700' : 'rounded-full bg-[#1D2542]/[0.08] px-2.5 py-1 text-[#1D2542]';
+                    toneClass = status === 'action-req' ? 'rounded-full bg-amber-50 px-2.5 py-1 text-amber-700' : 'rounded-full bg-[#182B62]/[0.08] px-2.5 py-1 text-[#182B62]';
                 }
 
                 return (
@@ -132,7 +132,7 @@ export default function MTOPTracker({ applications = [], auth }) {
                         <select
                             value={statusFilter}
                             onChange={(e) => setStatusFilter(e.target.value)}
-                            className="h-10 w-full cursor-pointer rounded-lg border border-slate-300 bg-white px-3 pr-8 text-xs font-semibold text-slate-900 shadow-2xs transition-colors focus:border-[#1D2542] focus:outline-none focus:ring-2 focus:ring-[#1D2542]/10 sm:w-56"
+                            className="h-10 w-full cursor-pointer rounded-lg border border-slate-300 bg-white px-3 pr-8 text-xs font-semibold text-slate-900 shadow-2xs transition-colors focus:border-[#182B62] focus:outline-none focus:ring-2 focus:ring-[#182B62]/10 sm:w-56"
                         >
                             <option value="all">All Statuses ({filterCounts.all})</option>
                             <option value="in-progress">In Progress ({filterCounts['in-progress']})</option>
@@ -159,7 +159,7 @@ export default function MTOPTracker({ applications = [], auth }) {
                                     ? 'bg-gradient-to-br from-emerald-500/[0.14] to-emerald-500/[0.02] text-emerald-600'
                                     : app.status === 'action-req'
                                         ? 'bg-gradient-to-br from-amber-500/[0.14] to-amber-500/[0.02] text-amber-600'
-                                        : 'bg-gradient-to-br from-[#1D2542]/[0.10] to-[#1D2542]/[0.02] text-[#1D2542]';
+                                        : 'bg-gradient-to-br from-[#182B62]/[0.10] to-[#182B62]/[0.02] text-[#182B62]';
 
                         const badgeVariant = isRedCard ? 'danger' : isYellowCard ? 'warning' : app.status === 'completed' ? 'success' : app.status === 'action-req' ? 'warning' : 'info';
                         const badgeLabel = app.status === 'completed'
@@ -206,7 +206,7 @@ export default function MTOPTracker({ applications = [], auth }) {
 
                                 <div className="flex shrink-0 flex-row items-center justify-between gap-3 sm:min-w-[180px] sm:flex-col sm:items-end">
                                     <StatusBadge variant={badgeVariant} icon={BadgeIcon}>{badgeLabel}</StatusBadge>
-                                    <span className="flex items-center gap-1 text-[11px] font-bold uppercase tracking-wide text-slate-400 group-hover:text-[#1D2542]">
+                                    <span className="flex items-center gap-1 text-[11px] font-bold uppercase tracking-wide text-slate-400 group-hover:text-[#182B62]">
                                         Track Status <ChevronRight size={13} strokeWidth={3} />
                                     </span>
                                 </div>

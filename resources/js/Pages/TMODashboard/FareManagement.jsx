@@ -55,7 +55,7 @@ export default function FareManagement({ currentFare = {}, fareHistory = [] }) {
                     title: 'New Rates Saved',
                     text: 'New fare rates have been saved and scheduled.',
                     icon: 'success',
-                    confirmButtonColor: '#1D2542',
+                    confirmButtonColor: '#182B62',
                     timer: 2000,
                     showConfirmButton: false,
                 });
@@ -104,7 +104,7 @@ export default function FareManagement({ currentFare = {}, fareHistory = [] }) {
                 <button
                     type="button"
                     onClick={() => setAddModalOpen(true)}
-                    className="inline-flex h-9 items-center gap-2 rounded-lg bg-[#1D2542] hover:bg-[#283256] px-3.5 text-xs font-semibold text-white shadow-sm transition-all self-start sm:self-center shrink-0 active:scale-[0.99] cursor-pointer"
+                    className="inline-flex h-9 items-center gap-2 rounded-lg bg-[#182B62] hover:bg-[#25449B] px-3.5 text-xs font-semibold text-white shadow-sm transition-all self-start sm:self-center shrink-0 active:scale-[0.99] cursor-pointer"
                 >
                     <Plus size={15} strokeWidth={2.2} />
                     <span>Add New Fare</span>

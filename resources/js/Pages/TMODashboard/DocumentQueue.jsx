@@ -184,7 +184,7 @@ export default function DocumentQueue({
                 {/* Card 4: Review Progress */}
                 <div className={`group rounded-2xl border border-slate-200/70 bg-white p-4 sm:p-5 ${CARD_SHADOW} transition-all hover:border-slate-300`}>
                     <div className="flex items-center justify-between">
-                        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-[#1D2542]/[0.10] to-[#1D2542]/[0.02] text-[#1D2542]">
+                        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-[#182B62]/[0.10] to-[#182B62]/[0.02] text-[#182B62]">
                             <TrendingUp size={16} strokeWidth={2.2} />
                         </div>
                         <span className="text-[11px] font-semibold text-slate-400">
@@ -510,7 +510,7 @@ function DesktopQueueRow({ app }) {
             <td className="py-3.5 pl-3 pr-5 text-right align-middle">
                 <Link
                     href={`/tmo/review/docs/${app.id}`}
-                    className="inline-flex items-center gap-1 rounded-full bg-[#1D2542] hover:bg-[#283256] text-white px-3.5 py-1.5 text-xs font-semibold shadow-2xs transition-all active:scale-[0.98]"
+                    className="inline-flex items-center gap-1 rounded-full bg-[#182B62] hover:bg-[#25449B] text-white px-3.5 py-1.5 text-xs font-semibold shadow-2xs transition-all active:scale-[0.98]"
                 >
                     <span>{app.status === 'Pending' ? 'Review' : 'Re-review'}</span>
                     <ChevronRight size={13} strokeWidth={2.5} className="text-slate-300" />
@@ -568,7 +568,7 @@ function MobileQueueCard({ app }) {
             <div className="mt-2.5 pt-2 border-t border-slate-100">
                 <Link
                     href={`/tmo/review/docs/${app.id}`}
-                    className="flex w-full items-center justify-center gap-1.5 rounded-full bg-[#1D2542] hover:bg-[#283256] text-white py-2 text-xs font-bold shadow-2xs transition-all active:scale-[0.98]"
+                    className="flex w-full items-center justify-center gap-1.5 rounded-full bg-[#182B62] hover:bg-[#25449B] text-white py-2 text-xs font-bold shadow-2xs transition-all active:scale-[0.98]"
                 >
                     <span>{app.status === 'Pending' ? 'Review' : 'Re-review'}</span>
                     <ChevronRight size={13} strokeWidth={2.5} className="text-slate-300" />

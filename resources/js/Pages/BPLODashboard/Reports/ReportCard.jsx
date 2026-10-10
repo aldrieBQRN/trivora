@@ -6,7 +6,7 @@ const CARD_SHADOW = 'shadow-[0_1px_2px_0_rgba(15,23,42,0.04),0_8px_24px_-8px_rgb
 /**
  * Shared chart/section card for BPLO Reports & Analytics — icon badge + title (+ optional
  * subtitle) header over a consistent card shell. Mirrors TMODashboard/Reports/ReportCard.jsx's
- * structure exactly, restyled with BPLO's own slate/#1D2542 convention instead of the TMO-only
+ * structure exactly, restyled with BPLO's own slate/#182B62 convention instead of the TMO-only
  * `tmo-*` Tailwind tokens (see trivora/CLAUDE.md — that namespace is TMO Panel only).
  */
 export default function ReportCard({ icon: Icon, title, subtitle, action, children, className = '' }) {
@@ -15,7 +15,7 @@ export default function ReportCard({ icon: Icon, title, subtitle, action, childr
             <div className="mb-3.5 flex items-start justify-between gap-3">
                 <div className="flex items-center gap-2.5">
                     {Icon && (
-                        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-50 text-[#1D2542]">
+                        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-50 text-[#182B62]">
                             <Icon size={14} strokeWidth={2.2} />
                         </span>
                     )}

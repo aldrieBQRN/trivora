@@ -190,7 +190,7 @@ export default function DocumentReview({ application }) {
                                 ? 'Application moved to Physical Inspection. Applicant notified.'
                                 : 'Notice sent. Applicant must re-upload corrected files.',
                             icon: 'success',
-                            confirmButtonColor: '#1D2542',
+                            confirmButtonColor: '#182B62',
                             timer: 2000,
                             showConfirmButton: false,
                         });
@@ -330,7 +330,7 @@ export default function DocumentReview({ application }) {
                     <div className={`overflow-hidden rounded-2xl border border-slate-200/70 bg-white ${CARD_SHADOW}`}>
                         <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50/60 px-5 py-3.5">
                             <div className="flex items-center gap-2">
-                                <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-[#1D2542]/[0.10] to-[#1D2542]/[0.02] text-[#1D2542]">
+                                <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-[#182B62]/[0.10] to-[#182B62]/[0.02] text-[#182B62]">
                                     <ClipboardList size={15} strokeWidth={2.2} />
                                 </div>
                                 <div>
@@ -368,7 +368,7 @@ export default function DocumentReview({ application }) {
                         <div className={`overflow-hidden rounded-2xl border border-slate-200/70 bg-white ${CARD_SHADOW}`}>
                             <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50/60 px-5 py-3.5">
                                 <div className="flex items-center gap-2">
-                                    <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-[#1D2542]/[0.10] to-[#1D2542]/[0.02] text-[#1D2542]">
+                                    <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-[#182B62]/[0.10] to-[#182B62]/[0.02] text-[#182B62]">
                                         <FileText size={15} strokeWidth={2.2} />
                                     </div>
                                     <div>
@@ -408,7 +408,7 @@ export default function DocumentReview({ application }) {
                     <div className={`overflow-hidden rounded-2xl border border-slate-200/70 bg-white p-5 ${CARD_SHADOW}`}>
                         <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                             <div className="flex items-center gap-2">
-                                <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-[#1D2542]/[0.10] to-[#1D2542]/[0.02] text-[#1D2542]">
+                                <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-[#182B62]/[0.10] to-[#182B62]/[0.02] text-[#182B62]">
                                     <ShieldCheck size={15} strokeWidth={2.2} />
                                 </div>
                                 <h3 className="text-sm font-bold text-slate-900">Review Decision</h3>
@@ -457,7 +457,7 @@ export default function DocumentReview({ application }) {
                                         type="button"
                                         disabled={isProcessing}
                                         onClick={() => handleFinalAction('approve')}
-                                        className="flex w-full items-center justify-center gap-2 rounded-full bg-[#1D2542] hover:bg-[#283256] text-white py-2.5 text-xs sm:text-sm font-bold shadow-2xs transition-all active:scale-[0.98] disabled:opacity-50"
+                                        className="flex w-full items-center justify-center gap-2 rounded-full bg-[#182B62] hover:bg-[#25449B] text-white py-2.5 text-xs sm:text-sm font-bold shadow-2xs transition-all active:scale-[0.98] disabled:opacity-50"
                                     >
                                         {isProcessing ? <Loader2 size={15} className="animate-spin" /> : <Send size={14} strokeWidth={2.2} />}
                                         <span>Approve Documents &amp; Proceed</span>
@@ -511,7 +511,7 @@ export default function DocumentReview({ application }) {
                     <div className={`rounded-2xl border border-slate-200/70 bg-white p-5 ${CARD_SHADOW}`}>
                         <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-3.5">
                             <div className="flex items-center gap-2">
-                                <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-[#1D2542]/[0.10] to-[#1D2542]/[0.02] text-[#1D2542]">
+                                <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-[#182B62]/[0.10] to-[#182B62]/[0.02] text-[#182B62]">
                                     <User size={15} strokeWidth={2.2} />
                                 </div>
                                 <h3 className="text-sm font-bold text-slate-900">Applicant Details</h3>
@@ -520,7 +520,7 @@ export default function DocumentReview({ application }) {
 
                         {/* Tricycle Owner Summary — always the primary applicant/person */}
                         <div className="flex items-center gap-3 pb-3 border-b border-slate-100">
-                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#1D2542] to-[#2A3560] text-xs font-bold text-white shadow-2xs">
+                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#182B62] to-[#2A3560] text-xs font-bold text-white shadow-2xs">
                                 {operatorInitials}
                             </div>
                             <div className="min-w-0 flex-1">
@@ -595,7 +595,7 @@ export default function DocumentReview({ application }) {
                     <div className={`rounded-2xl border border-slate-200/70 bg-white p-5 ${CARD_SHADOW}`}>
                         <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
                             <div className="flex items-center gap-2">
-                                <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-[#1D2542]/[0.10] to-[#1D2542]/[0.02] text-[#1D2542]">
+                                <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-[#182B62]/[0.10] to-[#182B62]/[0.02] text-[#182B62]">
                                     <Bike size={15} strokeWidth={2.2} />
                                 </div>
                                 <div>

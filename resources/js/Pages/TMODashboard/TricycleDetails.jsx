@@ -157,9 +157,9 @@ const TIMELINE_STATE_META = {
     },
     current: {
         icon: Clock,
-        circle: 'bg-[#1D2542] text-white ring-4 ring-[#1D2542]/15',
-        circleMobile: 'bg-[#1D2542] text-white ring-2 ring-[#1D2542]/15',
-        sub: 'text-[#1D2542] font-semibold',
+        circle: 'bg-[#182B62] text-white ring-4 ring-[#182B62]/15',
+        circleMobile: 'bg-[#182B62] text-white ring-2 ring-[#182B62]/15',
+        sub: 'text-[#182B62] font-semibold',
     },
     'action-req': {
         icon: ShieldAlert,
@@ -350,7 +350,7 @@ export default function TricycleDetails({
                                 onClick={() => setActiveTab(tab.key)}
                                 className={`relative flex flex-col items-center justify-center py-2 px-1 rounded-xl text-center transition-all ${
                                     active
-                                        ? 'bg-[#1D2542] text-white shadow-xs font-bold'
+                                        ? 'bg-[#182B62] text-white shadow-xs font-bold'
                                         : 'text-slate-500 hover:text-slate-900 active:scale-95'
                                 }`}
                             >
@@ -374,7 +374,7 @@ export default function TricycleDetails({
                                 onClick={() => setActiveTab(tab.key)}
                                 className={`flex shrink-0 items-center gap-2 whitespace-nowrap rounded-xl px-4 py-2.5 text-xs font-semibold transition-all ${
                                     active
-                                        ? 'bg-[#1D2542] text-white shadow-sm'
+                                        ? 'bg-[#182B62] text-white shadow-sm'
                                         : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
                                 }`}
                             >
@@ -474,7 +474,7 @@ export default function TricycleDetails({
                             owner is also the driver otherwise. */}
                         <div className={`rounded-2xl border border-slate-200/70 bg-white p-4 sm:p-5 ${CARD_SHADOW}`}>
                             <div className="flex items-center gap-2.5 pb-3 sm:pb-4 border-b border-slate-100">
-                                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-[#1D2542]/[0.10] to-[#1D2542]/[0.02] text-[#1D2542]">
+                                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-[#182B62]/[0.10] to-[#182B62]/[0.02] text-[#182B62]">
                                     <Users size={16} />
                                 </div>
                                 <div>
@@ -485,7 +485,7 @@ export default function TricycleDetails({
 
                             {/* Owner — primary */}
                             <div className="mt-3 sm:mt-4 flex items-center gap-3">
-                                <div className="flex h-11 w-11 sm:h-12 sm:w-12 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#1D2542] to-[#2A3560] text-white font-bold text-sm">
+                                <div className="flex h-11 w-11 sm:h-12 sm:w-12 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#182B62] to-[#2A3560] text-white font-bold text-sm">
                                     {operatorInitials}
                                 </div>
                                 <div className="min-w-0 flex-1">
@@ -510,7 +510,7 @@ export default function TricycleDetails({
                                         </p>
                                         <p className="text-[11px] text-slate-500">
                                             {tricycle.driver_contact ? (
-                                                <a href={`tel:${tricycle.driver_contact}`} className="hover:text-[#1D2542] hover:underline">
+                                                <a href={`tel:${tricycle.driver_contact}`} className="hover:text-[#182B62] hover:underline">
                                                     {tricycle.driver_contact}
                                                 </a>
                                             ) : 'No contact provided'}
@@ -524,7 +524,7 @@ export default function TricycleDetails({
                                     <span className="text-slate-500">Contact Number:</span>
                                     <a
                                         href={`tel:${tricycle.contact}`}
-                                        className="font-semibold text-[#1D2542] hover:underline flex items-center gap-1"
+                                        className="font-semibold text-[#182B62] hover:underline flex items-center gap-1"
                                     >
                                         <Phone size={12} className="text-slate-400" />
                                         {tricycle.contact}
@@ -563,7 +563,7 @@ export default function TricycleDetails({
                         <div className={`rounded-2xl border border-slate-200/70 bg-white p-4 sm:p-5 ${CARD_SHADOW}`}>
                             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
                                 <div className="flex items-center gap-2">
-                                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-[#1D2542]/[0.10] to-[#1D2542]/[0.02] text-[#1D2542]">
+                                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-[#182B62]/[0.10] to-[#182B62]/[0.02] text-[#182B62]">
                                         <Hash size={16} />
                                     </div>
                                     <h3 className="text-sm font-bold text-slate-900">Color Coding Scheme</h3>
@@ -614,7 +614,7 @@ export default function TricycleDetails({
                         <div className={`rounded-2xl border border-slate-200/70 bg-white p-4 sm:p-5 ${CARD_SHADOW}`}>
                             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
                                 <div className="flex items-center gap-2">
-                                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-[#1D2542]/[0.10] to-[#1D2542]/[0.02] text-[#1D2542]">
+                                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-[#182B62]/[0.10] to-[#182B62]/[0.02] text-[#182B62]">
                                         <Cpu size={16} />
                                     </div>
                                     <h3 className="text-sm font-bold text-slate-900">Smart GPS Telematics</h3>
@@ -794,7 +794,7 @@ function PassengerCapacityCard({ tricycle }) {
         <div className={`rounded-2xl border border-slate-200/70 bg-white p-4 sm:p-5 ${CARD_SHADOW}`}>
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
                 <div className="flex items-center gap-2">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-[#1D2542]/[0.10] to-[#1D2542]/[0.02] text-[#1D2542]">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-[#182B62]/[0.10] to-[#182B62]/[0.02] text-[#182B62]">
                         <Users size={16} />
                     </div>
                     <div>
@@ -834,7 +834,7 @@ function Card({ icon: Icon, title, children }) {
     return (
         <div className={`rounded-2xl border border-slate-200/70 bg-white p-4 sm:p-6 ${CARD_SHADOW}`}>
             <div className="mb-4 sm:mb-5 flex items-center gap-2 text-sm sm:text-base font-bold text-slate-900 pb-2.5 sm:pb-3 border-b border-slate-100">
-                <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-[#1D2542]/[0.10] to-[#1D2542]/[0.02] text-[#1D2542] shrink-0">
+                <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-[#182B62]/[0.10] to-[#182B62]/[0.02] text-[#182B62] shrink-0">
                     <Icon size={16} />
                 </div>
                 <span className="truncate">{title}</span>

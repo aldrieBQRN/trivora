@@ -82,7 +82,7 @@ export default function FinalConfirmationDetail({ application }) {
                 title: 'Checklist Incomplete',
                 text: 'Please verify all confirmation checkboxes and provide the IoT Device ID if applicable.',
                 icon: 'warning',
-                confirmButtonColor: '#1D2542'
+                confirmButtonColor: '#182B62'
             });
             return;
         }
@@ -200,7 +200,7 @@ export default function FinalConfirmationDetail({ application }) {
                     <div className={`rounded-2xl border border-slate-200/70 bg-white p-6 ${CARD_SHADOW}`}>
                         <div className="mb-4 flex items-center justify-between border-b border-slate-100 pb-3.5">
                             <h3 className="flex items-center gap-2 text-sm font-extrabold text-slate-900">
-                                <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-[#1D2542]/[0.10] to-[#1D2542]/[0.02] text-[#1D2542]">
+                                <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-[#182B62]/[0.10] to-[#182B62]/[0.02] text-[#182B62]">
                                     <User size={16} strokeWidth={2.2} />
                                 </span>
                                 Applicant &amp; Vehicle Registration
@@ -360,7 +360,7 @@ export default function FinalConfirmationDetail({ application }) {
                                 </div>
                                 <input
                                     type="text"
-                                    className="mt-1.5 w-full rounded-lg border-[1.5px] border-slate-300 bg-white px-3.5 py-2.5 font-mono text-sm font-bold text-slate-900 outline-none transition-colors focus:border-[#1D2542] focus:ring-2 focus:ring-[#1D2542]/10"
+                                    className="mt-1.5 w-full rounded-lg border-[1.5px] border-slate-300 bg-white px-3.5 py-2.5 font-mono text-sm font-bold text-slate-900 outline-none transition-colors focus:border-[#182B62] focus:ring-2 focus:ring-[#182B62]/10"
                                     placeholder="e.g. 1011 or SinoTrack Tracker ID"
                                     value={data.iot_device_id}
                                     onChange={(e) => setData('iot_device_id', e.target.value)}
@@ -496,7 +496,7 @@ function MethodCard({ icon: Icon, iconTone, title, badge, badgeTone, description
         <div
             onClick={disabled ? undefined : onClick}
             className={`rounded-xl border-2 p-4 transition-all ${disabled ? 'cursor-default opacity-70' : 'cursor-pointer'} ${
-                selected ? 'border-[#1D2542] bg-slate-50 shadow-sm' : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50/50'
+                selected ? 'border-[#182B62] bg-slate-50 shadow-sm' : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50/50'
             }`}
         >
             <div className={`mb-3 flex h-9 w-9 items-center justify-center rounded-lg ${iconTone}`}>

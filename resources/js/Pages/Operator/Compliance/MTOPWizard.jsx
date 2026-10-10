@@ -494,22 +494,22 @@ export default function MTOPWizard({ applicationType = 'new', tricycleUnit = nul
                             You can monitor the progress of your application through the Driver Portal.
                         </p>
 
-                        <div className={`mx-auto mb-10 max-w-sm rounded-2xl border border-[#1D2542]/15 bg-gradient-to-br from-[#1D2542]/[0.06] to-[#1D2542]/[0.01] p-7 text-left ${CARD_SHADOW}`}>
-                            <span className="mb-3 block text-[10px] font-bold uppercase tracking-[0.2em] text-[#1D2542]/60">Tracking Number</span>
-                            <p className="text-3xl font-bold tracking-wide text-[#1D2542]">NSB-2026-9812</p>
+                        <div className={`mx-auto mb-10 max-w-sm rounded-2xl border border-[#182B62]/15 bg-gradient-to-br from-[#182B62]/[0.06] to-[#182B62]/[0.01] p-7 text-left ${CARD_SHADOW}`}>
+                            <span className="mb-3 block text-[10px] font-bold uppercase tracking-[0.2em] text-[#182B62]/60">Tracking Number</span>
+                            <p className="text-3xl font-bold tracking-wide text-[#182B62]">NSB-2026-9812</p>
                         </div>
 
                         <div className="mx-auto mb-10 max-w-xl rounded-xl border border-slate-200/70 bg-slate-50 p-7 text-left">
                             <h4 className="mb-4 flex items-center gap-2.5 text-sm font-bold text-slate-900">
-                                <Info size={17} className="text-[#1D2542]" /> What happens next?
+                                <Info size={17} className="text-[#182B62]" /> What happens next?
                             </h4>
                             <ul className="flex flex-col gap-3">
                                 <li className="flex gap-3 text-sm leading-relaxed text-slate-500">
-                                    <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[#1D2542]" />
+                                    <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[#182B62]" />
                                     <span><strong className="text-slate-900">Document Verification:</strong> TMO staff will review your uploads within 24-48 hours.</span>
                                 </li>
                                 <li className="flex gap-3 text-sm leading-relaxed text-slate-500">
-                                    <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[#1D2542]" />
+                                    <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[#182B62]" />
                                     <span><strong className="text-slate-900">Physical Inspection:</strong> Once approved, you'll be instructed to bring your tricycle in for a roadworthiness check — track your status anytime in the Application Tracker below.</span>
                                 </li>
                             </ul>

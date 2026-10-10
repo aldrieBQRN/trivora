@@ -65,7 +65,7 @@ function ProfileCard({ account }) {
     return (
         <aside className="overflow-hidden rounded-xl border border-slate-200 bg-white">
             <div className="flex items-center gap-3.5 px-5 py-5">
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#1D2542] text-[15px] font-bold tracking-wide text-white">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#182B62] text-[15px] font-bold tracking-wide text-white">
                     {initials}
                 </div>
                 <div className="min-w-0">
@@ -144,7 +144,7 @@ function CardFooter({ note, processing, saved, label }) {
                 <button
                     type="submit"
                     disabled={processing}
-                    className="h-9 rounded-lg bg-[#1D2542] px-4 text-[13px] font-semibold text-white shadow-[0_1px_2px_rgba(15,23,42,0.12)] hover:bg-[#283256] disabled:opacity-60"
+                    className="h-9 rounded-lg bg-[#182B62] px-4 text-[13px] font-semibold text-white shadow-[0_1px_2px_rgba(15,23,42,0.12)] hover:bg-[#25449B] disabled:opacity-60"
                 >
                     {processing ? 'Saving…' : label}
                 </button>
@@ -155,7 +155,7 @@ function CardFooter({ note, processing, saved, label }) {
 
 const inputCls = (error) =>
     `h-10 w-full rounded-lg border bg-white px-3 text-[13.5px] text-slate-900 shadow-[0_1px_1px_rgba(15,23,42,0.03)] placeholder:text-slate-400 focus:outline-none focus:ring-[3px] ${
-        error ? 'border-rose-300 focus:border-rose-400 focus:ring-rose-100' : 'border-slate-300 focus:border-[#1D2542] focus:ring-[#1D2542]/10'
+        error ? 'border-rose-300 focus:border-rose-400 focus:ring-rose-100' : 'border-slate-300 focus:border-[#182B62] focus:ring-[#182B62]/10'
     }`;
 
 /* ── Profile ────────────────────────────────────────────────────────── */

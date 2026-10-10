@@ -156,7 +156,7 @@ function TricycleSection({ tricycle, index, pending = false }) {
             <div className={`overflow-hidden rounded-2xl border ${pending ? 'border-amber-200/80' : 'border-slate-200/70'} bg-white ${CARD_SHADOW}`}>
                 <div className="flex flex-col gap-4 border-b border-dashed border-slate-200 bg-slate-50 px-6 py-6 sm:flex-row sm:items-start sm:justify-between sm:px-8">
                     <div className="flex items-start gap-4">
-                        <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#1D2542]/[0.10] to-[#1D2542]/[0.02] text-[#1D2542]">
+                        <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#182B62]/[0.10] to-[#182B62]/[0.02] text-[#182B62]">
                             <Bike size={28} strokeWidth={2.5} />
                         </div>
                         <div>
@@ -343,7 +343,7 @@ function SpecRow({ label, value }) {
 }
 
 const TILE_TONES = {
-    default: 'bg-gradient-to-br from-[#1D2542]/[0.10] to-[#1D2542]/[0.02] text-[#1D2542]',
+    default: 'bg-gradient-to-br from-[#182B62]/[0.10] to-[#182B62]/[0.02] text-[#182B62]',
     amber: 'bg-gradient-to-br from-amber-500/[0.12] to-amber-500/[0.02] text-amber-600',
     emerald: 'bg-gradient-to-br from-emerald-500/[0.12] to-emerald-500/[0.02] text-emerald-600',
     danger: 'bg-gradient-to-br from-red-500/[0.12] to-red-500/[0.02] text-red-600',

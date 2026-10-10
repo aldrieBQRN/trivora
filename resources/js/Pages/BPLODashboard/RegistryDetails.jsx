@@ -137,7 +137,7 @@ export default function RegistryDetails({ registry }) {
                     }
                     actions={
                         <>
-                            <span className="inline-flex items-center px-2.5 py-1 rounded-lg bg-slate-100 border border-slate-200 text-xs font-mono font-bold text-[#1D2542]">
+                            <span className="inline-flex items-center px-2.5 py-1 rounded-lg bg-slate-100 border border-slate-200 text-xs font-mono font-bold text-[#182B62]">
                                 {registry?.plate_no || 'NO-PLATE'}
                             </span>
                         </>
@@ -156,7 +156,7 @@ export default function RegistryDetails({ registry }) {
                         <div className={`overflow-hidden rounded-2xl border border-slate-200/70 bg-white ${CARD_SHADOW}`}>
                             <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50/75 px-5 py-3.5">
                                 <div className="flex items-center gap-2">
-                                    <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-[#1D2542]/[0.10] to-[#1D2542]/[0.02] text-[#1D2542]">
+                                    <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-[#182B62]/[0.10] to-[#182B62]/[0.02] text-[#182B62]">
                                         <User size={15} strokeWidth={2.2} />
                                     </div>
                                     <div>
@@ -180,7 +180,7 @@ export default function RegistryDetails({ registry }) {
                                         <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Full Name</span>
                                         <span className="text-base font-bold text-slate-900 mt-0.5 block">{registry?.operator || '—'}</span>
                                     </div>
-                                    <div className="h-10 w-10 rounded-full bg-gradient-to-br from-[#1D2542] to-[#2A3560] text-white flex items-center justify-center text-sm font-bold shadow-2xs shrink-0">
+                                    <div className="h-10 w-10 rounded-full bg-gradient-to-br from-[#182B62] to-[#2A3560] text-white flex items-center justify-center text-sm font-bold shadow-2xs shrink-0">
                                         {registry?.operator ? registry.operator.charAt(0).toUpperCase() : 'D'}
                                     </div>
                                 </div>
@@ -192,7 +192,7 @@ export default function RegistryDetails({ registry }) {
                                         Contact Number
                                     </span>
                                     {registry?.contact && registry.contact !== 'N/A' ? (
-                                        <a href={`tel:${registry.contact}`} className="font-semibold text-slate-800 hover:text-[#1D2542] transition-colors font-mono">
+                                        <a href={`tel:${registry.contact}`} className="font-semibold text-slate-800 hover:text-[#182B62] transition-colors font-mono">
                                             {registry.contact}
                                         </a>
                                     ) : (
@@ -389,7 +389,7 @@ export default function RegistryDetails({ registry }) {
                         <div className={`overflow-hidden rounded-2xl border border-slate-200/70 bg-white ${CARD_SHADOW}`}>
                             <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50/75 px-5 py-3.5">
                                 <div className="flex items-center gap-2">
-                                    <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-[#1D2542]/[0.10] to-[#1D2542]/[0.02] text-[#1D2542]">
+                                    <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-[#182B62]/[0.10] to-[#182B62]/[0.02] text-[#182B62]">
                                         <Bike size={15} strokeWidth={2.2} />
                                     </div>
                                     <div>
@@ -433,7 +433,7 @@ export default function RegistryDetails({ registry }) {
 
                                 <div className="py-3 flex items-center justify-between gap-2">
                                     <span className="text-slate-500 font-medium">Sticker Number</span>
-                                    <span className="font-mono font-bold text-[#1D2542] text-sm">
+                                    <span className="font-mono font-bold text-[#182B62] text-sm">
                                         No. {registry?.coding_scheme_number || '—'}
                                     </span>
                                 </div>
@@ -472,7 +472,7 @@ export default function RegistryDetails({ registry }) {
                         <div className={`rounded-2xl border border-slate-200/70 bg-white p-4 sm:p-5 ${CARD_SHADOW} space-y-4`}>
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-2">
-                                    <Clock size={16} className="text-[#1D2542]" />
+                                    <Clock size={16} className="text-[#182B62]" />
                                     <div>
                                         <h4 className="text-xs font-bold uppercase tracking-wider text-slate-800">
                                             Color Coding &amp; Traffic Schedule
@@ -498,7 +498,7 @@ export default function RegistryDetails({ registry }) {
                                 </div>
                                 <div className="flex items-center justify-between">
                                     <span className="text-slate-500 font-medium">Authorized Area:</span>
-                                    <span className="font-semibold text-[#1D2542]">Nasugbu Municipal Zone</span>
+                                    <span className="font-semibold text-[#182B62]">Nasugbu Municipal Zone</span>
                                 </div>
                             </div>
 

@@ -12,7 +12,7 @@ import {
 import ReportCard from './ReportCard';
 import DateRangeFilter from './DateRangeFilter';
 
-const STATUS_COLORS = { pending: '#CBD5E1', released: '#1D2542' };
+const STATUS_COLORS = { pending: '#CBD5E1', released: '#182B62' };
 const GRANULARITIES = ['day', 'week', 'month'];
 const CARD_SHADOW = 'shadow-[0_1px_2px_0_rgba(15,23,42,0.04),0_8px_24px_-8px_rgba(15,23,42,0.10)]';
 
@@ -36,7 +36,7 @@ function KpiTile({ label, value, hint, icon: Icon }) {
             <div className="flex items-center justify-between">
                 <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">{label}</span>
                 {Icon && (
-                    <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-slate-50 text-[#1D2542]">
+                    <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-slate-50 text-[#182B62]">
                         <Icon size={14} />
                     </span>
                 )}
@@ -50,11 +50,11 @@ function KpiTile({ label, value, hint, icon: Icon }) {
 function StatBlock({ icon: Icon, value, label }) {
     return (
         <div className="flex items-start gap-2.5 rounded-xl bg-slate-50 p-3">
-            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white text-[#1D2542]">
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white text-[#182B62]">
                 <Icon size={15} />
             </span>
             <div className="min-w-0">
-                <p className="text-2xl font-extrabold tracking-tight tabular-nums text-[#1D2542]">{value}</p>
+                <p className="text-2xl font-extrabold tracking-tight tabular-nums text-[#182B62]">{value}</p>
                 <p className="mt-0.5 text-[10.5px] font-semibold uppercase tracking-wide text-slate-400">{label}</p>
             </div>
         </div>
@@ -147,7 +147,7 @@ export default function BPLOReportsIndex({ from, to, filters, reportData }) {
                         <select
                             value={filters.status || ''}
                             onChange={(e) => handleStatusChange(e.target.value)}
-                            className="h-9 w-full shrink-0 rounded-lg border border-slate-200 bg-white px-2.5 text-xs font-semibold text-slate-700 focus:border-[#1D2542] focus:outline-none focus:ring-2 focus:ring-[#1D2542]/10 sm:w-44"
+                            className="h-9 w-full shrink-0 rounded-lg border border-slate-200 bg-white px-2.5 text-xs font-semibold text-slate-700 focus:border-[#182B62] focus:outline-none focus:ring-2 focus:ring-[#182B62]/10 sm:w-44"
                         >
                             <option value="">All Statuses</option>
                             <option value="pending">Pending Release</option>
@@ -211,7 +211,7 @@ export default function BPLOReportsIndex({ from, to, filters, reportData }) {
                                             type="button"
                                             onClick={() => setGranularity(g)}
                                             className={`rounded-md px-2 py-1 text-[11px] font-semibold capitalize transition-colors ${
-                                                granularity === g ? 'bg-[#1D2542] text-white' : 'text-slate-500 hover:text-slate-900'
+                                                granularity === g ? 'bg-[#182B62] text-white' : 'text-slate-500 hover:text-slate-900'
                                             }`}
                                         >
                                             {g}
@@ -229,7 +229,7 @@ export default function BPLOReportsIndex({ from, to, filters, reportData }) {
                                         <XAxis dataKey="label" tick={{ fontSize: 10 }} tickLine={false} axisLine={{ stroke: '#EEF0F5' }} />
                                         <YAxis allowDecimals={false} tick={{ fontSize: 10 }} tickLine={false} axisLine={false} width={28} />
                                         <Tooltip content={<ChartTooltip />} />
-                                        <Bar dataKey="count" name="Releases" fill="#1D2542" radius={[4, 4, 0, 0]} barSize={granularity === 'day' ? 16 : 32} />
+                                        <Bar dataKey="count" name="Releases" fill="#182B62" radius={[4, 4, 0, 0]} barSize={granularity === 'day' ? 16 : 32} />
                                     </BarChart>
                                 </ResponsiveContainer>
                             )}
@@ -282,11 +282,11 @@ export default function BPLOReportsIndex({ from, to, filters, reportData }) {
                         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                             <div className="space-y-3">
                                 <div className="flex items-start gap-3 rounded-xl bg-slate-50 p-3.5">
-                                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white text-[#1D2542]">
+                                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white text-[#182B62]">
                                         <Timer size={15} />
                                     </span>
                                     <div className="min-w-0">
-                                        <p className="text-2xl font-extrabold tracking-tight tabular-nums text-[#1D2542]">
+                                        <p className="text-2xl font-extrabold tracking-tight tabular-nums text-[#182B62]">
                                             {processing.avg_days_to_release !== null ? `${processing.avg_days_to_release}d` : '—'}
                                         </p>
                                         <p className="mt-0.5 text-[10.5px] font-semibold uppercase tracking-wide text-slate-400">Avg. Processing Time</p>

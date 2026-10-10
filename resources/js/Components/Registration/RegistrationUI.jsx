@@ -54,13 +54,20 @@ export const REGISTRATION_CSS = `
   display: flex; flex-direction: column; justify-content: space-between;
   padding: 48px 44px;
   border-radius: 0 28px 28px 0;
+  box-shadow: 12px 0 36px -6px rgba(15, 23, 42, 0.22), 4px 0 14px -2px rgba(15, 23, 42, 0.12);
+  z-index: 5;
   background-image:
     linear-gradient(165deg, rgba(18, 40, 102, 0.92) 0%, rgba(37, 68, 155, 0.86) 55%, rgba(15, 33, 85, 0.95) 100%),
     url('/images/nasugbu-bg.jpg');
   background-size: cover; background-position: center; background-repeat: no-repeat;
   color: #FFFFFF;
 }
-@media (max-width: 900px) { .pa-side { flex: 0 0 auto; padding: 36px 28px; border-radius: 0 0 28px 28px; } }
+@media (max-width: 900px) {
+  .pa-side {
+    flex: 0 0 auto; padding: 36px 28px; border-radius: 0 0 28px 28px;
+    box-shadow: 0 12px 28px -4px rgba(15, 23, 42, 0.2), 0 4px 10px -2px rgba(15, 23, 42, 0.1);
+  }
+}
 
 .pa-side-top { position: relative; z-index: 1; }
 .pa-side-mid { position: relative; z-index: 1; margin-top: 36px; }

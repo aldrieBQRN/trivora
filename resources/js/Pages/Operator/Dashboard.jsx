@@ -113,7 +113,7 @@ export default function OperatorDashboard({ operator, stats, tricycles, recentVi
         return Math.max(10, Math.min(100, score));
     }, [expiredUnit, violationCount]);
 
-    const scoreTone = complianceScore >= 80 ? '#1D2542' : complianceScore >= 50 ? '#64748B' : '#DC2626';
+    const scoreTone = complianceScore >= 80 ? '#182B62' : complianceScore >= 50 ? '#64748B' : '#DC2626';
 
     const heroMessage = expiredUnit
         ? `Your MTOP franchise permit needs attention — ${expiredUnit.has_pending_renewal ? 'renewal is in progress.' : 'submit a renewal to stay compliant.'}`
@@ -138,7 +138,7 @@ export default function OperatorDashboard({ operator, stats, tricycles, recentVi
                 <div className="relative flex flex-col gap-8 lg:flex-row lg:items-center lg:justify-between">
                     <div className="max-w-lg">
                         <div className="text-[10.5px] font-bold uppercase tracking-widest text-slate-400">{today}</div>
-                        <h1 className="mt-2 text-[26px] font-extrabold leading-tight tracking-tight text-[#1D2542] sm:text-[32px]">
+                        <h1 className="mt-2 text-[26px] font-extrabold leading-tight tracking-tight text-[#182B62] sm:text-[32px]">
                             {greeting}
                         </h1>
                         <p className="mt-2 text-xs leading-relaxed text-slate-500 sm:text-sm">
@@ -147,7 +147,7 @@ export default function OperatorDashboard({ operator, stats, tricycles, recentVi
 
                         <div className="mt-6 flex flex-wrap gap-2.5">
                             <div className="flex items-center gap-2.5 rounded-xl bg-slate-50 p-2.5">
-                                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-[#1D2542]/[0.10] to-[#1D2542]/[0.02] text-[#1D2542]">
+                                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-[#182B62]/[0.10] to-[#182B62]/[0.02] text-[#182B62]">
                                     <Calendar size={14} />
                                 </span>
                                 <div>
@@ -156,7 +156,7 @@ export default function OperatorDashboard({ operator, stats, tricycles, recentVi
                                 </div>
                             </div>
                             <div className="flex items-center gap-2.5 rounded-xl bg-slate-50 p-2.5">
-                                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-[#1D2542]/[0.10] to-[#1D2542]/[0.02] text-[#1D2542]">
+                                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-[#182B62]/[0.10] to-[#182B62]/[0.02] text-[#182B62]">
                                     <Clock size={14} />
                                 </span>
                                 <div>
@@ -253,7 +253,7 @@ export default function OperatorDashboard({ operator, stats, tricycles, recentVi
                 <div className={`mb-5 rounded-2xl border border-slate-200/70 bg-white p-5 ${CARD_SHADOW} sm:p-6 ${FADE}`} style={delay(180)}>
                     <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                         <div className="flex items-center gap-3">
-                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#1D2542]/[0.10] to-[#1D2542]/[0.02] text-[#1D2542]">
+                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#182B62]/[0.10] to-[#182B62]/[0.02] text-[#182B62]">
                                 <ClipboardCheck size={18} strokeWidth={2.2} />
                             </div>
                             <div>
@@ -279,14 +279,14 @@ export default function OperatorDashboard({ operator, stats, tricycles, recentVi
                                 <div
                                     key={i}
                                     className={`h-1.5 flex-1 rounded-full ${
-                                        isDone ? 'bg-[#1D2542]' : isCurrent ? 'bg-[#1D2542]/50' : 'bg-slate-100'
+                                        isDone ? 'bg-[#182B62]' : isCurrent ? 'bg-[#182B62]/50' : 'bg-slate-100'
                                     }`}
                                 />
                             );
                         })}
                     </div>
 
-                    <p className={`mt-3 flex items-start gap-1.5 text-xs leading-relaxed ${applicationProgress.needsAction ? 'font-semibold text-[#1D2542]' : 'text-slate-500'}`}>
+                    <p className={`mt-3 flex items-start gap-1.5 text-xs leading-relaxed ${applicationProgress.needsAction ? 'font-semibold text-[#182B62]' : 'text-slate-500'}`}>
                         {applicationProgress.needsAction && <AlertCircle size={12} className="mt-0.5 shrink-0" />}
                         {applicationProgress.message}
                     </p>
@@ -300,7 +300,7 @@ export default function OperatorDashboard({ operator, stats, tricycles, recentVi
             <div className={`mb-5 overflow-hidden rounded-2xl border border-slate-200/70 bg-white ${CARD_SHADOW} ${FADE}`} style={delay(200)}>
                 <div className="flex flex-wrap items-center justify-between gap-1 border-b border-slate-100 px-5 py-3.5">
                     <div className="flex items-center gap-2">
-                        <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-[#1D2542]/[0.10] to-[#1D2542]/[0.02] text-[#1D2542]">
+                        <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-[#182B62]/[0.10] to-[#182B62]/[0.02] text-[#182B62]">
                             <Calendar size={15} strokeWidth={2.2} />
                         </div>
                         <h2 className="text-sm font-bold text-slate-900">Coding Schedule</h2>
@@ -313,7 +313,7 @@ export default function OperatorDashboard({ operator, stats, tricycles, recentVi
                             <div
                                 key={rule.day}
                                 className={`flex items-center justify-between gap-2 rounded-lg border px-3 py-2 lg:flex-col lg:justify-center lg:gap-1.5 lg:px-2 lg:py-2.5 lg:text-center ${
-                                    rule.day === todayName ? 'border-[#1D2542]/20 bg-slate-50' : 'border-slate-100 bg-white'
+                                    rule.day === todayName ? 'border-[#182B62]/20 bg-slate-50' : 'border-slate-100 bg-white'
                                 }`}
                             >
                                 <div className="flex min-w-0 items-center gap-1.5 lg:gap-1">
@@ -323,7 +323,7 @@ export default function OperatorDashboard({ operator, stats, tricycles, recentVi
                                         <span className="hidden lg:inline">{rule.day.slice(0, 3)}</span>
                                     </span>
                                     {rule.day === todayName && (
-                                        <span className="shrink-0 rounded bg-[#1D2542] px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-white lg:hidden">
+                                        <span className="shrink-0 rounded bg-[#182B62] px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-white lg:hidden">
                                             Today
                                         </span>
                                     )}
@@ -332,7 +332,7 @@ export default function OperatorDashboard({ operator, stats, tricycles, recentVi
                                     {rule.color}
                                 </span>
                                 {rule.day === todayName && (
-                                    <span className="hidden rounded bg-[#1D2542] px-1.5 py-0.5 text-[8.5px] font-bold uppercase tracking-wide text-white lg:block">
+                                    <span className="hidden rounded bg-[#182B62] px-1.5 py-0.5 text-[8.5px] font-bold uppercase tracking-wide text-white lg:block">
                                         Today
                                     </span>
                                 )}
@@ -340,7 +340,7 @@ export default function OperatorDashboard({ operator, stats, tricycles, recentVi
                         ))}
                     </div>
                     <div className="flex items-start gap-1.5 rounded-xl bg-slate-50 p-3 lg:w-72 lg:shrink-0">
-                        <Info size={13} className="mt-0.5 shrink-0 text-[#1D2542]" />
+                        <Info size={13} className="mt-0.5 shrink-0 text-[#182B62]" />
                         <p className="text-[10.5px] leading-relaxed text-slate-600">
                             Automated IoT enforcement is active in the Poblacion zone. Be aware of your restricted days to avoid digital fines.
                         </p>
@@ -360,12 +360,12 @@ export default function OperatorDashboard({ operator, stats, tricycles, recentVi
                 <div className={`flex flex-col overflow-hidden rounded-2xl border border-slate-200/70 bg-white ${CARD_SHADOW}`}>
                     <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3.5 sm:px-5">
                         <div className="flex items-center gap-2">
-                            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-[#1D2542]/[0.10] to-[#1D2542]/[0.02] text-[#1D2542]">
+                            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-[#182B62]/[0.10] to-[#182B62]/[0.02] text-[#182B62]">
                                 <Bike size={15} strokeWidth={2.2} />
                             </div>
                             <h2 className="text-sm font-bold text-slate-900">My Tricycle</h2>
                         </div>
-                        <Link href={route('operator.fleet')} className="shrink-0 text-[11px] font-bold uppercase tracking-wide text-[#1D2542] hover:text-[#283256]">
+                        <Link href={route('operator.fleet')} className="shrink-0 text-[11px] font-bold uppercase tracking-wide text-[#182B62] hover:text-[#25449B]">
                             Manage
                         </Link>
                     </div>
@@ -379,7 +379,7 @@ export default function OperatorDashboard({ operator, stats, tricycles, recentVi
                     ) : tricycles.slice(0, 1).map((trike) => (
                         <div key={trike.id} className="flex flex-1 flex-col gap-4 p-4 sm:p-5">
                             <div className="flex items-center gap-3 sm:gap-4">
-                                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#1D2542]/[0.10] to-[#1D2542]/[0.02] text-[#1D2542] sm:h-12 sm:w-12">
+                                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#182B62]/[0.10] to-[#182B62]/[0.02] text-[#182B62] sm:h-12 sm:w-12">
                                     <Bike size={20} strokeWidth={2.5} />
                                 </div>
                                 <div className="min-w-0">
@@ -394,13 +394,13 @@ export default function OperatorDashboard({ operator, stats, tricycles, recentVi
                                 <span className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wide text-slate-400">
                                     <FileText size={12} /> MTOP Franchise
                                 </span>
-                                <span className={`text-[13px] font-bold ${trike.is_expired ? 'text-red-600' : 'text-[#1D2542]'}`}>
+                                <span className={`text-[13px] font-bold ${trike.is_expired ? 'text-red-600' : 'text-[#182B62]'}`}>
                                     {trike.mtop_status || 'Valid'} &bull; {trike.mtop_expiry || 'N/A'}
                                 </span>
                             </div>
 
                             {trike.mtop_days_left !== null && trike.mtop_days_left <= 30 && (
-                                <p className="flex items-center gap-1.5 text-[11px] font-semibold text-[#1D2542]">
+                                <p className="flex items-center gap-1.5 text-[11px] font-semibold text-[#182B62]">
                                     <Clock size={11} className="shrink-0" />
                                     {trike.mtop_days_left > 0
                                         ? `Expires in ${trike.mtop_days_left} day${trike.mtop_days_left !== 1 ? 's' : ''} — renew soon.`
@@ -449,7 +449,7 @@ export default function OperatorDashboard({ operator, stats, tricycles, recentVi
                                     </div>
                                     <Link
                                         href={route('operator.violations.ticket', { id: v.id })}
-                                        className="shrink-0 whitespace-nowrap rounded-full bg-[#1D2542] px-3 py-1.5 text-[10px] font-bold uppercase tracking-wide text-white shadow-2xs transition-all hover:bg-[#283256] active:scale-[0.98]"
+                                        className="shrink-0 whitespace-nowrap rounded-full bg-[#182B62] px-3 py-1.5 text-[10px] font-bold uppercase tracking-wide text-white shadow-2xs transition-all hover:bg-[#25449B] active:scale-[0.98]"
                                     >
                                         View
                                     </Link>
@@ -458,8 +458,8 @@ export default function OperatorDashboard({ operator, stats, tricycles, recentVi
                         </div>
                     ) : (
                         <div className="flex flex-1 flex-col items-center justify-center px-6 py-10 text-center">
-                            <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-[#1D2542]/[0.10] to-[#1D2542]/[0.02]">
-                                <ShieldCheck size={22} className="text-[#1D2542]" />
+                            <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-[#182B62]/[0.10] to-[#182B62]/[0.02]">
+                                <ShieldCheck size={22} className="text-[#182B62]" />
                             </div>
                             <p className="text-sm font-semibold text-slate-800">No active violations.</p>
                             <p className="mt-1 max-w-xs text-xs text-slate-500">You're compliant with the Color Coding Ordinance.</p>
@@ -516,7 +516,7 @@ function ActionCard({ href, icon: Icon, active, danger, value, label, meta, cta 
                         danger
                             ? 'bg-gradient-to-br from-red-500/[0.12] to-red-500/[0.02] text-red-600'
                             : active
-                                ? 'bg-gradient-to-br from-[#1D2542]/[0.10] to-[#1D2542]/[0.02] text-[#1D2542]'
+                                ? 'bg-gradient-to-br from-[#182B62]/[0.10] to-[#182B62]/[0.02] text-[#182B62]'
                                 : 'bg-slate-100 text-slate-400'
                     }`}>
                         <Icon size={14} />
@@ -534,7 +534,7 @@ function ActionCard({ href, icon: Icon, active, danger, value, label, meta, cta 
 
             <div className="mt-3 rounded-xl bg-slate-50 p-2.5 flex items-center justify-between text-xs">
                 <span className="text-[11px] font-medium text-slate-500">Details:</span>
-                <span className={`text-xs font-bold flex items-center gap-0.5 transition-colors ${danger ? 'text-red-600 group-hover:text-red-700' : 'text-[#1D2542] group-hover:text-indigo-600'}`}>
+                <span className={`text-xs font-bold flex items-center gap-0.5 transition-colors ${danger ? 'text-red-600 group-hover:text-red-700' : 'text-[#182B62] group-hover:text-[#25449B]'}`}>
                     {cta} <ChevronRight size={12} className="transition-transform group-hover:translate-x-0.5" />
                 </span>
             </div>

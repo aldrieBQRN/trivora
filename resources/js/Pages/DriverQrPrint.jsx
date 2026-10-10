@@ -53,7 +53,7 @@ export default function DriverQrPrint({ unit, qrRide, autoPrint = false }) {
                         <button
                             type="button"
                             onClick={() => window.print()}
-                            className="inline-flex items-center gap-1.5 rounded-lg bg-[#1D2542] px-3.5 py-1.5 text-xs font-bold text-white hover:opacity-90 shadow-sm"
+                            className="inline-flex items-center gap-1.5 rounded-lg bg-[#182B62] px-3.5 py-1.5 text-xs font-bold text-white hover:opacity-90 shadow-sm"
                         >
                             <Printer size={14} /> Print / Save as PDF
                         </button>
@@ -73,7 +73,7 @@ export default function DriverQrPrint({ unit, qrRide, autoPrint = false }) {
             {/* The sheet (A6: 105mm x 148mm) */}
             <div className="qr-sheet mx-auto my-8 flex w-[105mm] min-h-[148mm] flex-col items-center justify-between border border-slate-200 bg-white px-[9mm] py-[10mm] text-center shadow-md print:my-0 print:border-0 print:shadow-none">
                 <div>
-                    <p className="text-[15pt] font-black tracking-[0.28em] text-[#1D2542]">TRIVORA</p>
+                    <p className="text-[15pt] font-black tracking-[0.28em] text-[#182B62]">TRIVORA</p>
                     <p className="mt-[2mm] text-[20pt] font-black leading-none tracking-tight text-slate-900">SCAN TO RIDE</p>
                 </div>
 
