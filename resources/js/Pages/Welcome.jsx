@@ -1328,14 +1328,14 @@ html { scroll-behavior: smooth; }
 const STEPS = [
   { icon: FileText, title: 'Submit Papers Online', desc: 'Fill in your details and upload your tricycle papers and clearances from your phone or computer—no need to line up early.' },
   { icon: ClipboardCheck, title: 'TMO Review & Inspection', desc: 'The Traffic Management Office reviews your papers and checks your tricycle’s road safety and roadworthiness.' },
-  { icon: Wallet, title: 'Pay at the Municipal Hall', desc: 'Pay standard municipal franchise fees at the Municipal Treasurer’s Office using your official Order of Payment.' },
+  { icon: Wallet, title: 'Pay at Municipal Cashier', desc: 'After your tricycle passes inspection, proceed to pay your franchise fee at the Municipal Treasurer cashier window in the municipal hall.' },
   { icon: Award, title: 'Claim Sticker & Permit', desc: 'Receive your official MTOP windshield sticker and digital franchise permit. You’re ready to drive with peace of mind.' },
 ];
 
 const FAQS = [
   {
     q: 'What papers do I need to apply for or renew an MTOP franchise?',
-    a: 'You will need: (1) LTO Official Receipt (OR) and Certificate of Registration (CR) of the tricycle, (2) Professional Driver’s License, (3) Barangay Clearance within Nasugbu, (4) Police or NBI Clearance, and (5) Certificate of TODA Membership endorsed by your TODA President.'
+    a: 'You will need: (1) LTO Official Receipt (OR) and Certificate of Registration (CR) of the tricycle, (2) Professional Driver’s License, (3) Barangay Clearance within Nasugbu, and (4) Police or NBI Clearance.'
   },
   {
     q: 'How can passengers check if a tricycle has an official permit?',
@@ -1343,11 +1343,11 @@ const FAQS = [
   },
   {
     q: 'How does daily color-coding and route monitoring work?',
-    a: 'The system helps operators and drivers keep track of their weekly color-coding schedules and designated TODA routes, preventing accidental violations and helping traffic flow smoothly.'
+    a: 'The system helps operators and drivers keep track of their weekly color-coding schedules and authorized municipal routes, preventing accidental violations and helping traffic flow smoothly.'
   },
   {
     q: 'Where and how do I pay my franchise fees?',
-    a: 'Once your documents and tricycle inspection are approved, your Order of Payment is ready in your account. You can pay the official municipal fee directly at the Municipal Treasurer’s Office in the Municipal Hall.'
+    a: 'After your tricycle physical inspection is conducted and approved by TMO personnel, you will be instructed to pay the official franchise fee in person at the Municipal Treasurer cashier at the Municipal Hall.'
   },
   {
     q: 'How long does the online application process take?',
@@ -1807,7 +1807,7 @@ export default function Welcome() {
               </div>
               <h2 className="wl-sec-title" id="about-heading">Modernizing Tricycle Transport in Nasugbu</h2>
               <p className="wl-sec-sub">
-                An official municipal initiative connecting local drivers, TODA associations, and commuters with simple, modern public service.
+                An official municipal initiative connecting local tricycle operators, drivers, and commuters with simple, modern public service.
               </p>
             </div>
 
@@ -1821,7 +1821,7 @@ export default function Welcome() {
                   Making Tricycle Services Faster, Safer, and More Organized for Nasugbu
                 </h3>
                 <p style={{ fontSize: 14, color: '#475569', lineHeight: 1.7, marginBottom: 14 }}>
-                  Created for the people of Nasugbu, Batangas, TRIVORA brings the Traffic Management Office (TMO), the Business Permits &amp; Licensing Office (BPLO), and our local TODA chapters together on one convenient website.
+                  Created for the people of Nasugbu, Batangas, TRIVORA brings the Traffic Management Office (TMO) and the Business Permits &amp; Licensing Office (BPLO) together into one convenient website for all Nasugbu tricycle operators.
                 </p>
                 <p style={{ fontSize: 14, color: '#475569', lineHeight: 1.7 }}>
                   No more lost paperwork or whole days spent waiting in line at the munisipyo. Operators can apply and renew from home, commuters can check standard fares and verify drivers, and our town keeps traffic moving smoothly.
@@ -1839,8 +1839,8 @@ export default function Welcome() {
                   <div className="wl-about-stat-lbl">Registered Units</div>
                 </div>
                 <div className="wl-about-stat-card">
-                  <div className="wl-about-stat-num">28</div>
-                  <div className="wl-about-stat-lbl">Local TODA Chapters</div>
+                  <div className="wl-about-stat-num">42</div>
+                  <div className="wl-about-stat-lbl">Barangays Covered</div>
                 </div>
                 <div className="wl-about-stat-card">
                   <div className="wl-about-stat-num">24/7</div>
@@ -1889,12 +1889,12 @@ export default function Welcome() {
 
               <div className="wl-about-card">
                 <div className="wl-about-card-icon">
-                  <Users size={24} strokeWidth={2} />
+                  <Building2 size={24} strokeWidth={2} />
                 </div>
                 <div>
-                  <h3 className="wl-about-card-title">Direct TODA &amp; Municipal Support</h3>
+                  <h3 className="wl-about-card-title">Unified TMO &amp; BPLO Processing</h3>
                   <p className="wl-about-card-desc">
-                    The Traffic Management Office works directly with TODA officers to keep driver rosters current, provide renewal reminders, and address member questions.
+                    Connects the Traffic Management Office and the Business Permits Office so inspections, document reviews, and permit approvals happen smoothly without duplicate paperwork.
                   </p>
                 </div>
               </div>
@@ -2055,7 +2055,7 @@ export default function Welcome() {
                 <Mail size={12} strokeWidth={2.4} /> Direct Assistance
               </div>
               <h2 className="wl-sec-title" id="contact-heading">Contact the TMO Office</h2>
-              <p className="wl-sec-sub">Need assistance with your MTOP application, TODA concerns, or transport guidelines? We are here to help.</p>
+              <p className="wl-sec-sub">Need assistance with your MTOP application, inspection schedule, or tricycle guidelines? We are here to help.</p>
             </div>
 
             <div className="wl-contact-grid">
