@@ -68,21 +68,12 @@ const CSS = `
   position: absolute;
   inset: 0;
   background-image:
-    linear-gradient(155deg, rgba(18, 40, 102, 0.94) 0%, rgba(37, 68, 155, 0.88) 55%, rgba(15, 33, 85, 0.96) 100%),
+    linear-gradient(155deg, rgba(18, 40, 102, 0.92) 0%, rgba(37, 68, 155, 0.86) 55%, rgba(15, 33, 85, 0.95) 100%),
     url('/images/nasugbu-bg.jpg');
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
   z-index: 0;
-}
-
-.ol-side-backdrop::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background-image: radial-gradient(circle, rgba(255, 255, 255, 0.07) 1px, transparent 1px);
-  background-size: 24px 24px;
-  pointer-events: none;
 }
 
 .ol-side-content {
