@@ -23,6 +23,7 @@ Route::get('/', function () {
     return Inertia::render('Welcome');
 })->name('home');
 
+
 // QR Ride — the public page a printed tricycle QR opens (/ride/q/{token}). Shows safe unit
 // details and whether it is taking walk-in passengers; joining happens in the Passenger app.
 Route::get('/ride/q/{token}', [\App\Http\Controllers\PublicQrRideController::class, 'show'])
@@ -589,6 +590,7 @@ Route::middleware(['auth', 'role:tmo_personnel,admin'])->group(function () {
 
     // --- SYSTEM ACTIVITY / AUDIT LOGS ---
     Route::get('/tmo/activity-logs', [\App\Http\Controllers\AuditLogController::class, 'index'])->name('tmo.activity-logs');
+    Route::get('/tmo/activity-logs/export', [\App\Http\Controllers\AuditLogController::class, 'export'])->name('tmo.activity-logs.export');
     Route::get('/tmo/activity-logs/export/excel', [\App\Http\Controllers\AuditLogController::class, 'exportExcel'])->name('tmo.activity-logs.export-excel');
 
     // Document Preview Routes

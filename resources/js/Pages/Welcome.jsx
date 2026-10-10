@@ -5,16 +5,19 @@ import {
   FileText, LogIn, ShieldCheck,
   Search, Cpu, Satellite,
   Phone, Wallet,
-  ClipboardCheck, Award, ArrowRight, Calendar, Menu, X
+  ClipboardCheck, Award, ArrowRight, Calendar, Menu, X,
+  HelpCircle, ChevronDown, ChevronUp, MapPin, Mail, Clock,
+  Send, MessageSquare, ExternalLink, Building2, CheckCircle2, Users
 } from 'lucide-react';
 
 const FADE = 'wl-fade';
 const delay = (ms) => ({ animationDelay: `${ms}ms` });
 
 /* ─────────────────────────────────────────────────────────────────────────
-   TRIVORA — Public Welcome / Landing Page Redesign
+   TRIVORA — Public Welcome / Landing Page
    Brand Primary: #25449B (Royal Nasugbu Blue)
    Senior UI/UX Designer Redesign
+   Integrated Sections: Hero Split, Verify, About, How It Works, Technology, FAQ, Contact
    Path: resources/js/Pages/Welcome.jsx
 ───────────────────────────────────────────────────────────────────────── */
 const CSS = `
@@ -42,7 +45,9 @@ html { scroll-behavior: smooth; }
 
 .wl-root a:focus-visible,
 .wl-root button:focus-visible,
-.wl-root input:focus-visible {
+.wl-root input:focus-visible,
+.wl-root textarea:focus-visible,
+.wl-root select:focus-visible {
   outline: 2px solid #25449B;
   outline-offset: 2px;
   border-radius: 8px;
@@ -96,8 +101,8 @@ html { scroll-behavior: smooth; }
 }
 .wl-logo-img { height: 30px; width: auto; object-fit: contain; display: block; }
 
-.wl-nav { display: flex; align-items: center; gap: 32px; }
-@media (max-width: 900px) { .wl-nav { display: none; } }
+.wl-nav { display: flex; align-items: center; gap: 26px; }
+@media (max-width: 960px) { .wl-nav { display: none; } }
 
 .wl-nav-link {
   font-family: 'Plus Jakarta Sans', sans-serif;
@@ -107,9 +112,9 @@ html { scroll-behavior: smooth; }
   text-decoration: none;
   position: relative;
   padding: 6px 0;
-  transition: color .18s ease;
+  cursor: pointer;
 }
-.wl-nav-link:hover { color: #25449B; }
+.wl-nav-link:hover, .wl-nav-link.active { color: #25449B; }
 .wl-nav-link::after {
   content: '';
   position: absolute;
@@ -121,7 +126,7 @@ html { scroll-behavior: smooth; }
   border-radius: 2px;
   transition: width .2s ease;
 }
-.wl-nav-link:hover::after { width: 100%; }
+.wl-nav-link:hover::after, .wl-nav-link.active::after { width: 100%; }
 
 .wl-header-actions { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
 
@@ -130,7 +135,7 @@ html { scroll-behavior: smooth; }
   align-items: center;
   gap: 8px;
   height: 42px;
-  padding: 0 20px;
+  padding: 0 18px;
   border-radius: 10px;
   border: 1.5px solid #25449B;
   background: transparent;
@@ -153,7 +158,7 @@ html { scroll-behavior: smooth; }
   align-items: center;
   gap: 8px;
   height: 42px;
-  padding: 0 22px;
+  padding: 0 20px;
   border-radius: 10px;
   border: none;
   background: #25449B;
@@ -174,7 +179,7 @@ html { scroll-behavior: smooth; }
 }
 
 /* In-page scroll target margin */
-#verify, #how-it-works, #technology { scroll-margin-top: 96px; }
+#about, #verify, #how-it-works, #technology, #faq, #contact { scroll-margin-top: 96px; }
 
 /* ── Mobile Drawer ───────────────────────────────────────────────────── */
 .wl-menu-btn {
@@ -191,7 +196,7 @@ html { scroll-behavior: smooth; }
   transition: border-color .18s, background .18s;
 }
 .wl-menu-btn:hover { border-color: #25449B; background: #EFF4FF; }
-@media (max-width: 900px) { .wl-menu-btn { display: inline-flex; } }
+@media (max-width: 960px) { .wl-menu-btn { display: inline-flex; } }
 
 .wl-drawer-overlay {
   position: fixed; inset: 0; z-index: 90;
@@ -212,7 +217,7 @@ html { scroll-behavior: smooth; }
 }
 .wl-drawer.is-open { transform: translateX(0); visibility: visible; }
 .wl-drawer-overlay.is-open { opacity: 1; visibility: visible; }
-@media (min-width: 901px) { .wl-drawer, .wl-drawer-overlay { display: none; } }
+@media (min-width: 961px) { .wl-drawer, .wl-drawer-overlay { display: none; } }
 
 .wl-drawer-head {
   height: 76px; flex-shrink: 0;
@@ -234,8 +239,9 @@ html { scroll-behavior: smooth; }
   color: #1E293B; text-decoration: none;
   font-family: 'Plus Jakarta Sans', sans-serif; font-size: 14px; font-weight: 600;
   transition: color .15s;
+  cursor: pointer;
 }
-.wl-mobile-link:hover { color: #25449B; }
+.wl-mobile-link:hover, .wl-mobile-link.active { color: #25449B; font-weight: 700; }
 .wl-drawer-foot {
   flex-shrink: 0; padding: 20px;
   display: flex; flex-direction: column; gap: 12px;
@@ -334,6 +340,29 @@ html { scroll-behavior: smooth; }
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
+}
+
+.wl-hero-tagline {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: clamp(14px, 1.2vw, 16px);
+  font-weight: 800;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: #25449B;
+  margin-top: 2px;
+  margin-bottom: 20px;
+}
+.wl-hero-tagline-word {
+  display: inline-block;
+  position: relative;
+}
+.wl-hero-tagline-sep {
+  color: #94A3B8;
+  font-weight: 400;
+  user-select: none;
 }
 
 .wl-hero-sub {
@@ -566,11 +595,11 @@ html { scroll-behavior: smooth; }
   font-weight: 400;
   color: #475569;
   line-height: 1.6;
-  max-width: 600px;
+  max-width: 640px;
   margin: 0 auto;
 }
 
-/* ── Section 1: Verification Card (Deep Shadow Effect) ─────────────────── */
+/* ── Verification Card (Deep Shadow Effect) ───────────────────────────── */
 .wl-verify-card {
   background: #FFFFFF;
   border: 1px solid #E2E8F0;
@@ -675,7 +704,107 @@ html { scroll-behavior: smooth; }
   .wl-verify-btn { width: 100%; }
 }
 
-/* ── Section 2: How It Works Steps (Refined Card Shadow) ───────────────── */
+/* ── Section: About TRIVORA (Comprehensive Single Section) ────────── */
+.wl-about-hero-box {
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  border-radius: 20px;
+  padding: 34px 34px;
+  box-shadow: 0 8px 20px -4px rgba(0, 0, 0, 0.06), 0 4px 8px -4px rgba(0, 0, 0, 0.04);
+  display: grid;
+  grid-template-columns: 1.25fr 0.75fr;
+  gap: 36px;
+  align-items: center;
+  margin-bottom: 28px;
+}
+@media (max-width: 900px) {
+  .wl-about-hero-box { grid-template-columns: 1fr; padding: 24px 20px; gap: 24px; }
+}
+.wl-about-stats-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+.wl-about-stat-card {
+  background: #F8FAFC;
+  border: 1px solid #E2E8F0;
+  border-radius: 14px;
+  padding: 18px 16px;
+  text-align: center;
+  transition: transform .2s, border-color .2s, box-shadow .2s;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02);
+}
+.wl-about-stat-card:hover {
+  transform: translateY(-2px);
+  border-color: #25449B;
+  box-shadow: 0 6px 16px rgba(37, 68, 155, 0.08);
+}
+.wl-about-stat-num {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 26px;
+  font-weight: 800;
+  color: #25449B;
+  line-height: 1.2;
+}
+.wl-about-stat-lbl {
+  font-family: 'Inter', sans-serif;
+  font-size: 12.5px;
+  color: #475569;
+  font-weight: 600;
+  margin-top: 5px;
+}
+
+.wl-about-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 28px;
+}
+@media (max-width: 900px) {
+  .wl-about-grid { grid-template-columns: 1fr; gap: 20px; }
+}
+
+.wl-about-card {
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  border-radius: 18px;
+  padding: 28px 26px;
+  display: flex;
+  gap: 20px;
+  box-shadow: 0 8px 20px -4px rgba(0, 0, 0, 0.06), 0 4px 8px -4px rgba(0, 0, 0, 0.04);
+  transition: transform .2s ease, border-color .2s ease, box-shadow .2s ease;
+}
+.wl-about-card:hover {
+  transform: translateY(-3px);
+  border-color: #25449B;
+  box-shadow: 0 16px 28px -6px rgba(37, 68, 155, 0.1);
+}
+.wl-about-card-icon {
+  width: 50px;
+  height: 50px;
+  border-radius: 14px;
+  background: #EFF4FF;
+  border: 1px solid #D6E4FF;
+  color: #25449B;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.wl-about-card-title {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 16.5px;
+  font-weight: 800;
+  color: #0F172A;
+  margin-bottom: 6px;
+}
+.wl-about-card-desc {
+  font-family: 'Inter', sans-serif;
+  font-size: 13.5px;
+  color: #475569;
+  line-height: 1.6;
+}
+
+/* ── How It Works Steps (Refined Card Shadow) ─────────────────────────── */
 .wl-steps-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -746,7 +875,7 @@ html { scroll-behavior: smooth; }
   line-height: 1.6;
 }
 
-/* ── Section 3: Technology Bento Grid (Elevated Card Shadow) ──────────── */
+/* ── Technology Bento Grid (Elevated Card Shadow) ─────────────────────── */
 .wl-bento {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -770,7 +899,7 @@ html { scroll-behavior: smooth; }
 .wl-bento-card:hover {
   transform: translateY(-3px);
   border-color: rgba(37, 68, 155, 0.35);
-  box-shadow: 0 16px 28px -6px rgba(0, 0, 0, 0.12), 0 8px 12px -4px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 16px 28px -6px rgba(37, 68, 155, 0.12), 0 8px 12px -4px rgba(0, 0, 0, 0.06);
 }
 .wl-bento-card--lg {
   display: flex;
@@ -811,7 +940,210 @@ html { scroll-behavior: smooth; }
   line-height: 1.6;
 }
 
-/* ── Section 4: Closing CTA Band ───────────────────────────────────────── */
+/* ── FAQ Accordion ────────────────────────────────────────────────────── */
+.wl-faq-list {
+  max-width: 860px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.wl-faq-item {
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.04);
+  transition: border-color .2s, box-shadow .2s;
+}
+.wl-faq-item.is-open {
+  border-color: #25449B;
+  box-shadow: 0 8px 24px rgba(37, 68, 155, 0.08);
+}
+.wl-faq-trigger {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 22px 26px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+}
+.wl-faq-question {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  color: #0F172A;
+  line-height: 1.4;
+}
+.wl-faq-icon-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: #F1F5F9;
+  color: #334155;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background .2s, color .2s;
+}
+.wl-faq-item.is-open .wl-faq-icon-btn {
+  background: #EFF4FF;
+  color: #25449B;
+}
+.wl-faq-answer {
+  padding: 0 26px 24px;
+  font-family: 'Inter', sans-serif;
+  font-size: 14.5px;
+  font-weight: 400;
+  color: #475569;
+  line-height: 1.68;
+}
+
+/* ── Contact Section ─────────────────────────────────────────────────── */
+.wl-contact-grid {
+  display: grid;
+  grid-template-columns: 1fr 1.25fr;
+  gap: 36px;
+}
+@media (max-width: 960px) {
+  .wl-contact-grid { grid-template-columns: 1fr; }
+}
+
+.wl-contact-cards-col {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.wl-contact-info-card {
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  border-radius: 18px;
+  padding: 26px 24px;
+  display: flex;
+  align-items: flex-start;
+  gap: 18px;
+  box-shadow: 0 8px 20px -4px rgba(0, 0, 0, 0.06), 0 4px 8px -4px rgba(0, 0, 0, 0.04);
+  transition: transform .2s, border-color .2s, box-shadow .2s;
+}
+.wl-contact-info-card:hover {
+  transform: translateY(-2px);
+  border-color: #25449B;
+  box-shadow: 0 14px 28px -6px rgba(37, 68, 155, 0.1);
+}
+.wl-contact-card-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: #EFF4FF;
+  border: 1px solid #D6E4FF;
+  color: #25449B;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.wl-contact-card-title {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 16px;
+  font-weight: 800;
+  color: #0F172A;
+  margin-bottom: 4px;
+}
+.wl-contact-card-desc {
+  font-family: 'Inter', sans-serif;
+  font-size: 13.5px;
+  font-weight: 400;
+  color: #475569;
+  line-height: 1.55;
+}
+
+/* Contact Form Box */
+.wl-contact-form-card {
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  border-radius: 20px;
+  padding: 36px 32px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.04);
+}
+.wl-contact-form-title {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 20px;
+  font-weight: 800;
+  color: #0F172A;
+  margin-bottom: 6px;
+}
+.wl-contact-form-sub {
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  color: #64748B;
+  margin-bottom: 24px;
+}
+.wl-form-group { margin-bottom: 18px; }
+.wl-form-label {
+  display: block;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #334155;
+  margin-bottom: 6px;
+}
+.wl-form-input, .wl-form-textarea {
+  width: 100%;
+  border-radius: 10px;
+  border: 1.5px solid #CBD5E1;
+  background: #F8FAFC;
+  padding: 12px 16px;
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  color: #0F172A;
+  outline: none;
+  transition: border-color .18s, box-shadow .18s, background .18s;
+}
+.wl-form-input:focus, .wl-form-textarea:focus {
+  border-color: #25449B;
+  box-shadow: 0 0 0 3px rgba(37, 68, 155, 0.12);
+  background: #FFFFFF;
+}
+.wl-form-input::placeholder, .wl-form-textarea::placeholder { color: #94A3B8; }
+.wl-form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+@media (max-width: 600px) {
+  .wl-form-row { grid-template-columns: 1fr; }
+}
+
+.wl-form-submit-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 48px;
+  width: 100%;
+  border-radius: 11px;
+  border: none;
+  background: #25449B;
+  color: #FFFFFF;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: background .18s, transform .15s, box-shadow .15s;
+}
+.wl-form-submit-btn:hover {
+  background: #1B3377;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* ── Closing CTA Band ──────────────────────────────────────────────────── */
 .wl-cta-band {
   background: linear-gradient(135deg, #182F72 0%, #25449B 50%, #1A347D 100%);
   padding: 84px 0;
@@ -914,47 +1246,83 @@ html { scroll-behavior: smooth; }
   border-top: 1px solid #E2E8F0;
   margin-top: auto;
 }
-.wl-footer-inner {
+.wl-footer-top {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr 1fr 1fr;
+  gap: 40px;
+  padding: 56px 0 44px;
+}
+@media (max-width: 900px) {
+  .wl-footer-top { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 560px) {
+  .wl-footer-top { grid-template-columns: 1fr; gap: 32px; }
+}
+
+.wl-footer-brand-title {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 16px;
+  font-weight: 800;
+  color: #0F172A;
+  margin-bottom: 8px;
+}
+.wl-footer-brand-desc {
+  font-family: 'Inter', sans-serif;
+  font-size: 13.5px;
+  color: #64748B;
+  line-height: 1.6;
+  max-width: 320px;
+}
+.wl-footer-col-title {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: #0F172A;
+  margin-bottom: 16px;
+}
+.wl-footer-nav-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.wl-footer-nav-link {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: #475569;
+  text-decoration: none;
+  transition: color .15s;
+}
+.wl-footer-nav-link:hover { color: #25449B; }
+
+.wl-footer-bottom {
+  border-top: 1px solid #F1F5F9;
+  padding: 24px 0;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 20px;
-  padding: 28px 0;
+  gap: 16px;
   flex-wrap: wrap;
 }
 .wl-footer-copy {
   font-family: 'Plus Jakarta Sans', sans-serif;
   font-size: 13px;
-  font-weight: 700;
-  color: #1E293B;
-  margin-bottom: 2px;
-}
-.wl-footer-tagline {
-  font-family: 'Inter', sans-serif;
-  font-size: 13px;
-  font-weight: 400;
+  font-weight: 600;
   color: #64748B;
 }
-.wl-footer-links {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-}
-.wl-footer-item {
+.wl-footer-helpline {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   font-family: 'Plus Jakarta Sans', sans-serif;
   font-size: 13px;
-  font-weight: 600;
-  color: #475569;
+  font-weight: 700;
+  color: #25449B;
   text-decoration: none;
 }
-.wl-footer-item--highlight {
-  color: #25449B;
-  font-weight: 700;
-}
-.wl-footer-sep { color: #CBD5E1; }
 `;
 
 const STEPS = [
@@ -964,16 +1332,95 @@ const STEPS = [
   { icon: Award, title: 'Get Your Permit', desc: 'Receive your official MTOP sticker and digital franchise certificate, fully activated in the municipal database.' },
 ];
 
+const FAQS = [
+  {
+    q: 'What are the required documents to apply for or renew an MTOP franchise?',
+    a: 'Key requirements include: (1) Valid LTO Official Receipt (OR) and Certificate of Registration (CR) under the applicant’s name, (2) Professional Driver’s License with valid restriction code, (3) Barangay Clearance of residence within Nasugbu, (4) Police or NBI Clearance, and (5) Certificate of TODA Membership endorsed by your TODA President.'
+  },
+  {
+    q: 'How can the public verify if a tricycle is legally franchised in Nasugbu?',
+    a: 'Simply use the public verification box on this page or scan the official TRIVORA QR code displayed on the tricycle windshield. Enter the 4-digit municipal plate number to check if the unit holds an Active MTOP franchise.'
+  },
+  {
+    q: 'How does the smart GPS tracking and coding day compliance work?',
+    a: 'Each authorized tricycle transmits periodic GPS pings through mobile devices or telemetry units. The system automatically cross-references active units against Nasugbu’s official coding schedules and designated TODA route boundaries, alerting operators proactively.'
+  },
+  {
+    q: 'Where and how do I pay my franchise fees?',
+    a: 'After TMO document inspection, an official Order of Payment is generated on your portal account. Fees can be paid directly at the Municipal Treasurer’s Office at Pamahalaang Bayan ng Nasugbu.'
+  },
+  {
+    q: 'How long does the digital MTOP application process take?',
+    a: 'With online submission and pre-verification, the typical review and inspection process takes 2 to 3 working days once physical inspection is completed, compared to several weeks in traditional manual systems.'
+  },
+  {
+    q: 'What should I do if my franchise has expired?',
+    a: 'Log into your operator account, navigate to the Renewal section, upload your updated OR/CR and clearances, and schedule a physical reinspection at TMO before operating to prevent coding and expired penalties.'
+  }
+];
+
 export default function Welcome() {
   const [plateQuery, setPlateQuery] = useState('');
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [openFaq, setOpenFaq] = useState(0);
+  const [activeSection, setActiveSection] = useState('about');
+
+  // Contact form local state
+  const [contactForm, setContactForm] = useState({
+    name: '',
+    contact: '',
+    subject: 'General Inquiry',
+    message: ''
+  });
+  const [sendingMsg, setSendingMsg] = useState(false);
+
+  // Track active section on scroll (scroll-spy)
+  useEffect(() => {
+    const sections = ['about', 'verify', 'how-it-works', 'technology', 'faq', 'contact'];
+    const handleScroll = () => {
+      const scrollPosition = window.scrollY + 130;
+      for (let i = sections.length - 1; i >= 0; i--) {
+        const el = document.getElementById(sections[i]);
+        if (el && el.offsetTop <= scrollPosition) {
+          setActiveSection(sections[i]);
+          break;
+        }
+      }
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    handleScroll();
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  // Smooth in-page navigation handler
+  const scrollToSection = (e, targetId) => {
+    if (e && e.preventDefault) e.preventDefault();
+    const el = document.getElementById(targetId);
+    if (el) {
+      const navOffset = 76;
+      const elementPosition = el.getBoundingClientRect().top + window.pageYOffset;
+      const offsetPosition = elementPosition - navOffset;
+
+      window.scrollTo({
+        top: offsetPosition,
+        behavior: 'smooth'
+      });
+      try {
+        window.history.pushState(null, '', `#${targetId}`);
+      } catch {
+        // ignore
+      }
+      setActiveSection(targetId);
+      setMenuOpen(false);
+    }
+  };
 
   // Mobile sidebar keyboard & resize listeners
   useEffect(() => {
     if (!menuOpen) return undefined;
     const onKey = (e) => { if (e.key === 'Escape') setMenuOpen(false); };
-    const onResize = () => { if (window.innerWidth > 900) setMenuOpen(false); };
+    const onResize = () => { if (window.innerWidth > 960) setMenuOpen(false); };
     window.addEventListener('keydown', onKey);
     window.addEventListener('resize', onResize);
     const prevOverflow = document.body.style.overflow;
@@ -1108,6 +1555,34 @@ export default function Welcome() {
     }
   };
 
+  // Handle Contact Inquiry submit
+  const handleContactSubmit = (e) => {
+    e.preventDefault();
+    if (!contactForm.name.trim() || !contactForm.contact.trim() || !contactForm.message.trim()) {
+      Swal.fire({
+        title: 'Incomplete Fields',
+        text: 'Please fill in your name, contact details, and message.',
+        icon: 'warning',
+        confirmButtonColor: '#25449B',
+        customClass: { title: 'font-jakarta', popup: 'font-inter' }
+      });
+      return;
+    }
+
+    setSendingMsg(true);
+    setTimeout(() => {
+      setSendingMsg(false);
+      Swal.fire({
+        title: 'Message Sent!',
+        text: 'Thank you for reaching out. The Traffic Management Office (TMO) will review your inquiry.',
+        icon: 'success',
+        confirmButtonColor: '#25449B',
+        customClass: { title: 'font-jakarta', popup: 'font-inter' }
+      });
+      setContactForm({ name: '', contact: '', subject: 'General Inquiry', message: '' });
+    }, 600);
+  };
+
   return (
     <div className="wl-root">
       <Head title="TRIVORA | Smart Tricycle Management System — Nasugbu LGU" />
@@ -1124,9 +1599,48 @@ export default function Welcome() {
             </Link>
 
             <nav className="wl-nav" aria-label="Primary Navigation">
-              <a href="#verify" className="wl-nav-link">Verify Permit</a>
-              <a href="#how-it-works" className="wl-nav-link">How It Works</a>
-              <a href="#technology" className="wl-nav-link">Technology</a>
+              <a
+                href="#about"
+                onClick={(e) => scrollToSection(e, 'about')}
+                className={`wl-nav-link ${activeSection === 'about' ? 'active' : ''}`}
+              >
+                About
+              </a>
+              <a
+                href="#verify"
+                onClick={(e) => scrollToSection(e, 'verify')}
+                className={`wl-nav-link ${activeSection === 'verify' ? 'active' : ''}`}
+              >
+                Verify
+              </a>
+              <a
+                href="#how-it-works"
+                onClick={(e) => scrollToSection(e, 'how-it-works')}
+                className={`wl-nav-link ${activeSection === 'how-it-works' ? 'active' : ''}`}
+              >
+                How It Works
+              </a>
+              <a
+                href="#technology"
+                onClick={(e) => scrollToSection(e, 'technology')}
+                className={`wl-nav-link ${activeSection === 'technology' ? 'active' : ''}`}
+              >
+                Technology
+              </a>
+              <a
+                href="#faq"
+                onClick={(e) => scrollToSection(e, 'faq')}
+                className={`wl-nav-link ${activeSection === 'faq' ? 'active' : ''}`}
+              >
+                FAQ
+              </a>
+              <a
+                href="#contact"
+                onClick={(e) => scrollToSection(e, 'contact')}
+                className={`wl-nav-link ${activeSection === 'contact' ? 'active' : ''}`}
+              >
+                Contact
+              </a>
             </nav>
 
             <div className="wl-header-actions">
@@ -1181,16 +1695,19 @@ export default function Welcome() {
         <nav aria-label="Mobile Navigation">
           <span className="wl-drawer-label">Quick Navigation</span>
           {[
-            ['#verify', 'Verify Permit'],
-            ['#how-it-works', 'How It Works'],
-            ['#technology', 'Technology']
-          ].map(([href, label]) => (
+            ['about', 'About the System'],
+            ['verify', 'Verify Permit'],
+            ['how-it-works', 'How It Works'],
+            ['technology', 'Technology'],
+            ['faq', 'FAQ'],
+            ['contact', 'Contact Us']
+          ].map(([id, label]) => (
             <a
-              key={href}
-              href={href}
-              className="wl-mobile-link"
+              key={id}
+              href={`#${id}`}
+              className={`wl-mobile-link ${activeSection === id ? 'active' : ''}`}
               tabIndex={menuOpen ? 0 : -1}
-              onClick={() => setMenuOpen(false)}
+              onClick={(e) => scrollToSection(e, id)}
             >
               {label} <ArrowRight size={15} strokeWidth={2.2} />
             </a>
@@ -1233,6 +1750,12 @@ export default function Welcome() {
                 <span className="wl-hero-title-accent">Management System</span>
               </h1>
 
+              <div className={`wl-hero-tagline ${FADE}`} style={delay(120)} aria-label="Tagline: Track, Protect, Connect">
+                <span className="wl-hero-tagline-word">Track.</span>
+                <span className="wl-hero-tagline-word">Protect.</span>
+                <span className="wl-hero-tagline-word">Connect.</span>
+              </div>
+
               <p className={`wl-hero-sub ${FADE}`} style={delay(160)}>
                 The official portal of the Nasugbu Municipal Government for applying,
                 renewing, and verifying tricycle franchises (MTOP)—backed by real-time GPS fleet monitoring
@@ -1243,7 +1766,7 @@ export default function Welcome() {
                 <Link href="/register-mtop" className="wl-hero-btn-primary">
                   Apply for a Permit <ArrowRight size={15} strokeWidth={2.4} />
                 </Link>
-                <a href="#verify" className="wl-hero-btn-outline">
+                <a href="#verify" onClick={(e) => scrollToSection(e, 'verify')} className="wl-hero-btn-outline">
                   <Search size={15} strokeWidth={2.2} /> Verify a Plate
                 </a>
               </div>
@@ -1277,8 +1800,112 @@ export default function Welcome() {
       {/* ══════ MAIN CONTENT ════════════════════════════════════ */}
       <main style={{ flex: 1 }}>
 
-        {/* ── Band 1: Public Plate Verification (Light Slate) ── */}
-        <section className="wl-band wl-band-slate" id="verify" aria-labelledby="verify-heading">
+        {/* ── Band 1: About Section (Slate) ── */}
+        <section className="wl-band wl-band-slate" id="about" aria-labelledby="about-heading">
+          <div className="wl-wrap">
+            <div className="wl-sec-head">
+              <div className="wl-sec-eyebrow">
+                <Building2 size={12} strokeWidth={2.4} /> About TRIVORA
+              </div>
+              <h2 className="wl-sec-title" id="about-heading">Modernizing Tricycle Transport in Nasugbu</h2>
+              <p className="wl-sec-sub">
+                An official municipal initiative combining smart cloud services and GPS telematics to support local operators, TODAs, and commuters.
+              </p>
+            </div>
+
+            {/* Municipal Mission & Impact Story */}
+            <div className="wl-about-hero-box">
+              <div>
+                <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '4px 10px', background: '#EFF4FF', borderRadius: 999, color: '#25449B', fontSize: 12, fontWeight: 700, marginBottom: 12 }}>
+                  <Award size={13} strokeWidth={2.4} /> Official Nasugbu LGU Initiative
+                </div>
+                <h3 style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: 20, fontWeight: 800, color: '#0F172A', marginBottom: 12, lineHeight: 1.35 }}>
+                  Empowering Nasugbu’s Transport Community Through Modern Digital Governance
+                </h3>
+                <p style={{ fontSize: 14, color: '#475569', lineHeight: 1.7, marginBottom: 14 }}>
+                  Established under the municipal transport modernization agenda of Nasugbu, Batangas, TRIVORA serves as the unified digital hub for the Traffic Management Office (TMO), Business Permits &amp; Licensing Office (BPLO), and accredited TODA chapters.
+                </p>
+                <p style={{ fontSize: 14, color: '#475569', lineHeight: 1.7 }}>
+                  By transitioning from paper ledgers to automated verification and live telemetry, TRIVORA protects commuters from unauthorized fares, eliminates administrative delays for drivers, and maintains disciplined traffic order across municipal thoroughfares.
+                </p>
+              </div>
+
+              {/* Stats Highlights */}
+              <div className="wl-about-stats-grid">
+                <div className="wl-about-stat-card">
+                  <div className="wl-about-stat-num">100%</div>
+                  <div className="wl-about-stat-lbl">Digital MTOP Filing</div>
+                </div>
+                <div className="wl-about-stat-card">
+                  <div className="wl-about-stat-num">3,000+</div>
+                  <div className="wl-about-stat-lbl">Authorized Units</div>
+                </div>
+                <div className="wl-about-stat-card">
+                  <div className="wl-about-stat-num">28</div>
+                  <div className="wl-about-stat-lbl">Accredited TODAs</div>
+                </div>
+                <div className="wl-about-stat-card">
+                  <div className="wl-about-stat-num">24/7</div>
+                  <div className="wl-about-stat-lbl">QR Safety &amp; Lookup</div>
+                </div>
+              </div>
+            </div>
+
+            {/* 4 Pillars Grid */}
+            <div className="wl-about-grid">
+              <div className="wl-about-card">
+                <div className="wl-about-card-icon">
+                  <FileText size={24} strokeWidth={2} />
+                </div>
+                <div>
+                  <h3 className="wl-about-card-title">Paperless MTOP Franchising</h3>
+                  <p className="wl-about-card-desc">
+                    Replaces physical logbooks and queues with a transparent digital portal. Operators submit requirements online, track review stages, and receive verified digital permits.
+                  </p>
+                </div>
+              </div>
+
+              <div className="wl-about-card">
+                <div className="wl-about-card-icon">
+                  <Satellite size={24} strokeWidth={2} />
+                </div>
+                <div>
+                  <h3 className="wl-about-card-title">GPS Telemetry &amp; Coding Adherence</h3>
+                  <p className="wl-about-card-desc">
+                    Smart GPS coordinates check active units automatically against municipal coding days and designated routes, maintaining road order without manual checkpoint friction.
+                  </p>
+                </div>
+              </div>
+
+              <div className="wl-about-card">
+                <div className="wl-about-card-icon">
+                  <ShieldCheck size={24} strokeWidth={2} />
+                </div>
+                <div>
+                  <h3 className="wl-about-card-title">Passenger Safety &amp; QR Rides</h3>
+                  <p className="wl-about-card-desc">
+                    Every authorized unit displays an official QR code. Commuters can verify franchise validity, driver identity, and recover lost property quickly.
+                  </p>
+                </div>
+              </div>
+
+              <div className="wl-about-card">
+                <div className="wl-about-card-icon">
+                  <Users size={24} strokeWidth={2} />
+                </div>
+                <div>
+                  <h3 className="wl-about-card-title">Unified LGU &amp; TODA Coordination</h3>
+                  <p className="wl-about-card-desc">
+                    Integrates the Traffic Management Office (TMO), BPLO, and Municipal Treasurer with accredited TODA associations for organized fleet management and renewal reminders.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ── Band 2: Public Plate Verification (White) ── */}
+        <section className="wl-band wl-band-white" id="verify" aria-labelledby="verify-heading">
           <div className="wl-wrap">
             <div className="wl-sec-head">
               <div className="wl-sec-eyebrow">
@@ -1318,8 +1945,8 @@ export default function Welcome() {
           </div>
         </section>
 
-        {/* ── Band 2: How It Works (White) ── */}
-        <section className="wl-band wl-band-white" id="how-it-works" aria-labelledby="how-it-works-heading">
+        {/* ── Band 3: How It Works (Slate) ── */}
+        <section className="wl-band wl-band-slate" id="how-it-works" aria-labelledby="how-it-works-heading">
           <div className="wl-wrap">
             <div className="wl-sec-head">
               <div className="wl-sec-eyebrow">
@@ -1346,8 +1973,8 @@ export default function Welcome() {
           </div>
         </section>
 
-        {/* ── Band 3: Technology Bento Grid (Slate) ── */}
-        <section className="wl-band wl-band-slate" id="technology" aria-labelledby="technology-heading">
+        {/* ── Band 4: Technology Bento Grid (White) ── */}
+        <section className="wl-band wl-band-white" id="technology" aria-labelledby="technology-heading">
           <div className="wl-wrap">
             <div className="wl-sec-head">
               <div className="wl-sec-eyebrow">
@@ -1383,7 +2010,178 @@ export default function Welcome() {
           </div>
         </section>
 
-        {/* ── Band 4: Closing CTA (Royal #25449B Full Bleed) ── */}
+        {/* ── Band 5: Frequently Asked Questions (Slate) ── */}
+        <section className="wl-band wl-band-slate" id="faq" aria-labelledby="faq-heading">
+          <div className="wl-wrap">
+            <div className="wl-sec-head">
+              <div className="wl-sec-eyebrow">
+                <HelpCircle size={12} strokeWidth={2.4} /> Got Questions?
+              </div>
+              <h2 className="wl-sec-title" id="faq-heading">Frequently Asked Questions</h2>
+              <p className="wl-sec-sub">Everything you need to know about Nasugbu’s MTOP franchise procedures, requirements, and compliance.</p>
+            </div>
+
+            <div className="wl-faq-list">
+              {FAQS.map((faq, index) => {
+                const isOpen = openFaq === index;
+                return (
+                  <div className={`wl-faq-item ${isOpen ? 'is-open' : ''}`} key={faq.q}>
+                    <button
+                      type="button"
+                      className="wl-faq-trigger"
+                      onClick={() => setOpenFaq(isOpen ? -1 : index)}
+                      aria-expanded={isOpen}
+                    >
+                      <span className="wl-faq-question">{faq.q}</span>
+                      <span className="wl-faq-icon-btn">
+                        {isOpen ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+                      </span>
+                    </button>
+                    {isOpen && (
+                      <div className="wl-faq-answer">
+                        <p>{faq.a}</p>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </section>
+
+        {/* ── Band 6: Contact Section (White) ── */}
+        <section className="wl-band wl-band-white" id="contact" aria-labelledby="contact-heading">
+          <div className="wl-wrap">
+            <div className="wl-sec-head">
+              <div className="wl-sec-eyebrow">
+                <Mail size={12} strokeWidth={2.4} /> Direct Assistance
+              </div>
+              <h2 className="wl-sec-title" id="contact-heading">Contact the TMO Office</h2>
+              <p className="wl-sec-sub">Need assistance with your MTOP application, TODA concerns, or transport guidelines? We are here to help.</p>
+            </div>
+
+            <div className="wl-contact-grid">
+              {/* Left Column: Official Contact Info Cards */}
+              <div className="wl-contact-cards-col">
+                <div className="wl-contact-info-card">
+                  <div className="wl-contact-card-icon">
+                    <MapPin size={22} strokeWidth={2.2} />
+                  </div>
+                  <div>
+                    <h3 className="wl-contact-card-title">Municipal Office</h3>
+                    <p className="wl-contact-card-desc">
+                      Traffic Management Office (TMO)<br />
+                      Pamahalaang Bayan ng Nasugbu<br />
+                      F. Alix Street, Nasugbu, Batangas 4231
+                    </p>
+                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, marginTop: 8, fontSize: 12.5, fontWeight: 600, color: '#25449B' }}>
+                      <CheckCircle2 size={13} strokeWidth={2.4} /> Official LGU Municipal Hall Desk
+                    </div>
+                  </div>
+                </div>
+
+                <div className="wl-contact-info-card">
+                  <div className="wl-contact-card-icon">
+                    <Phone size={22} strokeWidth={2.2} />
+                  </div>
+                  <div>
+                    <h3 className="wl-contact-card-title">Direct Hotlines</h3>
+                    <p className="wl-contact-card-desc">
+                      TMO Dispatch: <strong>(043) 740-8112</strong><br />
+                      Mobile Helpline: <strong>+63 917 123 4567</strong><br />
+                      Email: <strong>tmo@nasugbu.gov.ph</strong>
+                    </p>
+                  </div>
+                </div>
+
+                <div className="wl-contact-info-card">
+                  <div className="wl-contact-card-icon">
+                    <Clock size={22} strokeWidth={2.2} />
+                  </div>
+                  <div>
+                    <h3 className="wl-contact-card-title">Public Service Hours</h3>
+                    <p className="wl-contact-card-desc">
+                      Monday to Friday: <strong>8:00 AM – 5:00 PM</strong><br />
+                      Physical Tricycle Inspections: <strong>8:30 AM – 4:00 PM</strong><br />
+                      Closed on Weekends and Official Holidays
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Right Column: Interactive Inquiry / Assistance Form */}
+              <div className="wl-contact-form-card">
+                <h3 className="wl-contact-form-title">Send a Direct Inquiry</h3>
+                <p className="wl-contact-form-sub">Have a specific question about your franchise or report? Send a message directly to the TMO desk.</p>
+
+                <form onSubmit={handleContactSubmit}>
+                  <div className="wl-form-row">
+                    <div className="wl-form-group">
+                      <label className="wl-form-label" htmlFor="ct-name">Full Name</label>
+                      <input
+                        id="ct-name"
+                        type="text"
+                        className="wl-form-input"
+                        placeholder="Juan dela Cruz"
+                        value={contactForm.name}
+                        onChange={e => setContactForm({ ...contactForm, name: e.target.value })}
+                        required
+                      />
+                    </div>
+                    <div className="wl-form-group">
+                      <label className="wl-form-label" htmlFor="ct-contact">Mobile / Email</label>
+                      <input
+                        id="ct-contact"
+                        type="text"
+                        className="wl-form-input"
+                        placeholder="0917XXXXXXX or name@email.com"
+                        value={contactForm.contact}
+                        onChange={e => setContactForm({ ...contactForm, contact: e.target.value })}
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <div className="wl-form-group">
+                    <label className="wl-form-label" htmlFor="ct-subject">Inquiry Subject</label>
+                    <select
+                      id="ct-subject"
+                      className="wl-form-input"
+                      value={contactForm.subject}
+                      onChange={e => setContactForm({ ...contactForm, subject: e.target.value })}
+                    >
+                      <option value="General Inquiry">General MTOP Inquiry</option>
+                      <option value="Application Follow-up">Application Status Follow-up</option>
+                      <option value="Inspection Inquiry">Tricycle Physical Inspection</option>
+                      <option value="Coding Violation">Coding / Violation Appeal</option>
+                      <option value="Lost Item / Complaint">Commuter Feedback or Complaint</option>
+                    </select>
+                  </div>
+
+                  <div className="wl-form-group">
+                    <label className="wl-form-label" htmlFor="ct-msg">Your Message</label>
+                    <textarea
+                      id="ct-msg"
+                      rows={4}
+                      className="wl-form-textarea"
+                      placeholder="Please provide details about your inquiry or plate number if applicable..."
+                      value={contactForm.message}
+                      onChange={e => setContactForm({ ...contactForm, message: e.target.value })}
+                      required
+                    />
+                  </div>
+
+                  <button type="submit" className="wl-form-submit-btn" disabled={sendingMsg}>
+                    <Send size={15} strokeWidth={2.2} />
+                    {sendingMsg ? 'Transmitting...' : 'Submit Message'}
+                  </button>
+                </form>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ── Band 7: Closing CTA (Royal #25449B Full Bleed) ── */}
         <section className="wl-cta-band">
           <div className="wl-wrap">
             <div className="wl-cta-inner">
@@ -1409,24 +2207,63 @@ export default function Welcome() {
       {/* ══════ FOOTER (CRISP WHITE BACKGROUND) ══════════════════ */}
       <footer className="wl-footer">
         <div className="wl-wrap">
-          <div className="wl-footer-inner">
+          <div className="wl-footer-top">
             <div>
-              <p className="wl-footer-copy">
-                &copy; {new Date().getFullYear()} TRIVORA &bull; Smart Tricycle Management System
-              </p>
-              <p className="wl-footer-tagline">
-                Pamahalaang Bayan ng Nasugbu &bull; Traffic Management Office (TMO)
+              <div className="wl-logo-img-wrap" style={{ display: 'inline-flex', marginBottom: 14 }}>
+                <img src="/images/logo.png" alt="TRIVORA" className="wl-logo-img" />
+              </div>
+              <p className="wl-footer-brand-title">Smart Tricycle Management System</p>
+              <p className="wl-footer-brand-desc">
+                An official transport modernization initiative of the Municipal Government of Nasugbu, Batangas and the Traffic Management Office (TMO).
               </p>
             </div>
 
-            <div className="wl-footer-links">
-              <span className="wl-footer-item wl-footer-item--highlight">
-                <Phone size={13} strokeWidth={2.2} /> TMO Helpline Available
-              </span>
-              <span className="wl-footer-sep">&bull;</span>
-              <span className="wl-footer-item">
-                Nasugbu, Batangas
-              </span>
+            <div>
+              <p className="wl-footer-col-title">Navigation</p>
+              <ul className="wl-footer-nav-list">
+                <li><a href="#about" onClick={(e) => scrollToSection(e, 'about')} className="wl-footer-nav-link">About the System</a></li>
+                <li><a href="#verify" onClick={(e) => scrollToSection(e, 'verify')} className="wl-footer-nav-link">Verify Franchise</a></li>
+                <li><a href="#how-it-works" onClick={(e) => scrollToSection(e, 'how-it-works')} className="wl-footer-nav-link">How It Works</a></li>
+                <li><a href="#technology" onClick={(e) => scrollToSection(e, 'technology')} className="wl-footer-nav-link">Technology</a></li>
+                <li><a href="#faq" onClick={(e) => scrollToSection(e, 'faq')} className="wl-footer-nav-link">FAQ</a></li>
+                <li><a href="#contact" onClick={(e) => scrollToSection(e, 'contact')} className="wl-footer-nav-link">Contact</a></li>
+              </ul>
+            </div>
+
+            <div>
+              <p className="wl-footer-col-title">Services</p>
+              <ul className="wl-footer-nav-list">
+                <li><a href="#verify" onClick={(e) => scrollToSection(e, 'verify')} className="wl-footer-nav-link">Verify Franchise</a></li>
+                <li><Link href="/register-mtop" className="wl-footer-nav-link">Apply for Permit</Link></li>
+                <li><Link href={route('login')} className="wl-footer-nav-link">Driver Portal</Link></li>
+                <li><Link href={route('login')} className="wl-footer-nav-link">TMO Staff Access</Link></li>
+                <li><a href="#contact" onClick={(e) => scrollToSection(e, 'contact')} className="wl-footer-nav-link">Contact Helpdesk</a></li>
+              </ul>
+            </div>
+
+            <div>
+              <p className="wl-footer-col-title">TMO Office</p>
+              <p style={{ fontSize: 13, color: '#475569', lineHeight: 1.6, marginBottom: 8 }}>
+                Pamahalaang Bayan ng Nasugbu<br />
+                F. Alix St., Nasugbu, Batangas<br />
+                Hotline: (043) 740-8112
+              </p>
+              <a href="#contact" onClick={(e) => scrollToSection(e, 'contact')} style={{ fontSize: 13, fontWeight: 700, color: '#25449B', textDecoration: 'none' }}>
+                Go to Contact Desk &darr;
+              </a>
+            </div>
+          </div>
+
+          <div className="wl-footer-bottom">
+            <p className="wl-footer-copy">
+              &copy; {new Date().getFullYear()} TRIVORA &bull; Municipal Government of Nasugbu, Batangas. All rights reserved.
+            </p>
+            <div style={{ display: 'flex', gap: 18, alignItems: 'center' }}>
+              <a href="#about" onClick={(e) => scrollToSection(e, 'about')} className="wl-footer-nav-link">About</a>
+              <a href="#contact" onClick={(e) => scrollToSection(e, 'contact')} className="wl-footer-nav-link">Contact</a>
+              <a href="tel:0437408112" className="wl-footer-helpline">
+                <Phone size={13} strokeWidth={2.4} /> Helpline: (043) 740-8112
+              </a>
             </div>
           </div>
         </div>
