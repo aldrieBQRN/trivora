@@ -952,7 +952,7 @@ export default function Login() {
                         <div className="ol-register-hint">
                             Don't have an MTOP permit yet?{' '}
                             <Link href="/register-mtop" className="ol-register-link">
-                                Apply online &rarr;
+                                Apply online
                             </Link>
                         </div>
                     </div>

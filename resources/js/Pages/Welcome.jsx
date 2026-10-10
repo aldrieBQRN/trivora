@@ -730,35 +730,48 @@ html { scroll-behavior: smooth; }
 .wl-about-stats-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 16px;
+  gap: 14px;
 }
 .wl-about-stat-card {
   background: #F8FAFC;
   border: 1px solid #E2E8F0;
   border-radius: 14px;
-  padding: 18px 16px;
-  text-align: center;
+  padding: 16px 14px;
+  text-align: left;
   transition: transform .2s, border-color .2s, box-shadow .2s;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 .wl-about-stat-card:hover {
   transform: translateY(-2px);
   border-color: #25449B;
   box-shadow: 0 6px 16px rgba(37, 68, 155, 0.08);
 }
-.wl-about-stat-num {
-  font-family: 'Plus Jakarta Sans', sans-serif;
-  font-size: 26px;
-  font-weight: 800;
+.wl-about-card-badge-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: #EFF4FF;
   color: #25449B;
-  line-height: 1.2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
 }
-.wl-about-stat-lbl {
+.wl-about-stat-title {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  color: #0F172A;
+  line-height: 1.3;
+}
+.wl-about-stat-desc {
   font-family: 'Inter', sans-serif;
-  font-size: 12.5px;
-  color: #475569;
-  font-weight: 600;
-  margin-top: 5px;
+  font-size: 12px;
+  color: #64748B;
+  line-height: 1.5;
 }
 
 .wl-about-grid {
@@ -1395,7 +1408,7 @@ export default function Welcome() {
 
   // Track active section on scroll (scroll-spy)
   useEffect(() => {
-    const sections = ['about', 'verify', 'how-it-works', 'features', 'faq', 'contact'];
+    const sections = ['home', 'about', 'verify', 'how-it-works', 'features', 'faq', 'contact'];
     const handleScroll = () => {
       const scrollPosition = window.scrollY + 130;
       for (let i = sections.length - 1; i >= 0; i--) {
@@ -1618,6 +1631,13 @@ export default function Welcome() {
 
             <nav className="wl-nav" aria-label="Primary Navigation">
               <a
+                href="#home"
+                onClick={(e) => scrollToSection(e, 'home')}
+                className={`wl-nav-link ${activeSection === 'home' ? 'active' : ''}`}
+              >
+                Home
+              </a>
+              <a
                 href="#about"
                 onClick={(e) => scrollToSection(e, 'about')}
                 className={`wl-nav-link ${activeSection === 'about' ? 'active' : ''}`}
@@ -1710,6 +1730,7 @@ export default function Welcome() {
         <nav aria-label="Mobile Navigation">
           <span className="wl-drawer-label">Quick Navigation</span>
           {[
+            ['home', 'Home'],
             ['about', 'About the System'],
             ['verify', 'Verify Permit'],
             ['how-it-works', 'How It Works'],
@@ -1741,7 +1762,7 @@ export default function Welcome() {
       </aside>
 
       {/* ══════ HERO SECTION (50/50 SPLIT WITH SEAMLESS CENTER BLEND) ══════ */}
-      <section className="wl-hero-section">
+      <section className="wl-hero-section" id="home">
         <div className="wl-hero-grid">
 
           {/* Left Column: Pure White Background + Content */}
@@ -1835,23 +1856,43 @@ export default function Welcome() {
                 </p>
               </div>
 
-              {/* Stats Highlights */}
+              {/* Core Service Highlights (Qualitative - No Numbers) */}
               <div className="wl-about-stats-grid">
                 <div className="wl-about-stat-card">
-                  <div className="wl-about-stat-num">100%</div>
-                  <div className="wl-about-stat-lbl">Online Filing</div>
+                  <div className="wl-about-card-badge-icon">
+                    <FileText size={17} strokeWidth={2.2} />
+                  </div>
+                  <div>
+                    <div className="wl-about-stat-title">Paperless Filing</div>
+                    <div className="wl-about-stat-desc">Apply and renew MTOP permits with digital document submission.</div>
+                  </div>
                 </div>
                 <div className="wl-about-stat-card">
-                  <div className="wl-about-stat-num">3,000+</div>
-                  <div className="wl-about-stat-lbl">Registered Units</div>
+                  <div className="wl-about-stat-badge-icon wl-about-card-badge-icon">
+                    <ShieldCheck size={17} strokeWidth={2.2} />
+                  </div>
+                  <div>
+                    <div className="wl-about-stat-title">Verified Operators</div>
+                    <div className="wl-about-stat-desc">Legitimate registered units validated through municipal offices.</div>
+                  </div>
                 </div>
                 <div className="wl-about-stat-card">
-                  <div className="wl-about-stat-num">42</div>
-                  <div className="wl-about-stat-lbl">Barangays Covered</div>
+                  <div className="wl-about-card-badge-icon">
+                    <MapPin size={17} strokeWidth={2.2} />
+                  </div>
+                  <div>
+                    <div className="wl-about-stat-title">Townwide Coverage</div>
+                    <div className="wl-about-stat-desc">Organized route scheduling across all barangays in Nasugbu.</div>
+                  </div>
                 </div>
                 <div className="wl-about-stat-card">
-                  <div className="wl-about-stat-num">24/7</div>
-                  <div className="wl-about-stat-lbl">Plate Number Check</div>
+                  <div className="wl-about-card-badge-icon">
+                    <Search size={17} strokeWidth={2.2} />
+                  </div>
+                  <div>
+                    <div className="wl-about-stat-title">Public Lookup</div>
+                    <div className="wl-about-stat-desc">Instant plate and franchise validity check for commuters.</div>
+                  </div>
                 </div>
               </div>
             </div>
