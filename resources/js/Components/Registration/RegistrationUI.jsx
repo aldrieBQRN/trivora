@@ -74,37 +74,37 @@ export const REGISTRATION_CSS = `
   gap: 7px;
   padding: 6px 14px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.12);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.25);
   color: #FFFFFF;
-  font-family: 'DM Sans', sans-serif;
+  font-family: 'Plus Jakarta Sans', sans-serif;
   font-size: 11px;
   font-weight: 700;
-  letter-spacing: .08em;
+  letter-spacing: .06em;
   text-transform: uppercase;
   margin-bottom: 16px;
   width: fit-content;
+  backdrop-filter: blur(4px);
 }
 
 .pa-page-title {
   font-family: 'Plus Jakarta Sans', sans-serif;
-  font-size: clamp(22px, 2.6vw, 27px); font-weight: 800;
+  font-size: clamp(24px, 2.6vw, 30px); font-weight: 800;
   letter-spacing: -.025em; color: #FFFFFF;
-  line-height: 1.15; margin-top: 24px; margin-bottom: 8px;
+  line-height: 1.18; margin-top: 20px; margin-bottom: 10px;
 }
-@media (max-width: 900px) { .pa-page-title { margin-top: 16px; font-size: 20px; } }
+@media (max-width: 900px) { .pa-page-title { margin-top: 14px; font-size: 21px; } }
 .pa-page-sub {
   font-family: 'Inter', sans-serif;
-  font-size: 12.5px; font-weight: 400;
-  color: rgba(255,255,255,.72); line-height: 1.6; max-width: 300px;
+  font-size: 13.5px; font-weight: 400;
+  color: rgba(255,255,255,.82); line-height: 1.6; max-width: 320px;
 }
 @media (max-width: 900px) { .pa-page-sub { display: none; } }
 
 .pa-side-note {
-  font-family: 'DM Sans', sans-serif; font-size: 9px; font-weight: 700;
-  letter-spacing: .13em; text-transform: uppercase;
-  color: rgba(255,255,255,.45); line-height: 1.8;
-  padding-top: 20px; border-top: 1px solid rgba(255,255,255,.12);
+  font-family: 'Plus Jakarta Sans', sans-serif; font-size: 11px; font-weight: 600;
+  color: rgba(255,255,255,.65); line-height: 1.6;
+  padding-top: 20px; border-top: 1px solid rgba(255,255,255,.14);
 }
 
 /* ── Vertical step list ───────────────────────────────────────────────── */
@@ -118,43 +118,40 @@ export const REGISTRATION_CSS = `
 @media (max-width: 900px) { .pa-step-v-rail { flex-direction: row; width: 100%; } }
 
 .pa-step-v-dot {
-  width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0;
-  border: 2px solid rgba(255,255,255,.28);
-  background: rgba(255,255,255,.08);
+  width: 34px; height: 34px; border-radius: 50%; flex-shrink: 0;
+  border: 2px solid rgba(255,255,255,.3);
+  background: rgba(255,255,255,.1);
   display: flex; align-items: center; justify-content: center;
-  font-family: 'DM Sans', sans-serif; font-size: 11px; font-weight: 800;
-  color: rgba(255,255,255,.6);
+  font-family: 'Plus Jakarta Sans', sans-serif; font-size: 12px; font-weight: 800;
+  color: rgba(255,255,255,.7);
   transition: all .3s ease;
 }
-.pa-step-v-dot.active { background: #FFFFFF; border-color: #FFFFFF; color: #25449B; box-shadow: 0 0 0 5px rgba(255,255,255,.18); }
-.pa-step-v-dot.done { background: #25449B; border-color: #25449B; color: #FFFFFF; }
+.pa-step-v-dot.active { background: #FFFFFF; border-color: #FFFFFF; color: #25449B; box-shadow: 0 0 0 5px rgba(255,255,255,.24); }
+.pa-step-v-dot.done { background: #25449B; border-color: #FFFFFF; color: #FFFFFF; }
 .pa-step-v-line {
   width: 2px; flex: 1; min-height: 28px;
-  background: rgba(255,255,255,.16); border-radius: 2px;
+  background: rgba(255,255,255,.18); border-radius: 2px;
   transition: background .3s;
 }
-.pa-step-v-line.done { background: #25449B; }
-@media (max-width: 900px) { .pa-step-v-line { width: 100%; height: 2px; min-height: 0; flex: 1; margin-top: 15px; } }
+.pa-step-v-line.done { background: #FFFFFF; }
+@media (max-width: 900px) { .pa-step-v-line { width: 100%; height: 2px; min-height: 0; flex: 1; margin-top: 16px; } }
 
-.pa-step-v-text { padding-bottom: 28px; padding-top: 3px; }
+.pa-step-v-text { padding-bottom: 28px; padding-top: 5px; }
 @media (max-width: 900px) { .pa-step-v-text { display: none; } }
 .pa-step-v-label {
-  font-family: 'DM Sans', sans-serif; font-size: 11px; font-weight: 800;
-  letter-spacing: .04em; color: rgba(255,255,255,.55);
-  transition: color .3s; margin-bottom: 4px;
+  font-family: 'Plus Jakarta Sans', sans-serif; font-size: 13px; font-weight: 700;
+  letter-spacing: -0.01em; color: rgba(255,255,255,.65);
+  transition: color .3s; margin-bottom: 3px;
 }
-.pa-step-v-label.active, .pa-step-v-label.done { color: #FFFFFF; }
-.pa-step-v-desc { font-family: 'Inter', sans-serif; font-size: 11.5px; color: rgba(255,255,255,.5); line-height: 1.5; max-width: 220px; }
+.pa-step-v-label.active, .pa-step-v-label.done { color: #FFFFFF; font-weight: 800; }
+.pa-step-v-desc { font-family: 'Inter', sans-serif; font-size: 12px; color: rgba(255,255,255,.6); line-height: 1.5; max-width: 220px; }
 
-/* ── Content pane (right) — a 3-row grid (topbar / centered content /
-   footer) so the active step centers vertically & horizontally exactly
-   like Login.jsx's form pane, without that centering fighting the
-   topbar link or footer this page still needs (Login has neither). ── */
+/* ── Content pane (right) ────────────────────────────────────────────── */
 .pa-content { flex: 1; display: grid; grid-template-rows: auto 1fr auto; min-width: 0; background: #FFFFFF; overflow: hidden; }
 @media (max-width: 900px) { .pa-content { overflow: visible; } }
 .pa-content-topbar {
   display: flex; align-items: center; justify-content: space-between;
-  padding: 20px 40px 0;
+  padding: 22px 40px 0;
 }
 @media (max-width: 640px) { .pa-content-topbar { padding: 16px 20px 0; } }
 
@@ -181,122 +178,124 @@ export const REGISTRATION_CSS = `
 
 .pa-back-link {
   display: inline-flex; align-items: center; gap: 6px;
-  font-family: 'Plus Jakarta Sans', sans-serif; font-size: 11.5px; font-weight: 700;
-  color: #64748B; text-decoration: none; transition: all .18s;
-  padding: 6px 14px; border-radius: 8px; border: 1px solid #E2E8F0; background: #F8FAFC;
+  font-family: 'Plus Jakarta Sans', sans-serif; font-size: 12.5px; font-weight: 700;
+  color: #475569; text-decoration: none; transition: all .18s;
+  padding: 8px 16px; border-radius: 10px; border: 1.5px solid #E2E8F0; background: #FFFFFF;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
 }
-.pa-back-link:hover { color: #25449B; border-color: #25449B; background: #EFF4FF; transform: translateX(-2px); }
+.pa-back-link:hover { color: #25449B; border-color: #25449B; background: #EFF6FF; transform: translateX(-2px); }
 
-.pa-content-center { display: flex; align-items: safe center; justify-content: center; padding: 24px 24px; overflow-y: auto; }
-.pa-content-inner { width: 100%; max-width: 620px; }
+.pa-content-center { display: flex; align-items: safe center; justify-content: center; padding: 28px 24px; overflow-y: auto; }
+.pa-content-inner { width: 100%; max-width: 640px; }
 
-/* ── Step card (now the primary content itself, not a floating box) ──── */
+/* ── Step card ───────────────────────────────────────────────────────── */
 .pa-card { animation: paFadeUp .4s cubic-bezier(.2,0,.2,1) both; }
 .pa-card--elevated {
   background: #FFFFFF;
-  border: 1px solid rgba(28,35,64,.08);
-  border-radius: 22px;
-  padding: 56px 48px;
-  box-shadow: 0 1px 2px 0 rgba(28,35,64,.04), 0 8px 32px -8px rgba(28,35,64,.14);
-  max-width: 560px; margin: 40px auto;
+  border: 1px solid #E2E8F0;
+  border-radius: 24px;
+  padding: 52px 44px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.06), 0 8px 10px -6px rgba(0, 0, 0, 0.04);
+  max-width: 580px; margin: 40px auto;
 }
-@media (max-width: 640px) { .pa-card--elevated { padding: 40px 24px; margin: 20px auto; } }
+@media (max-width: 640px) { .pa-card--elevated { padding: 36px 20px; margin: 20px auto; } }
 
 /* ── Card heading ────────────────────────────────────────────────────── */
 .pa-card-top {
   display: flex; justify-content: space-between; align-items: center;
-  margin-bottom: 36px; gap: 16px;
+  margin-bottom: 32px; gap: 16px;
 }
 .pa-card-icon {
-  width: 48px; height: 48px; border-radius: 14px; flex-shrink: 0;
-  background: #EFF4FF;
-  border: 1px solid #D6E4FF;
+  width: 52px; height: 52px; border-radius: 16px; flex-shrink: 0;
+  background: #EFF6FF;
+  border: 1.5px solid #D6E4FF;
   display: flex; align-items: center; justify-content: center;
   color: #25449B;
+  box-shadow: 0 2px 8px rgba(37, 68, 155, 0.1);
 }
 .pa-card-top-text { display: flex; align-items: center; gap: 16px; }
 .pa-card-title {
   font-family: 'Plus Jakarta Sans', sans-serif;
-  font-size: 25px; font-weight: 800;
-  letter-spacing: -.025em; color: #1C2340;
-  margin-bottom: 5px; line-height: 1.15;
+  font-size: 26px; font-weight: 800;
+  letter-spacing: -.025em; color: #0F172A;
+  margin-bottom: 4px; line-height: 1.2;
 }
 .pa-card-sub {
-  font-family: 'DM Sans', sans-serif;
-  font-size: 9px; font-weight: 700;
-  letter-spacing: .16em; text-transform: uppercase;
-  color: #8A96BC;
+  font-family: 'Inter', sans-serif;
+  font-size: 13.5px; font-weight: 400;
+  color: #64748B; line-height: 1.5;
 }
 
 /* ── Agreement scroll box ────────────────────────────────────────────── */
 .pa-agree-scroll {
   height: 280px;
   overflow-y: auto;
-  background: #FAFAFA;
-  border: 1.5px solid rgba(28,35,64,.1);
+  background: #F8FAFC;
+  border: 1.5px solid #E2E8F0;
   border-radius: 14px;
-  padding: 24px 26px;
+  padding: 22px 24px;
   margin-bottom: 20px;
   scroll-behavior: smooth;
 }
-.pa-agree-scroll::-webkit-scrollbar { width: 5px; }
-.pa-agree-scroll::-webkit-scrollbar-track { background: rgba(28,35,64,.04); border-radius: 5px; }
-.pa-agree-scroll::-webkit-scrollbar-thumb { background: rgba(28,35,64,.18); border-radius: 5px; }
+.pa-agree-scroll::-webkit-scrollbar { width: 6px; }
+.pa-agree-scroll::-webkit-scrollbar-track { background: #F1F5F9; border-radius: 6px; }
+.pa-agree-scroll::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 6px; }
 
 .pa-agree-h {
   font-family: 'Plus Jakarta Sans', sans-serif;
-  font-size: 13px; font-weight: 700;
-  color: #1C2340; margin-bottom: 8px; margin-top: 20px;
+  font-size: 14px; font-weight: 700;
+  color: #0F172A; margin-bottom: 6px; margin-top: 18px;
 }
 .pa-agree-h:first-child { margin-top: 0; }
 .pa-agree-p {
   font-family: 'Inter', sans-serif;
-  font-size: 12px; color: #5A6488;
-  line-height: 1.8; margin-bottom: 10px;
+  font-size: 13px; color: #334155;
+  line-height: 1.7; margin-bottom: 10px; font-weight: 400;
 }
 .pa-agree-ol {
-  padding-left: 18px; margin-bottom: 10px;
+  padding-left: 20px; margin-bottom: 10px;
 }
 .pa-agree-ol li {
   font-family: 'Inter', sans-serif;
-  font-size: 12px; color: #5A6488;
-  line-height: 1.8; margin-bottom: 4px;
+  font-size: 13px; color: #334155;
+  line-height: 1.7; margin-bottom: 5px; font-weight: 400;
 }
 
 .pa-scroll-hint {
-  font-family: 'DM Sans', sans-serif;
-  font-size: 9px; font-weight: 700;
-  letter-spacing: .12em; text-transform: uppercase;
-  color: #8A96BC; text-align: center;
-  margin-bottom: 16px;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 12px; font-weight: 600;
+  color: #25449B; text-align: center;
+  background: #EFF6FF; border: 1px solid #BFDBFE;
+  border-radius: 999px; padding: 6px 14px; width: fit-content;
+  margin: 0 auto 18px;
 }
 
 /* ── Checkbox row ────────────────────────────────────────────────────── */
 .pa-checkbox-row {
-  display: flex; align-items: flex-start; gap: 12px;
-  padding: 16px 18px; border-radius: 12px;
-  border: 1.5px solid rgba(28,35,64,.1);
-  background: #F8F9FC; margin-bottom: 28px;
-  cursor: pointer; transition: border-color .18s, background .18s;
+  display: flex; align-items: flex-start; gap: 14px;
+  padding: 18px 20px; border-radius: 14px;
+  border: 1.5px solid #E2E8F0;
+  background: #F8FAFC; margin-bottom: 28px;
+  cursor: pointer; transition: all .18s;
 }
-.pa-checkbox-row:hover { border-color: rgba(28,35,64,.2); }
-.pa-checkbox-row.checked { border-color: rgba(37,68,155,.3); background: rgba(37,68,155,.04); }
-.pa-checkbox-row.locked { opacity: .5; cursor: not-allowed; }
+.pa-checkbox-row:hover { border-color: #CBD5E1; background: #F1F5F9; }
+.pa-checkbox-row.checked { border-color: #25449B; background: #EFF6FF; box-shadow: 0 0 0 1px #25449B; }
+.pa-checkbox-row.locked { opacity: .55; cursor: not-allowed; }
 
 .pa-checkbox {
-  width: 20px; height: 20px; border-radius: 6px;
-  border: 2px solid rgba(28,35,64,.2);
+  width: 22px; height: 22px; border-radius: 7px;
+  border: 2px solid #94A3B8;
   background: #FFFFFF; flex-shrink: 0; margin-top: 1px;
   display: flex; align-items: center; justify-content: center;
   transition: all .18s;
 }
-.pa-checkbox.checked { background: #25449B; border-color: #25449B; }
+.pa-checkbox.checked { background: #25449B; border-color: #25449B; box-shadow: 0 2px 6px rgba(37,68,155,0.35); }
 .pa-checkbox-text {
-  font-family: 'DM Sans', sans-serif;
-  font-size: 10px; font-weight: 700;
-  letter-spacing: .08em; color: #5A6488; line-height: 1.75;
+  font-family: 'Inter', sans-serif;
+  font-size: 13.5px; font-weight: 500;
+  color: #334155; line-height: 1.6;
 }
-.pa-checkbox-text span { color: #1C2340; }
+.pa-checkbox-text span { color: #0F172A; font-weight: 700; }
 
 /* ── Field grid ──────────────────────────────────────────────────────── */
 .pa-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 32px; }
@@ -306,9 +305,9 @@ export const REGISTRATION_CSS = `
 .pa-switch-btn {
   display: inline-flex; align-items: center; gap: 4px;
   background: none; border: none; padding: 0; cursor: pointer;
-  font-family: 'DM Sans', sans-serif; font-size: 10px; font-weight: 600;
-  color: #25449B; text-transform: none; letter-spacing: normal;
-  transition: color .15s, opacity .15s;
+  font-family: 'Plus Jakarta Sans', sans-serif; font-size: 12px; font-weight: 700;
+  color: #25449B; text-transform: none;
+  transition: color .15s;
 }
 .pa-switch-btn:hover { color: #1B3377; text-decoration: underline; }
 .pa-other-field { animation: paFadeIn .18s ease-out; }
@@ -320,368 +319,369 @@ export const REGISTRATION_CSS = `
 /* ── Owner vs separate Tricycle Driver toggle ────────────────────────── */
 .pa-toggle-row {
   display: flex; align-items: center; justify-content: space-between; gap: 16px;
-  background: #F7F8FC; border: 1px solid rgba(28,35,64,.09);
-  border-radius: 12px; padding: 14px 16px; margin-bottom: 24px;
+  background: #F8FAFC; border: 1.5px solid #E2E8F0;
+  border-radius: 14px; padding: 18px 20px; margin-bottom: 26px;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
 }
 .pa-toggle-label {
-  font-family: 'DM Sans', sans-serif;
-  font-size: 12.5px; font-weight: 700; color: #1C2340;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 14px; font-weight: 700; color: #0F172A;
 }
-.pa-toggle-hint { font-size: 11.5px; color: #6B7280; margin-top: 3px; line-height: 1.5; }
+.pa-toggle-hint { font-family: 'Inter', sans-serif; font-size: 12.5px; color: #64748B; margin-top: 3px; line-height: 1.5; }
 .pa-toggle {
   display: inline-flex; align-items: center; gap: 10px;
   background: none; border: none; padding: 0; cursor: pointer; flex-shrink: 0;
 }
 .pa-toggle-track {
-  width: 44px; height: 24px; border-radius: 999px;
-  background: #C7CBD9; position: relative; transition: background .18s;
+  width: 46px; height: 26px; border-radius: 999px;
+  background: #CBD5E1; position: relative; transition: background .2s ease;
 }
 .pa-toggle.on .pa-toggle-track { background: #25449B; }
 .pa-toggle-knob {
   position: absolute; top: 3px; left: 3px;
-  width: 18px; height: 18px; border-radius: 50%;
+  width: 20px; height: 20px; border-radius: 50%;
   background: #FFFFFF; box-shadow: 0 1px 3px rgba(0,0,0,.25);
-  transition: transform .18s;
+  transition: transform .2s ease;
 }
 .pa-toggle.on .pa-toggle-knob { transform: translateX(20px); }
 .pa-toggle-answer {
-  font-family: 'DM Sans', sans-serif;
-  font-size: 12.5px; font-weight: 700; color: #1C2340; min-width: 26px; text-align: left;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 13.5px; font-weight: 800; color: #0F172A; min-width: 28px; text-align: left;
 }
 
 /* ── Conditional Tricycle Driver subsection (owner ≠ driver) ─────────── */
 .pa-subsection {
-  border: 1.5px dashed rgba(37,68,155,.32);
-  background: rgba(37,68,155,.03);
-  border-radius: 14px; padding: 18px 18px 4px; margin-bottom: 32px;
+  border: 1.5px dashed rgba(37,68,155,.35);
+  background: #F8FAFF;
+  border-radius: 16px; padding: 22px 22px 6px; margin-bottom: 32px;
 }
 .pa-subsection-head { margin-bottom: 18px; }
 .pa-subsection-title {
-  font-family: 'DM Sans', sans-serif;
-  font-size: 12.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 14px; font-weight: 700; letter-spacing: -0.01em;
   color: #25449B;
 }
-.pa-subsection-sub { font-size: 12px; color: #5A6488; margin-top: 4px; line-height: 1.55; }
-.pa-subsection .pa-fields { margin-bottom: 28px; }
+.pa-subsection-sub { font-family: 'Inter', sans-serif; font-size: 12.5px; color: #64748B; margin-top: 3px; line-height: 1.55; }
+.pa-subsection .pa-fields { margin-bottom: 24px; }
 
 /* ── Field ───────────────────────────────────────────────────────────── */
 .pa-label {
-  display: block;
-  font-family: 'DM Sans', sans-serif;
-  font-size: 9px; font-weight: 700;
-  letter-spacing: .16em; text-transform: uppercase;
-  color: #8A96BC; margin-bottom: 8px; padding-left: 2px;
+  display: flex; align-items: center; gap: 6px;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 13px; font-weight: 700;
+  letter-spacing: -0.01em;
+  color: #1E293B; margin-bottom: 7px; padding-left: 1px;
 }
 .pa-input {
-  width: 100%; height: 48px;
-  border: 1.5px solid rgba(28,35,64,.12);
-  border-radius: 11px; background: #FAFAFA;
+  width: 100%; height: 50px;
+  border: 1.5px solid #CBD5E1;
+  border-radius: 12px; background: #FFFFFF;
   padding: 0 16px;
   font-family: 'Inter', sans-serif;
-  font-size: 13px; font-weight: 500; color: #1C2340;
-  outline: none; transition: border-color .2s, box-shadow .2s, background .2s;
+  font-size: 14px; font-weight: 500; color: #0F172A;
+  box-shadow: 0 1px 2px 0 rgba(15, 23, 42, 0.04);
+  outline: none; transition: all .2s ease;
 }
-.pa-input:hover { border-color: rgba(28,35,64,.2); background: #FFFFFF; }
+.pa-input:hover { border-color: #94A3B8; box-shadow: 0 2px 4px 0 rgba(15, 23, 42, 0.06); }
 .pa-input:focus {
   border-color: #25449B;
-  box-shadow: 0 0 0 3px rgba(37,68,155,.12);
+  box-shadow: 0 0 0 4px rgba(37, 68, 155, 0.14), 0 1px 2px 0 rgba(0, 0, 0, 0.05);
   background: #FFFFFF;
 }
-.pa-input::placeholder { color: #A0AEC0; font-weight: 400; opacity: 0.65; }
+.pa-input::placeholder { color: #94A3B8; font-weight: 400; opacity: 1; }
 
-/* Icon-in-field variant — used on the driver-info fields for a richer feel. */
+/* Icon-in-field variant ── */
 .pa-input-wrap { position: relative; }
-.pa-input-wrap .pa-input { padding-left: 42px; }
+.pa-input-wrap .pa-input { padding-left: 44px; }
 .pa-input-wrap-icon {
-  position: absolute; left: 14px; top: 50%; transform: translateY(-50%);
-  color: #9AA3CC; pointer-events: none; display: flex; align-items: center;
-  transition: color .2s;
+  position: absolute; left: 15px; top: 50%; transform: translateY(-50%);
+  color: #64748B; pointer-events: none; display: flex; align-items: center;
+  transition: color .2s, transform .2s;
 }
-.pa-input-wrap:focus-within .pa-input-wrap-icon { color: #25449B; }
+.pa-input-wrap:focus-within .pa-input-wrap-icon { color: #25449B; transform: translateY(-50%) scale(1.08); }
 
 .pa-select {
-  width: 100%; height: 48px;
-  border: 1.5px solid rgba(28,35,64,.12);
-  border-radius: 11px; background: #FAFAFA;
+  width: 100%; height: 50px;
+  border: 1.5px solid #CBD5E1;
+  border-radius: 12px; background: #FFFFFF;
   padding: 0 16px;
   font-family: 'Inter', sans-serif;
-  font-size: 13px; font-weight: 500; color: #1C2340;
+  font-size: 14px; font-weight: 500; color: #0F172A;
+  box-shadow: 0 1px 2px 0 rgba(15, 23, 42, 0.04);
   outline: none; appearance: none; cursor: pointer;
-  transition: border-color .2s, box-shadow .2s, background .2s;
+  transition: all .2s ease;
 }
-.pa-select:hover { border-color: rgba(28,35,64,.2); background: #FFFFFF; }
+.pa-select:hover { border-color: #94A3B8; box-shadow: 0 2px 4px 0 rgba(15, 23, 42, 0.06); }
 .pa-select:focus {
   border-color: #25449B;
-  box-shadow: 0 0 0 3px rgba(37,68,155,.12);
+  box-shadow: 0 0 0 4px rgba(37, 68, 155, 0.14), 0 1px 2px 0 rgba(0, 0, 0, 0.05);
   background: #FFFFFF;
 }
 .pa-select-wrap { position: relative; }
 .pa-select-wrap svg {
-  position: absolute; right: 14px; top: 50%; transform: translateY(-50%);
-  pointer-events: none; color: #9AA3CC;
+  position: absolute; right: 16px; top: 50%; transform: translateY(-50%);
+  pointer-events: none; color: #64748B; transition: color .2s;
 }
+.pa-select-wrap:focus-within svg { color: #25449B; }
 
 /* ── Field-level validation error ───────────────────────────────────── */
 .pa-input.pa-input-error, .pa-select.pa-input-error {
-  border-color: rgba(220,38,38,.5);
-  background: rgba(220,38,38,.03);
+  border-color: #EF4444;
+  background: #FEF2F2;
 }
 .pa-input.pa-input-error:focus, .pa-select.pa-input-error:focus {
-  box-shadow: 0 0 0 3px rgba(220,38,38,.1);
+  box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.14);
 }
 .pa-field-error {
-  font-family: 'Inter', sans-serif;
-  font-size: 10.5px; font-weight: 600; color: #DC2626;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 11.5px; font-weight: 600; color: #DC2626;
   margin-top: 6px; padding-left: 2px;
 }
 
 /* ── Action row ──────────────────────────────────────────────────────── */
-.pa-actions { display: flex; gap: 12px; }
+.pa-actions { display: flex; gap: 12px; margin-top: 8px; }
 
 /* ── Buttons ─────────────────────────────────────────────────────────── */
 .pa-btn-primary {
   flex: 2; height: 52px; border-radius: 12px;
   border: none; background: #25449B; color: #FFFFFF;
   cursor: pointer;
-  font-family: 'Plus Jakarta Sans', sans-serif; font-size: 13.5px; font-weight: 700;
+  font-family: 'Plus Jakarta Sans', sans-serif; font-size: 14px; font-weight: 700;
   display: flex; align-items: center; justify-content: center; gap: 9px;
   transition: background .18s, box-shadow .18s, transform .12s;
-  box-shadow: 0 4px 14px rgba(37,68,155,.25);
+  box-shadow: 0 4px 14px rgba(37,68,155,.28);
 }
 .pa-btn-primary:hover {
   background: #1B3377;
-  box-shadow: 0 6px 20px rgba(37,68,155,.32);
+  box-shadow: 0 6px 20px rgba(37,68,155,.35);
   transform: translateY(-1px);
 }
 .pa-btn-success {
   flex: 2; height: 52px; border-radius: 12px;
   border: none; background: #059669; color: #FFFFFF;
   cursor: pointer;
-  font-family: 'DM Sans', sans-serif; font-size: 10px; font-weight: 700;
-  letter-spacing: .15em; text-transform: uppercase;
+  font-family: 'Plus Jakarta Sans', sans-serif; font-size: 14px; font-weight: 700;
   display: flex; align-items: center; justify-content: center; gap: 9px;
   transition: background .18s, box-shadow .18s, transform .12s;
-  box-shadow: 0 4px 14px rgba(5,150,105,.25);
+  box-shadow: 0 4px 14px rgba(5,150,105,.28);
 }
 .pa-btn-success:hover {
   background: #047857;
-  box-shadow: 0 6px 20px rgba(5,150,105,.3);
+  box-shadow: 0 6px 20px rgba(5,150,105,.35);
   transform: translateY(-1px);
 }
 .pa-btn-ghost {
   flex: 1; height: 52px; border-radius: 12px;
-  border: 1.5px solid rgba(28,35,64,.14); background: #FFFFFF; color: #4A5070;
+  border: 1.5px solid #CBD5E1; background: #FFFFFF; color: #334155;
   cursor: pointer; text-decoration: none;
-  font-family: 'DM Sans', sans-serif; font-size: 10px; font-weight: 700;
-  letter-spacing: .13em; text-transform: uppercase;
+  font-family: 'Plus Jakarta Sans', sans-serif; font-size: 13.5px; font-weight: 700;
   display: flex; align-items: center; justify-content: center; gap: 7px;
-  transition: border-color .18s, background .18s, color .18s;
+  transition: all .18s;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
 }
-.pa-btn-ghost:hover { border-color: rgba(28,35,64,.25); color: #1C2340; background: #FAFAFA; }
+.pa-btn-ghost:hover { border-color: #94A3B8; color: #0F172A; background: #F8FAFC; transform: translateY(-1px); }
 
 /* ── File upload grid ────────────────────────────────────────────────── */
-.pa-docs-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 24px; }
+.pa-docs-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 24px; }
 @media (max-width: 640px) { .pa-docs-grid { grid-template-columns: 1fr; } }
 
-/* ── Required-docs progress readout — live feedback instead of only
-   finding out what's missing after clicking Submit. ── */
-.pa-req-progress { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; }
-.pa-req-progress-bar { flex: 1; height: 6px; border-radius: 4px; background: rgba(28,35,64,.08); overflow: hidden; }
-.pa-req-progress-fill { height: 100%; border-radius: 4px; background: #059669; transition: width .3s ease; }
+/* ── Required-docs progress readout ── */
+.pa-req-progress { display: flex; align-items: center; gap: 12px; margin-bottom: 22px; }
+.pa-req-progress-bar { flex: 1; height: 8px; border-radius: 6px; background: #E2E8F0; overflow: hidden; }
+.pa-req-progress-fill { height: 100%; border-radius: 6px; background: #059669; transition: width .3s ease; }
 .pa-req-progress-text {
-  font-family: 'DM Sans', sans-serif; font-size: 10px; font-weight: 800;
-  letter-spacing: .05em; color: #5A6488; white-space: nowrap;
+  font-family: 'Plus Jakarta Sans', sans-serif; font-size: 11.5px; font-weight: 700;
+  color: #475569; white-space: nowrap;
 }
 
 .pa-docs-subhead {
   display: flex; align-items: center; gap: 8px;
-  font-family: 'DM Sans', sans-serif; font-size: 10px; font-weight: 800;
-  letter-spacing: .1em; text-transform: uppercase; color: #8A96BC;
-  margin: 26px 0 12px; padding-top: 22px; border-top: 1px dashed rgba(28,35,64,.12);
+  font-family: 'Plus Jakarta Sans', sans-serif; font-size: 12px; font-weight: 800;
+  letter-spacing: .05em; text-transform: uppercase; color: #64748B;
+  margin: 28px 0 14px; padding-top: 24px; border-top: 1px dashed #CBD5E1;
 }
 
-/* ── File upload tile icon chip — gradient, matches the icon-chip language
-   used across the rest of the app; swaps to a settled emerald tone once
-   the document has files attached. ── */
+/* ── File upload tile ── */
 .pa-file-chip {
-  width: 34px; height: 34px; border-radius: 10px; flex-shrink: 0;
-  background: #EFF4FF;
-  border: 1px solid #D6E4FF;
+  width: 36px; height: 36px; border-radius: 10px; flex-shrink: 0;
+  background: #EFF6FF;
+  border: 1px solid #BFDBFE;
   display: flex; align-items: center; justify-content: center;
   color: #25449B; transition: all .18s;
 }
 .pa-file-tile-container.done .pa-file-chip {
-  background: linear-gradient(135deg, rgba(5,150,105,.16), rgba(5,150,105,.02));
-  border-color: rgba(5,150,105,.2); color: #059669;
+  background: #ECFDF5;
+  border-color: #A7F3D0; color: #059669;
 }
 .pa-file-tags { display: flex; gap: 6px; flex-wrap: wrap; }
 .pa-tag-req {
-  font-family: 'DM Sans', sans-serif; font-size: 8px; font-weight: 700;
-  letter-spacing: .14em; text-transform: uppercase;
-  color: #DC2626; background: rgba(220,38,38,.07);
-  border: 1px solid rgba(220,38,38,.15); border-radius: 5px; padding: 2px 8px;
+  font-family: 'Plus Jakarta Sans', sans-serif; font-size: 10px; font-weight: 700;
+  letter-spacing: .06em; text-transform: uppercase;
+  color: #DC2626; background: #FEF2F2;
+  border: 1px solid #FECACA; border-radius: 6px; padding: 2px 8px;
 }
 .pa-tag-opt {
-  font-family: 'DM Sans', sans-serif; font-size: 8px; font-weight: 700;
-  letter-spacing: .14em; text-transform: uppercase;
-  color: #8A96BC; background: rgba(28,35,64,.05);
-  border: 1px solid rgba(28,35,64,.1); border-radius: 5px; padding: 2px 8px;
+  font-family: 'Plus Jakarta Sans', sans-serif; font-size: 10px; font-weight: 700;
+  letter-spacing: .06em; text-transform: uppercase;
+  color: #475569; background: #F1F5F9;
+  border: 1px solid #E2E8F0; border-radius: 6px; padding: 2px 8px;
 }
 .pa-tag-done {
-  font-family: 'DM Sans', sans-serif; font-size: 8px; font-weight: 700;
-  letter-spacing: .14em; text-transform: uppercase;
-  color: #065F46; background: rgba(5,150,105,.08);
-  border: 1px solid rgba(5,150,105,.2); border-radius: 5px; padding: 2px 8px;
+  font-family: 'Plus Jakarta Sans', sans-serif; font-size: 10px; font-weight: 700;
+  letter-spacing: .06em; text-transform: uppercase;
+  color: #047857; background: #ECFDF5;
+  border: 1px solid #A7F3D0; border-radius: 6px; padding: 2px 8px;
 }
 
 /* ── Info notice ─────────────────────────────────────────────────────── */
 .pa-notice {
   display: flex; gap: 14px; align-items: flex-start;
-  background: rgba(245,158,11,.06); border: 1px solid rgba(245,158,11,.2);
-  border-radius: 12px; padding: 16px 18px; margin-bottom: 28px;
+  background: #FFFBEB; border: 1.5px solid #FDE68A;
+  border-radius: 14px; padding: 18px 20px; margin-bottom: 28px;
 }
-.pa-notice-icon { color: #D97706; flex-shrink: 0; margin-top: 1px; }
+.pa-notice-icon { color: #D97706; flex-shrink: 0; margin-top: 2px; }
 .pa-notice-text {
-  font-family: 'DM Sans', sans-serif; font-size: 10px; font-weight: 700;
-  letter-spacing: .1em; text-transform: uppercase;
-  color: #92400E; line-height: 1.9;
+  font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 500;
+  color: #92400E; line-height: 1.6;
 }
 
 /* ── Success card ────────────────────────────────────────────────────── */
 .pa-success-icon {
   width: 88px; height: 88px; border-radius: 50%;
-  background: linear-gradient(135deg, rgba(5,150,105,.16), rgba(5,150,105,.02));
-  border: 2px solid rgba(5,150,105,.2);
+  background: #ECFDF5;
+  border: 2px solid #A7F3D0;
   display: flex; align-items: center; justify-content: center;
-  color: #059669; margin: 0 auto 32px;
+  color: #059669; margin: 0 auto 28px;
+  box-shadow: 0 4px 14px rgba(5,150,105,.18);
 }
 .pa-tracking-box {
-  background: #1C2340; border-radius: 14px; padding: 24px 28px;
-  max-width: 340px; margin: 0 auto 28px;
+  background: #0F172A; border-radius: 16px; padding: 24px 28px;
+  max-width: 360px; margin: 0 auto 28px;
   position: relative; overflow: hidden;
+  box-shadow: 0 10px 25px -5px rgba(15,23,42,0.25);
 }
 .pa-tracking-box::before {
   content: ''; position: absolute; left: 0; top: 0; bottom: 0;
   width: 4px; background: linear-gradient(180deg, #25449B 0%, #122866 100%);
 }
 .pa-tracking-eyebrow {
-  font-family: 'DM Sans', sans-serif; font-size: 8.5px; font-weight: 700;
-  letter-spacing: .18em; text-transform: uppercase;
-  color: white; margin-bottom: 8px;
+  font-family: 'Plus Jakarta Sans', sans-serif; font-size: 11px; font-weight: 700;
+  letter-spacing: .08em; text-transform: uppercase;
+  color: #94A3B8; margin-bottom: 8px;
 }
 .pa-tracking-number {
   font-family: 'Plus Jakarta Sans', sans-serif;
-  font-size: 30px; font-weight: 800;
-  letter-spacing: .05em; color: #FFFFFF; line-height: 1;
+  font-size: 32px; font-weight: 800;
+  letter-spacing: .04em; color: #FFFFFF; line-height: 1;
 }
 .pa-success-desc {
-  font-family: 'DM Sans', sans-serif; font-size: 10px; font-weight: 700;
-  letter-spacing: .1em; text-transform: uppercase;
-  color: #8A96BC; line-height: 2; max-width: 420px; margin: 0 auto 36px;
+  font-family: 'Inter', sans-serif; font-size: 13.5px; font-weight: 400;
+  color: #475569; line-height: 1.7; max-width: 440px; margin: 0 auto 36px;
   text-align: center;
 }
-.pa-success-desc span { color: #1C2340; border-bottom: 1.5px solid rgba(28,35,64,.2); padding-bottom: 1px; }
+.pa-success-desc span { color: #0F172A; font-weight: 700; }
 
 /* ── Footer ──────────────────────────────────────────────────────────── */
 .pa-footer {
-  border-top: 1px solid rgba(28,35,64,.07);
+  border-top: 1px solid #E2E8F0;
   padding: 20px 40px; text-align: center;
 }
 @media (max-width: 640px) { .pa-footer { padding: 16px 20px; } }
 .pa-footer-copy {
-  font-family: 'DM Sans', sans-serif; font-size: 9px; font-weight: 700;
-  letter-spacing: .14em; text-transform: uppercase; color: #9AA3CC;
+  font-family: 'Plus Jakarta Sans', sans-serif; font-size: 12px; font-weight: 600;
+  color: #64748B;
 }
 
 /* ── Multi-file uploads style overrides ── */
 .pa-file-tile-container {
   display: flex; flex-direction: column; gap: 8px;
-  background: #FAFAFA; border: 1.5px dashed rgba(28,35,64,.15);
-  border-radius: 12px; padding: 14px 16px; min-height: 90px;
-  transition: all .18s;
+  background: #FFFFFF; border: 1.5px solid #E2E8F0;
+  box-shadow: 0 1px 3px 0 rgba(0,0,0,0.03);
+  border-radius: 14px; padding: 16px 18px; min-height: 96px;
+  transition: all .2s ease;
+}
+.pa-file-tile-container:hover {
+  border-color: #CBD5E1; box-shadow: 0 3px 8px -1px rgba(0,0,0,0.06);
 }
 .pa-file-tile-container.done {
   border-style: solid;
-  border-color: rgba(5,150,105,.25); background: rgba(5,150,105,.02);
+  border-color: #86EFAC; background: #F0FDF4;
 }
 .pa-file-tile-header {
   display: flex; align-items: center; justify-content: space-between;
   width: 100%; margin-bottom: 6px;
 }
-.pa-file-title-group { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.pa-file-title-group { display: flex; align-items: center; gap: 12px; min-width: 0; }
 .pa-file-title-text {
   display: block;
-  font-family: 'Inter', sans-serif;
-  font-size: 11.5px; font-weight: 600; color: #1C2340;
-  line-height: 1.3;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 13px; font-weight: 700; color: #0F172A;
+  line-height: 1.35;
 }
 .pa-file-tile-container.done .pa-file-title-text { color: #065F46; }
 .pa-file-hint {
   display: block;
   font-family: 'Inter', sans-serif;
-  font-size: 10px; font-weight: 500; color: #9AA3CC;
-  line-height: 1.4; margin-top: 1px;
+  font-size: 12px; font-weight: 400; color: #64748B;
+  line-height: 1.4; margin-top: 2px;
 }
 
 .pa-upload-btn-label {
   display: inline-flex; align-items: center; gap: 6px;
   padding: 6px 12px; border-radius: 8px;
-  background: rgba(37,68,155,.08); border: 1px solid rgba(37,68,155,.15);
-  color: #25449B; font-family: 'DM Sans', sans-serif;
-  font-size: 9px; font-weight: 700; text-transform: uppercase;
-  letter-spacing: .08em; cursor: pointer; transition: all .18s;
+  background: #EFF6FF; border: 1px solid #BFDBFE;
+  color: #25449B; font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 11px; font-weight: 700;
+  letter-spacing: normal; cursor: pointer; transition: all .18s;
   width: fit-content;
 }
 .pa-upload-btn-label:hover {
   background: #25449B; color: #FFFFFF; border-color: #25449B;
 }
 
-/* ── Empty-state dropzone — a full-width, obviously tappable action
-   instead of a small pill button, since most applicants attach these
-   via phone camera and need an unmissable primary target. ── */
+/* ── Empty-state dropzone ── */
 .pa-upload-dropzone {
-  display: flex; align-items: center; gap: 10px; width: 100%;
-  padding: 10px 12px; border-radius: 10px;
-  border: 1.5px dashed rgba(37,68,155,.35); background: rgba(37,68,155,.04);
+  display: flex; align-items: center; gap: 12px; width: 100%;
+  padding: 12px 14px; border-radius: 10px;
+  border: 1.5px dashed #93C5FD; background: #EFF6FF;
   cursor: pointer; transition: all .18s; text-align: left;
 }
-.pa-upload-dropzone:hover { background: rgba(37,68,155,.09); border-color: rgba(37,68,155,.55); }
+.pa-upload-dropzone:hover { background: #DBEAFE; border-color: #3B82F6; }
 .pa-upload-dropzone-icon {
-  width: 30px; height: 30px; border-radius: 8px; flex-shrink: 0;
-  background: rgba(37,68,155,.12); color: #25449B;
+  width: 32px; height: 32px; border-radius: 8px; flex-shrink: 0;
+  background: #DBEAFE; color: #25449B;
   display: flex; align-items: center; justify-content: center;
 }
 .pa-upload-dropzone-text {
-  font-family: 'DM Sans', sans-serif; font-size: 10.5px; font-weight: 700;
+  font-family: 'Plus Jakarta Sans', sans-serif; font-size: 12.5px; font-weight: 700;
   color: #25449B; line-height: 1.4;
 }
 
-/* ── Inline thumbnails — seeing the actual photo you just took builds
-   more confidence than a checkmark alone, without forcing a modal open. ── */
-.pa-upload-thumbs-row { display: flex; align-items: center; gap: 6px; width: 100%; flex-wrap: wrap; }
+/* ── Inline thumbnails ── */
+.pa-upload-thumbs-row { display: flex; align-items: center; gap: 8px; width: 100%; flex-wrap: wrap; margin-top: 2px; }
 .pa-upload-thumb-btn {
-  width: 34px; height: 34px; border-radius: 8px; flex-shrink: 0;
-  border: 1px solid rgba(28,35,64,.1); overflow: hidden; padding: 0; cursor: pointer;
+  width: 36px; height: 36px; border-radius: 8px; flex-shrink: 0;
+  border: 1.5px solid #CBD5E1; overflow: hidden; padding: 0; cursor: pointer;
   display: flex; align-items: center; justify-content: center;
-  background: #FFFFFF; color: #8A96BC; transition: border-color .15s;
+  background: #FFFFFF; color: #64748B; transition: border-color .15s;
 }
-.pa-upload-thumb-btn:hover { border-color: rgba(37,68,155,.45); }
+.pa-upload-thumb-btn:hover { border-color: #25449B; }
 .pa-upload-thumb-img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .pa-upload-thumb-more {
-  width: 34px; height: 34px; border-radius: 8px; flex-shrink: 0;
-  background: rgba(28,35,64,.05); color: #5A6488;
+  width: 36px; height: 36px; border-radius: 8px; flex-shrink: 0;
+  background: #F1F5F9; color: #475569;
   display: flex; align-items: center; justify-content: center;
-  font-family: 'DM Sans', sans-serif; font-size: 10px; font-weight: 700;
+  font-family: 'Plus Jakarta Sans', sans-serif; font-size: 11px; font-weight: 700;
 }
 .pa-upload-add-more, .pa-upload-view-btn {
-  width: 34px; height: 34px; border-radius: 8px; flex-shrink: 0;
-  border: 1px dashed rgba(28,35,64,.16); background: none; cursor: pointer;
+  width: 36px; height: 36px; border-radius: 8px; flex-shrink: 0;
+  border: 1.5px dashed #CBD5E1; background: #FFFFFF; cursor: pointer;
   display: flex; align-items: center; justify-content: center;
-  color: #8A96BC; transition: all .15s;
+  color: #64748B; transition: all .15s;
 }
 .pa-upload-add-more { margin-left: auto; }
-.pa-upload-view-btn { border-style: solid; }
-.pa-upload-add-more:hover, .pa-upload-view-btn:hover { border-color: rgba(37,68,155,.45); color: #25449B; background: rgba(37,68,155,.06); }
+.pa-upload-view-btn { border-style: solid; border-color: #E2E8F0; }
+.pa-upload-add-more:hover, .pa-upload-view-btn:hover { border-color: #25449B; color: #25449B; background: #EFF6FF; }
 
 .pa-file-list {
   display: flex; flex-direction: column; gap: 6px; width: 100%;
@@ -689,7 +689,7 @@ export const REGISTRATION_CSS = `
 }
 .pa-uploaded-item {
   display: flex; align-items: center; justify-content: space-between;
-  background: #FFFFFF; border: 1px solid rgba(28,35,64,.08);
+  background: #FFFFFF; border: 1px solid #E2E8F0;
   border-radius: 8px; padding: 6px 10px;
 }
 .pa-uploaded-item-left {
@@ -701,16 +701,16 @@ export const REGISTRATION_CSS = `
 }
 .pa-uploaded-icon-fallback {
   width: 28px; height: 28px; border-radius: 6px;
-  background: rgba(28,35,64,.05); border: 1px solid rgba(28,35,64,.08);
+  background: #F1F5F9; border: 1px solid #E2E8F0;
   display: flex; align-items: center; justify-content: center;
-  color: #8A96BC; flex-shrink: 0;
+  color: #64748B; flex-shrink: 0;
 }
 .pa-uploaded-name {
-  font-family: 'Inter', sans-serif; font-size: 11px; font-weight: 500;
-  color: #4A5070; text-overflow: ellipsis; overflow: hidden; white-space: nowrap;
+  font-family: 'Inter', sans-serif; font-size: 12px; font-weight: 500;
+  color: #334155; text-overflow: ellipsis; overflow: hidden; white-space: nowrap;
 }
 .pa-remove-btn {
-  background: none; border: none; color: #9CA3AF; cursor: pointer;
+  background: none; border: none; color: #94A3B8; cursor: pointer;
   display: flex; align-items: center; justify-content: center;
   padding: 4px; border-radius: 50%; transition: all .15s;
 }
@@ -719,52 +719,48 @@ export const REGISTRATION_CSS = `
 }
 
 /* ── Embedded use (Driver Portal New Unit / Renewal wizard) ──────────── */
-/* Light horizontal version of the vertical stepper above (same dot, line and label treatment). */
 .pa-hstep-list { display: flex; align-items: center; gap: 14px; margin-bottom: 22px; }
 .pa-hstep { display: flex; align-items: center; gap: 12px; }
 .pa-hstep-dot {
-  width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0;
-  border: 2px solid #D5DAE7; background: #FFFFFF;
+  width: 34px; height: 34px; border-radius: 50%; flex-shrink: 0;
+  border: 2px solid #CBD5E1; background: #FFFFFF;
   display: flex; align-items: center; justify-content: center;
-  font-family: 'DM Sans', sans-serif; font-size: 11px; font-weight: 800; color: #8A96BC;
+  font-family: 'Plus Jakarta Sans', sans-serif; font-size: 12px; font-weight: 800; color: #64748B;
   transition: all .3s ease;
 }
-.pa-hstep-dot.active { background: #25449B; border-color: #25449B; color: #FFFFFF; box-shadow: 0 0 0 5px rgba(37,68,155,.12); }
+.pa-hstep-dot.active { background: #25449B; border-color: #25449B; color: #FFFFFF; box-shadow: 0 0 0 5px rgba(37,68,155,.14); }
 .pa-hstep-dot.done { background: #25449B; border-color: #25449B; color: #FFFFFF; }
 .pa-hstep-label {
-  font-family: 'DM Sans', sans-serif; font-size: 10px; font-weight: 700;
-  letter-spacing: .12em; text-transform: uppercase; color: #8A96BC;
+  font-family: 'Plus Jakarta Sans', sans-serif; font-size: 12px; font-weight: 700;
+  color: #64748B;
 }
-.pa-hstep-label.active, .pa-hstep-label.done { color: #1C2340; }
-.pa-hstep-line { width: 48px; height: 2px; border-radius: 2px; background: #D5DAE7; flex-shrink: 0; }
+.pa-hstep-label.active, .pa-hstep-label.done { color: #0F172A; font-weight: 800; }
+.pa-hstep-line { width: 48px; height: 2px; border-radius: 2px; background: #CBD5E1; flex-shrink: 0; }
 .pa-hstep-line.done { background: #25449B; }
 @media (max-width: 640px) { .pa-hstep-line { width: 24px; } }
 
-/* White panel that gives the form the public page's clean white canvas inside a portal layout. */
 .pa-panel {
   background: #FFFFFF;
-  border: 1px solid rgba(28,35,64,.08);
+  border: 1px solid #E2E8F0;
   border-radius: 22px;
   padding: 32px 28px;
-  box-shadow: 0 1px 2px 0 rgba(28,35,64,.04), 0 8px 32px -8px rgba(28,35,64,.10);
+  box-shadow: 0 1px 3px 0 rgba(0,0,0,0.04);
 }
 @media (max-width: 640px) { .pa-panel { padding: 24px 16px; border-radius: 18px; } }
-/* Inside the portal the form uses the panel's full width (no centered narrow column). */
 .pa-panel-inner { width: 100%; }
 
-/* Read-only Tricycle Owner summary (the logged-in portal account). */
 .pa-owner-card {
   display: flex; align-items: center; gap: 14px;
-  padding: 16px 18px; border-radius: 14px;
-  background: #F7F8FB; border: 1px solid rgba(28,35,64,.08);
+  padding: 18px 20px; border-radius: 14px;
+  background: #F8FAFC; border: 1.5px solid #E2E8F0;
   margin-top: 28px; margin-bottom: 16px;
 }
 .pa-owner-eyebrow {
-  font-family: 'DM Sans', sans-serif; font-size: 9.5px; font-weight: 700;
-  letter-spacing: .14em; text-transform: uppercase; color: #8A96BC;
+  font-family: 'Plus Jakarta Sans', sans-serif; font-size: 11px; font-weight: 700;
+  letter-spacing: .06em; text-transform: uppercase; color: #64748B;
 }
-.pa-owner-name { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 14px; font-weight: 700; color: #1C2340; margin-top: 3px; }
-.pa-owner-meta { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #6B7597; margin-top: 3px; }
+.pa-owner-name { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 15px; font-weight: 800; color: #0F172A; margin-top: 3px; }
+.pa-owner-meta { display: flex; align-items: center; gap: 6px; font-size: 13px; color: #475569; margin-top: 3px; }
 `;
 
 // <input type="date"> value for "today" in local time (toISOString is UTC and can
@@ -896,19 +892,19 @@ export function PasswordStrengthMeter({ password }) {
     const strength = calculatePasswordStrength(password);
 
     return (
-        <div style={{ marginTop: '8px', marginBottom: '6px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '5px' }}>
-                <span style={{ fontSize: '9px', fontWeight: 700, color: '#8A96BC', textTransform: 'uppercase', letterSpacing: '0.12em', fontFamily: "'DM Sans', sans-serif" }}>
+        <div style={{ marginTop: '8px', marginBottom: '8px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                <span style={{ fontSize: '11px', fontWeight: 700, color: '#475569', letterSpacing: '0.02em', fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
                     Password Strength
                 </span>
-                <span style={{ fontSize: '11px', fontWeight: 700, color: strength.color, fontFamily: "'Inter', sans-serif" }}>
+                <span style={{ fontSize: '12px', fontWeight: 800, color: strength.color, fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
                     {strength.label}
                 </span>
             </div>
-            <div style={{ display: 'flex', gap: '4px', height: '4px' }}>
-                <div style={{ flex: 1, borderRadius: '2px', background: strength.score >= 1 ? strength.color : 'rgba(28,35,64,0.1)', transition: 'background 0.2s' }} />
-                <div style={{ flex: 1, borderRadius: '2px', background: strength.score >= 2 ? strength.color : 'rgba(28,35,64,0.1)', transition: 'background 0.2s' }} />
-                <div style={{ flex: 1, borderRadius: '2px', background: strength.score >= 3 ? strength.color : 'rgba(28,35,64,0.1)', transition: 'background 0.2s' }} />
+            <div style={{ display: 'flex', gap: '5px', height: '5px' }}>
+                <div style={{ flex: 1, borderRadius: '3px', background: strength.score >= 1 ? strength.color : '#E2E8F0', transition: 'background 0.2s' }} />
+                <div style={{ flex: 1, borderRadius: '3px', background: strength.score >= 2 ? strength.color : '#E2E8F0', transition: 'background 0.2s' }} />
+                <div style={{ flex: 1, borderRadius: '3px', background: strength.score >= 3 ? strength.color : '#E2E8F0', transition: 'background 0.2s' }} />
             </div>
         </div>
     );
