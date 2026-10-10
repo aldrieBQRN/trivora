@@ -81,12 +81,12 @@ export const REGISTRATION_DOCUMENTS = [
     { id: 'drivers_license', label: "Driver's License — Back-to-back Photocopy (Prof/Restriction 1/A1)", required: true },
     { id: 'barangay_clearance', label: 'Barangay Clearance (Original)', required: true },
     { id: 'toda_clearance', label: 'TODA/NAFTODA/ACTODAN Clearance (Original)', required: true },
-    { id: 'cedula', label: 'Cedula', required: true, hint: 'For redemption/processing at the Municipal Treasurer’s Office' },
+    { id: 'cedula', label: 'Cedula', required: true },
     { id: 'driver_id', label: "Driver's ID Issued by NAFTODA/ACTODAN", required: true },
-    { id: 'tariff_list', label: 'List of Existing Tariff Fee', required: true, hint: 'For display inside the sidecar' },
-    { id: 'delivery_receipt', label: 'Delivery Receipt (Photocopy)', required: false, hint: 'Required for vehicles without OR/CR yet, or for new units' },
-    { id: 'authorization_letter', label: "Operator's Authorization Letter & Photocopy of ID", required: false, hint: 'Required if the person processing or claiming the permit is not the operator/owner' },
-    { id: 'prangkisa', label: 'Xerox Prangkisa (Kung Renew)', required: false, renewalOnly: true, hint: 'Required only when renewing an existing franchise' },
+    { id: 'tariff_list', label: 'List of Existing Tariff Fee', required: true },
+    { id: 'delivery_receipt', label: 'Delivery Receipt (Photocopy)', required: false },
+    { id: 'authorization_letter', label: "Operator's Authorization Letter & Photocopy of ID", required: false },
+    { id: 'prangkisa', label: 'Xerox Prangkisa (Kung Renew)', required: false, renewalOnly: true },
 ];
 
 /**

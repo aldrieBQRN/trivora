@@ -827,7 +827,6 @@ export default function PublicApply() {
                                             key={doc.id}
                                             id={doc.id}
                                             label={doc.label}
-                                            hint={doc.hint}
                                             required={doc.required}
                                             conditional={!doc.required}
                                             files={data.documents[doc.id] || []}
@@ -855,7 +854,6 @@ export default function PublicApply() {
                                                 key={doc.id}
                                                 id={doc.id}
                                                 label={doc.label}
-                                                hint={doc.hint}
                                                 required={doc.required}
                                                 conditional={!doc.required}
                                                 files={data.documents[doc.id] || []}
