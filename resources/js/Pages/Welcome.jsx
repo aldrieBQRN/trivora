@@ -82,24 +82,26 @@ html { scroll-behavior: smooth; }
   gap: 12px;
 }
 .wl-logo-img-wrap {
-  height: 44px;
+  height: auto;
   width: auto;
-  border-radius: 10px;
-  background: #FFFFFF;
-  border: 1px solid #E2E8F0;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+  background: transparent;
+  border: none;
+  box-shadow: none;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 5px 10px;
+  padding: 0;
   flex-shrink: 0;
-  transition: transform .2s, box-shadow .2s;
+  transition: transform .2s ease;
 }
 .wl-logo:hover .wl-logo-img-wrap {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  transform: scale(1.02);
+  box-shadow: none;
 }
-.wl-logo-img { height: 30px; width: auto; object-fit: contain; display: block; }
+.wl-logo-img { height: 48px; width: auto; object-fit: contain; display: block; }
+@media (max-width: 600px) {
+  .wl-logo-img { height: 40px; }
+}
 
 .wl-nav { display: flex; align-items: center; gap: 26px; }
 @media (max-width: 960px) { .wl-nav { display: none; } }
@@ -1150,17 +1152,6 @@ html { scroll-behavior: smooth; }
   text-align: center;
   position: relative;
   overflow: hidden;
-}
-.wl-cta-band::before {
-  content: '';
-  position: absolute;
-  top: -120px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 700px;
-  height: 400px;
-  background: radial-gradient(ellipse at center, rgba(255,255,255,0.18), transparent 70%);
-  pointer-events: none;
 }
 .wl-cta-inner {
   position: relative;
