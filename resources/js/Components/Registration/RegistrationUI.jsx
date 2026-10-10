@@ -55,21 +55,12 @@ export const REGISTRATION_CSS = `
   padding: 48px 44px;
   border-radius: 0 28px 28px 0;
   background-image:
-    linear-gradient(165deg, rgba(20,26,51,.86) 0%, rgba(20,26,51,.97) 100%),
+    linear-gradient(165deg, rgba(18, 40, 102, 0.92) 0%, rgba(37, 68, 155, 0.86) 55%, rgba(15, 33, 85, 0.95) 100%),
     url('/images/nasugbu-bg.jpg');
   background-size: cover; background-position: center; background-repeat: no-repeat;
   color: #FFFFFF;
 }
 @media (max-width: 900px) { .pa-side { flex: 0 0 auto; padding: 36px 28px; border-radius: 0 0 28px 28px; } }
-
-.pa-side::before {
-  content: ''; position: absolute; inset: 0;
-  background-image: radial-gradient(circle, rgba(255,255,255,.05) 1px, transparent 1px);
-  background-size: 26px 26px; pointer-events: none;
-}
-.pa-hero-glow { position: absolute; border-radius: 50%; pointer-events: none; filter: blur(70px); }
-.pa-hero-glow--1 { top: -120px; right: -100px; width: 340px; height: 340px; background: radial-gradient(circle, rgba(79,91,203,.42), transparent 70%); }
-.pa-hero-glow--2 { bottom: -140px; left: -100px; width: 300px; height: 300px; background: radial-gradient(circle, rgba(255,255,255,.12), transparent 70%); }
 
 .pa-side-top { position: relative; z-index: 1; }
 .pa-side-mid { position: relative; z-index: 1; margin-top: 36px; }
@@ -77,17 +68,23 @@ export const REGISTRATION_CSS = `
 .pa-side-bottom { position: relative; z-index: 1; margin-top: 28px; }
 @media (max-width: 900px) { .pa-side-bottom { display: none; } }
 
-.pa-logo { display: flex; align-items: center; gap: 14px; text-decoration: none; width: fit-content; }
-.pa-logo-img-wrap {
-  height: 42px; width: auto; border-radius: 10px;
-  background: #FFFFFF;
-  box-shadow: 0 2px 10px rgba(0,0,0,.15);
-  display: flex; align-items: center; justify-content: center;
-  padding: 6px 9px; flex-shrink: 0;
-  transition: box-shadow .2s;
+.pa-side-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #FFFFFF;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  margin-bottom: 16px;
+  width: fit-content;
 }
-.pa-logo:hover .pa-logo-img-wrap { box-shadow: 0 4px 16px rgba(0,0,0,.22); }
-.pa-logo-img { height: 26px; width: auto; object-fit: contain; display: block; }
 
 .pa-page-title {
   font-family: 'Plus Jakarta Sans', sans-serif;
@@ -129,14 +126,14 @@ export const REGISTRATION_CSS = `
   color: rgba(255,255,255,.6);
   transition: all .3s ease;
 }
-.pa-step-v-dot.active { background: #FFFFFF; border-color: #FFFFFF; color: #1C2340; box-shadow: 0 0 0 5px rgba(255,255,255,.14); }
-.pa-step-v-dot.done { background: #4F5BCB; border-color: #4F5BCB; color: #FFFFFF; }
+.pa-step-v-dot.active { background: #FFFFFF; border-color: #FFFFFF; color: #25449B; box-shadow: 0 0 0 5px rgba(255,255,255,.18); }
+.pa-step-v-dot.done { background: #25449B; border-color: #25449B; color: #FFFFFF; }
 .pa-step-v-line {
   width: 2px; flex: 1; min-height: 28px;
   background: rgba(255,255,255,.16); border-radius: 2px;
   transition: background .3s;
 }
-.pa-step-v-line.done { background: #4F5BCB; }
+.pa-step-v-line.done { background: #25449B; }
 @media (max-width: 900px) { .pa-step-v-line { width: 100%; height: 2px; min-height: 0; flex: 1; margin-top: 15px; } }
 
 .pa-step-v-text { padding-bottom: 28px; padding-top: 3px; }
@@ -156,17 +153,39 @@ export const REGISTRATION_CSS = `
 .pa-content { flex: 1; display: grid; grid-template-rows: auto 1fr auto; min-width: 0; background: #FFFFFF; overflow: hidden; }
 @media (max-width: 900px) { .pa-content { overflow: visible; } }
 .pa-content-topbar {
-  display: flex; align-items: center; justify-content: flex-end;
+  display: flex; align-items: center; justify-content: space-between;
   padding: 20px 40px 0;
 }
 @media (max-width: 640px) { .pa-content-topbar { padding: 16px 20px 0; } }
+
+.pa-topbar-logo {
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+  transition: transform .2s ease;
+}
+.pa-topbar-logo:hover {
+  transform: scale(1.02);
+}
+.pa-topbar-logo-img {
+  height: 44px;
+  width: auto;
+  object-fit: contain;
+  display: block;
+}
+@media (max-width: 640px) {
+  .pa-topbar-logo-img {
+    height: 36px;
+  }
+}
+
 .pa-back-link {
   display: inline-flex; align-items: center; gap: 6px;
-  font-family: 'DM Sans', sans-serif; font-size: 10px; font-weight: 700;
-  letter-spacing: .1em; text-transform: uppercase;
-  color: #8A96BC; text-decoration: none; transition: color .18s;
+  font-family: 'Plus Jakarta Sans', sans-serif; font-size: 11.5px; font-weight: 700;
+  color: #64748B; text-decoration: none; transition: all .18s;
+  padding: 6px 14px; border-radius: 8px; border: 1px solid #E2E8F0; background: #F8FAFC;
 }
-.pa-back-link:hover { color: #1C2340; }
+.pa-back-link:hover { color: #25449B; border-color: #25449B; background: #EFF4FF; transform: translateX(-2px); }
 
 .pa-content-center { display: flex; align-items: safe center; justify-content: center; padding: 24px 24px; overflow-y: auto; }
 .pa-content-inner { width: 100%; max-width: 620px; }
@@ -190,10 +209,10 @@ export const REGISTRATION_CSS = `
 }
 .pa-card-icon {
   width: 48px; height: 48px; border-radius: 14px; flex-shrink: 0;
-  background: linear-gradient(135deg, rgba(79,91,203,.15), rgba(79,91,203,.02));
-  border: 1px solid rgba(79,91,203,.14);
+  background: #EFF4FF;
+  border: 1px solid #D6E4FF;
   display: flex; align-items: center; justify-content: center;
-  color: #4F5BCB;
+  color: #25449B;
 }
 .pa-card-top-text { display: flex; align-items: center; gap: 16px; }
 .pa-card-title {
@@ -261,7 +280,7 @@ export const REGISTRATION_CSS = `
   cursor: pointer; transition: border-color .18s, background .18s;
 }
 .pa-checkbox-row:hover { border-color: rgba(28,35,64,.2); }
-.pa-checkbox-row.checked { border-color: rgba(79,91,203,.3); background: rgba(79,91,203,.04); }
+.pa-checkbox-row.checked { border-color: rgba(37,68,155,.3); background: rgba(37,68,155,.04); }
 .pa-checkbox-row.locked { opacity: .5; cursor: not-allowed; }
 
 .pa-checkbox {
@@ -271,7 +290,7 @@ export const REGISTRATION_CSS = `
   display: flex; align-items: center; justify-content: center;
   transition: all .18s;
 }
-.pa-checkbox.checked { background: #1C2340; border-color: #1C2340; }
+.pa-checkbox.checked { background: #25449B; border-color: #25449B; }
 .pa-checkbox-text {
   font-family: 'DM Sans', sans-serif;
   font-size: 10px; font-weight: 700;
@@ -288,10 +307,10 @@ export const REGISTRATION_CSS = `
   display: inline-flex; align-items: center; gap: 4px;
   background: none; border: none; padding: 0; cursor: pointer;
   font-family: 'DM Sans', sans-serif; font-size: 10px; font-weight: 600;
-  color: #4F5BCB; text-transform: none; letter-spacing: normal;
+  color: #25449B; text-transform: none; letter-spacing: normal;
   transition: color .15s, opacity .15s;
 }
-.pa-switch-btn:hover { color: #2E3A9E; text-decoration: underline; }
+.pa-switch-btn:hover { color: #1B3377; text-decoration: underline; }
 .pa-other-field { animation: paFadeIn .18s ease-out; }
 @keyframes paFadeIn {
   from { opacity: 0; transform: translateY(-3px); }
@@ -317,7 +336,7 @@ export const REGISTRATION_CSS = `
   width: 44px; height: 24px; border-radius: 999px;
   background: #C7CBD9; position: relative; transition: background .18s;
 }
-.pa-toggle.on .pa-toggle-track { background: #4F5BCB; }
+.pa-toggle.on .pa-toggle-track { background: #25449B; }
 .pa-toggle-knob {
   position: absolute; top: 3px; left: 3px;
   width: 18px; height: 18px; border-radius: 50%;
@@ -332,15 +351,15 @@ export const REGISTRATION_CSS = `
 
 /* ── Conditional Tricycle Driver subsection (owner ≠ driver) ─────────── */
 .pa-subsection {
-  border: 1.5px dashed rgba(79,91,203,.38);
-  background: rgba(79,91,203,.035);
+  border: 1.5px dashed rgba(37,68,155,.32);
+  background: rgba(37,68,155,.03);
   border-radius: 14px; padding: 18px 18px 4px; margin-bottom: 32px;
 }
 .pa-subsection-head { margin-bottom: 18px; }
 .pa-subsection-title {
   font-family: 'DM Sans', sans-serif;
-  font-size: 13px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
-  color: #4F5BCB;
+  font-size: 12.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+  color: #25449B;
 }
 .pa-subsection-sub { font-size: 12px; color: #5A6488; margin-top: 4px; line-height: 1.55; }
 .pa-subsection .pa-fields { margin-bottom: 28px; }
@@ -364,8 +383,8 @@ export const REGISTRATION_CSS = `
 }
 .pa-input:hover { border-color: rgba(28,35,64,.2); background: #FFFFFF; }
 .pa-input:focus {
-  border-color: rgba(79,91,203,.45);
-  box-shadow: 0 0 0 3px rgba(79,91,203,.1);
+  border-color: #25449B;
+  box-shadow: 0 0 0 3px rgba(37,68,155,.12);
   background: #FFFFFF;
 }
 .pa-input::placeholder { color: #A0AEC0; font-weight: 400; opacity: 0.65; }
@@ -378,7 +397,7 @@ export const REGISTRATION_CSS = `
   color: #9AA3CC; pointer-events: none; display: flex; align-items: center;
   transition: color .2s;
 }
-.pa-input-wrap:focus-within .pa-input-wrap-icon { color: #4F5BCB; }
+.pa-input-wrap:focus-within .pa-input-wrap-icon { color: #25449B; }
 
 .pa-select {
   width: 100%; height: 48px;
@@ -392,8 +411,8 @@ export const REGISTRATION_CSS = `
 }
 .pa-select:hover { border-color: rgba(28,35,64,.2); background: #FFFFFF; }
 .pa-select:focus {
-  border-color: rgba(79,91,203,.45);
-  box-shadow: 0 0 0 3px rgba(79,91,203,.1);
+  border-color: #25449B;
+  box-shadow: 0 0 0 3px rgba(37,68,155,.12);
   background: #FFFFFF;
 }
 .pa-select-wrap { position: relative; }
@@ -422,17 +441,16 @@ export const REGISTRATION_CSS = `
 /* ── Buttons ─────────────────────────────────────────────────────────── */
 .pa-btn-primary {
   flex: 2; height: 52px; border-radius: 12px;
-  border: none; background: #1C2340; color: #FFFFFF;
+  border: none; background: #25449B; color: #FFFFFF;
   cursor: pointer;
-  font-family: 'DM Sans', sans-serif; font-size: 10px; font-weight: 700;
-  letter-spacing: .15em; text-transform: uppercase;
+  font-family: 'Plus Jakarta Sans', sans-serif; font-size: 13.5px; font-weight: 700;
   display: flex; align-items: center; justify-content: center; gap: 9px;
   transition: background .18s, box-shadow .18s, transform .12s;
-  box-shadow: 0 4px 14px rgba(28,35,64,.25);
+  box-shadow: 0 4px 14px rgba(37,68,155,.25);
 }
 .pa-btn-primary:hover {
-  background: #2E3A9E;
-  box-shadow: 0 6px 20px rgba(28,35,64,.3);
+  background: #1B3377;
+  box-shadow: 0 6px 20px rgba(37,68,155,.32);
   transform: translateY(-1px);
 }
 .pa-btn-success {
@@ -487,10 +505,10 @@ export const REGISTRATION_CSS = `
    the document has files attached. ── */
 .pa-file-chip {
   width: 34px; height: 34px; border-radius: 10px; flex-shrink: 0;
-  background: linear-gradient(135deg, rgba(79,91,203,.14), rgba(79,91,203,.02));
-  border: 1px solid rgba(79,91,203,.14);
+  background: #EFF4FF;
+  border: 1px solid #D6E4FF;
   display: flex; align-items: center; justify-content: center;
-  color: #4F5BCB; transition: all .18s;
+  color: #25449B; transition: all .18s;
 }
 .pa-file-tile-container.done .pa-file-chip {
   background: linear-gradient(135deg, rgba(5,150,105,.16), rgba(5,150,105,.02));
@@ -544,7 +562,7 @@ export const REGISTRATION_CSS = `
 }
 .pa-tracking-box::before {
   content: ''; position: absolute; left: 0; top: 0; bottom: 0;
-  width: 4px; background: linear-gradient(180deg, #4F5BCB 0%, #1C2340 100%);
+  width: 4px; background: linear-gradient(180deg, #25449B 0%, #122866 100%);
 }
 .pa-tracking-eyebrow {
   font-family: 'DM Sans', sans-serif; font-size: 8.5px; font-weight: 700;
@@ -608,14 +626,14 @@ export const REGISTRATION_CSS = `
 .pa-upload-btn-label {
   display: inline-flex; align-items: center; gap: 6px;
   padding: 6px 12px; border-radius: 8px;
-  background: rgba(79,91,203,.08); border: 1px solid rgba(79,91,203,.15);
-  color: #4F5BCB; font-family: 'DM Sans', sans-serif;
+  background: rgba(37,68,155,.08); border: 1px solid rgba(37,68,155,.15);
+  color: #25449B; font-family: 'DM Sans', sans-serif;
   font-size: 9px; font-weight: 700; text-transform: uppercase;
   letter-spacing: .08em; cursor: pointer; transition: all .18s;
   width: fit-content;
 }
 .pa-upload-btn-label:hover {
-  background: #4F5BCB; color: #FFFFFF; border-color: #4F5BCB;
+  background: #25449B; color: #FFFFFF; border-color: #25449B;
 }
 
 /* ── Empty-state dropzone — a full-width, obviously tappable action
@@ -624,18 +642,18 @@ export const REGISTRATION_CSS = `
 .pa-upload-dropzone {
   display: flex; align-items: center; gap: 10px; width: 100%;
   padding: 10px 12px; border-radius: 10px;
-  border: 1.5px dashed rgba(79,91,203,.35); background: rgba(79,91,203,.04);
+  border: 1.5px dashed rgba(37,68,155,.35); background: rgba(37,68,155,.04);
   cursor: pointer; transition: all .18s; text-align: left;
 }
-.pa-upload-dropzone:hover { background: rgba(79,91,203,.09); border-color: rgba(79,91,203,.55); }
+.pa-upload-dropzone:hover { background: rgba(37,68,155,.09); border-color: rgba(37,68,155,.55); }
 .pa-upload-dropzone-icon {
   width: 30px; height: 30px; border-radius: 8px; flex-shrink: 0;
-  background: rgba(79,91,203,.12); color: #4F5BCB;
+  background: rgba(37,68,155,.12); color: #25449B;
   display: flex; align-items: center; justify-content: center;
 }
 .pa-upload-dropzone-text {
   font-family: 'DM Sans', sans-serif; font-size: 10.5px; font-weight: 700;
-  color: #4F5BCB; line-height: 1.4;
+  color: #25449B; line-height: 1.4;
 }
 
 /* ── Inline thumbnails — seeing the actual photo you just took builds
@@ -647,7 +665,7 @@ export const REGISTRATION_CSS = `
   display: flex; align-items: center; justify-content: center;
   background: #FFFFFF; color: #8A96BC; transition: border-color .15s;
 }
-.pa-upload-thumb-btn:hover { border-color: rgba(79,91,203,.45); }
+.pa-upload-thumb-btn:hover { border-color: rgba(37,68,155,.45); }
 .pa-upload-thumb-img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .pa-upload-thumb-more {
   width: 34px; height: 34px; border-radius: 8px; flex-shrink: 0;
@@ -663,7 +681,7 @@ export const REGISTRATION_CSS = `
 }
 .pa-upload-add-more { margin-left: auto; }
 .pa-upload-view-btn { border-style: solid; }
-.pa-upload-add-more:hover, .pa-upload-view-btn:hover { border-color: rgba(79,91,203,.45); color: #4F5BCB; background: rgba(79,91,203,.06); }
+.pa-upload-add-more:hover, .pa-upload-view-btn:hover { border-color: rgba(37,68,155,.45); color: #25449B; background: rgba(37,68,155,.06); }
 
 .pa-file-list {
   display: flex; flex-direction: column; gap: 6px; width: 100%;
@@ -711,15 +729,15 @@ export const REGISTRATION_CSS = `
   font-family: 'DM Sans', sans-serif; font-size: 11px; font-weight: 800; color: #8A96BC;
   transition: all .3s ease;
 }
-.pa-hstep-dot.active { background: #1C2340; border-color: #1C2340; color: #FFFFFF; box-shadow: 0 0 0 5px rgba(28,35,64,.10); }
-.pa-hstep-dot.done { background: #4F5BCB; border-color: #4F5BCB; color: #FFFFFF; }
+.pa-hstep-dot.active { background: #25449B; border-color: #25449B; color: #FFFFFF; box-shadow: 0 0 0 5px rgba(37,68,155,.12); }
+.pa-hstep-dot.done { background: #25449B; border-color: #25449B; color: #FFFFFF; }
 .pa-hstep-label {
   font-family: 'DM Sans', sans-serif; font-size: 10px; font-weight: 700;
   letter-spacing: .12em; text-transform: uppercase; color: #8A96BC;
 }
 .pa-hstep-label.active, .pa-hstep-label.done { color: #1C2340; }
 .pa-hstep-line { width: 48px; height: 2px; border-radius: 2px; background: #D5DAE7; flex-shrink: 0; }
-.pa-hstep-line.done { background: #4F5BCB; }
+.pa-hstep-line.done { background: #25449B; }
 @media (max-width: 640px) { .pa-hstep-line { width: 24px; } }
 
 /* White panel that gives the form the public page's clean white canvas inside a portal layout. */
@@ -1390,7 +1408,7 @@ export function FileUpload({ id, label, hint, required, conditional, files = [],
                                     transition: 'all .15s'
                                 }}
                             >
-                                <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'rgba(79,91,203,.1)', color: '#4F5BCB', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'rgba(37,68,155,.1)', color: '#25449B', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                     <Upload size={18} />
                                 </div>
                                 <div style={{ textAlign: 'left' }}>
@@ -1563,7 +1581,7 @@ export function FileUpload({ id, label, hint, required, conditional, files = [],
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                             <button
                                                 type="button"
-                                                style={{ background: 'none', border: 'none', color: '#4F5BCB', cursor: 'pointer', padding: '4px' }}
+                                                style={{ background: 'none', border: 'none', color: '#25449B', cursor: 'pointer', padding: '4px' }}
                                                 onClick={() => setActivePreviewUrl(thumb || previewUrls[idx])}
                                                 title="View file"
                                             >

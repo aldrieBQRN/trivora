@@ -3,7 +3,8 @@ import { Head, useForm, Link, usePage } from '@inertiajs/react';
 import Swal from 'sweetalert2';
 import {
     Upload, Info, CheckCircle2, MapPin, Check, Camera, Eye, X,
-    FileText, User, Bike, Mail, Lock, Phone, Loader2, CalendarDays
+    FileText, User, Bike, Mail, Lock, Phone, Loader2, CalendarDays,
+    ShieldCheck
 } from 'lucide-react';
 import { VEHICLE_DETAIL_FIELDS, getApplicableDocuments } from '@/data/registrationRequirements';
 import { NASUGBU_BARANGAYS } from '@/data/nasugbuBarangays';
@@ -280,7 +281,7 @@ export default function PublicApply() {
                 html: 'Pakisumite ang lahat ng required na dokumento bago magpatuloy:<br/><br/>'
                     + missingRequiredDocs.map(d => `&bull; ${d.label}`).join('<br/>'),
                 icon: 'warning',
-                confirmButtonColor: '#1C2340'
+                confirmButtonColor: '#25449B'
             });
             return;
         }
@@ -290,7 +291,7 @@ export default function PublicApply() {
                 title: 'Agreement Required',
                 text: 'Please go back to Step 1 and agree to the Terms & Conditions and Data Privacy Consent before submitting.',
                 icon: 'warning',
-                confirmButtonColor: '#1C2340'
+                confirmButtonColor: '#25449B'
             });
             return;
         }
@@ -305,7 +306,7 @@ export default function PublicApply() {
                     title: 'Submission Failed',
                     text: firstErr || 'Please check your inputs and try again.',
                     icon: 'error',
-                    confirmButtonColor: '#1C2340'
+                    confirmButtonColor: '#25449B'
                 });
             }
         });
@@ -327,15 +328,11 @@ export default function PublicApply() {
             {/* ── SPLIT LEFT: branding + vertical step tracker (hidden once submitted) ── */}
             {step < 5 && (
                 <aside className="pa-side">
-                    <div className="pa-hero-glow pa-hero-glow--1" aria-hidden="true" />
-                    <div className="pa-hero-glow pa-hero-glow--2" aria-hidden="true" />
-
                     <div className="pa-side-top">
-                        <Link href="/" className="pa-logo">
-                            <div className="pa-logo-img-wrap">
-                                <img src="/images/logo.png" alt="TRIVORA" className="pa-logo-img" />
-                            </div>
-                        </Link>
+                        <div className="pa-side-badge">
+                            <ShieldCheck size={13} strokeWidth={2.4} />
+                            Nasugbu, Batangas
+                        </div>
                         <h1 className="pa-page-title">Register Your Tricycle Unit</h1>
                         <p className="pa-page-sub">Complete all steps to submit your franchise application to the Nasugbu TMO.</p>
                     </div>
@@ -376,6 +373,9 @@ export default function PublicApply() {
             <main className="pa-content">
                 {step < 5 && (
                     <div className="pa-content-topbar">
+                        <Link href="/" className="pa-topbar-logo">
+                            <img src="/images/logo.png" alt="TRIVORA" className="pa-topbar-logo-img" />
+                        </Link>
                         <Link href="/" className="pa-back-link" onClick={() => clearSavedDraft()}>
                             Cancel &amp; Return Home
                         </Link>
@@ -873,10 +873,10 @@ export default function PublicApply() {
                                     style={{
                                         display: 'inline-flex', alignItems: 'center', gap: 9,
                                         height: 52, padding: '0 36px', borderRadius: 12,
-                                        background: '#1C2340', color: '#FFFFFF', textDecoration: 'none',
+                                        background: '#25449B', color: '#FFFFFF', textDecoration: 'none',
                                         fontFamily: "'DM Sans', sans-serif", fontSize: 10, fontWeight: 700,
                                         letterSpacing: '.15em', textTransform: 'uppercase',
-                                        boxShadow: '0 4px 14px rgba(28,35,64,.25)',
+                                        boxShadow: '0 4px 14px rgba(37,68,155,.25)',
                                     }}
                                 >
                                     Go to Driver Portal
