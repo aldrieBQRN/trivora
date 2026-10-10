@@ -17,7 +17,7 @@ const delay = (ms) => ({ animationDelay: `${ms}ms` });
    TRIVORA — Public Welcome / Landing Page
    Brand Primary: #25449B (Royal Nasugbu Blue)
    Senior UI/UX Designer Redesign
-   Integrated Sections: Hero Split, Verify, About, How It Works, Technology, FAQ, Contact
+   Integrated Sections: Hero Split, Verify, About, How It Works, Features, FAQ, Contact
    Path: resources/js/Pages/Welcome.jsx
 ───────────────────────────────────────────────────────────────────────── */
 const CSS = `
@@ -179,7 +179,7 @@ html { scroll-behavior: smooth; }
 }
 
 /* In-page scroll target margin */
-#about, #verify, #how-it-works, #technology, #faq, #contact { scroll-margin-top: 96px; }
+#about, #verify, #how-it-works, #features, #faq, #contact { scroll-margin-top: 96px; }
 
 /* ── Mobile Drawer ───────────────────────────────────────────────────── */
 .wl-menu-btn {
@@ -1329,17 +1329,39 @@ const STEPS = [
   { icon: FileText, title: 'Submit Papers Online', desc: 'Fill in your details and upload your tricycle papers and clearances from your phone or computer—no need to line up early.' },
   { icon: ClipboardCheck, title: 'TMO Review & Inspection', desc: 'The Traffic Management Office reviews your papers and checks your tricycle’s road safety and roadworthiness.' },
   { icon: Wallet, title: 'Pay at Municipal Cashier', desc: 'After your tricycle passes inspection, proceed to pay your franchise fee at the Municipal Treasurer cashier window in the municipal hall.' },
-  { icon: Award, title: 'Claim Sticker & Permit', desc: 'Receive your official MTOP windshield sticker and digital franchise permit. You’re ready to drive with peace of mind.' },
+  { icon: Award, title: 'Claim Sticker & Permit', desc: 'Receive your MTOP windshield sticker and franchise permit. You’re ready to drive with peace of mind.' },
 ];
 
 const FAQS = [
   {
     q: 'What papers do I need to apply for or renew an MTOP franchise?',
-    a: 'You will need: (1) LTO Official Receipt (OR) and Certificate of Registration (CR) of the tricycle, (2) Professional Driver’s License, (3) Barangay Clearance within Nasugbu, and (4) Police or NBI Clearance.'
+    a: (
+      <div>
+        <p style={{ marginBottom: 10, fontWeight: 500 }}>
+          Take a clear photo or upload scanned copies of each document when submitting your application online:
+        </p>
+        <ul style={{ paddingLeft: 20, display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 12 }}>
+          <li><strong>Photocopy of OR/CR</strong> (or Delivery Receipt if newly purchased / no OR/CR yet)</li>
+          <li><strong>Driver’s License</strong> — back-to-back photocopy (Professional / Restriction 1/A1)</li>
+          <li><strong>Barangay Clearance</strong> (Original)</li>
+          <li><strong>Police Clearance or LGU Certification</strong></li>
+          <li><strong>Health Certificate</strong> (Driver)</li>
+          <li><strong>Cedula</strong> (Community Tax Certificate)</li>
+          <li><strong>TODA / NAFTODA / ACTODAN Clearance</strong> (Original)</li>
+          <li><strong>Driver's ID Issued by NAFTODA/ACTODAN</strong></li>
+          <li><strong>List of Existing Tariff Fee</strong> (for sidecar display)</li>
+          <li><strong>Xerox Prangkisa</strong> — required when renewing an existing franchise</li>
+          <li><em>Operator's Authorization Letter &amp; ID</em> — if a representative is filing on behalf of the owner</li>
+        </ul>
+        <p style={{ fontSize: 13, color: '#64748B' }}>
+          Tip: Ensure all documents are clear, flat, and legible before uploading.
+        </p>
+      </div>
+    )
   },
   {
-    q: 'How can passengers check if a tricycle has an official permit?',
-    a: 'You can use the plate check tool on this page or scan the official TRIVORA QR code displayed on the tricycle windshield. It instantly shows if the unit has an active and valid municipal franchise.'
+    q: 'How can passengers check if a tricycle has an active permit?',
+    a: 'Simply type the tricycle plate number in the verification box on this page. It instantly checks municipal records and shows if the franchise is active, valid, and authorized to operate.'
   },
   {
     q: 'How does daily color-coding and route monitoring work?',
@@ -1347,7 +1369,7 @@ const FAQS = [
   },
   {
     q: 'Where and how do I pay my franchise fees?',
-    a: 'After your tricycle physical inspection is conducted and approved by TMO personnel, you will be instructed to pay the official franchise fee in person at the Municipal Treasurer cashier at the Municipal Hall.'
+    a: 'After your tricycle physical inspection is conducted and approved by TMO personnel, you will be instructed to pay the franchise fee in person at the Municipal Treasurer cashier at the Municipal Hall.'
   },
   {
     q: 'How long does the online application process take?',
@@ -1377,7 +1399,7 @@ export default function Welcome() {
 
   // Track active section on scroll (scroll-spy)
   useEffect(() => {
-    const sections = ['about', 'verify', 'how-it-works', 'technology', 'faq', 'contact'];
+    const sections = ['about', 'verify', 'how-it-works', 'features', 'faq', 'contact'];
     const handleScroll = () => {
       const scrollPosition = window.scrollY + 130;
       for (let i = sections.length - 1; i >= 0; i--) {
@@ -1455,7 +1477,7 @@ export default function Welcome() {
 
     Swal.fire({
       title: 'Searching Records...',
-      text: 'Looking up official franchise record.',
+      text: 'Looking up franchise record.',
       allowOutsideClick: false,
       didOpen: () => Swal.showLoading(),
     });
@@ -1478,7 +1500,7 @@ export default function Welcome() {
       if (!data.found) {
         Swal.fire({
           title: 'Record Not Found',
-          text: `No official franchise record found for Plate No. "${plateQuery.trim().toUpperCase()}".`,
+          text: `No franchise record found for Plate No. "${plateQuery.trim().toUpperCase()}".`,
           icon: 'question',
           confirmButtonColor: '#25449B',
           customClass: { title: 'font-jakarta', popup: 'font-inter' }
@@ -1574,7 +1596,7 @@ export default function Welcome() {
       setSendingMsg(false);
       Swal.fire({
         title: 'Message Sent!',
-        text: 'Thank you for reaching out. The Traffic Management Office (TMO) will review your inquiry.',
+        text: 'Thank you for reaching out. Your inquiry has been submitted and will be reviewed shortly.',
         icon: 'success',
         confirmButtonColor: '#25449B',
         customClass: { title: 'font-jakarta', popup: 'font-inter' }
@@ -1585,7 +1607,7 @@ export default function Welcome() {
 
   return (
     <div className="wl-root">
-      <Head title="TRIVORA | Smart Tricycle Management System — Nasugbu LGU" />
+      <Head title="TRIVORA | Smart Tricycle Management System — Nasugbu, Batangas" />
       <style dangerouslySetInnerHTML={{ __html: CSS }} />
 
       {/* ══════ STICKY NAVBAR (CRISP WHITE BACKGROUND) ══════════ */}
@@ -1621,11 +1643,11 @@ export default function Welcome() {
                 How It Works
               </a>
               <a
-                href="#technology"
-                onClick={(e) => scrollToSection(e, 'technology')}
-                className={`wl-nav-link ${activeSection === 'technology' ? 'active' : ''}`}
+                href="#features"
+                onClick={(e) => scrollToSection(e, 'features')}
+                className={`wl-nav-link ${activeSection === 'features' ? 'active' : ''}`}
               >
-                Technology
+                Features
               </a>
               <a
                 href="#faq"
@@ -1698,7 +1720,7 @@ export default function Welcome() {
             ['about', 'About the System'],
             ['verify', 'Verify Permit'],
             ['how-it-works', 'How It Works'],
-            ['technology', 'Technology'],
+            ['features', 'Features'],
             ['faq', 'FAQ'],
             ['contact', 'Contact Us']
           ].map(([id, label]) => (
@@ -1757,7 +1779,7 @@ export default function Welcome() {
               </div>
 
               <p className={`wl-hero-sub ${FADE}`} style={delay(160)}>
-                The official online portal of the Municipal Government of Nasugbu. Apply for or renew your tricycle franchise (MTOP), check daily color-coding schedules, and ensure safe, reliable rides across town.
+                A modern tricycle management and franchise platform for Nasugbu, Batangas. Apply for or renew your MTOP permit online, check daily color-coding schedules, and verify authorized tricycles across town.
               </p>
 
               <div className={`wl-hero-cta ${FADE}`} style={delay(220)}>
@@ -1807,7 +1829,7 @@ export default function Welcome() {
               </div>
               <h2 className="wl-sec-title" id="about-heading">Modernizing Tricycle Transport in Nasugbu</h2>
               <p className="wl-sec-sub">
-                An official municipal initiative connecting local tricycle operators, drivers, and commuters with simple, modern public service.
+                Connecting local tricycle operators, drivers, and commuters with simple, modern municipal transport services.
               </p>
             </div>
 
@@ -1815,7 +1837,7 @@ export default function Welcome() {
             <div className="wl-about-hero-box">
               <div>
                 <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '4px 10px', background: '#EFF4FF', borderRadius: 999, color: '#25449B', fontSize: 12, fontWeight: 700, marginBottom: 12 }}>
-                  <Award size={13} strokeWidth={2.4} /> Official Nasugbu LGU Initiative
+                  <Award size={13} strokeWidth={2.4} /> Nasugbu Transport Platform
                 </div>
                 <h3 style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: 20, fontWeight: 800, color: '#0F172A', marginBottom: 12, lineHeight: 1.35 }}>
                   Making Tricycle Services Faster, Safer, and More Organized for Nasugbu
@@ -1844,7 +1866,7 @@ export default function Welcome() {
                 </div>
                 <div className="wl-about-stat-card">
                   <div className="wl-about-stat-num">24/7</div>
-                  <div className="wl-about-stat-lbl">Plate &amp; QR Check</div>
+                  <div className="wl-about-stat-lbl">Plate Number Check</div>
                 </div>
               </div>
             </div>
@@ -1880,9 +1902,9 @@ export default function Welcome() {
                   <ShieldCheck size={24} strokeWidth={2} />
                 </div>
                 <div>
-                  <h3 className="wl-about-card-title">Passenger Safety &amp; QR Code Lookup</h3>
+                  <h3 className="wl-about-card-title">Passenger Safety &amp; Unit Lookup</h3>
                   <p className="wl-about-card-desc">
-                    Every authorized tricycle carries an official QR code. Passengers can scan it with any smartphone to confirm driver identity, check standard fares, or report lost items.
+                    Passengers and commuters can easily type any tricycle's plate number on this portal to verify franchise validity, confirm authorized driver details, and ensure safe travel across Nasugbu.
                   </p>
                 </div>
               </div>
@@ -1972,13 +1994,13 @@ export default function Welcome() {
         </section>
 
         {/* ── Band 4: Helpful Features Bento Grid (White) ── */}
-        <section className="wl-band wl-band-white" id="technology" aria-labelledby="technology-heading">
+        <section className="wl-band wl-band-white" id="features" aria-labelledby="features-heading">
           <div className="wl-wrap">
             <div className="wl-sec-head">
               <div className="wl-sec-eyebrow">
                 <Cpu size={12} strokeWidth={2.4} /> Helpful Features
               </div>
-              <h2 className="wl-sec-title" id="technology-heading">Built for Nasugbu's Roads</h2>
+              <h2 className="wl-sec-title" id="features-heading">Built for Nasugbu's Roads</h2>
               <p className="wl-sec-sub">Practical, everyday tools designed to make tricycle operations safer and more convenient for our town.</p>
             </div>
 
@@ -2037,7 +2059,7 @@ export default function Welcome() {
                     </button>
                     {isOpen && (
                       <div className="wl-faq-answer">
-                        <p>{faq.a}</p>
+                        {typeof faq.a === 'string' ? <p>{faq.a}</p> : faq.a}
                       </div>
                     )}
                   </div>
@@ -2054,7 +2076,7 @@ export default function Welcome() {
               <div className="wl-sec-eyebrow">
                 <Mail size={12} strokeWidth={2.4} /> Direct Assistance
               </div>
-              <h2 className="wl-sec-title" id="contact-heading">Contact the TMO Office</h2>
+              <h2 className="wl-sec-title" id="contact-heading">Contact &amp; Inquiries</h2>
               <p className="wl-sec-sub">Need assistance with your MTOP application, inspection schedule, or tricycle guidelines? We are here to help.</p>
             </div>
 
@@ -2073,7 +2095,7 @@ export default function Welcome() {
                       F. Alix Street, Nasugbu, Batangas 4231
                     </p>
                     <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, marginTop: 8, fontSize: 12.5, fontWeight: 600, color: '#25449B' }}>
-                      <CheckCircle2 size={13} strokeWidth={2.4} /> Official LGU Municipal Hall Desk
+                      <CheckCircle2 size={13} strokeWidth={2.4} /> Municipal Hall Helpdesk
                     </div>
                   </div>
                 </div>
@@ -2110,7 +2132,7 @@ export default function Welcome() {
               {/* Right Column: Interactive Inquiry / Assistance Form */}
               <div className="wl-contact-form-card">
                 <h3 className="wl-contact-form-title">Send a Direct Inquiry</h3>
-                <p className="wl-contact-form-sub">Have a specific question about your franchise or report? Send a message directly to the TMO desk.</p>
+                <p className="wl-contact-form-sub">Have a specific question about your franchise or permit status? Send your inquiry here.</p>
 
                 <form onSubmit={handleContactSubmit}>
                   <div className="wl-form-row">
@@ -2185,7 +2207,7 @@ export default function Welcome() {
             <div className="wl-cta-inner">
               <h2 className="wl-cta-title">Ready to apply or renew your tricycle franchise?</h2>
               <p className="wl-cta-sub">
-                Join thousands of operators across Nasugbu using the official online portal. Apply in minutes, track your approval status, and avoid waiting in long lines.
+                Apply in minutes, track your approval status online, and avoid waiting in long lines at the municipal hall.
               </p>
               <div className="wl-cta-actions">
                 <Link href="/register-mtop" className="wl-cta-btn-main">
@@ -2211,7 +2233,7 @@ export default function Welcome() {
               </div>
               <p className="wl-footer-brand-title">Smart Tricycle Management System</p>
               <p className="wl-footer-brand-desc">
-                An official transport modernization initiative of the Municipal Government of Nasugbu, Batangas and the Traffic Management Office (TMO).
+                Smart tricycle management and franchise platform serving operators, drivers, and commuters in Nasugbu, Batangas.
               </p>
             </div>
 
@@ -2221,7 +2243,7 @@ export default function Welcome() {
                 <li><a href="#about" onClick={(e) => scrollToSection(e, 'about')} className="wl-footer-nav-link">About the System</a></li>
                 <li><a href="#verify" onClick={(e) => scrollToSection(e, 'verify')} className="wl-footer-nav-link">Verify Franchise</a></li>
                 <li><a href="#how-it-works" onClick={(e) => scrollToSection(e, 'how-it-works')} className="wl-footer-nav-link">How It Works</a></li>
-                <li><a href="#technology" onClick={(e) => scrollToSection(e, 'technology')} className="wl-footer-nav-link">Technology</a></li>
+                <li><a href="#features" onClick={(e) => scrollToSection(e, 'features')} className="wl-footer-nav-link">Features</a></li>
                 <li><a href="#faq" onClick={(e) => scrollToSection(e, 'faq')} className="wl-footer-nav-link">FAQ</a></li>
                 <li><a href="#contact" onClick={(e) => scrollToSection(e, 'contact')} className="wl-footer-nav-link">Contact</a></li>
               </ul>
@@ -2239,7 +2261,7 @@ export default function Welcome() {
             </div>
 
             <div>
-              <p className="wl-footer-col-title">TMO Office</p>
+              <p className="wl-footer-col-title">Transport Helpdesk</p>
               <p style={{ fontSize: 13, color: '#475569', lineHeight: 1.6, marginBottom: 8 }}>
                 Pamahalaang Bayan ng Nasugbu<br />
                 F. Alix St., Nasugbu, Batangas<br />
@@ -2253,7 +2275,7 @@ export default function Welcome() {
 
           <div className="wl-footer-bottom">
             <p className="wl-footer-copy">
-              &copy; {new Date().getFullYear()} TRIVORA &bull; Municipal Government of Nasugbu, Batangas. All rights reserved.
+              &copy; {new Date().getFullYear()} TRIVORA &bull; Nasugbu, Batangas. All rights reserved.
             </p>
             <div style={{ display: 'flex', gap: 18, alignItems: 'center' }}>
               <a href="#about" onClick={(e) => scrollToSection(e, 'about')} className="wl-footer-nav-link">About</a>
