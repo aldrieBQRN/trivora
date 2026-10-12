@@ -622,67 +622,6 @@ input[type="password"]::-ms-clear {
   to { transform: rotate(360deg); }
 }
 
-/* Quick Demo Access */
-.ol-demo-section {
-  margin-top: 28px;
-  padding-top: 24px;
-  border-top: 1px solid #F1F5F9;
-}
-
-.ol-demo-label {
-  font-family: 'DM Sans', sans-serif;
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: .12em;
-  text-transform: uppercase;
-  color: #94A3B8;
-  margin-bottom: 12px;
-  text-align: center;
-}
-
-.ol-demo-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
-}
-
-@media (max-width: 480px) {
-  .ol-demo-grid {
-    grid-template-columns: 1fr;
-  }
-}
-
-.ol-demo-btn {
-  background: #F8FAFC;
-  border: 1px solid #E2E8F0;
-  border-radius: 10px;
-  padding: 10px 8px;
-  font-family: 'Plus Jakarta Sans', sans-serif;
-  font-size: 12px;
-  font-weight: 700;
-  color: #475569;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 7px;
-  transition: all .18s ease;
-}
-
-.ol-demo-btn:hover {
-  background: #FFFFFF;
-  border-color: #25449B;
-  color: #25449B;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
-}
-
-.ol-demo-btn--active {
-  background: #EFF4FF;
-  border-color: #25449B;
-  color: #25449B;
-}
-
 .ol-register-hint {
   margin-top: 24px;
   text-align: center;
@@ -699,6 +638,13 @@ input[type="password"]::-ms-clear {
 .ol-register-link:hover {
   text-decoration: underline;
 }
+
+/* ── Custom scrollbar (matches .custom-scrollbar in panels) ──────────── */
+html, .ol-content-center { scrollbar-width: thin; scrollbar-color: #CBD5E1 transparent; }
+html::-webkit-scrollbar, .ol-content-center::-webkit-scrollbar { width: 6px; height: 6px; }
+html::-webkit-scrollbar-track, .ol-content-center::-webkit-scrollbar-track { background: transparent; }
+html::-webkit-scrollbar-thumb, .ol-content-center::-webkit-scrollbar-thumb { background-color: #CBD5E1; border-radius: 9999px; }
+html::-webkit-scrollbar-thumb:hover, .ol-content-center::-webkit-scrollbar-thumb:hover { background-color: #94A3B8; }
 `;
 
 export default function Login() {
@@ -708,29 +654,10 @@ export default function Login() {
         remember: false,
     });
     const [showPassword, setShowPassword] = useState(false);
-    const [selectedRole, setSelectedRole] = useState(null);
 
     const submit = (e) => {
         e.preventDefault();
         post('/login');
-    };
-
-    // Quick demo accounts for review and testing
-    const setDemoAccount = (role) => {
-        const credentials = {
-            tmo: { login_id: 'tmo.jdelacruz@trivora.gov.ph', password: 'TmoUser@123' },
-            bplo: { login_id: 'bplo.areyes@trivora.gov.ph', password: 'BploUser@123' },
-            operator: { login_id: 'driver.test@trivora.test', password: 'TestDriver123!' },
-        };
-
-        if (credentials[role]) {
-            setSelectedRole(role);
-            setData({
-                login_id: credentials[role].login_id,
-                password: credentials[role].password,
-                remember: false
-            });
-        }
     };
 
     return (
@@ -919,34 +846,6 @@ export default function Login() {
                                 )}
                             </button>
                         </form>
-
-                        {/* Quick Demo Access for Testing */}
-                        <div className="ol-demo-section">
-                            <p className="ol-demo-label">Quick Demo Access</p>
-                            <div className="ol-demo-grid">
-                                <button
-                                    type="button"
-                                    className={`ol-demo-btn ${selectedRole === 'tmo' ? 'ol-demo-btn--active' : ''}`}
-                                    onClick={() => setDemoAccount('tmo')}
-                                >
-                                    <Shield size={14} strokeWidth={2.2} /> TMO
-                                </button>
-                                <button
-                                    type="button"
-                                    className={`ol-demo-btn ${selectedRole === 'bplo' ? 'ol-demo-btn--active' : ''}`}
-                                    onClick={() => setDemoAccount('bplo')}
-                                >
-                                    <Award size={14} strokeWidth={2.2} /> BPLO
-                                </button>
-                                <button
-                                    type="button"
-                                    className={`ol-demo-btn ${selectedRole === 'operator' ? 'ol-demo-btn--active' : ''}`}
-                                    onClick={() => setDemoAccount('operator')}
-                                >
-                                    <Bike size={14} strokeWidth={2.2} /> Driver
-                                </button>
-                            </div>
-                        </div>
 
                         {/* Don't have an MTOP yet? */}
                         <div className="ol-register-hint">

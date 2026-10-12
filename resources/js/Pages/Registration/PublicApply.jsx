@@ -3,7 +3,7 @@ import { Head, useForm, Link, usePage } from '@inertiajs/react';
 import Swal from 'sweetalert2';
 import {
     Upload, Info, CheckCircle2, MapPin, Check, Camera, Eye, X,
-    FileText, User, Bike, Mail, Lock, Phone, Loader2, CalendarDays,
+    FileText, User, Mail, Lock, Phone, Loader2, CalendarDays,
     ShieldCheck, ArrowLeft, LogIn
 } from 'lucide-react';
 import { VEHICLE_DETAIL_FIELDS, getApplicableDocuments } from '@/data/registrationRequirements';
@@ -391,7 +391,6 @@ export default function PublicApply() {
                         <div className="pa-card">
                             <div className="pa-card-top">
                                 <div className="pa-card-top-text">
-                                    <div className="pa-card-icon"><FileText size={20} strokeWidth={1.8} /></div>
                                     <div>
                                         <h2 className="pa-card-title">Terms & Agreement</h2>
                                         <p className="pa-card-sub">Read the full policy before proceeding with your application</p>
@@ -491,7 +490,6 @@ export default function PublicApply() {
                         <div className="pa-card">
                             <div className="pa-card-top">
                                 <div className="pa-card-top-text">
-                                    <div className="pa-card-icon"><User size={20} strokeWidth={1.8} /></div>
                                     <div>
                                         <h2 className="pa-card-title">Applicant Information</h2>
                                         <p className="pa-card-sub">Tricycle Owner details — the applicant of this franchise</p>
@@ -715,7 +713,6 @@ export default function PublicApply() {
                         <div className="pa-card">
                             <div className="pa-card-top">
                                 <div className="pa-card-top-text">
-                                    <div className="pa-card-icon"><Bike size={20} strokeWidth={1.8} /></div>
                                     <div>
                                         <h2 className="pa-card-title">Vehicle Specs</h2>
                                         <p className="pa-card-sub">Tricycle Registration & Unit Details</p>
@@ -775,7 +772,6 @@ export default function PublicApply() {
                         <div className="pa-card" style={{ maxWidth: 880 }}>
                             <div className="pa-card-top">
                                 <div className="pa-card-top-text">
-                                    <div className="pa-card-icon"><Upload size={20} strokeWidth={2} /></div>
                                     <div>
                                         <h2 className="pa-card-title">Requirements</h2>
                                         <p className="pa-card-sub">Take a clear photo or upload scanned copies of each document</p>

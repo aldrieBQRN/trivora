@@ -271,8 +271,13 @@ export default function BPLOLayout({ children, title, role = "BPLO Officer", bre
                             <Menu size={18} strokeWidth={2} />
                         </button>
 
+                        {/* Logo (mobile & tablet — replaces breadcrumbs) */}
+                        <Link href="/bplo-dashboard" className="flex shrink-0 items-center lg:hidden">
+                            <img src="/images/logo.png" alt="Trivora" className="h-7 w-auto object-contain" />
+                        </Link>
+
                         {/* Dynamic Breadcrumbs Trail */}
-                        <nav aria-label="Breadcrumb" className="hidden items-center gap-1.5 text-[12.5px] font-medium overflow-hidden sm:flex sm:gap-2">
+                        <nav aria-label="Breadcrumb" className="hidden items-center gap-1.5 text-[12.5px] font-medium overflow-hidden lg:flex lg:gap-2">
                             {computedBreadcrumbs.map((crumb, idx) => {
                                 const isLast = idx === computedBreadcrumbs.length - 1;
                                 return (

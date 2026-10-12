@@ -64,7 +64,7 @@ export default function NotificationBell() {
                 <div
                     role="dialog"
                     aria-label="Notifications"
-                    className="absolute right-0 top-[calc(100%+8px)] z-50 w-[360px] max-w-[calc(100vw-24px)] overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg"
+                    className="fixed inset-x-3 top-[72px] z-50 overflow-hidden sm:absolute sm:inset-x-auto sm:right-0 sm:top-[calc(100%+8px)] sm:w-[360px] rounded-xl border border-slate-200 bg-white shadow-lg"
                 >
                     <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
                         <div className="flex items-baseline gap-2">
@@ -89,7 +89,7 @@ export default function NotificationBell() {
                             <p className="mt-0.5 text-[11.5px] text-slate-400">Workflow updates that need your action will appear here.</p>
                         </div>
                     ) : (
-                        <ul className="max-h-[420px] divide-y divide-slate-100 overflow-y-auto">
+                        <ul className="max-h-[min(420px,calc(100dvh-160px))] divide-y divide-slate-100 overflow-y-auto custom-scrollbar">
                             {items.map((n) => (
                                 <li key={n.id} className={n.read ? 'bg-white' : 'bg-slate-50/70'}>
                                     <div className="flex items-start gap-3 px-4 py-3">

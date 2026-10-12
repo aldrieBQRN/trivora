@@ -836,6 +836,13 @@ export const REGISTRATION_CSS = `
 }
 .pa-owner-name { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 15px; font-weight: 800; color: #0F172A; margin-top: 3px; }
 .pa-owner-meta { display: flex; align-items: center; gap: 6px; font-size: 13px; color: #475569; margin-top: 3px; }
+
+/* ── Custom scrollbar (matches .custom-scrollbar in panels) ──────────── */
+html, .pa-content-center, .pa-agree-scroll { scrollbar-width: thin; scrollbar-color: #CBD5E1 transparent; }
+html::-webkit-scrollbar, .pa-content-center::-webkit-scrollbar, .pa-agree-scroll::-webkit-scrollbar { width: 6px; height: 6px; }
+html::-webkit-scrollbar-track, .pa-content-center::-webkit-scrollbar-track, .pa-agree-scroll::-webkit-scrollbar-track { background: transparent; }
+html::-webkit-scrollbar-thumb, .pa-content-center::-webkit-scrollbar-thumb, .pa-agree-scroll::-webkit-scrollbar-thumb { background-color: #CBD5E1; border-radius: 9999px; }
+html::-webkit-scrollbar-thumb:hover, .pa-content-center::-webkit-scrollbar-thumb:hover, .pa-agree-scroll::-webkit-scrollbar-thumb:hover { background-color: #94A3B8; }
 `;
 
 // <input type="date"> value for "today" in local time (toISOString is UTC and can
@@ -1630,7 +1637,7 @@ export function FileUpload({ id, label, hint, required, conditional, files = [],
                                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
                             </button>
                         </div>
-                        <div style={{ padding: '20px', flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '12px', background: '#F9FAFB' }}>
+                        <div className="custom-scrollbar" style={{ padding: '20px', flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '12px', background: '#F9FAFB' }}>
                             {files.map((file, idx) => {
                                 const isImg = file.type?.startsWith('image/');
                                 const thumb = previewUrls[idx];
@@ -1709,7 +1716,7 @@ export function FileUpload({ id, label, hint, required, conditional, files = [],
                                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
                             </button>
                         </div>
-                        <div style={{ padding: '20px', flex: 1, overflowY: 'auto', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#F9FAFB' }}>
+                        <div className="custom-scrollbar" style={{ padding: '20px', flex: 1, overflowY: 'auto', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#F9FAFB' }}>
                             {activePreviewUrl.includes('application/pdf') || files.find(f => previewUrls.indexOf(activePreviewUrl) !== -1)?.type === 'application/pdf' ? (
                                 <iframe
                                     src={activePreviewUrl}

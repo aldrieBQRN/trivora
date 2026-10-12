@@ -719,7 +719,7 @@ html { scroll-behavior: smooth; }
   padding: 34px 34px;
   box-shadow: 0 8px 20px -4px rgba(0, 0, 0, 0.06), 0 4px 8px -4px rgba(0, 0, 0, 0.04);
   display: grid;
-  grid-template-columns: 1.25fr 0.75fr;
+  grid-template-columns: 1fr 1fr;
   gap: 36px;
   align-items: center;
   margin-bottom: 28px;
@@ -1332,6 +1332,13 @@ html { scroll-behavior: smooth; }
   color: #25449B;
   text-decoration: none;
 }
+
+/* ── Custom scrollbar (matches .custom-scrollbar in panels) ──────────── */
+html, .wl-drawer nav { scrollbar-width: thin; scrollbar-color: #CBD5E1 transparent; }
+html::-webkit-scrollbar, .wl-drawer nav::-webkit-scrollbar { width: 6px; height: 6px; }
+html::-webkit-scrollbar-track, .wl-drawer nav::-webkit-scrollbar-track { background: transparent; }
+html::-webkit-scrollbar-thumb, .wl-drawer nav::-webkit-scrollbar-thumb { background-color: #CBD5E1; border-radius: 9999px; }
+html::-webkit-scrollbar-thumb:hover, .wl-drawer nav::-webkit-scrollbar-thumb:hover { background-color: #94A3B8; }
 `;
 
 const STEPS = [
