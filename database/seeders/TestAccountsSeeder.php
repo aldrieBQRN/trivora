@@ -18,6 +18,7 @@ use App\Models\Violation;
 use App\Models\ViolationAppeal;
 use Carbon\Carbon;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
@@ -435,6 +436,18 @@ class TestAccountsSeeder extends Seeder
         ];
 
         $driversData = array_merge($baseDriversData, $newDriversWithViolations);
+
+        // When re-seeding across different weekdays, test drivers rotate franchise numbers
+        // to guarantee non-restricted operation today. Neutralize previously assigned franchise numbers
+        // on these test tricycles with unique temporary values so the row-by-row update loop never
+        // triggers a duplicate entry violation against the active_franchise_number unique index.
+        $testPlates = array_column($driversData, 'plate');
+        $testTrikeIds = Tricycle::whereIn('plate_number', $testPlates)->pluck('id');
+        if ($testTrikeIds->isNotEmpty()) {
+            FranchiseScheme::whereIn('tricycle_id', $testTrikeIds)->update([
+                'franchise_number' => DB::raw("CONCAT('TMP-', id)"),
+            ]);
+        }
 
         foreach ($driversData as $d) {
             $scheme = $colorSchemes->get($d['scheme_name']) ?? $colorSchemes->first();
