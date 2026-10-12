@@ -37,7 +37,7 @@ class OwnerTricycleDriverDistinctionTest extends TestCase
     {
         parent::setUp();
         Storage::fake('public');
-        $this->seedTodaAndColorScheme();
+        $this->seedColorScheme();
     }
 
     /**

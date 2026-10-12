@@ -8,15 +8,9 @@ import {
     Cpu, Smartphone, Phone,
 } from 'lucide-react';
 
+import Avatar from '@/Components/Avatar';
 const CARD_SHADOW = 'shadow-[0_1px_2px_0_rgba(15,23,42,0.04),0_8px_24px_-8px_rgba(15,23,42,0.10)]';
 const ITEMS_PER_PAGE = 10;
-
-function getInitials(name) {
-    if (!name || name === 'N/A') return 'TD';
-    const parts = name.trim().split(/\s+/);
-    if (parts.length === 1) return parts[0].substring(0, 2).toUpperCase();
-    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-}
 
 function StatusPill({ status }) {
     const isPending = status === 'Awaiting Final Confirmation' || status === 'awaiting_tmo_confirmation' || status === 'Pending';
@@ -42,6 +36,7 @@ export default function FinalConfirmationQueue({
     mobileActiveCount = 0,
 }) {
     const [query, setQuery] = useState(searchTerm);
+    const [typeFilter, setTypeFilter] = useState('all');
     const [currentPage, setCurrentPage] = useState(1);
 
     // Silent background refresh for multi-officer synchronization
@@ -59,10 +54,11 @@ export default function FinalConfirmationQueue({
                 (a.operator_name && a.operator_name.toLowerCase().includes(q)) ||
                 (a.plate_number && a.plate_number.toLowerCase().includes(q)) ||
                 (a.sticker_number && a.sticker_number.toLowerCase().includes(q));
+            const matchesType = typeFilter === 'all' || (a.application_type || '').toLowerCase() === typeFilter;
 
-            return matchesQuery && a.raw_status === 'awaiting_tmo_confirmation';
+            return matchesQuery && matchesType && a.raw_status === 'awaiting_tmo_confirmation';
         });
-    }, [applications, query]);
+    }, [applications, query, typeFilter]);
 
     const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE) || 1;
     const activePage = Math.min(currentPage, totalPages);
@@ -70,10 +66,11 @@ export default function FinalConfirmationQueue({
     const endIndex = Math.min(startIndex + ITEMS_PER_PAGE, filtered.length);
     const paginated = filtered.slice(startIndex, endIndex);
 
-    const isFiltering = query.trim() !== '';
+    const isFiltering = query.trim() !== '' || typeFilter !== 'all';
 
     const handleClearAll = () => {
         setQuery('');
+        setTypeFilter('all');
         setCurrentPage(1);
     };
 
@@ -264,17 +261,19 @@ export default function FinalConfirmationQueue({
                             )}
                         </div>
 
-                        {isFiltering && (
-                            <button
-                                type="button"
-                                onClick={handleClearAll}
-                                title="Reset filter"
-                                className="inline-flex h-10 items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50/70 px-3.5 text-xs font-bold text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-colors shrink-0 cursor-pointer"
-                            >
-                                <RotateCcw size={13} strokeWidth={2.2} />
-                                <span>Reset</span>
-                            </button>
-                        )}
+                        <select
+                            value={typeFilter}
+                            onChange={e => {
+                                setTypeFilter(e.target.value);
+                                setCurrentPage(1);
+                            }}
+                            aria-label="Filter by application type"
+                            className="h-10 w-full sm:w-auto sm:min-w-[160px] rounded-xl border border-slate-200 bg-slate-50/70 pl-3 pr-8 text-xs font-bold text-slate-700 transition-colors focus:border-[#182B62] focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#182B62] cursor-pointer"
+                        >
+                            <option value="all">All Application Types</option>
+                            <option value="new">New Franchise</option>
+                            <option value="renewal">Renewal Franchise</option>
+                        </select>
                     </div>
                 </div>
 
@@ -314,7 +313,7 @@ export default function FinalConfirmationQueue({
                                     <thead>
                                         <tr className="border-b border-slate-100 bg-slate-50/75">
                                             <th scope="col" className="py-3 pl-5 pr-3 text-[10.5px] font-bold uppercase tracking-wider text-slate-400">
-                                                Reference No.
+                                                Application No. &amp; Type
                                             </th>
                                             <th scope="col" className="py-3 px-4 text-[10.5px] font-bold uppercase tracking-wider text-slate-400">
                                                 Tricycle Owner
@@ -451,19 +450,19 @@ export default function FinalConfirmationQueue({
 ───────────────────────────────────────────────────────────────────────── */
 
 function DesktopConfirmationRow({ app }) {
+    const isRenewal = (app.application_type || '').toLowerCase() === 'renewal';
     const isAwaiting = app.raw_status === 'awaiting_tmo_confirmation';
-    const initials = getInitials(app.operator_name);
 
     return (
         <tr className="group transition-colors hover:bg-slate-50/80">
-            {/* Column 1: Reference Number */}
+            {/* Column 1: Application No. & Type */}
             <td className="py-4 pl-5 pr-3 align-middle">
                 <div className="flex flex-col">
-                    <span className="font-mono text-xs font-black text-slate-900 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded-md w-fit">
+                    <span className="font-mono text-xs sm:text-[13px] font-bold tracking-wide text-slate-900">
                         {app.reference}
                     </span>
                     <span className="mt-1 text-[11px] font-semibold text-slate-500">
-                        {app.application_type || 'Franchise'} Unit
+                        {isRenewal ? 'Renewal Franchise' : 'New Franchise'}
                     </span>
                 </div>
             </td>
@@ -471,9 +470,7 @@ function DesktopConfirmationRow({ app }) {
             {/* Column 2: Tricycle Owner */}
             <td className="py-4 px-4 align-middle">
                 <div className="flex items-center gap-2.5">
-                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#182B62] to-[#25449B] text-xs font-black text-white shadow-2xs">
-                        {initials}
-                    </div>
+                    <Avatar name={app.operator_name} src={app.operator_photo} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#182B62] to-[#25449B] text-xs font-black text-white shadow-2xs" />
                     <div className="min-w-0">
                         <p className="truncate text-xs sm:text-sm font-bold text-slate-900">
                             {app.operator_name}
@@ -527,9 +524,10 @@ function DesktopConfirmationRow({ app }) {
             <td className="py-4 pl-3 pr-6 text-right align-middle">
                 <Link
                     href={`/tmo/final-confirmation/${app.id}`}
-                    className="inline-flex items-center justify-center rounded-xl bg-[#182B62] hover:bg-[#25449B] text-white px-3.5 py-1.5 text-xs font-bold shadow-2xs transition-all active:scale-[0.98]"
+                    className="inline-flex items-center justify-center gap-1 rounded-xl bg-[#182B62] hover:bg-[#25449B] text-white px-3.5 py-1.5 text-xs font-bold shadow-2xs transition-all active:scale-[0.98]"
                 >
                     <span>{isAwaiting ? 'Confirm' : 'View'}</span>
+                    <ChevronRight size={13} strokeWidth={2.5} className="text-white/70" />
                 </Link>
             </td>
         </tr>
@@ -537,19 +535,19 @@ function DesktopConfirmationRow({ app }) {
 }
 
 function MobileConfirmationCard({ app }) {
+    const isRenewal = (app.application_type || '').toLowerCase() === 'renewal';
     const isAwaiting = app.raw_status === 'awaiting_tmo_confirmation';
-    const initials = getInitials(app.operator_name);
 
     return (
         <div className={`rounded-2xl border border-slate-200/80 bg-white p-4 transition-all ${CARD_SHADOW}`}>
             {/* Top Row: Reference & Status */}
             <div className="flex items-start justify-between gap-2 border-b border-slate-100 pb-2.5">
                 <div className="flex flex-col">
-                    <span className="font-mono text-xs font-black text-slate-900 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded-md w-fit">
+                    <span className="font-mono text-xs sm:text-[13px] font-bold tracking-wide text-slate-900">
                         {app.reference}
                     </span>
                     <span className="mt-1 text-[11px] font-semibold text-slate-500">
-                        {app.application_type || 'Franchise'} Unit
+                        {isRenewal ? 'Renewal Franchise' : 'New Franchise'}
                     </span>
                 </div>
                 <StatusPill status={app.raw_status} />
@@ -558,9 +556,7 @@ function MobileConfirmationCard({ app }) {
             {/* Driver / Owner info */}
             <div className="mt-3 flex items-center justify-between gap-2">
                 <div className="flex items-center gap-2.5 min-w-0">
-                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#182B62] to-[#25449B] text-[11px] font-black text-white shadow-2xs">
-                        {initials}
-                    </div>
+                    <Avatar name={app.operator_name} src={app.operator_photo} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#182B62] to-[#25449B] text-[11px] font-black text-white shadow-2xs" />
                     <div className="min-w-0">
                         <p className="truncate text-xs font-bold text-slate-900">{app.operator_name}</p>
                         <p className="mt-0.5 flex items-center gap-1 text-[11px] text-slate-500 font-medium truncate">
@@ -599,9 +595,10 @@ function MobileConfirmationCard({ app }) {
             <div className="mt-3 pt-2.5 border-t border-slate-100">
                 <Link
                     href={`/tmo/final-confirmation/${app.id}`}
-                    className="flex w-full items-center justify-center rounded-xl bg-[#182B62] hover:bg-[#25449B] text-white py-2.5 text-xs font-bold shadow-2xs transition-all active:scale-[0.98]"
+                    className="flex w-full items-center justify-center gap-1 rounded-xl bg-[#182B62] hover:bg-[#25449B] text-white py-2.5 text-xs font-bold shadow-2xs transition-all active:scale-[0.98]"
                 >
                     <span>{isAwaiting ? 'Confirm' : 'View'}</span>
+                    <ChevronRight size={13} strokeWidth={2.5} className="text-white/70" />
                 </Link>
             </div>
         </div>

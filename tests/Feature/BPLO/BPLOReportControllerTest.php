@@ -24,7 +24,7 @@ class BPLOReportControllerTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->seedTodaAndColorScheme();
+        $this->seedColorScheme();
     }
 
     /** Drives one application from public registration through TMO document review and physical
@@ -199,6 +199,21 @@ class BPLOReportControllerTest extends TestCase
 
         $response->assertOk();
         $this->assertStringContainsString('spreadsheet', $response->headers->get('content-type'));
+    }
+
+    #[Test]
+    public function export_route_returns_a_pdf_when_requested(): void
+    {
+        $application = $this->bringToPendingBploRelease(['plate_number' => 'BPR-PDF-0001']);
+        $this->releaseByBplo($application, '9106');
+
+        $officer = $this->makeBploUser();
+        $response = $this->actingAs($officer)->get(route('bplo.reports.export-excel', ['format' => 'pdf']));
+
+        $response->assertOk();
+        $this->assertStringContainsString('application/pdf', $response->headers->get('content-type'));
+        $this->assertStringStartsWith('%PDF', $response->streamedContent());
+        $this->assertDatabaseHas('audit_logs', ['action' => 'report.exported_pdf']);
     }
 
     /** @param array $params from/to/status overrides */

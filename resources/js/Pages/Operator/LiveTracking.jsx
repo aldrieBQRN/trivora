@@ -196,7 +196,6 @@ export default function LiveTracking({ tricycle, pathCoordinates = [], auth }) {
                     </div>
                     <div className="flex flex-wrap items-center gap-x-6 gap-y-3 sm:justify-end">
                         <MiniStat icon={TrackingIcon} label="Tracking Method" value={trackingMeta.label} />
-                        <MiniStat icon={MapPin} label="Current Zone" value={details.zone} />
                         <MiniStat icon={Clock} label="Last Updated" value={details.last_ping} tone={details.is_recent_ping ? 'success' : 'warning'} />
                     </div>
                 </div>

@@ -45,7 +45,7 @@ class DriverQrCodeController extends Controller
             ], 404);
         }
 
-        $tricycle->loadMissing(['franchiseScheme', 'todaZone']);
+        $tricycle->loadMissing(['franchiseScheme']);
         $summary = QrRideService::tmoSummary($tricycle);
 
         return response()->json([

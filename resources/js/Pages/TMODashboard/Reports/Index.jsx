@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Head, router } from '@inertiajs/react';
 import useBackgroundRefresh from '@/hooks/useBackgroundRefresh';
 import TrivoraLayout from '@/Layouts/TrivoraLayout';
 import { DateRangeFilter } from '@/Components/TMO';
-import { ShieldAlert, FileText, Bike, FileSpreadsheet } from 'lucide-react';
+import { ShieldAlert, FileText, Bike, Download } from 'lucide-react';
+import ExportDialog from '@/Components/ExportDialog';
 import ViolationsTab from './ViolationsTab';
 import ApplicationsTab from './ApplicationsTab';
 import FleetTab from './FleetTab';
@@ -16,12 +17,19 @@ const TABS = [
     { value: 'fleet',        label: 'Fleet & Registry',          icon: Bike },
 ];
 
+const EXPORT_LABELS = {
+    violations:   'Violations & Compliance',
+    applications: 'Franchise & Applications',
+    fleet:        'Fleet & Registry',
+};
+
 /**
  * TMO Reports & Analytics — historical trends and municipal operations analytics
  * with responsive layout, Plus Jakarta Sans typography, and clean municipal phrasing.
  */
 export default function ReportsIndex({ tab, from, to, filters, reportData }) {
     useBackgroundRefresh(['reportData']);
+    const [exportOpen, setExportOpen] = useState(false);
 
     const visit = (params) => {
         router.get(route('tmo.reports'), { tab, from, to, ...filters, ...params }, {
@@ -72,13 +80,14 @@ export default function ReportsIndex({ tab, from, to, filters, reportData }) {
                     </p>
                 </div>
                 <div className="flex items-center gap-2">
-                    <a
-                        href={exportUrl}
-                        className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 text-xs font-bold text-slate-700 shadow-2xs hover:bg-slate-50 hover:text-slate-900 transition-colors font-['Plus_Jakarta_Sans',sans-serif]"
+                    <button
+                        type="button"
+                        onClick={() => setExportOpen(true)}
+                        className="inline-flex items-center gap-2 rounded-xl bg-[#182B62] hover:bg-[#25449B] px-4 py-2.5 text-xs font-bold text-white shadow-xs transition-all active:scale-[0.98] cursor-pointer"
                     >
-                        <FileSpreadsheet size={14} className="text-emerald-600" />
-                        <span>Export to Excel</span>
-                    </a>
+                        <Download size={15} strokeWidth={2.2} className="text-white" />
+                        <span>Export</span>
+                    </button>
                 </div>
             </div>
 
@@ -155,15 +164,6 @@ export default function ReportsIndex({ tab, from, to, filters, reportData }) {
                         <DateRangeFilter from={from} to={to} onChange={handleDateChange} />
                     </div>
 
-                    <div className="flex items-center gap-2 self-start lg:self-auto shrink-0">
-                        <a
-                            href={exportUrl}
-                            className="inline-flex h-10 shrink-0 items-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50/70 px-3.5 text-xs font-bold text-slate-700 hover:bg-slate-100 hover:text-slate-900 transition-colors font-['Plus_Jakarta_Sans',sans-serif]"
-                        >
-                            <FileSpreadsheet size={14} className="text-emerald-600" />
-                            <span>Download Report Excel</span>
-                        </a>
-                    </div>
                 </div>
             </div>
 
@@ -191,6 +191,15 @@ export default function ReportsIndex({ tab, from, to, filters, reportData }) {
                     <FleetTab from={from} to={to} data={reportData.fleet} />
                 )}
             </div>
+            <ExportDialog
+                show={exportOpen}
+                onClose={() => setExportOpen(false)}
+                title={`Export ${EXPORT_LABELS[tab] || 'Report'}`}
+                recordLabel={`${EXPORT_LABELS[tab] || 'report'} report`}
+                scopeNote={from && to ? `${from} – ${to}` : 'All Recorded Dates'}
+                exportUrl={exportUrl}
+                fallbackName={`trivora_${tab}_report`}
+            />
         </TrivoraLayout>
     );
 }

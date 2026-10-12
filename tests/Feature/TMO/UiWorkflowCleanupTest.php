@@ -6,7 +6,6 @@ use App\Models\Application;
 use App\Models\ColorCodingScheme;
 use App\Models\FranchiseScheme;
 use App\Models\Operator;
-use App\Models\TodaZone;
 use App\Models\Tricycle;
 use App\Models\User;
 use App\Models\Violation;
@@ -27,7 +26,7 @@ class UiWorkflowCleanupTest extends TestCase
     {
         parent::setUp();
         Storage::fake('public');
-        $this->seedTodaAndColorScheme();
+        $this->seedColorScheme();
 
         $this->tmoUser = $this->makeTmoUser();
         $this->bploUser = $this->makeBploUser();

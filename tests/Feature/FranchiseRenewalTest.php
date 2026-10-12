@@ -36,7 +36,7 @@ class FranchiseRenewalTest extends TestCase
     {
         parent::setUp();
         Storage::fake('public');
-        $this->seedTodaAndColorScheme();
+        $this->seedColorScheme();
     }
 
     private function allInspectionItemsPassed(): array
@@ -414,14 +414,19 @@ class FranchiseRenewalTest extends TestCase
             'action' => 'pass', 'inspectionStatuses' => $this->allInspectionItemsPassed(),
         ]);
 
+        // The Sticker Number is system-generated, so a request trying to force tricycle A's still-ACTIVE
+        // number is ignored: B is released with its own, different number instead.
+        $numberA = $applicationA->tricycle()->first()->coding_scheme_number;
+
         $response = $this->actingAs($bplo)->post(route('bplo.release.submit', $applicationB), [
-            'body_number' => '0009',
+            'body_number' => $numberA,
             'sticker_number' => 'STK-DUP-B',
         ]);
 
-        $response->assertSessionHasErrors('body_number');
-        $applicationB->refresh();
-        $this->assertSame('pending_bplo_release', $applicationB->status);
+        $response->assertSessionDoesntHaveErrors();
+        $numberB = $applicationB->tricycle()->first()->coding_scheme_number;
+        $this->assertNotEmpty($numberB);
+        $this->assertNotSame($numberA, $numberB);
     }
 
     #[Test]
@@ -446,10 +451,10 @@ class FranchiseRenewalTest extends TestCase
             'action' => 'pass', 'inspectionStatuses' => $this->allInspectionItemsPassed(),
         ]);
 
-        // Reuse the exact SAME Sticker Number '0010' — must now succeed (previously blocked by the
-        // global unique constraint).
+        // A renewal automatically keeps the SAME Sticker Number as the original period — must
+        // succeed (previously blocked by the global unique constraint).
+        $originalNumber = $originalScheme->franchise_number;
         $response = $this->actingAs($bplo)->post(route('bplo.release.submit', $renewalApplication), [
-            'body_number' => '0010',
             'sticker_number' => 'STK-HIST-0002',
         ]);
         $response->assertRedirect();
@@ -461,7 +466,7 @@ class FranchiseRenewalTest extends TestCase
         // independently queryable by id. The new one is still is_active=false at this point
         // (BPLO release only; TMO Final Confirmation, not run here, is what activates it), so
         // BOTH rows are inactive right now — that itself proves nothing was silently overwritten.
-        $this->assertCount(2, $rows->where('franchise_number', '0010'));
+        $this->assertCount(2, $rows->where('franchise_number', $originalNumber));
         $this->assertSame(0, $rows->where('is_active', true)->count());
         $this->assertTrue($rows->contains('id', $originalScheme->id));
         $this->assertSame(1, $rows->where('id', '!=', $originalScheme->id)->count());

@@ -5,9 +5,10 @@ import BPLOLayout from '@/Layouts/BPLOLayout';
 import {
     Search, Award, ChevronRight, ChevronLeft, Bike,
     Hash, CheckCircle2, Inbox, X, RotateCcw,
-    FolderCheck, MapPin, Receipt, TrendingUp
+    FolderCheck, MapPin, Receipt, TrendingUp, Phone, Calendar
 } from 'lucide-react';
 
+import Avatar from '@/Components/Avatar';
 // Shared soft, layered shadow token — same elevation language used across the redesigned TMO
 // panel pages, so BPLO cards read as part of the same product.
 const CARD_SHADOW = 'shadow-[0_1px_2px_0_rgba(15,23,42,0.04),0_8px_24px_-8px_rgba(15,23,42,0.10)]';
@@ -21,6 +22,7 @@ export default function ReleasingQueue({
     activeRegistryCount = 0,
 }) {
     const [query, setQuery] = useState('');
+    const [typeFilter, setTypeFilter] = useState('all');
     const [currentPage, setCurrentPage] = useState(1);
 
     // Silent background refresh — a TMO physical inspection pass elsewhere feeds new units into
@@ -30,7 +32,7 @@ export default function ReleasingQueue({
     const filtered = useMemo(() => {
         const q = query.trim().toLowerCase();
         return applications.filter((a) => {
-            return (
+            const matchesQuery = (
                 !q ||
                 String(a.id).toLowerCase().includes(q) ||
                 (a.reference && a.reference.toLowerCase().includes(q)) ||
@@ -38,8 +40,10 @@ export default function ReleasingQueue({
                 (a.make && a.make.toLowerCase().includes(q)) ||
                 (a.plate && a.plate.toLowerCase().includes(q))
             );
+            const matchesType = typeFilter === 'all' || (typeFilter === 'renewal' ? a.is_renewal : !a.is_renewal);
+            return matchesQuery && matchesType;
         });
-    }, [applications, query]);
+    }, [applications, query, typeFilter]);
 
     const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE) || 1;
     const activePage = Math.min(currentPage, totalPages);
@@ -47,10 +51,11 @@ export default function ReleasingQueue({
     const endIndex = Math.min(startIndex + ITEMS_PER_PAGE, filtered.length);
     const paginated = filtered.slice(startIndex, endIndex);
 
-    const isFiltering = query.trim() !== '';
+    const isFiltering = query.trim() !== '' || typeFilter !== 'all';
 
     const handleClearAll = () => {
         setQuery('');
+        setTypeFilter('all');
         setCurrentPage(1);
     };
 
@@ -206,13 +211,13 @@ export default function ReleasingQueue({
             </div>
 
             {/* ══════════════════════════════════════════════════════════════
-                3. SEARCH & FILTER DECK
+                3. SEARCH & FILTER TOOLBAR
                ══════════════════════════════════════════════════════════════ */}
-            <div className={`mb-4 rounded-2xl border border-slate-200/70 bg-white p-3 sm:p-3.5 ${CARD_SHADOW}`}>
-                <div className="flex flex-col sm:flex-row sm:items-center gap-2.5">
-                    <div className="relative flex-1 min-w-[220px]">
+            <div className={`mb-5 rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-3.5 sm:p-4 ${CARD_SHADOW}`}>
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
+                    <div className="relative flex-1 min-w-0">
                         <Search
-                            size={16}
+                            size={14}
                             strokeWidth={2.2}
                             className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"
                         />
@@ -224,7 +229,7 @@ export default function ReleasingQueue({
                                 setCurrentPage(1);
                             }}
                             placeholder="Search by reference ID, operator name, or make…"
-                            className="h-10 w-full rounded-lg border border-slate-200 bg-slate-50/50 pl-10 pr-9 text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 shadow-2xs transition-all focus:border-[#182B62] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#182B62]/10"
+                            className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50/70 pl-10 pr-9 text-xs sm:text-sm font-medium text-slate-900 placeholder:text-slate-400 transition-colors focus:border-[#182B62] focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#182B62]"
                         />
                         {query && (
                             <button
@@ -233,7 +238,7 @@ export default function ReleasingQueue({
                                     setQuery('');
                                     setCurrentPage(1);
                                 }}
-                                className="absolute right-3 top-1/2 flex h-5 w-5 -translate-y-1/2 items-center justify-center rounded-full text-slate-400 hover:bg-slate-200 hover:text-slate-700"
+                                className="absolute right-3 top-1/2 flex h-5 w-5 -translate-y-1/2 items-center justify-center rounded-full text-slate-400 hover:bg-slate-200 hover:text-slate-700 cursor-pointer"
                             >
                                 <X size={12} strokeWidth={2.5} />
                             </button>
@@ -241,17 +246,19 @@ export default function ReleasingQueue({
                     </div>
 
                     <div className="flex items-center gap-2">
-                        {isFiltering && (
-                            <button
-                                type="button"
-                                onClick={handleClearAll}
-                                className="inline-flex h-10 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-600 shadow-2xs transition-colors hover:bg-slate-50 hover:text-slate-900"
-                                title="Reset all filters"
-                            >
-                                <RotateCcw size={13} strokeWidth={2.2} className="text-slate-400" />
-                                <span>Reset</span>
-                            </button>
-                        )}
+                        <select
+                            value={typeFilter}
+                            onChange={(e) => {
+                                setTypeFilter(e.target.value);
+                                setCurrentPage(1);
+                            }}
+                            aria-label="Filter by application type"
+                            className="h-10 w-full sm:w-auto sm:min-w-[140px] rounded-xl border border-slate-200 bg-slate-50/70 pl-3 pr-8 text-xs font-bold text-slate-700 transition-colors focus:border-[#182B62] focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#182B62] cursor-pointer"
+                        >
+                            <option value="all">All Application Types</option>
+                            <option value="new">New Franchise</option>
+                            <option value="renewal">Renewal Franchise</option>
+                        </select>
                     </div>
                 </div>
             </div>
@@ -292,13 +299,16 @@ export default function ReleasingQueue({
                                 <thead>
                                     <tr className="border-b border-slate-200 bg-slate-50/75">
                                         <th scope="col" className="py-3 pl-5 pr-3 text-[11px] font-bold uppercase tracking-wider text-slate-500">
-                                            Tracking / Reference
+                                            Application No. &amp; Type
                                         </th>
                                         <th scope="col" className="py-3 px-4 text-[11px] font-bold uppercase tracking-wider text-slate-500">
-                                            Operator &amp; Unit
+                                            Operator &amp; Contact
                                         </th>
                                         <th scope="col" className="py-3 px-4 text-[11px] font-bold uppercase tracking-wider text-slate-500">
-                                            Inspection
+                                            Tricycle Unit
+                                        </th>
+                                        <th scope="col" className="py-3 px-4 text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                                            TMO Inspection
                                         </th>
                                         <th scope="col" className="py-3 pl-3 pr-5 text-right text-[11px] font-bold uppercase tracking-wider text-slate-500">
                                             Action
@@ -424,65 +434,72 @@ export default function ReleasingQueue({
    SUBCOMPONENTS: Table Row & Mobile Card
 ───────────────────────────────────────────────────────────────────────── */
 
-function getInitials(name) {
-    if (!name || name === 'N/A') return 'OP';
-    const parts = name.trim().split(/\s+/);
-    if (parts.length === 1) return parts[0].substring(0, 2).toUpperCase();
-    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-}
-
 function DesktopReleasingRow({ app }) {
-    const initials = getInitials(app.operator);
 
     return (
         <tr className="group transition-colors hover:bg-slate-50/80">
-            {/* Column 1: Tracking / Reference */}
+            {/* Column 1: Application No. & Type */}
             <td className="py-3.5 pl-5 pr-3 align-middle">
                 <div className="flex flex-col">
                     <span className="font-mono text-xs sm:text-[13px] font-bold tracking-wide text-slate-900">
                         {app.reference}
                     </span>
-                    <span className="mt-0.5 text-[11px] text-slate-400 font-medium">
-                        Verified Application
+                    <span className="mt-0.5 text-[11px] font-medium text-slate-500">
+                        {app.is_renewal ? 'Renewal Franchise' : 'New Franchise'}
                     </span>
                 </div>
             </td>
 
-            {/* Column 2: Operator & Unit */}
+            {/* Column 2: Operator & Contact */}
             <td className="py-3.5 px-4 align-middle">
                 <div className="flex items-center gap-2.5">
-                    <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-100 text-[11px] font-bold text-slate-700">
-                        {initials}
-                    </div>
+                    <Avatar name={app.operator} src={app.operator_photo} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#182B62] to-[#25449B] text-[11px] font-bold text-white shadow-2xs" />
                     <div className="min-w-0">
                         <p className="truncate text-xs sm:text-[13px] font-semibold text-slate-900 group-hover:text-slate-950">
                             {app.operator}
                         </p>
-                        <div className="mt-0.5 flex items-center gap-1.5 text-xs text-slate-500">
-                            <Bike size={12} className="text-slate-400 shrink-0" />
-                            <span className="truncate">{app.make}</span>
-                            {app.plate && app.plate !== 'N/A' && (
-                                <>
-                                    <span className="text-slate-300">·</span>
-                                    <span className="font-mono text-[11px] font-semibold text-slate-700 bg-slate-100 px-1.5 py-0.2 rounded border border-slate-200/60">
-                                        {app.plate}
-                                    </span>
-                                </>
-                            )}
-                        </div>
+                        {app.contact && app.contact !== 'N/A' ? (
+                            <a
+                                href={`tel:${app.contact}`}
+                                className="mt-0.5 inline-flex items-center gap-1 text-[11px] font-medium text-slate-500 hover:text-slate-800"
+                            >
+                                <Phone size={10} strokeWidth={2.2} className="text-slate-400" />
+                                {app.contact}
+                            </a>
+                        ) : (
+                            <span className="text-[11px] text-slate-400">No contact number</span>
+                        )}
                     </div>
                 </div>
             </td>
 
-
-            {/* Column 4: Inspection */}
+            {/* Column 3: Tricycle Unit */}
             <td className="py-3.5 px-4 align-middle">
-                <div className="flex flex-wrap items-center gap-1.5">
-                    <span className="inline-flex items-center gap-1 rounded-md bg-emerald-50 px-2 py-0.5 text-[10.5px] font-semibold text-emerald-700 border border-emerald-200/70">
-                        <CheckCircle2 size={11} strokeWidth={2.5} />
-                        TMO Passed · {app.tmo_passed_at || 'Passed'}
+                <div className="flex items-center gap-1.5">
+                    <Bike size={13} strokeWidth={2} className="text-slate-400 shrink-0" />
+                    <span className="truncate text-xs sm:text-[13px] font-semibold text-slate-800">
+                        {app.make || 'Tricycle Unit'}
                     </span>
                 </div>
+                {app.plate && app.plate !== 'N/A' && (
+                    <p className="mt-0.5 pl-[19px] font-mono text-[11px] font-semibold text-slate-500">
+                        PLT-{app.plate}
+                    </p>
+                )}
+            </td>
+
+            {/* Column 4: TMO Inspection */}
+            <td className="py-3.5 px-4 align-middle">
+                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-700 border border-emerald-200/80">
+                    <CheckCircle2 size={11} strokeWidth={2.5} />
+                    Passed
+                </span>
+                {app.tmo_passed_at && app.tmo_passed_at !== 'Passed' && (
+                    <div className="mt-1 flex items-center gap-1.5 text-[11px] text-slate-500">
+                        <Calendar size={11} className="text-slate-400" />
+                        <span>{app.tmo_passed_at}</span>
+                    </div>
+                )}
             </td>
 
             {/* Column 5: Action */}
@@ -500,42 +517,57 @@ function DesktopReleasingRow({ app }) {
 }
 
 function MobileReleasingCard({ app }) {
-    const initials = getInitials(app.operator);
 
     return (
         <div className={`rounded-2xl border border-slate-200/70 bg-white p-3.5 transition-all hover:border-slate-300 ${CARD_SHADOW}`}>
             {/* Top Row: Reference & TMO Passed Pill */}
             <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-2">
-                <span className="font-mono text-sm font-bold tracking-wide text-slate-900">
-                    {app.reference}
-                </span>
+                <div className="flex flex-col min-w-0">
+                    <span className="font-mono text-sm font-bold tracking-wide text-slate-900">
+                        {app.reference}
+                    </span>
+                    <span className="text-[10.5px] font-medium text-slate-500">
+                        {app.is_renewal ? 'Renewal Franchise' : 'New Franchise'}
+                    </span>
+                </div>
                 <span className="inline-flex items-center gap-1 rounded-md bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-700 border border-emerald-200/70">
                     <CheckCircle2 size={10} strokeWidth={2.5} />
                     TMO Passed
                 </span>
             </div>
 
-            {/* Operator & TODA */}
+            {/* Operator & Contact */}
             <div className="mt-2.5 flex items-center justify-between gap-2">
                 <div className="flex items-center gap-2 min-w-0">
-                    <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-100 text-[10px] font-bold text-slate-700">
-                        {initials}
-                    </div>
+                    <Avatar name={app.operator} src={app.operator_photo} className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#182B62] to-[#25449B] text-[10px] font-bold text-white shadow-2xs" />
                     <div className="min-w-0">
                         <p className="truncate text-xs font-semibold text-slate-900">{app.operator}</p>
+                        {app.contact && app.contact !== 'N/A' ? (
+                            <a href={`tel:${app.contact}`} className="inline-flex items-center gap-1 truncate text-[11px] text-slate-500 hover:text-slate-800">
+                                <Phone size={10} strokeWidth={2.2} className="text-slate-400" />
+                                {app.contact}
+                            </a>
+                        ) : (
+                            <p className="truncate text-[11px] text-slate-400">No contact number</p>
+                        )}
                     </div>
                 </div>
+
+                {app.tmo_passed_at && app.tmo_passed_at !== 'Passed' && (
+                    <div className="flex items-center gap-1 text-[11px] text-slate-500 shrink-0">
+                        <Calendar size={11} className="text-slate-400" />
+                        <span>{app.tmo_passed_at}</span>
+                    </div>
+                )}
             </div>
 
             {/* Vehicle Info */}
-            <div className="mt-2 flex items-center justify-between text-xs text-slate-600">
-                <div className="flex items-center gap-1.5 truncate">
-                    <Bike size={12} className="text-slate-400 shrink-0" />
-                    <span className="truncate font-medium">{app.make || 'Tricycle Unit'}</span>
-                </div>
+            <div className="mt-2 flex items-center gap-1.5 text-xs text-slate-600">
+                <Bike size={12} className="text-slate-400 shrink-0" />
+                <span className="truncate font-medium">{app.make || 'Tricycle Unit'}</span>
                 {app.plate && app.plate !== 'N/A' && (
-                    <span className="font-mono text-[11px] font-semibold text-slate-700 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200/60 shrink-0">
-                        {app.plate}
+                    <span className="shrink-0 font-mono text-[11px] font-semibold text-slate-500">
+                        PLT-{app.plate}
                     </span>
                 )}
             </div>

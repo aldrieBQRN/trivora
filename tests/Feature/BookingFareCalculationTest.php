@@ -3,7 +3,6 @@
 namespace Tests\Feature;
 
 use App\Models\Booking;
-use App\Models\TodaZone;
 use App\Models\User;
 use App\Services\FareService;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
@@ -26,16 +25,11 @@ class BookingFareCalculationTest extends TestCase
 {
     use DatabaseTransactions;
 
-    protected TodaZone $zone;
 
     protected function setUp(): void
     {
         parent::setUp();
 
-        $this->zone = TodaZone::firstOrCreate(
-            ['code' => 'TODA-FARETEST'],
-            ['name' => 'TODA Fare Test Zone', 'barangay' => 'Brgy. 8', 'is_active' => true]
-        );
     }
 
     protected function actingAsPassenger(): User
@@ -60,7 +54,6 @@ class BookingFareCalculationTest extends TestCase
             'dropoff_name' => 'Barangay 8 Chapel',
             'dropoff_lat' => 14.0703,
             'dropoff_lng' => 120.6332,
-            'toda_zone_id' => $this->zone->id,
             'passenger_count' => 1,
         ];
     }

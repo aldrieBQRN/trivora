@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, RadialBarChart, RadialBar, PolarAngleAxis } from 'recharts';
 
+import Avatar from '@/Components/Avatar';
 const STAGE_META = {
     document_review:    { label: 'Document Review',      hex: '#F59E0B' },
     physical:            { label: 'Physical Inspection',  hex: '#6366F1' },
@@ -52,7 +53,6 @@ export default function Dashboard({
     const { props } = usePage();
     const userName = props?.auth?.user?.name || 'Officer';
     const firstName = userName.split(' ')[0];
-    const initials = userName.split(' ').filter(Boolean).slice(0, 2).map(n => n[0]).join('').toUpperCase() || 'TO';
 
     // Silent background refresh so a workflow change made by another TMO/BPLO user shows up here
     // without a manual reload — only re-requests the counts/lists this page actually renders.
@@ -113,9 +113,7 @@ export default function Dashboard({
                 <div className="relative grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-6 items-center">
                     <div className="lg:col-span-7 xl:col-span-7">
                         <div className="flex items-center gap-2.5 sm:gap-3">
-                            <div className="flex h-9 w-9 sm:h-10 sm:w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#182B62] to-[#25449B] text-xs font-black text-white shadow-sm ring-2 ring-white">
-                                {initials}
-                            </div>
+                            <Avatar name={userName} src={props?.auth?.user?.profile_photo_url} fallback="TO" className="flex h-9 w-9 sm:h-10 sm:w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#182B62] to-[#25449B] text-xs font-black text-white shadow-sm ring-2 ring-white" />
                             <div className="flex flex-col justify-center">
                                 <span className="font-['Plus_Jakarta_Sans',sans-serif] text-[11.5px] sm:text-[12px] font-bold text-slate-800 leading-tight">
                                     {today}

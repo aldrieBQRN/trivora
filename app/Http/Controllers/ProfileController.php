@@ -2,22 +2,23 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\ProfileUpdateRequest;
 use App\Services\AuditService;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Redirect;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class ProfileController extends Controller
 {
     /**
-     * Staff accounts keep their own mobile number / address on the user record. A driver's mobile
-     * number lives on their operator profile (it is their Driver App login), so it is not edited
-     * here.
+     * Staff accounts keep their own mobile number / address on the user record (maintained through
+     * each office's Staff Management). A driver's details live on their operator profile from
+     * franchise registration. Account Settings only displays them — the password is the one thing
+     * a user changes here (Auth\PasswordController).
      */
     public const STAFF_ROLES = ['tmo_personnel', 'bplo_staff', 'municipal_treasurer', 'admin'];
 
@@ -60,63 +61,67 @@ class ProfileController extends Controller
                 'is_active'         => (bool) $user->is_active,
                 'email_verified_at' => $user->email_verified_at?->format('M d, Y'),
                 'member_since'      => $user->created_at?->format('M d, Y'),
+                'profile_photo_url' => $user->profile_photo_url,
                 'registration'      => $operator ? [
                     'birthday'       => $operator->date_of_birth?->format('M d, Y'),
                     'contact_number' => $operator->contact_number,
+                    'barangay'       => $operator->barangay,
                 ] : null,
             ],
         ]);
     }
 
     /**
-     * Update the user's profile information.
+     * Upload or replace the signed-in user's own profile photo (the same users.profile_photo_path
+     * the mobile apps use via Api\ProfilePhotoController). The only editable thing on the profile.
      */
-    public function update(ProfileUpdateRequest $request): RedirectResponse
+    public function updatePhoto(Request $request): RedirectResponse
     {
+        $request->validate([
+            'photo' => ['required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
+        ], [
+            'photo.max' => 'The photo must be 5 MB or smaller.',
+        ]);
+
         $user = $request->user();
-        $oldValues = [
-            'name'  => $user->name,
-            'email' => $user->email,
-        ];
-        if (in_array($user->role, self::STAFF_ROLES, true)) {
-            $oldValues['contact_number'] = $user->contact_number;
-            $oldValues['address'] = $user->address;
-            $oldValues['birthday'] = $user->birthday?->format('Y-m-d');
-        }
+        $oldPath = $user->profile_photo_path;
 
-        $data = $request->validated();
-        if (!in_array($user->role, self::STAFF_ROLES, true)) {
-            unset($data['contact_number'], $data['address'], $data['birthday']);
-        }
+        $user->update(['profile_photo_path' => $request->file('photo')->store('profile_photos', 'public')]);
 
-        $user->fill($data);
-
-        if ($user->isDirty('email')) {
-            $user->email_verified_at = null;
-        }
-
-        $user->save();
-
-        $newValues = [
-            'name'  => $user->name,
-            'email' => $user->email,
-        ];
-        if (in_array($user->role, self::STAFF_ROLES, true)) {
-            $newValues['contact_number'] = $user->contact_number;
-            $newValues['address'] = $user->address;
-            $newValues['birthday'] = $user->birthday?->format('Y-m-d');
+        if ($oldPath) {
+            Storage::disk('public')->delete($oldPath);
         }
 
         AuditService::log(
             module: 'profile',
-            action: 'profile.updated',
+            action: 'profile.photo_updated',
             record: $user,
-            description: "User {$user->name} updated account profile",
-            oldValues: $oldValues,
-            newValues: $newValues
+            description: "User {$user->name} updated their profile photo"
         );
 
-        return Redirect::route('profile.edit')->with('status', 'profile-updated');
+        return Redirect::route('profile.edit')->with('status', 'photo-updated');
+    }
+
+    /**
+     * Remove the signed-in user's profile photo (falls back to their initials).
+     */
+    public function destroyPhoto(Request $request): RedirectResponse
+    {
+        $user = $request->user();
+
+        if ($user->profile_photo_path) {
+            Storage::disk('public')->delete($user->profile_photo_path);
+            $user->update(['profile_photo_path' => null]);
+
+            AuditService::log(
+                module: 'profile',
+                action: 'profile.photo_removed',
+                record: $user,
+                description: "User {$user->name} removed their profile photo"
+            );
+        }
+
+        return Redirect::route('profile.edit')->with('status', 'photo-removed');
     }
 
     /**

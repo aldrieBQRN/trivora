@@ -21,7 +21,7 @@ class HeaderNotificationsTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->seedTodaAndColorScheme();
+        $this->seedColorScheme();
     }
 
     private function eventsFor(User $user): array

@@ -23,7 +23,7 @@ class ApplicationController extends Controller
     {
         // Fetch applications currently at Phase 1 (Online Document Review)
         // This includes pending_review, under_review, and rejected (awaiting resubmission)
-        $applications = Application::with(['operator', 'documents'])
+        $applications = Application::with(['operator.user', 'documents'])
             ->whereIn('status', ['pending_review', 'under_review', 'rejected'])
             ->orderBy('submitted_at', 'asc')
             ->get()
@@ -35,6 +35,7 @@ class ApplicationController extends Controller
                     'reference'        => $app->reference_number,
                     'application_type' => $app->application_type,
                     'operator'         => $app->operator ? $app->operator->full_name : 'N/A',
+                    'operator_photo'   => $app->operator?->profile_photo_url,
                     'contact'          => $app->operator?->contact_number ?: 'N/A',
                     'submitted_at'     => $app->submitted_at ? $app->submitted_at->diffForHumans() : 'N/A',
                     'submitted_date'   => $app->submitted_at ? $app->submitted_at->format('F j, Y · g:i A') : 'N/A',
@@ -66,7 +67,7 @@ class ApplicationController extends Controller
      */
     public function show(Application $application): Response
     {
-        $application->load(['operator', 'tricycle', 'tricycleDriver', 'documents' => function ($query) {
+        $application->load(['operator.user', 'tricycle', 'tricycleDriver', 'documents' => function ($query) {
             // Oldest first, so a resubmission (a newer row for the same requirement) is
             // processed last below and its status/reason wins over the obsolete submission.
             $query->orderBy('created_at');
@@ -103,6 +104,7 @@ class ApplicationController extends Controller
             'reference'        => $application->reference_number,
             'application_type' => $application->application_type,
             'operator'         => $operator ? $operator->full_name : 'N/A',
+            'operator_photo'   => $operator?->profile_photo_url,
             // Tricycle Owner (the applicant) + optional separate Tricycle Driver. Lists keep
             // showing `operator` as the primary person; the driver only appears in details.
             'owner'          => $application->ownerDetails(),

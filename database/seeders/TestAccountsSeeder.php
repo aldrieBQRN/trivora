@@ -11,7 +11,6 @@ use App\Models\FranchiseScheme;
 use App\Models\Inspection;
 use App\Models\Operator;
 use App\Models\Passenger;
-use App\Models\TodaZone;
 use App\Models\Tricycle;
 use App\Models\TricycleLocation;
 use App\Models\User;
@@ -34,16 +33,6 @@ class TestAccountsSeeder extends Seeder
 {
     public function run(): void
     {
-        // Ensure TODA zones exist first
-        $this->call(TodaZonesSeeder::class);
-
-        $allZones = TodaZone::where('is_active', true)->get()->keyBy('code');
-
-        if ($allZones->isEmpty()) {
-            $this->command->error('TestAccountsSeeder: no TODA zones available — aborting.');
-            return;
-        }
-
         // ---------------------------------------------------------------------
         // 1. Five Passenger Test Accounts (for Passenger App login)
         // ---------------------------------------------------------------------
@@ -175,7 +164,7 @@ class TestAccountsSeeder extends Seeder
                 'model'       => 'TMX 125',
                 'color'       => 'White',
                 'scheme_name' => 'White',
-                'toda_code'   => 'TODA-BRGY10',
+                'barangay'    => 'Brgy. 10',
                 'ref'         => 'APP-2026-09999',
                 'lat'         => 14.0725,
                 'lng'         => 120.6322,
@@ -197,7 +186,7 @@ class TestAccountsSeeder extends Seeder
                 'model'       => 'STX 125',
                 'color'       => 'Blue',
                 'scheme_name' => 'Blue',
-                'toda_code'   => 'TODA-BUCANA',
+                'barangay'    => 'Bucana',
                 'ref'         => 'APP-2026-09992',
                 'lat'         => 14.0770,
                 'lng'         => 120.6280,
@@ -219,7 +208,7 @@ class TestAccountsSeeder extends Seeder
                 'model'       => 'Barako II',
                 'color'       => 'Red',
                 'scheme_name' => 'Blue',
-                'toda_code'   => 'TODA-BRGY8',
+                'barangay'    => 'Brgy. 8',
                 'ref'         => 'APP-2026-09993',
                 'lat'         => 14.0745,
                 'lng'         => 120.6350,
@@ -241,7 +230,7 @@ class TestAccountsSeeder extends Seeder
                 'model'       => 'RE 4S',
                 'color'       => 'Green',
                 'scheme_name' => 'Green',
-                'toda_code'   => 'TODA-BRGY4',
+                'barangay'    => 'Brgy. 4',
                 'ref'         => 'APP-2026-09994',
                 'lat'         => 14.0700,
                 'lng'         => 120.6300,
@@ -263,7 +252,7 @@ class TestAccountsSeeder extends Seeder
                 'model'       => 'TMX Alpha',
                 'color'       => 'Black',
                 'scheme_name' => 'Yellow',
-                'toda_code'   => 'TODA-BRGY1',
+                'barangay'    => 'Brgy. 1',
                 'ref'         => 'APP-2026-09995',
                 'lat'         => 14.0760,
                 'lng'         => 120.6335,
@@ -289,7 +278,7 @@ class TestAccountsSeeder extends Seeder
                 'model'       => 'STX 125',
                 'color'       => 'Blue',
                 'scheme_name' => $c0['scheme'],
-                'toda_code'   => 'TODA-BUCANA',
+                'barangay'    => 'Bucana',
                 'ref'         => 'APP-2026-09986',
                 'lat'         => 14.0775,
                 'lng'         => 120.6285,
@@ -319,7 +308,7 @@ class TestAccountsSeeder extends Seeder
                 'model'       => 'Barako II',
                 'color'       => 'Red',
                 'scheme_name' => $c1['scheme'],
-                'toda_code'   => 'TODA-BRGY10',
+                'barangay'    => 'Brgy. 10',
                 'ref'         => 'APP-2026-09987',
                 'lat'         => 14.0735,
                 'lng'         => 120.6315,
@@ -349,7 +338,7 @@ class TestAccountsSeeder extends Seeder
                 'model'       => 'TMX 125',
                 'color'       => 'White',
                 'scheme_name' => $c2['scheme'],
-                'toda_code'   => 'TODA-BRGY8',
+                'barangay'    => 'Brgy. 8',
                 'ref'         => 'APP-2026-09988',
                 'lat'         => 14.0750,
                 'lng'         => 120.6340,
@@ -384,7 +373,7 @@ class TestAccountsSeeder extends Seeder
                 'model'       => 'RE 4S',
                 'color'       => 'Green',
                 'scheme_name' => $c3['scheme'],
-                'toda_code'   => 'TODA-BRGY4',
+                'barangay'    => 'Brgy. 4',
                 'ref'         => 'APP-2026-09989',
                 'lat'         => 14.0690,
                 'lng'         => 120.6310,
@@ -421,7 +410,7 @@ class TestAccountsSeeder extends Seeder
                 'model'       => 'TMX Alpha',
                 'color'       => 'Black',
                 'scheme_name' => $c4['scheme'],
-                'toda_code'   => 'TODA-BRGY1',
+                'barangay'    => 'Brgy. 1',
                 'ref'         => 'APP-2026-09990',
                 'lat'         => 14.0765,
                 'lng'         => 120.6345,
@@ -448,7 +437,6 @@ class TestAccountsSeeder extends Seeder
         $driversData = array_merge($baseDriversData, $newDriversWithViolations);
 
         foreach ($driversData as $d) {
-            $zone = $allZones->get($d['toda_code']) ?? $allZones->first();
             $scheme = $colorSchemes->get($d['scheme_name']) ?? $colorSchemes->first();
 
             $driverUser = User::updateOrCreate(
@@ -466,12 +454,11 @@ class TestAccountsSeeder extends Seeder
                 ['license_number' => $d['license']],
                 [
                     'user_id'                  => $driverUser->id,
-                    'toda_id'                  => $zone?->id,
                     'first_name'               => $d['first_name'],
                     'last_name'                => $d['last_name'],
                     'contact_number'           => $d['mobile'],
-                    'address'                  => "Test Address, {$zone?->name}, Nasugbu",
-                    'barangay'                 => $zone?->name ?? 'Barangay 10',
+                    'address'                  => "Test Address, {$d['barangay']}, Nasugbu",
+                    'barangay'                 => $d['barangay'],
                     'date_of_birth'            => '1990-01-01',
                     'license_expiry_date'      => now()->addYears(3)->toDateString(),
                     'license_restriction_code' => '1,2',
@@ -482,7 +469,6 @@ class TestAccountsSeeder extends Seeder
                 ['plate_number' => $d['plate']],
                 [
                     'operator_id'          => $operator->id,
-                    'toda_zone_id'         => $zone?->id,
                     'coding_scheme_number' => $d['franchise'],
                     'engine_number'        => $d['engine'],
                     'chassis_number'       => $d['chassis'],

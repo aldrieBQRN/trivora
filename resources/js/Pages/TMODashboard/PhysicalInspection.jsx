@@ -12,6 +12,7 @@ import {
 import { Textarea } from '@/Components/TMO';
 import { PHYSICAL_INSPECTION_ITEMS } from '@/data/physicalInspectionItems';
 
+import Avatar from '@/Components/Avatar';
 const CARD_SHADOW = 'shadow-[0_1px_2px_0_rgba(15,23,42,0.04),0_8px_24px_-8px_rgba(15,23,42,0.10)]';
 
 const QUICK_REJECTION_REASONS = [
@@ -22,13 +23,6 @@ const QUICK_REJECTION_REASONS = [
     'Defective horn or audible warning device',
     'Excessive smoke emissions / roadworthiness failure',
 ];
-
-function getInitials(name) {
-    if (!name || name === 'N/A') return 'TD';
-    const parts = name.trim().split(/\s+/);
-    if (parts.length === 1) return parts[0].substring(0, 2).toUpperCase();
-    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-}
 
 export default function PhysicalInspection({ application }) {
     const appData = application || {};
@@ -144,7 +138,6 @@ export default function PhysicalInspection({ application }) {
         });
     };
 
-    const operatorInitials = getInitials(appData.operator);
 
     return (
         <TrivoraLayout title="Physical Inspection" role="TMO Officer">
@@ -418,9 +411,7 @@ export default function PhysicalInspection({ application }) {
 
                             {/* Owner Summary */}
                             <div className="flex items-center gap-3 pb-3 border-b border-slate-100">
-                                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#182B62] to-[#25449B] text-xs font-black text-white shadow-2xs">
-                                    {operatorInitials}
-                                </div>
+                                <Avatar name={appData.operator} src={appData.operator_photo} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#182B62] to-[#25449B] text-xs font-black text-white shadow-2xs" />
                                 <div className="min-w-0 flex-1">
                                     <p className="truncate text-xs sm:text-sm font-bold text-slate-900">{appData.operator || 'N/A'}</p>
                                     <p className="truncate text-xs text-slate-500 font-medium">Tricycle Owner (Applicant)</p>

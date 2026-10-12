@@ -4,7 +4,6 @@ namespace Tests\Feature\Concerns;
 
 use App\Models\Application;
 use App\Models\ColorCodingScheme;
-use App\Models\TodaZone;
 use App\Models\User;
 use Illuminate\Http\UploadedFile;
 
@@ -16,18 +15,8 @@ use Illuminate\Http\UploadedFile;
  */
 trait DrivesFranchiseWorkflow
 {
-    /**
-     * RegistrationController::store() resolves the TODA zone by matching TodaZone.name against
-     * the exact string PublicApply.jsx's dropdown submits — 'TODA Bucana' here, matching that
-     * dropdown's real option value (see registrationPayload()'s 'toda' default below).
-     */
-    protected function seedTodaAndColorScheme(): void
+    protected function seedColorScheme(): void
     {
-        TodaZone::firstOrCreate(
-            ['name' => 'TODA Bucana'],
-            ['code' => 'TODA-WORKFLOW-TEST', 'barangay' => 'Poblacion', 'is_active' => true]
-        );
-
         // Sticker Numbers ending in 1 or 2 are Monday-restricted (ColorCodingRuleService) — this
         // scheme lets BPLOController::release() resolve a real match instead of falling back to
         // ColorCodingScheme::first().

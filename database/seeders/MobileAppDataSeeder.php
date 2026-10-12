@@ -7,7 +7,6 @@ use App\Models\Driver;
 use App\Models\Operator;
 use App\Models\Passenger;
 use App\Models\RideRating;
-use App\Models\TodaZone;
 use App\Models\Tricycle;
 use App\Models\TricycleLocation;
 use App\Models\User;
@@ -34,11 +33,11 @@ class MobileAppDataSeeder extends Seeder
         // 1. Ensure Drivers are linked to Tricycles and TODA Zones
         // ---------------------------------------------------------------------
         $driverTriMap = [
-            'driver.pramos@trivora.ph'     => ['plate' => 'AAA-1234', 'zone' => 'TODA-BUCANA', 'lat' => 14.0645, 'lng' => 120.6298, 'online' => true,  'avail' => false, 'trips' => 84, 'earnings' => 740.00, 'rating' => 4.92],
-            'driver.jbautista@trivora.ph'  => ['plate' => 'BBB-5678', 'zone' => 'TODA-BRGY10', 'lat' => 14.0725, 'lng' => 120.6322, 'online' => true,  'avail' => false, 'trips' => 62, 'earnings' => 580.00, 'rating' => 4.88],
-            'driver.evillanueva@trivora.ph'=> ['plate' => 'CCC-9012', 'zone' => 'TODA-BRGY8',  'lat' => 14.0715, 'lng' => 120.6330, 'online' => false, 'avail' => true,  'trips' => 45, 'earnings' => 320.00, 'rating' => 4.75],
-            'driver.mclara@trivora.ph'     => ['plate' => 'DDD-3456', 'zone' => 'TODA-BRGY4',  'lat' => 14.0673, 'lng' => 120.6331, 'online' => true,  'avail' => true,  'trips' => 91, 'earnings' => 890.00, 'rating' => 4.95],
-            'driver.rsantos@trivora.ph'    => ['plate' => 'TRV-MOBGPS','zone' => 'TODA-BUCANA', 'lat' => 14.0655, 'lng' => 120.6305, 'online' => true,  'avail' => false, 'trips' => 110,'earnings' => 950.00, 'rating' => 4.98],
+            'driver.pramos@trivora.ph'     => ['plate' => 'AAA-1234', 'lat' => 14.0645, 'lng' => 120.6298, 'online' => true,  'avail' => false, 'trips' => 84, 'earnings' => 740.00, 'rating' => 4.92],
+            'driver.jbautista@trivora.ph'  => ['plate' => 'BBB-5678', 'lat' => 14.0725, 'lng' => 120.6322, 'online' => true,  'avail' => false, 'trips' => 62, 'earnings' => 580.00, 'rating' => 4.88],
+            'driver.evillanueva@trivora.ph'=> ['plate' => 'CCC-9012', 'lat' => 14.0715, 'lng' => 120.6330, 'online' => false, 'avail' => true,  'trips' => 45, 'earnings' => 320.00, 'rating' => 4.75],
+            'driver.mclara@trivora.ph'     => ['plate' => 'DDD-3456', 'lat' => 14.0673, 'lng' => 120.6331, 'online' => true,  'avail' => true,  'trips' => 91, 'earnings' => 890.00, 'rating' => 4.95],
+            'driver.rsantos@trivora.ph'    => ['plate' => 'TRV-MOBGPS','lat' => 14.0655, 'lng' => 120.6305, 'online' => true,  'avail' => false, 'trips' => 110,'earnings' => 950.00, 'rating' => 4.98],
         ];
 
         foreach ($driverTriMap as $email => $data) {
@@ -113,10 +112,6 @@ class MobileAppDataSeeder extends Seeder
         $dMaria   = Driver::whereHas('user', fn ($q) => $q->where('email', 'driver.mclara@trivora.ph'))->first();
         $dRicardo = Driver::whereHas('user', fn ($q) => $q->where('email', 'driver.rsantos@trivora.ph'))->first();
 
-        $zBucana = TodaZone::where('code', 'TODA-BUCANA')->first();
-        $zBrgy10 = TodaZone::where('code', 'TODA-BRGY10')->first();
-        $zBrgy8  = TodaZone::where('code', 'TODA-BRGY8')->first();
-        $zBrgy4  = TodaZone::where('code', 'TODA-BRGY4')->first();
 
         // ---------------------------------------------------------------------
         // 4. Seed Active Bookings (For Real-Time Mobile App Demo)
@@ -127,7 +122,6 @@ class MobileAppDataSeeder extends Seeder
             ['booking_code' => 'BK-' . date('Ymd') . '-PND1'],
             [
                 'passenger_id'            => $p1->id,
-                'toda_zone_id'            => $zBucana?->id,
                 'pickup_name'             => 'Poblacion Public Market',
                 'pickup_lat'              => 14.0725,
                 'pickup_lng'              => 120.6322,
@@ -150,7 +144,6 @@ class MobileAppDataSeeder extends Seeder
             ['booking_code' => 'BK-' . date('Ymd') . '-PND2'],
             [
                 'passenger_id'            => $p2->id,
-                'toda_zone_id'            => $zBrgy8?->id,
                 'pickup_name'             => 'Nasugbu Municipal Hall',
                 'pickup_lat'              => 14.0715,
                 'pickup_lng'              => 120.6330,
@@ -176,7 +169,6 @@ class MobileAppDataSeeder extends Seeder
                     'passenger_id'            => $p3->id,
                     'driver_id'               => $dPedro->id,
                     'tricycle_id'             => $dPedro->tricycle_id,
-                    'toda_zone_id'            => $zBucana?->id,
                     'pickup_name'             => 'San Isidro Parish Church',
                     'pickup_lat'              => 14.0710,
                     'pickup_lng'              => 120.6318,
@@ -204,7 +196,6 @@ class MobileAppDataSeeder extends Seeder
                     'passenger_id'            => $p4->id,
                     'driver_id'               => $dJose->id,
                     'tricycle_id'             => $dJose->tricycle_id,
-                    'toda_zone_id'            => $zBrgy10?->id,
                     'pickup_name'             => 'Brgy. 10 Elementary School',
                     'pickup_lat'              => 14.0726,
                     'pickup_lng'              => 120.6327,
@@ -233,7 +224,6 @@ class MobileAppDataSeeder extends Seeder
                     'passenger_id'            => $p5->id,
                     'driver_id'               => $dRicardo->id,
                     'tricycle_id'             => $dRicardo->tricycle_id,
-                    'toda_zone_id'            => $zBucana?->id,
                     'pickup_name'             => 'Wawa Fish Port Terminal',
                     'pickup_lat'              => 14.0673,
                     'pickup_lng'              => 120.6325,
@@ -260,35 +250,35 @@ class MobileAppDataSeeder extends Seeder
         // ---------------------------------------------------------------------
         $completedScenarios = [
             // Today trips (0 days ago) for Pedro Ramos & others
-            [$p2, $dPedro,   $zBucana, 'Nasugbu Town Plaza', 'Bucana Public Beach', 55.00, 2.4, 8, 0, 5, 'Super polite driver! On time and safe ride.', ['Polite Driver', 'Clean Tricycle', 'Safe Driving']],
-            [$p3, $dPedro,   $zBucana, 'Barangay 8 Market', 'Nasugbu Doctors Hospital', 40.00, 1.5, 5, 0, 5, 'Very helpful driver, assisted with bags.', ['On Time', 'Helpful']],
-            [$p4, $dPedro,   $zBucana, 'Savemore Market Nasugbu', 'Coastal View Subd Gate 2', 60.00, 2.8, 9, 0, 5, 'Great route choice and smooth drive.', ['Great Route', 'Smooth Ride']],
+            [$p2, $dPedro, 'Nasugbu Town Plaza', 'Bucana Public Beach', 55.00, 2.4, 8, 0, 5, 'Super polite driver! On time and safe ride.', ['Polite Driver', 'Clean Tricycle', 'Safe Driving']],
+            [$p3, $dPedro, 'Barangay 8 Market', 'Nasugbu Doctors Hospital', 40.00, 1.5, 5, 0, 5, 'Very helpful driver, assisted with bags.', ['On Time', 'Helpful']],
+            [$p4, $dPedro, 'Savemore Market Nasugbu', 'Coastal View Subd Gate 2', 60.00, 2.8, 9, 0, 5, 'Great route choice and smooth drive.', ['Great Route', 'Smooth Ride']],
             
             // Yesterday trips (1 day ago)
-            [$p1, $dRicardo, $zBucana, 'Nasugbu Town Plaza', 'Bucana Beach Resort', 50.00, 2.1, 7, 1, 5, 'Very courteous driver! Smooth ride to the beach.', ['Polite Driver', 'Clean Tricycle', 'Safe Driving']],
-            [$p5, $dPedro,   $zBucana, 'San Isidro Parish', 'Wawa Port Terminal', 50.00, 2.2, 7, 1, 5, 'Arrived very quickly. Excellent driver.', ['On Time', 'Safe Driving']],
-            [$p1, $dPedro,   $zBucana, 'Poblacion Commercial Center', 'Sunset View Bay', 45.00, 1.9, 6, 2, 5, 'Quick pickup and very helpful with my groceries.', ['On Time', 'Helpful']],
+            [$p1, $dRicardo, 'Nasugbu Town Plaza', 'Bucana Beach Resort', 50.00, 2.1, 7, 1, 5, 'Very courteous driver! Smooth ride to the beach.', ['Polite Driver', 'Clean Tricycle', 'Safe Driving']],
+            [$p5, $dPedro, 'San Isidro Parish', 'Wawa Port Terminal', 50.00, 2.2, 7, 1, 5, 'Arrived very quickly. Excellent driver.', ['On Time', 'Safe Driving']],
+            [$p1, $dPedro, 'Poblacion Commercial Center', 'Sunset View Bay', 45.00, 1.9, 6, 2, 5, 'Quick pickup and very helpful with my groceries.', ['On Time', 'Helpful']],
 
             // Earlier trips (3-12 days ago)
-            [$p2, $dJose,    $zBrgy10, 'Brgy. 10 Public Market', 'San Isidro Street', 35.00, 1.1, 4, 2, 5, 'Fast and safe driving.', ['Safe Driving', 'Smooth Ride']],
-            [$p2, $dMaria,   $zBrgy4,  'Wawa Terminal', 'Poblacion Plaza', 40.00, 1.5, 5, 3, 4, 'Polite driver, clean sidecar.', ['Clean Tricycle', 'Polite Driver']],
-            [$p3, $dPedro,   $zBucana, 'Municipal Hall Compound', 'Bucana Fisherman Village', 50.00, 2.2, 8, 3, 5, 'Great route choice, avoided traffic completely.', ['Great Route', 'Polite Driver']],
-            [$p4, $dPedro,   $zBucana, 'Brgy. 10 Chapel', 'Batangas State University Gate 1', 65.00, 3.2, 11, 4, 5, 'Punctual and very respectful.', ['On Time', 'Safe Driving']],
-            [$p3, $dRicardo, $zBucana, 'San Isidro Parish', 'Central Terminal', 40.00, 1.4, 5, 4, 5, 'Punctual and very respectful.', ['On Time', 'Safe Driving']],
-            [$p4, $dJose,    $zBrgy10, 'Brgy. 10 Market Gate 1', 'Nasugbu Doctors Hospital', 45.00, 1.7, 6, 4, 5, 'Clean tricycle and smooth acceleration.', ['Clean Tricycle', 'Smooth Ride']],
-            [$p4, $dErnesto, $zBrgy8,  'Barangay 8 Hall', 'Nasugbu Integrated School', 30.00, 1.0, 4, 5, 4, 'Good ride, fair charge.', ['On Time']],
-            [$p5, $dMaria,   $zBrgy4,  'Brgy. 4 Covered Court', 'Wawa Beach Front', 35.00, 1.3, 5, 5, 5, 'Exemplary service! Very polite lady driver.', ['Polite Driver', 'Clean Tricycle', 'Safe Driving']],
-            [$p2, $dPedro,   $zBucana, 'Central Bus Terminal', 'Nasugbu Public Market', 35.00, 1.2, 5, 6, 4, 'Good driver service.', ['Safe Driving']],
-            [$p5, $dRicardo, $zBucana, 'BSU Nasugbu Campus', 'Poblacion Market', 45.00, 1.8, 7, 6, 5, 'Always dependable driver in Nasugbu.', ['Safe Driving', 'Great Route']],
-            [$p1, $dPedro,   $zBucana, 'Bucana Elementary School', 'Town Plaza', 40.00, 1.6, 6, 7, 5, 'Smooth and pleasant commute.', ['Polite Driver']],
-            [$p2, $dJose,    $zBrgy10, 'Nasugbu Hospital', 'Brgy. 10 Residence', 35.00, 1.2, 4, 8, 5, 'Very careful driver, felt very safe.', ['Safe Driving']],
-            [$p3, $dErnesto, $zBrgy8,  'Brgy. 8 Chapel', 'Market Terminal', 30.00, 0.9, 3, 9, 4, 'On time pickup.', ['On Time']],
-            [$p4, $dMaria,   $zBrgy4,  'Wawa Port Gate', 'Municipal Plaza', 40.00, 1.5, 5, 10, 5, 'Friendly conversation and clean ride.', ['Polite Driver', 'Clean Tricycle']],
-            [$p5, $dRicardo, $zBucana, 'Coastal Subdivision', 'Nasugbu High School', 55.00, 2.5, 9, 12, 5, 'Excellent driver service as always!', ['Polite Driver', 'Safe Driving', 'On Time']],
+            [$p2, $dJose, 'Brgy. 10 Public Market', 'San Isidro Street', 35.00, 1.1, 4, 2, 5, 'Fast and safe driving.', ['Safe Driving', 'Smooth Ride']],
+            [$p2, $dMaria,  'Wawa Terminal', 'Poblacion Plaza', 40.00, 1.5, 5, 3, 4, 'Polite driver, clean sidecar.', ['Clean Tricycle', 'Polite Driver']],
+            [$p3, $dPedro, 'Municipal Hall Compound', 'Bucana Fisherman Village', 50.00, 2.2, 8, 3, 5, 'Great route choice, avoided traffic completely.', ['Great Route', 'Polite Driver']],
+            [$p4, $dPedro, 'Brgy. 10 Chapel', 'Batangas State University Gate 1', 65.00, 3.2, 11, 4, 5, 'Punctual and very respectful.', ['On Time', 'Safe Driving']],
+            [$p3, $dRicardo, 'San Isidro Parish', 'Central Terminal', 40.00, 1.4, 5, 4, 5, 'Punctual and very respectful.', ['On Time', 'Safe Driving']],
+            [$p4, $dJose, 'Brgy. 10 Market Gate 1', 'Nasugbu Doctors Hospital', 45.00, 1.7, 6, 4, 5, 'Clean tricycle and smooth acceleration.', ['Clean Tricycle', 'Smooth Ride']],
+            [$p4, $dErnesto,  'Barangay 8 Hall', 'Nasugbu Integrated School', 30.00, 1.0, 4, 5, 4, 'Good ride, fair charge.', ['On Time']],
+            [$p5, $dMaria,  'Brgy. 4 Covered Court', 'Wawa Beach Front', 35.00, 1.3, 5, 5, 5, 'Exemplary service! Very polite lady driver.', ['Polite Driver', 'Clean Tricycle', 'Safe Driving']],
+            [$p2, $dPedro, 'Central Bus Terminal', 'Nasugbu Public Market', 35.00, 1.2, 5, 6, 4, 'Good driver service.', ['Safe Driving']],
+            [$p5, $dRicardo, 'BSU Nasugbu Campus', 'Poblacion Market', 45.00, 1.8, 7, 6, 5, 'Always dependable driver in Nasugbu.', ['Safe Driving', 'Great Route']],
+            [$p1, $dPedro, 'Bucana Elementary School', 'Town Plaza', 40.00, 1.6, 6, 7, 5, 'Smooth and pleasant commute.', ['Polite Driver']],
+            [$p2, $dJose, 'Nasugbu Hospital', 'Brgy. 10 Residence', 35.00, 1.2, 4, 8, 5, 'Very careful driver, felt very safe.', ['Safe Driving']],
+            [$p3, $dErnesto,  'Brgy. 8 Chapel', 'Market Terminal', 30.00, 0.9, 3, 9, 4, 'On time pickup.', ['On Time']],
+            [$p4, $dMaria,  'Wawa Port Gate', 'Municipal Plaza', 40.00, 1.5, 5, 10, 5, 'Friendly conversation and clean ride.', ['Polite Driver', 'Clean Tricycle']],
+            [$p5, $dRicardo, 'Coastal Subdivision', 'Nasugbu High School', 55.00, 2.5, 9, 12, 5, 'Excellent driver service as always!', ['Polite Driver', 'Safe Driving', 'On Time']],
         ];
 
         foreach ($completedScenarios as $idx => $sc) {
-            [$pass, $driver, $zone, $pick, $drop, $fare, $dist, $dur, $daysAgo, $score, $comment, $tags] = $sc;
+            [$pass, $driver, $pick, $drop, $fare, $dist, $dur, $daysAgo, $score, $comment, $tags] = $sc;
 
             if (! $driver) {
                 continue;
@@ -307,7 +297,6 @@ class MobileAppDataSeeder extends Seeder
                     'passenger_id'            => $pass->id,
                     'driver_id'               => $driver->id,
                     'tricycle_id'             => $driver->tricycle_id,
-                    'toda_zone_id'            => $zone?->id,
                     'pickup_name'             => $pick,
                     'pickup_lat'              => 14.0700 + (rand(-10, 10) / 1000),
                     'pickup_lng'              => 120.6300 + (rand(-10, 10) / 1000),
@@ -345,13 +334,13 @@ class MobileAppDataSeeder extends Seeder
         // 6. Seed Cancelled Bookings (Presenting Exception Flow)
         // ---------------------------------------------------------------------
         $cancelledScenarios = [
-            [$p2, $dPedro,   $zBucana, 'Poblacion Market Gate 3', 'Bucana Resort', 45.00, 'passenger', 'Passenger changed plans / found alternative transport', 2],
-            [$p4, $dErnesto, $zBrgy8,  'Brgy. 8 Chapel', 'Doctors Hospital', 35.00, 'driver', 'Driver flat tire emergency', 5],
-            [$p5, null,      $zBrgy10, 'Brgy. 10 Elementary School', 'Municipal Hall', 30.00, 'system', 'No driver accepted within timeout limit', 8],
+            [$p2, $dPedro, 'Poblacion Market Gate 3', 'Bucana Resort', 45.00, 'passenger', 'Passenger changed plans / found alternative transport', 2],
+            [$p4, $dErnesto,  'Brgy. 8 Chapel', 'Doctors Hospital', 35.00, 'driver', 'Driver flat tire emergency', 5],
+            [$p5, null, 'Brgy. 10 Elementary School', 'Municipal Hall', 30.00, 'system', 'No driver accepted within timeout limit', 8],
         ];
 
         foreach ($cancelledScenarios as $idx => $cs) {
-            [$pass, $driver, $zone, $pick, $drop, $fare, $by, $reason, $daysAgo] = $cs;
+            [$pass, $driver, $pick, $drop, $fare, $by, $reason, $daysAgo] = $cs;
 
             $reqTime = now()->subDays($daysAgo)->setTime(rand(8, 17), rand(10, 50), 0);
             $bookingCode = 'BK-' . $reqTime->format('Ymd') . '-CXL' . ($idx + 1);
@@ -362,7 +351,6 @@ class MobileAppDataSeeder extends Seeder
                     'passenger_id'            => $pass->id,
                     'driver_id'               => $driver?->id,
                     'tricycle_id'             => $driver?->tricycle_id,
-                    'toda_zone_id'            => $zone?->id,
                     'pickup_name'             => $pick,
                     'pickup_lat'              => 14.0710,
                     'pickup_lng'              => 120.6320,

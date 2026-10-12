@@ -81,7 +81,6 @@ Route::get('/seed-database', function (\Illuminate\Http\Request $request) {
         // Gather real database statistics for verification display
         $stats = [
             'color_schemes' => \App\Models\ColorCodingScheme::count(),
-            'toda_zones'    => \App\Models\TodaZone::count(),
             'users'         => \App\Models\User::count(),
             'tricycles'     => \App\Models\Tricycle::count(),
             'applications'  => \App\Models\Application::count(),
@@ -139,10 +138,6 @@ Route::get('/seed-database', function (\Illuminate\Http\Request $request) {
             <div class="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-4 text-center">
                 <span class="block text-2xl sm:text-3xl font-black text-indigo-400 font-mono">{$stats['applications']}</span>
                 <span class="text-xs font-semibold text-slate-400 mt-1 block">MTOP Applications</span>
-            </div>
-            <div class="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-4 text-center">
-                <span class="block text-2xl sm:text-3xl font-black text-amber-400 font-mono">{$stats['toda_zones']}</span>
-                <span class="text-xs font-semibold text-slate-400 mt-1 block">TODA Zones</span>
             </div>
         </div>
 
@@ -836,9 +831,6 @@ Route::middleware(['auth', 'role:tricycle_driver,admin'])->group(function () {
                         'isFinalized'          => true,
                         'active_tracking_mode' => $tri->active_tracking_mode,
                         'iot_device_id'        => $tri->iot_device_id,
-                        // The unit's assigned TODA zone, from its own relationship (same source
-                        // the registry uses) — feeds the Live Tracking "Current Zone" stat.
-                        'zone'                 => $tri->todaZone?->name ?: ($tri->operator?->todaZone?->name ?: 'Unassigned'),
                         'heading'              => $latestLocation ? (int)$latestLocation->heading_deg : 0,
                         'accuracy'             => $latestLocation ? (float)$latestLocation->accuracy_m : null,
                         'last_ping'            => $latestLocation ? $latestLocation->recorded_at->diffForHumans() : 'Never',
@@ -888,8 +880,11 @@ Route::middleware(['auth', 'role:tricycle_driver,admin'])->group(function () {
 */
 
 Route::middleware('auth')->group(function () {
+    // Account Settings is read-only for profile details (managed by each office's staff
+    // management); only the password can be changed here (PUT /password).
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
-    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::post('/profile/photo', [ProfileController::class, 'updatePhoto'])->name('profile.photo.update');
+    Route::delete('/profile/photo', [ProfileController::class, 'destroyPhoto'])->name('profile.photo.destroy');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
     // Header notification bell — always the signed-in user's own notifications.

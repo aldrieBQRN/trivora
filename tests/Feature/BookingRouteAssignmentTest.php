@@ -9,7 +9,6 @@ use App\Models\FranchiseScheme;
 use App\Models\Operator;
 use App\Models\Passenger;
 use App\Models\RideRating;
-use App\Models\TodaZone;
 use App\Models\Tricycle;
 use App\Models\User;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
@@ -21,8 +20,6 @@ class BookingRouteAssignmentTest extends TestCase
 {
     use DatabaseTransactions;
 
-    protected TodaZone $zoneBrgy8;
-    protected TodaZone $zoneBucana;
     protected Driver $driverBrgy8Online;
     protected Driver $driverBucanaOnline;
     protected Driver $driverBrgy8Offline;
@@ -36,15 +33,7 @@ class BookingRouteAssignmentTest extends TestCase
         // 1. Fetch or create TODA zones — coordinates matter now: TODA matching is purely
         // nearest-pin (haversine to latitude/longitude), no GeoJSON fallback, so a zone without
         // real coordinates would simply be excluded from matching.
-        $this->zoneBrgy8 = TodaZone::firstOrCreate(
-            ['code' => 'TODA-BRGY8'],
-            ['name' => 'TODA Brgy. 8', 'barangay' => 'Brgy. 8', 'is_active' => true, 'latitude' => 14.0693163, 'longitude' => 120.6347771]
-        );
 
-        $this->zoneBucana = TodaZone::firstOrCreate(
-            ['code' => 'TODA-BUCANA'],
-            ['name' => 'TODA Bucana', 'barangay' => 'Bucana', 'is_active' => true, 'latitude' => 14.0677115, 'longitude' => 120.6275606]
-        );
 
         // Dispatch eligibility requires an ACTIVE franchise (see
         // BookingDispatchService::getEligibleDrivers()) — a real active tricycle always has one
@@ -67,7 +56,6 @@ class BookingRouteAssignmentTest extends TestCase
             'role' => 'tricycle_driver',
         ]);
         $op1 = Operator::create([
-            'toda_id' => $this->zoneBrgy8->id,
             'first_name' => 'Driver',
             'last_name' => 'One',
             'contact_number' => '09170000001',
@@ -79,7 +67,6 @@ class BookingRouteAssignmentTest extends TestCase
         ]);
         $tri1 = Tricycle::create([
             'operator_id' => $op1->id,
-            'toda_zone_id' => $this->zoneBrgy8->id,
             'plate_number' => 'PLT-TEST-001',
             'engine_number' => 'ENG-TEST-001',
             'chassis_number' => 'CHS-TEST-001',
@@ -112,7 +99,6 @@ class BookingRouteAssignmentTest extends TestCase
             'role' => 'tricycle_driver',
         ]);
         $op2 = Operator::create([
-            'toda_id' => $this->zoneBucana->id,
             'first_name' => 'Driver',
             'last_name' => 'Two',
             'contact_number' => '09170000002',
@@ -124,7 +110,6 @@ class BookingRouteAssignmentTest extends TestCase
         ]);
         $tri2 = Tricycle::create([
             'operator_id' => $op2->id,
-            'toda_zone_id' => $this->zoneBucana->id,
             'plate_number' => 'PLT-TEST-002',
             'engine_number' => 'ENG-TEST-002',
             'chassis_number' => 'CHS-TEST-002',
@@ -157,7 +142,6 @@ class BookingRouteAssignmentTest extends TestCase
             'role' => 'tricycle_driver',
         ]);
         $op3 = Operator::create([
-            'toda_id' => $this->zoneBrgy8->id,
             'first_name' => 'Driver',
             'last_name' => 'Three',
             'contact_number' => '09170000003',
@@ -169,7 +153,6 @@ class BookingRouteAssignmentTest extends TestCase
         ]);
         $tri3 = Tricycle::create([
             'operator_id' => $op3->id,
-            'toda_zone_id' => $this->zoneBrgy8->id,
             'plate_number' => 'PLT-TEST-003',
             'engine_number' => 'ENG-TEST-003',
             'chassis_number' => 'CHS-TEST-003',
@@ -271,66 +254,6 @@ class BookingRouteAssignmentTest extends TestCase
     }
 
     #[Test]
-    public function a_toda_zone_id_that_does_not_exist_in_this_table_does_not_422_and_is_ignored()
-    {
-        $passengerUser = User::create([
-            'name' => 'Mismatched Zone Passenger',
-            'email' => 'mismatched.zone.passenger.test@trivora.ph',
-            'password' => bcrypt('password'),
-            'role' => 'passenger',
-        ]);
-        Sanctum::actingAs($passengerUser, ['*']);
-
-        $response = $this->postJson('/api/v1/passenger/bookings/request', [
-            'pickup_name' => 'Nasugbu Municipal Hall',
-            'pickup_lat' => 14.071514,
-            'pickup_lng' => 120.633083,
-            'dropoff_name' => 'Barangay 8 Chapel',
-            'dropoff_lat' => 14.0703,
-            'dropoff_lng' => 120.6332,
-            'passenger_count' => 2,
-            'distance_km' => 1.0,
-            'toda_zone_id' => 999999, // does not exist in toda_zones
-        ]);
-
-        $response->assertStatus(201);
-        $booking = Booking::find($response->json('booking.id'));
-
-        $this->assertNotNull($booking);
-        $this->assertEquals($this->driverBrgy8Online->id, $booking->dispatched_driver_id);
-    }
-
-    #[Test]
-    public function a_toda_zone_id_that_does_not_match_the_pickup_is_not_trusted()
-    {
-        $passengerUser = User::create([
-            'name' => 'Wrong Zone Passenger',
-            'email' => 'wrong.zone.passenger.test@trivora.ph',
-            'password' => bcrypt('password'),
-            'role' => 'passenger',
-        ]);
-        Sanctum::actingAs($passengerUser, ['*']);
-
-        $response = $this->postJson('/api/v1/passenger/bookings/request', [
-            'pickup_name' => 'Nasugbu Municipal Hall',
-            'pickup_lat' => 14.071514,
-            'pickup_lng' => 120.633083,
-            'dropoff_name' => 'Barangay 8 Chapel',
-            'dropoff_lat' => 14.0703,
-            'dropoff_lng' => 120.6332,
-            'passenger_count' => 2,
-            'distance_km' => 1.0,
-            'toda_zone_id' => 4,
-        ]);
-
-        $response->assertStatus(201);
-        $booking = Booking::find($response->json('booking.id'));
-
-        $this->assertNotNull($booking);
-        $this->assertEquals($this->driverBrgy8Online->id, $booking->dispatched_driver_id);
-    }
-
-    #[Test]
     public function only_eligible_online_and_matching_toda_drivers_receive_booking_request()
     {
         $passengerUser = User::create([
@@ -348,7 +271,6 @@ class BookingRouteAssignmentTest extends TestCase
         $booking = Booking::create([
             'booking_code' => 'BK-TEST-BRGY8',
             'passenger_id' => $passenger->id,
-            'toda_zone_id' => $this->zoneBrgy8->id,
             'pickup_name' => 'Nasugbu Hall',
             'pickup_lat' => 14.0715,
             'pickup_lng' => 120.6330,
@@ -394,7 +316,6 @@ class BookingRouteAssignmentTest extends TestCase
         $booking = Booking::create([
             'booking_code' => 'BK-DECLINE-'.uniqid(),
             'passenger_id' => $passenger->id,
-            'toda_zone_id' => $this->zoneBrgy8->id,
             'pickup_name' => 'Nasugbu Hall', 'pickup_lat' => 14.0715, 'pickup_lng' => 120.6330,
             'dropoff_name' => 'Brgy 8 Chapel', 'dropoff_lat' => 14.0703, 'dropoff_lng' => 120.6332,
             'fare_amount' => 45.00, 'status' => 'pending', 'requested_at' => now(),
@@ -484,7 +405,6 @@ class BookingRouteAssignmentTest extends TestCase
         $booking = Booking::create([
             'booking_code' => 'BK-TEST-RACE',
             'passenger_id' => $passenger->id,
-            'toda_zone_id' => $this->zoneBrgy8->id,
             'pickup_name' => 'Nasugbu Hall',
             'pickup_lat' => 14.0715,
             'pickup_lng' => 120.6330,
@@ -536,7 +456,6 @@ class BookingRouteAssignmentTest extends TestCase
         $booking = Booking::create([
             'booking_code' => 'BK-TEST-NOAUTH',
             'passenger_id' => $passenger->id,
-            'toda_zone_id' => $this->zoneBrgy8->id,
             'pickup_name' => 'Nasugbu Hall',
             'pickup_lat' => 14.0715,
             'pickup_lng' => 120.6330,
@@ -575,7 +494,6 @@ class BookingRouteAssignmentTest extends TestCase
             'booking_code' => 'BK-TEST-'.uniqid(),
             'passenger_id' => $passenger->id,
             'driver_id' => $this->driverBrgy8Online->id,
-            'toda_zone_id' => $this->zoneBrgy8->id,
             'pickup_name' => 'Nasugbu Hall',
             'pickup_lat' => 14.0715,
             'pickup_lng' => 120.6330,
@@ -749,7 +667,6 @@ class BookingRouteAssignmentTest extends TestCase
         $booking = Booking::create([
             'booking_code' => 'BK-TEST-'.uniqid(),
             'passenger_id' => $passenger->id,
-            'toda_zone_id' => $this->zoneBrgy8->id,
             'pickup_name' => 'Nasugbu Hall', 'pickup_lat' => 14.0715, 'pickup_lng' => 120.6330,
             'dropoff_name' => 'Brgy 8 Chapel', 'dropoff_lat' => 14.0703, 'dropoff_lng' => 120.6332,
             'fare_amount' => 45.00, 'status' => 'pending', 'requested_at' => now(),
@@ -829,7 +746,6 @@ class BookingRouteAssignmentTest extends TestCase
             'passenger_id' => $passenger->id,
             'driver_id' => $this->driverBrgy8Online->id,
             'tricycle_id' => $this->driverBrgy8Online->tricycle_id,
-            'toda_zone_id' => $this->zoneBrgy8->id,
             'pickup_name' => 'Nasugbu Hall',
             'pickup_lat' => 14.0715,
             'pickup_lng' => 120.6330,
@@ -966,7 +882,6 @@ class BookingRouteAssignmentTest extends TestCase
             'passenger_id' => Passenger::where('user_id', $passengerA->id)->first()->id,
             'driver_id' => $this->driverBrgy8Online->id,
             'tricycle_id' => $this->driverBrgy8Online->tricycle_id,
-            'toda_zone_id' => $this->zoneBrgy8->id,
             'pickup_name' => 'Nasugbu Hall', 'pickup_lat' => 14.0715, 'pickup_lng' => 120.6330,
             'dropoff_name' => 'Brgy 8 Chapel', 'dropoff_lat' => 14.0703, 'dropoff_lng' => 120.6332,
             'fare_amount' => 45.00, 'status' => 'completed', 'requested_at' => now(),
@@ -990,7 +905,6 @@ class BookingRouteAssignmentTest extends TestCase
             'passenger_id' => Passenger::where('user_id', $passengerB->id)->first()->id,
             'driver_id' => $this->driverBucanaOnline->id,
             'tricycle_id' => $this->driverBucanaOnline->tricycle_id,
-            'toda_zone_id' => $this->zoneBucana->id,
             'pickup_name' => 'Bucana Terminal', 'pickup_lat' => 14.0640, 'pickup_lng' => 120.6298,
             'dropoff_name' => 'Bucana Market', 'dropoff_lat' => 14.0650, 'dropoff_lng' => 120.6310,
             'fare_amount' => 60.00, 'status' => 'completed', 'requested_at' => now(),

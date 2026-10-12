@@ -5,7 +5,6 @@ namespace Tests\Feature;
 use App\Models\Driver;
 use App\Models\GpsDevice;
 use App\Models\Operator;
-use App\Models\TodaZone;
 use App\Models\Tricycle;
 use App\Models\TricycleLocation;
 use App\Models\User;
@@ -127,25 +126,19 @@ class SinoTrackIngestTest extends TestCase
      */
     private function makeTricycleWithDriver(): array
     {
-        $toda = TodaZone::firstOrCreate(
-            ['code' => 'TODA-SINOTRACK-TEST'],
-            ['name' => 'SinoTrack Test Zone', 'barangay' => 'Poblacion', 'is_active' => true]
-        );
         $user = User::create([
             'name' => 'SinoTrack Driver', 'email' => 'sinotrack.' . uniqid() . '@trivora.test',
             'password' => bcrypt('password'), 'role' => 'tricycle_driver',
         ]);
         $operator = Operator::create([
-            'user_id' => $user->id, 'toda_id' => $toda->id,
-            'first_name' => 'Sino', 'last_name' => 'Track',
+            'user_id' => $user->id, 'first_name' => 'Sino', 'last_name' => 'Track',
             'contact_number' => '09170000099', 'address' => 'Poblacion', 'barangay' => 'Poblacion',
             'date_of_birth' => '1990-01-01',
             'license_number' => 'LIC-SINO-' . uniqid(), 'license_expiry_date' => '2028-01-01',
         ]);
         $suffix = uniqid();
         $tricycle = Tricycle::create([
-            'operator_id' => $operator->id, 'toda_zone_id' => $toda->id,
-            'coding_scheme_number' => '0003',
+            'operator_id' => $operator->id, 'coding_scheme_number' => '0003',
             'plate_number' => 'SNO-' . substr($suffix, -6), 'engine_number' => "ENG-{$suffix}", 'chassis_number' => "CHS-{$suffix}",
             'make' => 'Honda', 'model' => 'TMX', 'year_model' => 2021,
             'body_color' => 'Red', 'body_type' => 'Standard',

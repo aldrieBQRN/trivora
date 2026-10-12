@@ -8,7 +8,6 @@ use Illuminate\Http\Request;
 use App\Models\Tricycle;
 use App\Models\Driver;
 use App\Models\ApplicationDocument;
-use App\Models\TodaZone;
 use App\Models\Violation;
 use App\Models\ViolationAppeal;
 use App\Models\FranchiseScheme;
@@ -19,8 +18,6 @@ use App\Services\ColorCodingRuleService;
 use App\Services\ViolationNotifier;
 use Illuminate\Support\Facades\DB;
 use Inertia\Response;
-use PhpOffice\PhpSpreadsheet\Spreadsheet;
-use PhpOffice\PhpSpreadsheet\Worksheet\PageSetup;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class DashboardController extends Controller
@@ -203,7 +200,7 @@ class DashboardController extends Controller
         // plate number looks like — filtering by a "TEST"/"DEMO" substring in plate_number
         // was hiding genuinely active franchises (including real manual test registrations),
         // not actual garbage data.
-        $tricycles = Tricycle::with(['operator', 'franchiseSchemes.colorCodingScheme', 'franchiseSchemes.application'])
+        $tricycles = Tricycle::with(['operator.user', 'franchiseSchemes.colorCodingScheme', 'franchiseSchemes.application'])
             ->whereIn('status', ['active', 'suspended'])
             ->orderByDesc('created_at')
             ->get();
@@ -264,6 +261,7 @@ class DashboardController extends Controller
                     'validity_term'         => $validityTerm,
                     'plate_no'              => $tri->plate_number,
                     'operator'              => $tri->operator ? $tri->operator->full_name : 'N/A',
+                    'operator_photo'        => $tri->operator?->profile_photo_url,
                     'contact'               => $tri->operator ? $tri->operator->contact_number : 'N/A',
                     'coding_color'          => $colorName,
                     'coding_hex'            => $colorHex,
@@ -285,56 +283,58 @@ class DashboardController extends Controller
      * styling as the TMO Reports exports (shared ExportsMunicipalExcelReports trait), fed
      * by the exact same registryListData() rows the on-screen list renders.
      */
-    public function exportRegistryExcel(): StreamedResponse
+    public function exportRegistryExcel(Request $request): StreamedResponse
     {
+        $format = $this->exportFormat($request);
         $registryList = $this->registryListData();
+        $filename = $this->exportFilename('trivora_active_tricycle_registry_' . now()->toDateString(), $format);
 
-        $spreadsheet = new Spreadsheet();
-        $spreadsheet->getDefaultStyle()->getFont()->setName('Segoe UI');
-        $sheet = $spreadsheet->getActiveSheet();
-        $sheet->setTitle('Active Tricycle Registry');
-        $sheet->getPageSetup()->setOrientation(PageSetup::ORIENTATION_LANDSCAPE);
+        $this->logExport($format, $filename, 'Active Tricycle Registry', 'tmo_registry', $registryList->count());
 
-        $activeCount    = $registryList->where('status', 'active')->count();
-        $suspendedCount = $registryList->where('status', 'suspended')->count();
-        $revokedCount   = $registryList->where('status', 'revoked')->count();
+        return $this->streamMunicipalReport($format, [
+            'title'      => 'Active Tricycle Registry',
+            'subtitle'   => 'As of: ' . now()->format('F d, Y \a\t h:i A'),
+            'sheetTitle' => 'Active Tricycle Registry',
+            'docRef'     => 'LGU-NAS-TMO-REGISTRY',
+            'columns'    => 9,
+            'kpis'       => [
+                'Total Units'     => number_format($registryList->count()),
+                'Active Units'    => number_format($registryList->where('status', 'active')->count()),
+                'Suspended Units' => number_format($registryList->where('status', 'suspended')->count()),
+                'Revoked Units'   => number_format($registryList->where('status', 'revoked')->count()),
+            ],
+            'kpiSpans'   => [3, 3, 2, 1],
+            'sections'   => [[
+                'title'   => 'Registered Fleet Masterlist',
+                'headers' => ['Unit Code', 'Sticker Number', 'Plate No.', 'Tricycle Owner', 'Franchise No.', 'Validity Term', 'Color Coding', 'Coding Day', 'Status'],
+                'rows'    => $registryList->map(fn ($u) => [
+                    $u['unit_code'],
+                    $u['coding_scheme_number'],
+                    $u['plate_no'],
+                    $u['operator'],
+                    $u['franchise_number'],
+                    $u['validity_term'],
+                    $u['coding_color'],
+                    $u['coding_day'],
+                    ucfirst($u['status']),
+                ])->all(),
+            ]],
+        ], $filename);
+    }
 
-        $row = $this->writeReportHeader(
-            $sheet,
-            'Active Tricycle Registry',
-            'As of: ' . now()->format('F d, Y \a\t h:i A'),
-            9
+    /** Records an export in the system activity log, matching the Reports exports. */
+    private function logExport(string $format, string $filename, string $reportName, string $reportKey, int $rowCount): void
+    {
+        AuditService::log(
+            module: 'reports',
+            action: 'report.exported_' . $format,
+            record: null,
+            description: "Exported {$reportName} " . ($format === 'pdf' ? 'PDF' : 'Excel') . " Report ({$rowCount} records)",
+            oldValues: null,
+            newValues: null,
+            targetReference: $filename,
+            metadata: ['report' => $reportKey, 'filename' => $filename, 'format' => $format, 'row_count' => $rowCount]
         );
-
-        $row = $this->writeKpiRow($sheet, $row, [
-            'Total Units'     => number_format($registryList->count()),
-            'Active Units'    => number_format($activeCount),
-            'Suspended Units' => number_format($suspendedCount),
-            'Revoked Units'   => number_format($revokedCount),
-        ], [3, 3, 2, 2]);
-
-        $row = $this->writeSectionTitle($sheet, $row, 'Registered Fleet Masterlist');
-        $row = $this->writeTable(
-            $sheet,
-            $row,
-            ['Unit Code', 'Sticker Number', 'Plate No.', 'Tricycle Owner', 'Franchise No.', 'Validity Term', 'Color Coding', 'Coding Day', 'Status'],
-            $registryList->map(fn ($u) => [
-                $u['unit_code'],
-                $u['coding_scheme_number'],
-                $u['plate_no'],
-                $u['operator'],
-                $u['franchise_number'],
-                $u['validity_term'],
-                $u['coding_color'],
-                $u['coding_day'],
-                ucfirst($u['status']),
-            ])->all(),
-            true
-        );
-
-        $filename = 'trivora_active_tricycle_registry_' . now()->toDateString() . '.xlsx';
-
-        return $this->streamExcel($spreadsheet, $filename);
     }
 
     /**
@@ -401,6 +401,7 @@ class DashboardController extends Controller
             'franchise_number'     => $franchiseNumber,
             'plate_no'             => $tri->plate_number,
             'operator'             => $tri->operator ? $tri->operator->full_name : 'Unassigned Operator',
+            'operator_photo'       => $tri->operator?->profile_photo_url,
             'contact'              => $tri->operator ? $tri->operator->contact_number : 'N/A',
             'operator_address'     => $tri->operator ? ($tri->operator->address . ($tri->operator->barangay ? ', ' . $tri->operator->barangay : '')) : 'Nasugbu, Batangas',
             'coding_day'           => $codingMeta['day'],
@@ -755,7 +756,7 @@ class DashboardController extends Controller
      */
     private function violationsListData(): array
     {
-        $rawViolations = Violation::with(['tricycle.operator.todaZone', 'locationSnapshot', 'appeal'])
+        $rawViolations = Violation::with(['tricycle.operator.user', 'locationSnapshot', 'appeal'])
             ->orderByDesc('detected_at')
             ->get();
 
@@ -772,8 +773,8 @@ class DashboardController extends Controller
                 'formatted_date' => $v->detected_at ? $v->detected_at->format('M d, Y') : 'N/A',
                 'time'           => $v->detected_at ? $v->detected_at->format('h:i A') : 'N/A',
                 'operator'       => $v->tricycle?->operator ? $v->tricycle->operator->full_name : 'N/A',
+                'operator_photo' => $v->tricycle?->operator?->profile_photo_url,
                 'plate_no'       => $v->tricycle?->plate_number ?: 'N/A',
-                'toda'           => $v->tricycle?->todaZone ? $v->tricycle->todaZone->name : 'N/A',
                 'type'           => ucwords(str_replace('_', ' ', $v->violation_type)),
                 'raw_type'       => $v->violation_type,
                 'source'         => $v->detectionLabel(),
@@ -815,37 +816,16 @@ class DashboardController extends Controller
      * styling as the TMO Reports exports (shared ExportsMunicipalExcelReports trait),
      * fed by the exact same violationsListData() rows the on-screen list renders.
      */
-    public function exportViolationRecordsExcel(): StreamedResponse
+    public function exportViolationRecordsExcel(Request $request): StreamedResponse
     {
+        $format = $this->exportFormat($request);
         [$violations, $stats] = $this->violationsListData();
+        $filename = $this->exportFilename('trivora_violation_records_' . now()->toDateString(), $format);
 
-        $spreadsheet = new Spreadsheet();
-        $spreadsheet->getDefaultStyle()->getFont()->setName('Segoe UI');
-        $sheet = $spreadsheet->getActiveSheet();
-        $sheet->setTitle('Violation Records');
-        $sheet->getPageSetup()->setOrientation(PageSetup::ORIENTATION_LANDSCAPE);
-
-        $row = $this->writeReportHeader(
-            $sheet,
-            'Violation Records Report',
-            'As of: ' . now()->format('F d, Y \a\t h:i A'),
-            9
-        );
-
-        $row = $this->writeKpiRow($sheet, $row, [
-            'Total Records'          => number_format($stats['total_records']),
-            'Unsettled Cases'        => number_format($stats['unsettled_count']),
-            'Settled Cases'          => number_format($stats['settled_count']),
-            'Unsettled Fines (PHP)'  => 'PHP ' . number_format($stats['unsettled_fines_sum'], 2),
-            'Settled Fines (PHP)'    => 'PHP ' . number_format($stats['settled_fines_sum'], 2),
-        ], [2, 2, 1, 2, 2]);
-
-        $row = $this->writeSectionTitle($sheet, $row, 'Official Violation Log');
-        $row = $this->writeTable(
-            $sheet,
-            $row,
-            ['Ticket No.', 'Date', 'Time', 'Type', 'Detection Method', 'Tricycle Owner', 'Plate No.', 'Fine Amount (PHP)', 'Status'],
-            $violations->map(fn ($v) => [
+        $sections = [[
+            'title'   => 'Official Violation Log',
+            'headers' => ['Ticket No.', 'Date', 'Time', 'Type', 'Detection Method', 'Tricycle Owner', 'Plate No.', 'Fine Amount (PHP)', 'Status'],
+            'rows'    => $violations->map(fn ($v) => [
                 $v['id'],
                 $v['date'],
                 $v['time'],
@@ -853,33 +833,44 @@ class DashboardController extends Controller
                 $v['detection_method'],
                 $v['operator'],
                 $v['plate_no'],
-                (float) $v['fine'],
+                $format === 'pdf' ? 'PHP ' . number_format((float) $v['fine'], 2) : (float) $v['fine'],
                 $v['status'] === 'settled' ? 'Settled' : 'Unsettled',
             ])->all(),
-            true
-        );
+        ]];
 
         if ($violations->contains(fn ($v) => $v['appeal_status'])) {
-            $row = $this->writeSectionTitle($sheet, $row, 'Appeals On Record');
-            $row = $this->writeTable(
-                $sheet,
-                $row,
-                ['Ticket No.', 'Date', 'Type', 'Tricycle Owner', 'Plate No.', 'Appeal Status'],
-                $violations->filter(fn ($v) => $v['appeal_status'])->map(fn ($v) => [
+            $sections[] = [
+                'title'   => 'Appeals On Record',
+                'headers' => ['Ticket No.', 'Date', 'Type', 'Tricycle Owner', 'Plate No.', 'Appeal Status'],
+                'rows'    => $violations->filter(fn ($v) => $v['appeal_status'])->map(fn ($v) => [
                     $v['id'],
                     $v['date'],
                     $v['type'],
                     $v['operator'],
                     $v['plate_no'],
                     ucfirst(str_replace('_', ' ', $v['appeal_status'])),
-                ])->all(),
-                true
-            );
+                ])->values()->all(),
+            ];
         }
 
-        $filename = 'trivora_violation_records_' . now()->toDateString() . '.xlsx';
+        $this->logExport($format, $filename, 'Violation Records', 'tmo_violation_records', $violations->count());
 
-        return $this->streamExcel($spreadsheet, $filename);
+        return $this->streamMunicipalReport($format, [
+            'title'      => 'Violation Records Report',
+            'subtitle'   => 'As of: ' . now()->format('F d, Y \a\t h:i A'),
+            'sheetTitle' => 'Violation Records',
+            'docRef'     => 'LGU-NAS-TMO-VIOLATIONS',
+            'columns'    => 9,
+            'kpis'       => [
+                'Total Records'          => number_format($stats['total_records']),
+                'Unsettled Cases'        => number_format($stats['unsettled_count']),
+                'Settled Cases'          => number_format($stats['settled_count']),
+                'Unsettled Fines (PHP)'  => 'PHP ' . number_format($stats['unsettled_fines_sum'], 2),
+                'Settled Fines (PHP)'    => 'PHP ' . number_format($stats['settled_fines_sum'], 2),
+            ],
+            'kpiSpans'   => [2, 2, 1, 2, 2],
+            'sections'   => $sections,
+        ], $filename);
     }
 
     /**
@@ -888,7 +879,7 @@ class DashboardController extends Controller
     public function violationDetails($id)
     {
         $v = Violation::with([
-            'tricycle.operator.todaZone',
+            'tricycle.operator.user',
             'tricycle.franchiseScheme.colorCodingScheme',
             'locationSnapshot',
             'appeal.driver.user',
@@ -924,14 +915,12 @@ class DashboardController extends Controller
                 ? (float) $v->locationSnapshot->longitude
                 : ($v->longitude !== null ? (float) $v->longitude : null),
             'speed_kmh'            => $v->locationSnapshot ? (float) $v->locationSnapshot->speed_kmh : null,
-            // Real area name only (the unit's TODA zone) — never a synthesised street/zone label.
-            'location_desc'        => $v->tricycle?->todaZone?->name ?: null,
             'operator'             => $ownerName,
             'owner_name'           => $ownerName,
+            'operator_photo'       => $v->tricycle?->operator?->profile_photo_url,
             'driver_name'          => $driverName,
             'owner_is_driver'      => $ownerIsDriver,
             'operator_contact'     => $v->tricycle?->operator?->contact_number ?: null,
-            'toda'                 => $v->tricycle?->todaZone ? $v->tricycle->todaZone->name : 'N/A',
             'coding_scheme_number' => $v->tricycle?->coding_scheme_number ?: null,
             'plate_no'             => $v->tricycle?->plate_number ?: 'N/A',
             'make_model'           => $v->tricycle ? trim(($v->tricycle->make ?: '') . ' ' . ($v->tricycle->model ?: '')) : 'N/A',

@@ -2,12 +2,13 @@ import React, { useState, useMemo } from 'react';
 import { Link, usePage, router } from '@inertiajs/react';
 import NotificationBell from '@/Components/NotificationBell';
 import {
-    Bell, Menu, Settings, LogOut,
+    Bell, Menu, Settings, LogOut, Landmark,
     ChevronDown, ChevronRight,
     LayoutDashboard, FileText,
     FolderCheck, Users, X, BarChart3, ScrollText
 } from 'lucide-react';
 
+import Avatar from '@/Components/Avatar';
 /* ─────────────────────────────────────────────────────────────────────────
    BPLO Panel shell — sidebar + header chrome shared by every BPLO page.
    Brand token: `#182B62` (Deep Royal Navy).
@@ -20,9 +21,9 @@ export default function BPLOLayout({ children, title, role = "BPLO Officer", bre
     const [profileOpen, setProfileOpen] = useState(false);
     // Signed-in account for the header menu (shared auth prop — never a hardcoded placeholder).
     const authUser = props?.auth?.user;
+    // Shown in the sidebar office card.
+    const todayLabel = new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
     const accountName = authUser?.name || role;
-    const accountInitials = (authUser?.name || role)
-        .split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join('').toUpperCase();
     const [isExiting,   setIsExiting]   = useState(false);
 
     const navigation = [
@@ -229,29 +230,24 @@ export default function BPLOLayout({ children, title, role = "BPLO Officer", bre
                         ))}
                     </div>
 
-                    {/* Bottom Logout Dock */}
+                    {/* Office Info Card — Sign Out lives in the header account menu */}
                     <div className="shrink-0 border-t border-white/10 p-3">
-                        <button
-                            onClick={handleLogout}
-                            className="group flex w-full items-center justify-between rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2.5 text-left transition-all duration-200 hover:border-rose-500/30 hover:bg-rose-500/10 active:scale-[0.99]"
-                        >
-                            <div className="flex items-center gap-2.5 min-w-0">
-                                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-white/10 text-white/70 transition-colors group-hover:bg-rose-500/20 group-hover:text-rose-300">
-                                    <LogOut size={14} strokeWidth={2.2} />
-                                </div>
-                                <div className="flex flex-col min-w-0">
-                                    <span className="text-xs font-bold text-white transition-colors group-hover:text-rose-200 leading-tight">
-                                        Sign Out
-                                    </span>
-                                    <span className="text-[10px] font-medium text-white/40 group-hover:text-rose-300/70 transition-colors leading-tight">
-                                        End session
-                                    </span>
-                                </div>
+                        <div className="flex items-center gap-2.5 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2.5">
+                            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-white/10 text-white/70">
+                                <Landmark size={14} strokeWidth={2.2} />
                             </div>
-                            <span className="rounded bg-white/10 px-2 py-0.5 text-[9.5px] font-bold text-white/60 transition-colors group-hover:bg-rose-500/25 group-hover:text-rose-200 shrink-0">
-                                Exit
-                            </span>
-                        </button>
+                            <div className="flex min-w-0 flex-col">
+                                <span className="truncate text-xs font-bold leading-tight text-white">
+                                    BPLO · Nasugbu
+                                </span>
+                                <span className="truncate text-[10.5px] font-semibold leading-tight text-white/60">
+                                    Batangas
+                                </span>
+                                <span className="truncate text-[10px] font-medium leading-tight text-white/40">
+                                    {todayLabel}
+                                </span>
+                            </div>
+                        </div>
                     </div>
                 </nav>
             </aside>
@@ -321,9 +317,7 @@ export default function BPLOLayout({ children, title, role = "BPLO Officer", bre
                                 className="flex items-center gap-2.5 rounded-full py-1 pl-1 pr-3 hover:bg-slate-100/80 transition-all border border-transparent hover:border-slate-200/60"
                                 onClick={() => setProfileOpen(p => !p)}
                             >
-                                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#182B62] to-[#25449B] text-[11px] font-bold tracking-wide text-white shadow-xs">
-                                    {accountInitials}
-                                </div>
+                                <Avatar name={accountName} src={authUser?.profile_photo_url} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#182B62] to-[#25449B] text-[11px] font-bold tracking-wide text-white shadow-xs" />
 
                                 <div className="hidden text-left leading-tight md:block">
                                     <p className="max-w-[160px] truncate text-[12.5px] font-bold text-slate-800 font-['Plus_Jakarta_Sans',sans-serif]">{accountName}</p>

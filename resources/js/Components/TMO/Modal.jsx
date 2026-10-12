@@ -24,7 +24,7 @@ export default function Modal({ show, onClose, title, description, maxWidth = '2
                     </button>
                 )}
             </div>
-            <div className="max-h-[70vh] overflow-y-auto px-6 py-5">{children}</div>
+            <div className="max-h-[70vh] overflow-y-auto custom-scrollbar px-6 py-5">{children}</div>
             {footer && (
                 <div className="flex items-center justify-end gap-2 border-t border-tmo-border bg-tmo-bg/50 px-6 py-4">
                     {footer}

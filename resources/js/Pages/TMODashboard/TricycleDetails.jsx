@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { PHYSICAL_INSPECTION_ITEMS } from '@/data/physicalInspectionItems';
 
+import Avatar from '@/Components/Avatar';
 // Semantic status treatment for a franchise's operational authorization status
 const FRANCHISE_STATUS_META = {
     active:    { label: 'Active',    badge: 'bg-emerald-50 text-emerald-700 border-emerald-200/90', dot: 'bg-emerald-500' },
@@ -295,13 +296,6 @@ export default function TricycleDetails({
     const isOwnerDriver = tricycle.owner_is_driver ?? (!driver);
 
     const operatorName = owner.full_name || tricycle.owner_name || tricycle.operator || 'OP';
-    const operatorInitials = operatorName
-        .split(' ')
-        .filter(Boolean)
-        .map(w => w[0])
-        .slice(0, 2)
-        .join('')
-        .toUpperCase() || 'OP';
 
     const gpsStatus = GPS_STATUS_META[tricycle.gps_status] || GPS_STATUS_META.awaiting;
 
@@ -384,9 +378,7 @@ export default function TricycleDetails({
                             {/* Owner profile header */}
                             <div className="flex flex-wrap items-center justify-between gap-3 mb-4 pb-3.5 border-b border-slate-100">
                                 <div className="flex items-center gap-3">
-                                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#182B62] to-[#25449B] text-white font-bold text-sm shadow-2xs">
-                                        {operatorInitials}
-                                    </div>
+                                    <Avatar name={operatorName} src={tricycle.operator_photo} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#182B62] to-[#25449B] text-white font-bold text-sm shadow-2xs" />
                                     <div className="min-w-0">
                                         <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 font-['Plus_Jakarta_Sans',sans-serif]">Tricycle Owner</p>
                                         <h4 className="text-base font-bold text-slate-900 truncate font-['Plus_Jakarta_Sans',sans-serif]">

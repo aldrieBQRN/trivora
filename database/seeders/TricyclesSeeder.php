@@ -5,7 +5,6 @@ namespace Database\Seeders;
 use App\Models\ColorCodingScheme;
 use App\Models\FranchiseScheme;
 use App\Models\Operator;
-use App\Models\TodaZone;
 use App\Models\Tricycle;
 use Illuminate\Database\Seeder;
 
@@ -29,17 +28,6 @@ class TricyclesSeeder extends Seeder
         $fallbackOperator = $operators->first();
 
         // TODA Zones
-        $todaBucana = TodaZone::where('code', 'TODA-BUCANA')->orWhere('name', 'TODA Bucana')->first();
-        $todaBrgy10 = TodaZone::where('code', 'TODA-BRGY10')->orWhere('name', 'TODA Brgy. 10')->first();
-        $todaBrgy8  = TodaZone::where('code', 'TODA-BRGY8')->orWhere('name', 'TODA Brgy. 8')->first();
-        $todaBrgy4  = TodaZone::where('code', 'TODA-BRGY4')->orWhere('name', 'TODA Brgy. 4')->first();
-        $todaBrgy1  = TodaZone::where('code', 'TODA-BRGY1')->orWhere('name', 'TODA Brgy. 1')->first();
-        $todaBrgy2  = TodaZone::where('code', 'TODA-BRGY2')->orWhere('name', 'TODA Brgy. 2')->first();
-        $todaBrgy3  = TodaZone::where('code', 'TODA-BRGY3')->orWhere('name', 'TODA Brgy. 3')->first();
-        $todaBrgy5  = TodaZone::where('code', 'TODA-BRGY5')->orWhere('name', 'TODA Brgy. 5')->first();
-        $todaBrgy6  = TodaZone::where('code', 'TODA-BRGY6')->orWhere('name', 'TODA Brgy. 6')->first();
-        $todaBrgy7  = TodaZone::where('code', 'TODA-BRGY7')->orWhere('name', 'TODA Brgy. 7')->first();
-        $todaBrgy9  = TodaZone::where('code', 'TODA-BRGY9')->orWhere('name', 'TODA Brgy. 9')->first();
 
         // Color coding scheme cache
         $colorSchemes = [
@@ -54,52 +42,52 @@ class TricyclesSeeder extends Seeder
 
         // Authentic Nasugbu Registered Tricycle Units across all TODAs
         $unitsData = [
-            ['plate' => 'AAA-1234', 'coding_number' => '0142', 'make' => 'Kawasaki', 'model' => 'Barako II 175', 'status' => 'active',    'toda' => $todaBucana, 'iot' => 'TRV-GPS-991'],
-            ['plate' => 'BBB-5678', 'coding_number' => '0089', 'make' => 'Honda',    'model' => 'TMX 125',       'status' => 'active',    'toda' => $todaBrgy10, 'iot' => 'TRV-GPS-992'],
-            ['plate' => 'CCC-9012', 'coding_number' => '0301', 'make' => 'Yamaha',   'model' => 'STX 125',       'status' => 'suspended', 'toda' => $todaBrgy8,  'iot' => 'TRV-GPS-993'],
-            ['plate' => 'DDD-3456', 'coding_number' => '0012', 'make' => 'Honda',    'model' => 'TMX Alpha',     'status' => 'active',    'toda' => $todaBrgy4,  'iot' => 'TRV-GPS-994'],
-            ['plate' => 'EEE-7890', 'coding_number' => '0204', 'make' => 'Kawasaki', 'model' => 'Barako 175',   'status' => 'active',    'toda' => $todaBucana, 'iot' => 'TRV-GPS-995'],
-            ['plate' => 'FFF-2468', 'coding_number' => '0512', 'make' => 'Suzuki',   'model' => 'GD 110',        'status' => 'suspended', 'toda' => $todaBrgy10, 'iot' => 'TRV-GPS-996'],
-            ['plate' => 'GGG-1357', 'coding_number' => '0108', 'make' => 'Honda',    'model' => 'TMX 125',       'status' => 'active',    'toda' => $todaBrgy8,  'iot' => 'TRV-GPS-997'],
-            ['plate' => 'HHH-9876', 'coding_number' => '0330', 'make' => 'Yamaha',   'model' => 'Sight 115',     'status' => 'active',    'toda' => $todaBrgy4,  'iot' => 'TRV-GPS-998'],
-            ['plate' => 'JJJ-5432', 'coding_number' => '0415', 'make' => 'Kawasaki', 'model' => 'Barako II',     'status' => 'suspended', 'toda' => $todaBucana, 'iot' => 'TRV-GPS-999'],
-            ['plate' => 'KKK-1122', 'coding_number' => '0602', 'make' => 'Honda',    'model' => 'Supra GTR',     'status' => 'active',    'toda' => $todaBrgy10, 'iot' => 'TRV-GPS-1000'],
-            ['plate' => 'LLL-3344', 'coding_number' => '0711', 'make' => 'Yamaha',   'model' => 'Mio i 125',     'status' => 'active',    'toda' => $todaBrgy8,  'iot' => 'TRV-GPS-1001'],
-            ['plate' => 'MMM-5566', 'coding_number' => '0820', 'make' => 'Kawasaki', 'model' => 'Barako 175',   'status' => 'active',    'toda' => $todaBrgy4,  'iot' => 'TRV-GPS-1002'],
-            ['plate' => 'NNN-7788', 'coding_number' => '0935', 'make' => 'Honda',    'model' => 'TMX 125',       'status' => 'active',    'toda' => $todaBucana, 'iot' => 'TRV-GPS-1003'],
-            ['plate' => 'PPP-9900', 'coding_number' => '0150', 'make' => 'Suzuki',   'model' => 'Raider J',      'status' => 'suspended', 'toda' => $todaBrgy10, 'iot' => 'TRV-GPS-1004'],
-            ['plate' => 'QQQ-1230', 'coding_number' => '0264', 'make' => 'Honda',    'model' => 'TMX Alpha',     'status' => 'active',    'toda' => $todaBrgy8,  'iot' => 'TRV-GPS-1005'],
-            ['plate' => 'RRR-4560', 'coding_number' => '0378', 'make' => 'Kawasaki', 'model' => 'Barako II',     'status' => 'active',    'toda' => $todaBrgy4,  'iot' => 'TRV-GPS-1006'],
-            ['plate' => 'SSS-7890', 'coding_number' => '0489', 'make' => 'Yamaha',   'model' => 'STX 125',       'status' => 'active',    'toda' => $todaBucana, 'iot' => 'TRV-GPS-1007'],
-            ['plate' => 'TTT-0123', 'coding_number' => '0590', 'make' => 'Honda',    'model' => 'TMX 125',       'status' => 'suspended', 'toda' => $todaBrgy10, 'iot' => 'TRV-GPS-1008'],
-            ['plate' => 'VVV-3456', 'coding_number' => '0611', 'make' => 'Kawasaki', 'model' => 'Barako 175',   'status' => 'active',    'toda' => $todaBrgy8,  'iot' => 'TRV-GPS-1009'],
-            ['plate' => 'WWW-6789', 'coding_number' => '0722', 'make' => 'Honda',    'model' => 'TMX Alpha',     'status' => 'active',    'toda' => $todaBrgy4,  'iot' => 'TRV-GPS-1010'],
-            ['plate' => 'XXX-9012', 'coding_number' => '0833', 'make' => 'Kawasaki', 'model' => 'Barako 175',   'status' => 'active',    'toda' => $todaBucana, 'iot' => 'TRV-GPS-1011'],
-            ['plate' => 'YYY-2345', 'coding_number' => '0944', 'make' => 'Honda',    'model' => 'TMX 125',       'status' => 'suspended', 'toda' => $todaBrgy10, 'iot' => 'TRV-GPS-1012'],
-            ['plate' => 'ZZZ-5678', 'coding_number' => '0055', 'make' => 'Yamaha',   'model' => 'STX 125',       'status' => 'active',    'toda' => $todaBrgy8,  'iot' => 'TRV-GPS-1013'],
-            ['plate' => 'ABC-8901', 'coding_number' => '0166', 'make' => 'Honda',    'model' => 'TMX Alpha',     'status' => 'active',    'toda' => $todaBrgy4,  'iot' => 'TRV-GPS-1014'],
-            ['plate' => 'XYZ-2346', 'coding_number' => '0277', 'make' => 'Kawasaki', 'model' => 'Barako II',     'status' => 'active',    'toda' => $todaBucana, 'iot' => 'TRV-GPS-1015'],
+            ['plate' => 'AAA-1234', 'coding_number' => '0142', 'make' => 'Kawasaki', 'model' => 'Barako II 175', 'status' => 'active',    'iot' => 'TRV-GPS-991'],
+            ['plate' => 'BBB-5678', 'coding_number' => '0089', 'make' => 'Honda',    'model' => 'TMX 125',       'status' => 'active',    'iot' => 'TRV-GPS-992'],
+            ['plate' => 'CCC-9012', 'coding_number' => '0301', 'make' => 'Yamaha',   'model' => 'STX 125',       'status' => 'suspended', 'iot' => 'TRV-GPS-993'],
+            ['plate' => 'DDD-3456', 'coding_number' => '0012', 'make' => 'Honda',    'model' => 'TMX Alpha',     'status' => 'active',    'iot' => 'TRV-GPS-994'],
+            ['plate' => 'EEE-7890', 'coding_number' => '0204', 'make' => 'Kawasaki', 'model' => 'Barako 175',   'status' => 'active',    'iot' => 'TRV-GPS-995'],
+            ['plate' => 'FFF-2468', 'coding_number' => '0512', 'make' => 'Suzuki',   'model' => 'GD 110',        'status' => 'suspended', 'iot' => 'TRV-GPS-996'],
+            ['plate' => 'GGG-1357', 'coding_number' => '0108', 'make' => 'Honda',    'model' => 'TMX 125',       'status' => 'active',    'iot' => 'TRV-GPS-997'],
+            ['plate' => 'HHH-9876', 'coding_number' => '0330', 'make' => 'Yamaha',   'model' => 'Sight 115',     'status' => 'active',    'iot' => 'TRV-GPS-998'],
+            ['plate' => 'JJJ-5432', 'coding_number' => '0415', 'make' => 'Kawasaki', 'model' => 'Barako II',     'status' => 'suspended', 'iot' => 'TRV-GPS-999'],
+            ['plate' => 'KKK-1122', 'coding_number' => '0602', 'make' => 'Honda',    'model' => 'Supra GTR',     'status' => 'active',    'iot' => 'TRV-GPS-1000'],
+            ['plate' => 'LLL-3344', 'coding_number' => '0711', 'make' => 'Yamaha',   'model' => 'Mio i 125',     'status' => 'active',    'iot' => 'TRV-GPS-1001'],
+            ['plate' => 'MMM-5566', 'coding_number' => '0820', 'make' => 'Kawasaki', 'model' => 'Barako 175',   'status' => 'active',    'iot' => 'TRV-GPS-1002'],
+            ['plate' => 'NNN-7788', 'coding_number' => '0935', 'make' => 'Honda',    'model' => 'TMX 125',       'status' => 'active',    'iot' => 'TRV-GPS-1003'],
+            ['plate' => 'PPP-9900', 'coding_number' => '0150', 'make' => 'Suzuki',   'model' => 'Raider J',      'status' => 'suspended', 'iot' => 'TRV-GPS-1004'],
+            ['plate' => 'QQQ-1230', 'coding_number' => '0264', 'make' => 'Honda',    'model' => 'TMX Alpha',     'status' => 'active',    'iot' => 'TRV-GPS-1005'],
+            ['plate' => 'RRR-4560', 'coding_number' => '0378', 'make' => 'Kawasaki', 'model' => 'Barako II',     'status' => 'active',    'iot' => 'TRV-GPS-1006'],
+            ['plate' => 'SSS-7890', 'coding_number' => '0489', 'make' => 'Yamaha',   'model' => 'STX 125',       'status' => 'active',    'iot' => 'TRV-GPS-1007'],
+            ['plate' => 'TTT-0123', 'coding_number' => '0590', 'make' => 'Honda',    'model' => 'TMX 125',       'status' => 'suspended', 'iot' => 'TRV-GPS-1008'],
+            ['plate' => 'VVV-3456', 'coding_number' => '0611', 'make' => 'Kawasaki', 'model' => 'Barako 175',   'status' => 'active',    'iot' => 'TRV-GPS-1009'],
+            ['plate' => 'WWW-6789', 'coding_number' => '0722', 'make' => 'Honda',    'model' => 'TMX Alpha',     'status' => 'active',    'iot' => 'TRV-GPS-1010'],
+            ['plate' => 'XXX-9012', 'coding_number' => '0833', 'make' => 'Kawasaki', 'model' => 'Barako 175',   'status' => 'active',    'iot' => 'TRV-GPS-1011'],
+            ['plate' => 'YYY-2345', 'coding_number' => '0944', 'make' => 'Honda',    'model' => 'TMX 125',       'status' => 'suspended', 'iot' => 'TRV-GPS-1012'],
+            ['plate' => 'ZZZ-5678', 'coding_number' => '0055', 'make' => 'Yamaha',   'model' => 'STX 125',       'status' => 'active',    'iot' => 'TRV-GPS-1013'],
+            ['plate' => 'ABC-8901', 'coding_number' => '0166', 'make' => 'Honda',    'model' => 'TMX Alpha',     'status' => 'active',    'iot' => 'TRV-GPS-1014'],
+            ['plate' => 'XYZ-2346', 'coding_number' => '0277', 'make' => 'Kawasaki', 'model' => 'Barako II',     'status' => 'active',    'iot' => 'TRV-GPS-1015'],
             // Brgy. 1
-            ['plate' => 'B01-1001', 'coding_number' => '1101', 'make' => 'Kawasaki', 'model' => 'Barako II 175', 'status' => 'active',    'toda' => $todaBrgy1,  'iot' => 'TRV-GPS-1016'],
-            ['plate' => 'B01-1002', 'coding_number' => '1102', 'make' => 'Honda',    'model' => 'TMX 125',       'status' => 'active',    'toda' => $todaBrgy1,  'iot' => 'TRV-GPS-1017'],
+            ['plate' => 'B01-1001', 'coding_number' => '1101', 'make' => 'Kawasaki', 'model' => 'Barako II 175', 'status' => 'active',    'iot' => 'TRV-GPS-1016'],
+            ['plate' => 'B01-1002', 'coding_number' => '1102', 'make' => 'Honda',    'model' => 'TMX 125',       'status' => 'active',    'iot' => 'TRV-GPS-1017'],
             // Brgy. 2
-            ['plate' => 'B02-2001', 'coding_number' => '1201', 'make' => 'Yamaha',   'model' => 'STX 125',       'status' => 'active',    'toda' => $todaBrgy2,  'iot' => 'TRV-GPS-1018'],
-            ['plate' => 'B02-2002', 'coding_number' => '1202', 'make' => 'Honda',    'model' => 'TMX Alpha',     'status' => 'active',    'toda' => $todaBrgy2,  'iot' => 'TRV-GPS-1019'],
+            ['plate' => 'B02-2001', 'coding_number' => '1201', 'make' => 'Yamaha',   'model' => 'STX 125',       'status' => 'active',    'iot' => 'TRV-GPS-1018'],
+            ['plate' => 'B02-2002', 'coding_number' => '1202', 'make' => 'Honda',    'model' => 'TMX Alpha',     'status' => 'active',    'iot' => 'TRV-GPS-1019'],
             // Brgy. 3
-            ['plate' => 'B03-3001', 'coding_number' => '1301', 'make' => 'Kawasaki', 'model' => 'Barako 175',   'status' => 'active',    'toda' => $todaBrgy3,  'iot' => 'TRV-GPS-1020'],
-            ['plate' => 'B03-3002', 'coding_number' => '1302', 'make' => 'Suzuki',   'model' => 'GD 110',        'status' => 'active',    'toda' => $todaBrgy3,  'iot' => 'TRV-GPS-1021'],
+            ['plate' => 'B03-3001', 'coding_number' => '1301', 'make' => 'Kawasaki', 'model' => 'Barako 175',   'status' => 'active',    'iot' => 'TRV-GPS-1020'],
+            ['plate' => 'B03-3002', 'coding_number' => '1302', 'make' => 'Suzuki',   'model' => 'GD 110',        'status' => 'active',    'iot' => 'TRV-GPS-1021'],
             // Brgy. 5
-            ['plate' => 'B05-5001', 'coding_number' => '1501', 'make' => 'Honda',    'model' => 'TMX 125',       'status' => 'active',    'toda' => $todaBrgy5,  'iot' => 'TRV-GPS-1022'],
-            ['plate' => 'B05-5002', 'coding_number' => '1502', 'make' => 'Yamaha',   'model' => 'Sight 115',     'status' => 'active',    'toda' => $todaBrgy5,  'iot' => 'TRV-GPS-1023'],
+            ['plate' => 'B05-5001', 'coding_number' => '1501', 'make' => 'Honda',    'model' => 'TMX 125',       'status' => 'active',    'iot' => 'TRV-GPS-1022'],
+            ['plate' => 'B05-5002', 'coding_number' => '1502', 'make' => 'Yamaha',   'model' => 'Sight 115',     'status' => 'active',    'iot' => 'TRV-GPS-1023'],
             // Brgy. 6
-            ['plate' => 'B06-6001', 'coding_number' => '1601', 'make' => 'Kawasaki', 'model' => 'Barako II',     'status' => 'active',    'toda' => $todaBrgy6,  'iot' => 'TRV-GPS-1024'],
-            ['plate' => 'B06-6002', 'coding_number' => '1602', 'make' => 'Honda',    'model' => 'TMX Alpha',     'status' => 'active',    'toda' => $todaBrgy6,  'iot' => 'TRV-GPS-1025'],
+            ['plate' => 'B06-6001', 'coding_number' => '1601', 'make' => 'Kawasaki', 'model' => 'Barako II',     'status' => 'active',    'iot' => 'TRV-GPS-1024'],
+            ['plate' => 'B06-6002', 'coding_number' => '1602', 'make' => 'Honda',    'model' => 'TMX Alpha',     'status' => 'active',    'iot' => 'TRV-GPS-1025'],
             // Brgy. 7
-            ['plate' => 'B07-7001', 'coding_number' => '1701', 'make' => 'Yamaha',   'model' => 'Mio i 125',     'status' => 'active',    'toda' => $todaBrgy7,  'iot' => 'TRV-GPS-1026'],
-            ['plate' => 'B07-7002', 'coding_number' => '1702', 'make' => 'Honda',    'model' => 'TMX 125',       'status' => 'active',    'toda' => $todaBrgy7,  'iot' => 'TRV-GPS-1027'],
+            ['plate' => 'B07-7001', 'coding_number' => '1701', 'make' => 'Yamaha',   'model' => 'Mio i 125',     'status' => 'active',    'iot' => 'TRV-GPS-1026'],
+            ['plate' => 'B07-7002', 'coding_number' => '1702', 'make' => 'Honda',    'model' => 'TMX 125',       'status' => 'active',    'iot' => 'TRV-GPS-1027'],
             // Brgy. 9
-            ['plate' => 'B09-9001', 'coding_number' => '1901', 'make' => 'Suzuki',   'model' => 'Raider J',      'status' => 'active',    'toda' => $todaBrgy9,  'iot' => 'TRV-GPS-1028'],
-            ['plate' => 'B09-9002', 'coding_number' => '1902', 'make' => 'Kawasaki', 'model' => 'Barako II',     'status' => 'active',    'toda' => $todaBrgy9,  'iot' => 'TRV-GPS-1029'],
+            ['plate' => 'B09-9001', 'coding_number' => '1901', 'make' => 'Suzuki',   'model' => 'Raider J',      'status' => 'active',    'iot' => 'TRV-GPS-1028'],
+            ['plate' => 'B09-9002', 'coding_number' => '1902', 'make' => 'Kawasaki', 'model' => 'Barako II',     'status' => 'active',    'iot' => 'TRV-GPS-1029'],
         ];
 
         foreach ($unitsData as $idx => $data) {
@@ -116,7 +104,6 @@ class TricyclesSeeder extends Seeder
             $hasApplications = $existing && $existing->applications()->exists();
 
             $payload = [
-                'toda_zone_id'         => $data['toda']?->id,
                 'coding_scheme_number' => $data['coding_number'],
                 'engine_number'        => 'ENG-' . str_pad($idx + 100, 6, '0', STR_PAD_LEFT),
                 'chassis_number'       => 'CHS-' . str_pad($idx + 100, 6, '0', STR_PAD_LEFT),
@@ -185,7 +172,6 @@ class TricyclesSeeder extends Seeder
         $mobTrike = Tricycle::where('plate_number', 'TRV-MOBGPS')->first();
         if ($mobTrike) {
             $mobTrike->update([
-                'toda_zone_id'         => $todaBucana->id,
                 'coding_scheme_number' => '0141',
             ]);
             if (!empty($colorSchemes['Red'])) {

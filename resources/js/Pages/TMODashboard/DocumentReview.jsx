@@ -11,6 +11,7 @@ import {
 import { Modal, Button, Textarea } from '@/Components/TMO';
 import { getApplicableDocuments } from '@/data/registrationRequirements';
 
+import Avatar from '@/Components/Avatar';
 const CARD_SHADOW = 'shadow-[0_1px_2px_0_rgba(15,23,42,0.04),0_8px_24px_-8px_rgba(15,23,42,0.10)]';
 
 const QUICK_CORRECTION_REASONS = [
@@ -143,14 +144,6 @@ export default function DocumentReview({ application }) {
     const mandatoryApprovedCount = mandatoryRequirements.filter(r => docStatuses[r.id] === 'approved').length;
     const mandatoryPct = mandatoryRequirements.length > 0 ? Math.round((mandatoryApprovedCount / mandatoryRequirements.length) * 100) : 0;
 
-    const operatorInitials = (appData.operator || 'OP')
-        .trim()
-        .split(/\s+/)
-        .filter(Boolean)
-        .map(w => w[0])
-        .slice(0, 2)
-        .join('')
-        .toUpperCase();
 
     const handleFinalAction = (type) => {
         const isApprove = type === 'approve';
@@ -544,9 +537,7 @@ export default function DocumentReview({ application }) {
 
                             {/* Owner Summary */}
                             <div className="flex items-center gap-3 pb-3 border-b border-slate-100">
-                                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#182B62] text-xs font-bold text-white shadow-2xs">
-                                    {operatorInitials}
-                                </div>
+                                <Avatar name={appData.operator} src={appData.operator_photo} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#182B62] text-xs font-bold text-white shadow-2xs" />
                                 <div className="min-w-0 flex-1">
                                     <p className="truncate text-xs sm:text-sm font-bold text-slate-900">{appData.operator}</p>
                                     <p className="truncate text-xs text-slate-500 font-medium">Tricycle Owner (Applicant)</p>

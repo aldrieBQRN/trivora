@@ -83,22 +83,16 @@ class StaffBirthdayTest extends TestCase
     }
 
     #[Test]
-    public function staff_can_set_their_birthday_in_account_settings(): void
+    public function staff_see_their_birthday_in_account_settings(): void
     {
         $tmo = $this->manager('tmo_personnel');
-
-        $this->actingAs($tmo)->patch('/profile', ['name' => $tmo->name, 'email' => $tmo->email, 'birthday' => '1988-12-01'])
-            ->assertSessionHasNoErrors();
-        $this->assertSame('1988-12-01', $tmo->fresh()->birthday->format('Y-m-d'));
+        $tmo->forceFill(['birthday' => '1988-12-01'])->save();
 
         $account = null;
         $this->actingAs($tmo)->get('/profile')->assertInertia(function ($page) use (&$account) {
             $account = $page->toArray()['props']['account'];
         });
         $this->assertSame('1988-12-01', $account['birthday']);
-
-        $this->actingAs($tmo)->patch('/profile', ['name' => $tmo->name, 'email' => $tmo->email, 'birthday' => now()->addYear()->toDateString()])
-            ->assertSessionHasErrors('birthday');
     }
 
     #[Test]
@@ -122,16 +116,4 @@ class StaffBirthdayTest extends TestCase
         $this->assertSame('09175550000', $account['registration']['contact_number']);
     }
 
-    #[Test]
-    public function drivers_birthday_is_not_changed_from_account_settings(): void
-    {
-        $driver = User::create([
-            'name' => 'Driver', 'email' => 'drv.' . uniqid() . '@trivora.test',
-            'password' => bcrypt('password'), 'role' => 'tricycle_driver', 'is_active' => true,
-        ]);
-
-        $this->actingAs($driver)->patch('/profile', ['name' => 'Driver', 'email' => $driver->email, 'birthday' => '1995-01-01'])
-            ->assertSessionHasNoErrors();
-        $this->assertNull($driver->fresh()->birthday);
-    }
 }

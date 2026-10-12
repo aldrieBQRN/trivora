@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Concerns;
 
+use Barryvdh\DomPDF\Facade\Pdf;
 use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
 use PhpOffice\PhpSpreadsheet\Cell\DataType;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
@@ -27,6 +28,76 @@ trait ExportsMunicipalExcelReports
             (new Xlsx($spreadsheet))->save('php://output');
         }, 200, [
             'Content-Type'        => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+            'Cache-Control'       => 'max-age=0',
+        ]);
+    }
+
+    /** `?format=pdf` → 'pdf', anything else → 'excel'. */
+    private function exportFormat(\Illuminate\Http\Request $request): string
+    {
+        return $request->query('format') === 'pdf' ? 'pdf' : 'excel';
+    }
+
+    private function exportFilename(string $base, string $format): string
+    {
+        return $base . ($format === 'pdf' ? '.pdf' : '.xlsx');
+    }
+
+    /**
+     * One report definition rendered as either an Excel workbook (regular, non-sticky table
+     * headers) or a landscape PDF, so every office export offers both formats with the same content.
+     *
+     * $report keys: title, subtitle, sheetTitle, columns (Excel letterhead width), kpis
+     * ['Label' => 'Value'], kpiSpans (optional), sections [['title', 'headers', 'rows']],
+     * and optionally orientation (PageSetup constant), officeName, footerCode, docRef.
+     */
+    private function streamMunicipalReport(string $format, array $report, string $filename): StreamedResponse
+    {
+        $officeName = $report['officeName'] ?? 'TRICYCLE MANAGEMENT OFFICE (TMO)';
+        $footerCode = $report['footerCode'] ?? 'TMO';
+
+        if ($format === 'pdf') {
+            return $this->streamMunicipalPdf([
+                'officeName'  => $officeName,
+                'footerCode'  => $footerCode,
+                'docRef'      => $report['docRef'] ?? 'LGU-NAS-' . $footerCode . '-REPORT',
+                'reportTitle' => $report['title'],
+                'periodLabel' => $report['subtitle'],
+                'kpis'        => $report['kpis'],
+                'sections'    => $report['sections'],
+            ], $filename);
+        }
+
+        $spreadsheet = new Spreadsheet();
+        $spreadsheet->getDefaultStyle()->getFont()->setName('Segoe UI');
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->setTitle($report['sheetTitle']);
+        $sheet->getPageSetup()->setOrientation($report['orientation'] ?? PageSetup::ORIENTATION_LANDSCAPE);
+
+        $row = $this->writeReportHeader($sheet, $report['title'], $report['subtitle'], $report['columns'], $officeName, $footerCode);
+        $row = $this->writeKpiRow($sheet, $row, $report['kpis'], $report['kpiSpans'] ?? null);
+
+        foreach ($report['sections'] as $section) {
+            $row = $this->writeSectionTitle($sheet, $row, $section['title']);
+            $row = $this->writeTable($sheet, $row, $section['headers'], $section['rows']);
+        }
+
+        return $this->streamExcel($spreadsheet, $filename);
+    }
+
+    /**
+     * Landscape A4 PDF counterpart of the Excel export, rendered from the shared
+     * reports/municipal_table_pdf view (same letterhead/KPI/table look as the audit log PDF).
+     */
+    private function streamMunicipalPdf(array $viewData, string $filename): StreamedResponse
+    {
+        $pdf = Pdf::loadView('reports.municipal_table_pdf', $viewData)->setPaper('a4', 'landscape');
+
+        return new StreamedResponse(function () use ($pdf) {
+            echo $pdf->output();
+        }, 200, [
+            'Content-Type'        => 'application/pdf',
             'Content-Disposition' => 'attachment; filename="' . $filename . '"',
             'Cache-Control'       => 'max-age=0',
         ]);

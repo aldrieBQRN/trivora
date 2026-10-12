@@ -133,35 +133,6 @@ class Driver extends Model
         return $this->franchise()?->canOperate() ?? false;
     }
 
-    /**
-     * Get the driver's assigned TODA Zone ID.
-     */
-    public function getTodaZoneIdAttribute(): ?int
-    {
-        return $this->getTodaZoneId();
-    }
-
-    /**
-     * Resolve assigned TODA Zone ID via tricycle or operator.
-     */
-    public function getTodaZoneId(): ?int
-    {
-        if ($this->tricycle_id) {
-            $tricycle = Tricycle::find($this->tricycle_id);
-            if ($tricycle && $tricycle->toda_zone_id) {
-                return (int) $tricycle->toda_zone_id;
-            }
-        }
-
-        if ($this->operator_id) {
-            $operator = Operator::find($this->operator_id);
-            if ($operator && $operator->toda_id) {
-                return (int) $operator->toda_id;
-            }
-        }
-
-        return null;
-    }
 
     /**
      * Check if driver is currently within maximum service area coverage distance of a location.

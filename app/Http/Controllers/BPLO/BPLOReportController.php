@@ -61,8 +61,47 @@ class BPLOReportController extends Controller
     {
         [$from, $to] = $this->resolveDateRange($request);
         $status = $request->query('status');
+        $format = $request->query('format') === 'pdf' ? 'pdf' : 'excel';
         $data = $this->buildReport($from, $to, $status);
         $records = $this->mapReleaseRecords($this->releaseLedger($from, $to, ! $status || $status === 'released'));
+
+        if ($format === 'pdf') {
+            $filename = 'trivora_bplo_releasing_report_' . $from->toDateString() . '_to_' . $to->toDateString() . '.pdf';
+            $this->logReportExport('pdf', $filename, $from, $to, $status, count($records));
+
+            return $this->streamMunicipalPdf([
+                'officeName'  => 'BUSINESS PERMITS AND LICENSING OFFICE (BPLO)',
+                'footerCode'  => 'BPLO',
+                'docRef'      => 'LGU-NAS-BPLO-RELEASING',
+                'reportTitle' => 'BPLO Releasing Analytics Report',
+                'periodLabel' => $from->format('M d, Y') . ' to ' . $to->format('M d, Y') . ($status ? ' | Status: ' . ucfirst($status) : ''),
+                'kpis'        => [
+                    'Total for BPLO Release' => number_format($data['overview']['total_for_bplo']),
+                    'Pending Release'        => number_format($data['overview']['pending_release']),
+                    'Released'               => number_format($data['overview']['released']),
+                    'Released in Period'     => number_format($data['overview']['activity_in_period']),
+                ],
+                'sections'    => [
+                    [
+                        'title'   => 'Release Status Breakdown',
+                        'headers' => ['Status', 'Applications Count'],
+                        'rows'    => collect($data['statusBreakdown'])->map(fn ($s) => [$s['label'], (int) $s['count']])->all(),
+                    ],
+                    [
+                        'title'   => 'Releasing Activity (Daily)',
+                        'headers' => ['Date', 'Releases'],
+                        'rows'    => collect($data['activityTrend'])->map(fn ($a) => [$a['date'], (int) $a['count']])->all(),
+                    ],
+                    [
+                        'title'   => 'Sticker & Plate Release Records',
+                        'headers' => ['Reference', 'Operator', 'Plate No.', 'Sticker Number', 'Franchise Number', 'Release Date'],
+                        'rows'    => $records->map(fn ($r) => [
+                            $r['reference'], $r['operator'], $r['plate'], $r['coding_scheme_number'], $r['sticker_no'], $r['release_date'],
+                        ])->all(),
+                    ],
+                ],
+            ], $filename);
+        }
 
         $spreadsheet = new Spreadsheet();
         $spreadsheet->getDefaultStyle()->getFont()->setName('Segoe UI');
@@ -120,26 +159,33 @@ class BPLOReportController extends Controller
         );
 
         $filename = 'trivora_bplo_releasing_report_' . $from->toDateString() . '_to_' . $to->toDateString() . '.xlsx';
+        $this->logReportExport('excel', $filename, $from, $to, $status, count($records));
+
+        return $this->streamExcel($spreadsheet, $filename);
+    }
+
+    private function logReportExport(string $format, string $filename, Carbon $from, Carbon $to, ?string $status, int $totalRecords): void
+    {
+        $label = $format === 'pdf' ? 'PDF' : 'Excel';
 
         AuditService::log(
             module: 'reports',
-            action: 'report.exported_excel',
+            action: 'report.exported_' . $format,
             record: null,
-            description: "Exported BPLO Releasing Analytics Excel Report ({$from->toDateString()} to {$to->toDateString()})",
+            description: "Exported BPLO Releasing Analytics {$label} Report ({$from->toDateString()} to {$to->toDateString()})",
             oldValues: null,
             newValues: null,
             targetReference: $filename,
             metadata: [
                 'report'        => 'bplo_releasing',
                 'filename'      => $filename,
+                'format'        => $format,
                 'from'          => $from->toDateString(),
                 'to'            => $to->toDateString(),
                 'status'        => $status,
-                'total_records' => count($records),
+                'total_records' => $totalRecords,
             ]
         );
-
-        return $this->streamExcel($spreadsheet, $filename);
     }
 
     private function resolveDateRange(Request $request): array

@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { Modal } from '@/Components/TMO';
 
+import Avatar from '@/Components/Avatar';
 const CARD_SHADOW = 'shadow-[0_1px_2px_0_rgba(15,23,42,0.04),0_8px_24px_-8px_rgba(15,23,42,0.10)]';
 const ITEMS_PER_PAGE = 10;
 
@@ -18,13 +19,6 @@ const STATUS_OPTIONS = [
     { value: 'active', label: 'Active' },
     { value: 'inactive', label: 'Inactive' },
 ];
-
-function getInitials(name) {
-    if (!name) return 'ST';
-    const parts = name.trim().split(/\s+/);
-    if (parts.length === 1) return parts[0].substring(0, 2).toUpperCase();
-    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-}
 
 function StatusPill({ user, onToggleStatus }) {
     const isActive = user.is_active;
@@ -280,9 +274,9 @@ export default function StaffManagement({
                     <button
                         type="button"
                         onClick={handleOpenAdd}
-                        className="inline-flex items-center gap-2 rounded-xl bg-[#182B62] hover:bg-[#25449B] text-white px-4 py-2.5 text-xs sm:text-sm font-bold shadow-2xs transition-all active:scale-[0.98] self-start sm:self-center shrink-0 cursor-pointer"
+                        className="inline-flex items-center gap-2 rounded-xl bg-[#182B62] hover:bg-[#25449B] px-4 py-2.5 text-xs font-bold text-white shadow-xs transition-all active:scale-[0.98] self-start sm:self-center shrink-0 cursor-pointer"
                     >
-                        <UserPlus size={16} strokeWidth={2.2} />
+                        <UserPlus size={15} strokeWidth={2.2} />
                         <span>Add Staff</span>
                     </button>
                 </div>
@@ -464,18 +458,6 @@ export default function StaffManagement({
                                     <option key={opt.value} value={opt.value}>{opt.label}</option>
                                 ))}
                             </select>
-
-                            {isFiltering && (
-                                <button
-                                    type="button"
-                                    onClick={handleClearAll}
-                                    title="Reset filter"
-                                    className="inline-flex h-10 items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50/70 px-3.5 text-xs font-bold text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-colors shrink-0 cursor-pointer"
-                                >
-                                    <RotateCcw size={13} strokeWidth={2.2} />
-                                    <span>Reset</span>
-                                </button>
-                            )}
                         </div>
                     </div>
                 </div>
@@ -1057,16 +1039,13 @@ export default function StaffManagement({
 ───────────────────────────────────────────────────────────────────────── */
 
 function DesktopStaffRow({ user, onEdit, onToggleStatus, onDelete }) {
-    const initials = getInitials(user.name);
 
     return (
         <tr className="group transition-colors hover:bg-slate-50/80">
             {/* Column 1: Staff Member */}
             <td className="py-4 pl-5 pr-3 align-middle">
                 <div className="flex items-center gap-2.5">
-                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#182B62] to-[#25449B] text-xs font-black text-white shadow-2xs">
-                        {initials}
-                    </div>
+                    <Avatar name={user.name} src={user.profile_photo_url} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#182B62] to-[#25449B] text-xs font-black text-white shadow-2xs" />
                     <div className="min-w-0">
                         <div className="flex items-center gap-1.5">
                             <p className="truncate text-xs sm:text-sm font-bold text-slate-900">
@@ -1164,16 +1143,13 @@ function DesktopStaffRow({ user, onEdit, onToggleStatus, onDelete }) {
 }
 
 function MobileStaffCard({ user, onEdit, onToggleStatus, onDelete }) {
-    const initials = getInitials(user.name);
 
     return (
         <div className={`rounded-2xl border border-slate-200/80 bg-white p-4 transition-all ${CARD_SHADOW}`}>
             {/* Top Row: Staff & Status */}
             <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-2.5">
                 <div className="flex items-center gap-2.5 min-w-0">
-                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#182B62] to-[#25449B] text-[11px] font-black text-white shadow-2xs">
-                        {initials}
-                    </div>
+                    <Avatar name={user.name} src={user.profile_photo_url} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#182B62] to-[#25449B] text-[11px] font-black text-white shadow-2xs" />
                     <div className="min-w-0">
                         <div className="flex items-center gap-1.5">
                             <p className="truncate text-xs font-bold text-slate-900">{user.name}</p>

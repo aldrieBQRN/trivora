@@ -57,9 +57,8 @@ export const REGISTRATION_CSS = `
   box-shadow: 12px 0 36px -6px rgba(15, 23, 42, 0.22), 4px 0 14px -2px rgba(15, 23, 42, 0.12);
   z-index: 5;
   background-image:
-    linear-gradient(165deg, rgba(18, 40, 102, 0.92) 0%, rgba(37, 68, 155, 0.86) 55%, rgba(15, 33, 85, 0.95) 100%),
-    url('/images/nasugbu-bg.jpg');
-  background-size: cover; background-position: center; background-repeat: no-repeat;
+    linear-gradient(165deg, rgba(18, 40, 102, 0.92) 0%, rgba(37, 68, 155, 0.86) 55%, rgba(15, 33, 85, 0.95) 100%);
+  background-color: #1B3478;
   color: #FFFFFF;
 }
 @media (max-width: 900px) {

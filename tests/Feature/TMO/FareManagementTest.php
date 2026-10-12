@@ -4,7 +4,6 @@ namespace Tests\Feature\TMO;
 
 use App\Models\Booking;
 use App\Models\FareConfiguration;
-use App\Models\TodaZone;
 use App\Models\User;
 use App\Services\FareService;
 use Carbon\Carbon;
@@ -19,7 +18,6 @@ class FareManagementTest extends TestCase
     protected User $adminUser;
     protected User $driverUser;
     protected User $passengerUser;
-    protected TodaZone $zone;
 
     protected function setUp(): void
     {
@@ -45,10 +43,6 @@ class FareManagementTest extends TestCase
             'is_active' => true,
         ]);
 
-        $this->zone = TodaZone::firstOrCreate(
-            ['code' => 'TODA-FAREMGMT'],
-            ['name' => 'TODA Fare Mgmt Zone', 'barangay' => 'Brgy. 1', 'is_active' => true]
-        );
 
         // Ensure baseline fare exists for test context
         FareConfiguration::firstOrCreate(

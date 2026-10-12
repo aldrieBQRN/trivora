@@ -10,7 +10,6 @@ class Operator extends Model
 {
     protected $fillable = [
         'user_id',
-        'toda_id',
         'first_name',
         'middle_name',
         'last_name',
@@ -77,12 +76,14 @@ class Operator extends Model
     }
 
     /**
-     * The TODA zone this operator belongs to.
+     * The operator's profile photo (stored on their linked user account), or null. Eager-load
+     * `operator.user` when mapping lists to avoid one query per row.
      */
-    public function todaZone(): BelongsTo
+    public function getProfilePhotoUrlAttribute(): ?string
     {
-        return $this->belongsTo(TodaZone::class, 'toda_id');
+        return $this->user?->profile_photo_url;
     }
+
 
     /**
      * Tricycle units owned by this operator.

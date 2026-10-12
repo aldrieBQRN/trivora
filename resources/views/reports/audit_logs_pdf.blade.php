@@ -9,13 +9,16 @@
             margin: 14mm 16mm 16mm 16mm;
         }
 
-        * {
-            box-sizing: border-box;
+        /* No margin reset on `*`/html: dompdf applies @page margins through the <html>
+           element, so resetting it would push the content to the paper edge. */
+        div, p, table {
             margin: 0;
             padding: 0;
         }
 
         body {
+            margin: 0;
+            padding: 0;
             font-family: DejaVu Sans, Helvetica, Arial, sans-serif;
             color: #0f172a;
             font-size: 7.5pt;

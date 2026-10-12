@@ -16,7 +16,6 @@ import {
     ShieldCheck,
     Search,
     X,
-    RotateCcw,
 } from 'lucide-react';
 
 // Shared soft, layered shadow token — same elevation language used across TMODashboard, so this
@@ -319,17 +318,6 @@ export default function MyTricycles({ tricycles = [], auth }) {
                                 <option value="pending">Pending ({pendingCount})</option>
                                 <option value="online">Online GPS ({onlineCount})</option>
                             </select>
-
-                            {(query || fleetFilter !== 'all') && (
-                                <button
-                                    type="button"
-                                    onClick={() => { setQuery(''); setFleetFilter('all'); }}
-                                    className="inline-flex h-10 items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50/70 px-3.5 text-xs font-bold text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-colors"
-                                >
-                                    <RotateCcw size={13} strokeWidth={2.2} />
-                                    <span>Reset</span>
-                                </button>
-                            )}
                         </div>
                     </div>
                 </div>

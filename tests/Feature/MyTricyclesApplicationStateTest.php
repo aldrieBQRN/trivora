@@ -7,7 +7,6 @@ use App\Models\ApplicationStatusHistory;
 use App\Models\ColorCodingScheme;
 use App\Models\FranchiseScheme;
 use App\Models\Operator;
-use App\Models\TodaZone;
 use App\Models\Tricycle;
 use App\Models\TricycleLocation;
 use App\Models\User;
@@ -39,10 +38,6 @@ class MyTricyclesApplicationStateTest extends TestCase
     {
         parent::setUp();
 
-        $toda = TodaZone::firstOrCreate(
-            ['code' => 'TODA-FLEET-TEST'],
-            ['name' => 'Fleet State Test Zone', 'barangay' => 'Poblacion', 'is_active' => true]
-        );
 
         $this->driverUser = User::create([
             'name' => 'Fleet State Driver', 'email' => 'fleet.state.' . uniqid() . '@trivora.test',
@@ -50,8 +45,7 @@ class MyTricyclesApplicationStateTest extends TestCase
         ]);
 
         $this->operator = Operator::create([
-            'user_id' => $this->driverUser->id, 'toda_id' => $toda->id,
-            'first_name' => 'Fleet', 'last_name' => 'State', 'contact_number' => '09170000061',
+            'user_id' => $this->driverUser->id, 'first_name' => 'Fleet', 'last_name' => 'State', 'contact_number' => '09170000061',
             'address' => 'Poblacion', 'barangay' => 'Poblacion', 'date_of_birth' => '1990-01-01',
             'license_number' => 'LIC-FLEET-001', 'license_expiry_date' => '2028-01-01',
         ]);
@@ -61,7 +55,6 @@ class MyTricyclesApplicationStateTest extends TestCase
     {
         return Tricycle::create([
             'operator_id' => $this->operator->id,
-            'toda_zone_id' => $this->operator->toda_id,
             'plate_number' => $plate, 'engine_number' => 'ENG-' . $plate, 'chassis_number' => 'CHS-' . $plate,
             'make' => 'Honda', 'model' => 'TMX', 'year_model' => 2022, 'body_color' => 'Red', 'body_type' => 'Standard',
             'or_number' => 'OR-' . $plate, 'cr_number' => 'CR-' . $plate, 'status' => $status,

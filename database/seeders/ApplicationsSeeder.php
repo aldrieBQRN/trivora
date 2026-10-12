@@ -11,7 +11,6 @@ use App\Models\FranchiseScheme;
 use App\Models\Inspection;
 use App\Models\Operator;
 use App\Models\Payment;
-use App\Models\TodaZone;
 use App\Models\Tricycle;
 use App\Models\User;
 use Illuminate\Database\Seeder;
@@ -38,10 +37,6 @@ class ApplicationsSeeder extends Seeder
         $admin     = User::where('role', 'admin')->first();
 
         // TODA Zones
-        $todaBucana = TodaZone::where('code', 'TODA-BUCANA')->orWhere('name', 'TODA Bucana')->first();
-        $todaBrgy10 = TodaZone::where('code', 'TODA-BRGY10')->orWhere('name', 'TODA Brgy. 10')->first();
-        $todaBrgy8  = TodaZone::where('code', 'TODA-BRGY8')->orWhere('name', 'TODA Brgy. 8')->first();
-        $todaBrgy4  = TodaZone::where('code', 'TODA-BRGY4')->orWhere('name', 'TODA Brgy. 4')->first();
 
         $op1       = Operator::whereHas('user', fn ($q) => $q->where('email', 'driver.pramos@trivora.ph'))->first();
         $op2       = Operator::whereHas('user', fn ($q) => $q->where('email', 'driver.jbautista@trivora.ph'))->first();
@@ -75,7 +70,6 @@ class ApplicationsSeeder extends Seeder
                 'license_number'           => 'N01-84-112233',
                 'license_expiry_date'      => '2028-04-12',
                 'license_restriction_code' => '1,2',
-                'toda_id'                  => $todaBrgy10?->id,
             ]);
         }
         if (! $opBen->user_id) {
@@ -107,7 +101,6 @@ class ApplicationsSeeder extends Seeder
                 'license_number'           => 'N01-92-445566',
                 'license_expiry_date'      => '2027-09-18',
                 'license_restriction_code' => '1',
-                'toda_id'                  => $todaBrgy8?->id,
             ]);
         }
         if (! $opCarla->user_id) {
@@ -139,7 +132,6 @@ class ApplicationsSeeder extends Seeder
                 'license_number'           => 'N01-80-778899',
                 'license_expiry_date'      => '2026-01-25',
                 'license_restriction_code' => '1,2',
-                'toda_id'                  => $todaBrgy4?->id,
             ]);
         }
         if (! $opDante->user_id) {
@@ -171,7 +163,6 @@ class ApplicationsSeeder extends Seeder
                 'license_number'           => 'N01-89-332211',
                 'license_expiry_date'      => '2028-11-30',
                 'license_restriction_code' => '1,2',
-                'toda_id'                  => $todaBucana?->id,
             ]);
         }
         if (! $opElena->user_id) {
@@ -1062,7 +1053,6 @@ class ApplicationsSeeder extends Seeder
             ['plate_number' => 'PLT-4819'],
             [
                 'operator_id'   => $opBen?->id,
-                'toda_zone_id'  => $todaBrgy10?->id,
                 'make'          => 'Honda',
                 'model'         => 'TMX 125',
                 'year_model'    => 2023,
@@ -1093,7 +1083,6 @@ class ApplicationsSeeder extends Seeder
             ['plate_number' => 'PLT-7203'],
             [
                 'operator_id'   => $opCarla?->id,
-                'toda_zone_id'  => $todaBrgy8?->id,
                 'make'          => 'Yamaha',
                 'model'         => 'STX 125',
                 'year_model'    => 2024,
@@ -1124,7 +1113,6 @@ class ApplicationsSeeder extends Seeder
             ['plate_number' => 'PLT-9182'],
             [
                 'operator_id'   => $opDante?->id,
-                'toda_zone_id'  => $todaBrgy4?->id,
                 'make'          => 'Kawasaki',
                 'model'         => 'Barako 175',
                 'year_model'    => 2023,
@@ -1155,7 +1143,6 @@ class ApplicationsSeeder extends Seeder
             ['plate_number' => 'PLT-5541'],
             [
                 'operator_id'   => $op2?->id,
-                'toda_zone_id'  => $todaBrgy10?->id,
                 'make'          => 'Honda',
                 'model'         => 'TMX Alpha',
                 'year_model'    => 2024,
@@ -1186,7 +1173,6 @@ class ApplicationsSeeder extends Seeder
             ['plate_number' => 'PLT-2390'],
             [
                 'operator_id'   => $opCarla?->id,
-                'toda_zone_id'  => $todaBucana?->id,
                 'make'          => 'Suzuki',
                 'model'         => 'GD 110',
                 'year_model'    => 2023,
@@ -1242,7 +1228,6 @@ class ApplicationsSeeder extends Seeder
             ['license_number' => 'N01-87-556677'],
             [
                 'user_id'                  => $userRegOwner->id,
-                'toda_id'                  => $todaBucana?->id,
                 'first_name'               => 'Rolando',
                 'middle_name'              => 'Diaz',
                 'last_name'                => 'Mercado',
@@ -1263,7 +1248,6 @@ class ApplicationsSeeder extends Seeder
             ['plate_number' => 'REG-7788'],
             [
                 'operator_id'          => $opRegOwner->id,
-                'toda_zone_id'         => $todaBucana?->id,
                 'coding_scheme_number' => '0777',
                 'engine_number'        => 'ENG-REG-7788',
                 'chassis_number'       => 'CHS-REG-7788',

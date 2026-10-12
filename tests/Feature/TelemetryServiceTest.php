@@ -6,7 +6,6 @@ use App\Models\ColorCodingScheme;
 use App\Models\Driver;
 use App\Models\FranchiseScheme;
 use App\Models\Operator;
-use App\Models\TodaZone;
 use App\Models\Tricycle;
 use App\Models\TricycleLocation;
 use App\Models\User;
@@ -40,10 +39,6 @@ class TelemetryServiceTest extends TestCase
 
         $this->service = app(TelemetryService::class);
 
-        $toda = TodaZone::firstOrCreate(
-            ['code' => 'TODA-TELEMSVC-TEST'],
-            ['name' => 'Telemetry Service Test Zone', 'barangay' => 'Poblacion', 'is_active' => true]
-        );
 
         $colorScheme = ColorCodingScheme::create([
             'name' => 'Telemetry Service Test Scheme', 'color_hex' => '#FF0000',
@@ -57,7 +52,6 @@ class TelemetryServiceTest extends TestCase
 
         $operator = Operator::create([
             'user_id' => $driverUser->id,
-            'toda_id' => $toda->id,
             'first_name' => 'TelemSvc', 'last_name' => 'Driver',
             'contact_number' => '09170000040', 'address' => 'Poblacion', 'barangay' => 'Poblacion',
             'date_of_birth' => '1990-01-01',
@@ -65,8 +59,7 @@ class TelemetryServiceTest extends TestCase
         ]);
 
         $this->tricycle = Tricycle::create([
-            'operator_id' => $operator->id, 'toda_zone_id' => $toda->id,
-            'coding_scheme_number' => '0002',
+            'operator_id' => $operator->id, 'coding_scheme_number' => '0002',
             'plate_number' => 'TSV-0002', 'engine_number' => 'ENG-TSV-002', 'chassis_number' => 'CHS-TSV-002',
             'make' => 'Honda', 'model' => 'TMX', 'year_model' => 2021,
             'body_color' => 'Red', 'body_type' => 'Standard',

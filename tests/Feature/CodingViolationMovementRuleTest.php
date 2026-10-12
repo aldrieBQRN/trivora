@@ -6,7 +6,6 @@ use App\Models\ColorCodingScheme;
 use App\Models\Driver;
 use App\Models\FranchiseScheme;
 use App\Models\Operator;
-use App\Models\TodaZone;
 use App\Models\Tricycle;
 use App\Models\User;
 use App\Models\Violation;
@@ -49,10 +48,6 @@ class CodingViolationMovementRuleTest extends TestCase
     {
         parent::setUp();
 
-        $toda = TodaZone::firstOrCreate(
-            ['code' => 'TODA-MOVEMENT-TEST'],
-            ['name' => 'Movement Rule Test Zone', 'barangay' => 'Poblacion', 'is_active' => true]
-        );
 
         $colorScheme = ColorCodingScheme::create([
             'name' => 'Movement Rule Test Scheme', 'color_hex' => '#FF0000',
@@ -66,7 +61,6 @@ class CodingViolationMovementRuleTest extends TestCase
 
         $operator = Operator::create([
             'user_id' => $this->driverUser->id,
-            'toda_id' => $toda->id,
             'first_name' => 'Movement', 'last_name' => 'Driver',
             'contact_number' => '09170000050', 'address' => 'Poblacion', 'barangay' => 'Poblacion',
             'date_of_birth' => '1990-01-01',
@@ -74,8 +68,7 @@ class CodingViolationMovementRuleTest extends TestCase
         ]);
 
         $this->tricycle = Tricycle::create([
-            'operator_id' => $operator->id, 'toda_zone_id' => $toda->id,
-            'coding_scheme_number' => '0002',
+            'operator_id' => $operator->id, 'coding_scheme_number' => '0002',
             'plate_number' => 'MOV-0002', 'engine_number' => 'ENG-MOV-002', 'chassis_number' => 'CHS-MOV-002',
             'make' => 'Honda', 'model' => 'TMX', 'year_model' => 2021,
             'body_color' => 'Red', 'body_type' => 'Standard',

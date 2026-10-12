@@ -242,7 +242,6 @@ class MTOPController extends Controller
 
                 $tricycle = \App\Models\Tricycle::create([
                     'operator_id'    => $operator->id,
-                    'toda_zone_id'   => null,
                     'plate_number'   => $request->input('plate_number'),
                     'engine_number'  => $request->input('engine_number'),
                     'chassis_number' => $request->input('chassis_number'),
@@ -530,7 +529,7 @@ class MTOPController extends Controller
                 $query->where('id', $refNo)
                       ->orWhere('reference_number', $refNo);
             })
-            ->with(['tricycle.todaZone', 'statusHistories', 'tricycleDriver', 'documents' => function ($query) {
+            ->with(['tricycle', 'statusHistories', 'tricycleDriver', 'documents' => function ($query) {
                 $query->orderBy('created_at');
             }, 'inspections'])
             ->firstOrFail();
@@ -679,7 +678,6 @@ class MTOPController extends Controller
             // Real status-history-derived dates — same fields the tracker list shows.
             'last_updated'           => ($app->statusHistories->sortByDesc('created_at')->first()?->created_at ?? $app->created_at)->format('F d, Y'),
             'step_dates'             => $this->trackerStepDates($app),
-            'toda'                   => $app->tricycle?->todaZone ? $app->tricycle->todaZone->name : 'N/A',
             'make'                   => $app->tricycle ? "{$app->tricycle->make} {$app->tricycle->model}" : 'N/A',
             'plate'                  => $app->tricycle ? $app->tricycle->plate_number : 'N/A',
             'engine'                 => $app->tricycle ? $app->tricycle->engine_number : 'N/A',
@@ -764,7 +762,7 @@ class MTOPController extends Controller
                 $query->where('id', $id)
                       ->orWhere('reference_number', $id);
             })
-            ->with(['tricycle.todaZone', 'statusHistories', 'documents' => function ($query) {
+            ->with(['tricycle', 'statusHistories', 'documents' => function ($query) {
                 $query->orderBy('created_at');
             }, 'inspections'])
             ->firstOrFail();

@@ -5,7 +5,6 @@ namespace Tests\Feature;
 use App\Models\Driver;
 use App\Models\GpsDevice;
 use App\Models\Operator;
-use App\Models\TodaZone;
 use App\Models\Tricycle;
 use App\Models\TricycleLocation;
 use App\Models\User;
@@ -32,10 +31,6 @@ class GpsReplayHarnessTest extends TestCase
     {
         parent::setUp();
 
-        $toda = TodaZone::firstOrCreate(
-            ['code' => 'TODA-REPLAY-TEST'],
-            ['name' => 'Replay Test Zone', 'barangay' => 'Poblacion', 'is_active' => true]
-        );
 
         $user = User::create([
             'name' => 'Replay Driver', 'email' => 'replay.' . uniqid() . '@trivora.test',
@@ -43,8 +38,7 @@ class GpsReplayHarnessTest extends TestCase
         ]);
 
         $operator = Operator::create([
-            'user_id' => $user->id, 'toda_id' => $toda->id,
-            'first_name' => 'Replay', 'last_name' => 'Driver',
+            'user_id' => $user->id, 'first_name' => 'Replay', 'last_name' => 'Driver',
             'contact_number' => '09170000123', 'address' => 'Poblacion', 'barangay' => 'Poblacion',
             'date_of_birth' => '1990-01-01',
             'license_number' => 'LIC-REPLAY-001', 'license_expiry_date' => '2028-01-01',
@@ -52,8 +46,7 @@ class GpsReplayHarnessTest extends TestCase
 
         $suffix = uniqid();
         $this->tricycle = Tricycle::create([
-            'operator_id' => $operator->id, 'toda_zone_id' => $toda->id,
-            'coding_scheme_number' => '0004',
+            'operator_id' => $operator->id, 'coding_scheme_number' => '0004',
             'plate_number' => 'RPL-' . substr($suffix, -6), 'engine_number' => "ENG-{$suffix}", 'chassis_number' => "CHS-{$suffix}",
             'make' => 'Honda', 'model' => 'TMX', 'year_model' => 2021,
             'body_color' => 'Red', 'body_type' => 'Standard',

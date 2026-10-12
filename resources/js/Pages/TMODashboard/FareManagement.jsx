@@ -134,9 +134,9 @@ export default function FareManagement({ currentFare = {}, fareHistory = [] }) {
                     <button
                         type="button"
                         onClick={handleOpenAdd}
-                        className="inline-flex items-center gap-2 rounded-xl bg-[#182B62] hover:bg-[#25449B] text-white px-4 py-2.5 text-xs sm:text-sm font-bold shadow-2xs transition-all active:scale-[0.98] self-start sm:self-center shrink-0 cursor-pointer"
+                        className="inline-flex items-center gap-2 rounded-xl bg-[#182B62] hover:bg-[#25449B] px-4 py-2.5 text-xs font-bold text-white shadow-xs transition-all active:scale-[0.98] self-start sm:self-center shrink-0 cursor-pointer"
                     >
-                        <Plus size={16} strokeWidth={2.2} />
+                        <Plus size={15} strokeWidth={2.2} />
                         <span>Add Fare Rate</span>
                     </button>
                 </div>
@@ -375,9 +375,11 @@ export default function FareManagement({ currentFare = {}, fareHistory = [] }) {
                                                     <button
                                                         type="button"
                                                         onClick={() => handleOpenView(fare)}
-                                                        className="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-3.5 py-1.5 text-xs font-bold text-slate-700 shadow-2xs hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900 transition-all active:scale-[0.98] cursor-pointer"
+                                                        className="inline-flex h-8 w-8 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 shadow-2xs hover:border-slate-300 hover:bg-slate-50 hover:text-[#182B62] transition-all active:scale-[0.98] cursor-pointer"
+                                                        aria-label="View fare details"
+                                                        title="View fare details"
                                                     >
-                                                        View
+                                                        <Eye size={15} strokeWidth={2.2} />
                                                     </button>
                                                 </td>
                                             </tr>
@@ -426,9 +428,11 @@ export default function FareManagement({ currentFare = {}, fareHistory = [] }) {
                                         <button
                                             type="button"
                                             onClick={() => handleOpenView(fare)}
-                                            className="flex w-full items-center justify-center rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100/80 py-2 text-xs font-bold text-slate-700 shadow-2xs transition-all active:scale-[0.98] cursor-pointer"
+                                            className="flex w-full items-center justify-center rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100/80 py-2 text-slate-600 hover:text-[#182B62] shadow-2xs transition-all active:scale-[0.98] cursor-pointer"
+                                            aria-label="View fare details"
+                                            title="View fare details"
                                         >
-                                            View
+                                            <Eye size={15} strokeWidth={2.2} />
                                         </button>
                                     </div>
                                 ))}

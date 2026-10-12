@@ -17,7 +17,7 @@ class TricycleRegistryDetailsDocumentsTest extends TestCase
     {
         parent::setUp();
         Storage::fake('public');
-        $this->seedTodaAndColorScheme();
+        $this->seedColorScheme();
     }
 
     #[Test]

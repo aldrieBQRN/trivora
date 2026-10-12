@@ -513,6 +513,8 @@ class AuditLogController extends Controller
             'application.approved'             => 'Application Approved',
             'profile.updated'                  => 'Profile Updated',
             'profile.password_updated'         => 'Password Changed',
+            'profile.photo_updated'            => 'Profile Photo Updated',
+            'profile.photo_removed'            => 'Profile Photo Removed',
             'report.exported_excel'            => 'Excel Report Exported',
             'report.exported_pdf'              => 'PDF Report Exported',
             'report.exported_csv'              => 'CSV Report Exported',

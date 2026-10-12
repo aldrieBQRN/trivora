@@ -2,12 +2,14 @@ import React, { useState, useMemo } from 'react';
 import { Head, Link } from '@inertiajs/react';
 import useBackgroundRefresh from '@/hooks/useBackgroundRefresh';
 import TrivoraLayout from '@/Layouts/TrivoraLayout';
+import ExportDialog from '@/Components/ExportDialog';
 import {
     Bike, Phone, Search, X, ChevronRight, ChevronLeft,
     Calendar, RotateCcw, ShieldAlert, ShieldCheck,
-    FileSpreadsheet
+    Download
 } from 'lucide-react';
 
+import Avatar from '@/Components/Avatar';
 const WEEKDAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
 // Layered soft shadow matching Live Fleet Monitoring and Dashboard
@@ -25,6 +27,7 @@ export default function TricycleRegistry({ initialUnits = [], activeCodingScheme
     const [codingFilter, setCodingFilter] = useState('all');
     const [onlyCodedToday, setOnlyCodedToday] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
+    const [exportOpen, setExportOpen] = useState(false);
     const itemsPerPage = 10;
 
     // Contextual day calculation
@@ -148,13 +151,14 @@ export default function TricycleRegistry({ initialUnits = [], activeCodingScheme
                 </div>
 
                 <div className="flex items-center gap-2.5">
-                    <a
-                        href={route('tmo.registry.export-excel')}
-                        className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 text-xs font-bold text-slate-700 shadow-2xs hover:bg-slate-50 hover:text-slate-900 transition-colors font-['Plus_Jakarta_Sans',sans-serif]"
+                    <button
+                        type="button"
+                        onClick={() => setExportOpen(true)}
+                        className="inline-flex items-center gap-2 rounded-xl bg-[#182B62] hover:bg-[#25449B] px-4 py-2.5 text-xs font-bold text-white shadow-xs transition-all active:scale-[0.98] cursor-pointer"
                     >
-                        <FileSpreadsheet size={14} className="text-emerald-600" />
-                        <span>Export to Excel</span>
-                    </a>
+                        <Download size={15} strokeWidth={2.2} className="text-white" />
+                        <span>Export</span>
+                    </button>
                 </div>
             </div>
 
@@ -573,6 +577,16 @@ export default function TricycleRegistry({ initialUnits = [], activeCodingScheme
                     </div>
                 </>
             )}
+            <ExportDialog
+                show={exportOpen}
+                onClose={() => setExportOpen(false)}
+                title="Export Tricycle Registry"
+                recordLabel="registered units"
+                recordCount={initialUnits.length}
+                scopeNote="Entire Tricycle Registry"
+                exportUrl={route('tmo.registry.export-excel')}
+                fallbackName="trivora_active_tricycle_registry"
+            />
         </TrivoraLayout>
     );
 }
@@ -580,13 +594,6 @@ export default function TricycleRegistry({ initialUnits = [], activeCodingScheme
 /* ─────────────────────────────────────────────────────────────────────────
    SUBCOMPONENTS: Table Row & Mobile Card
 ───────────────────────────────────────────────────────────────────────── */
-
-function getInitials(name) {
-    if (!name || name === 'N/A') return 'OP';
-    const parts = name.trim().split(/\s+/);
-    if (parts.length === 1) return parts[0].substring(0, 2).toUpperCase();
-    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-}
 
 const STATUS_PILL_META = {
     active:    { label: 'Active',    className: 'border border-emerald-200/90 bg-emerald-50 text-emerald-700', dot: 'bg-emerald-500' },
@@ -609,7 +616,6 @@ function DesktopTableRow({ unit, todayName, isWeekend }) {
     const unitCode = unit.unit_code || `TRV-${String(unit.id).padStart(3, '0')}`;
     const stickerNumber = unit.coding_scheme_number;
     const isCodedToday = !isWeekend && unit.coding_day && unit.coding_day.toLowerCase().includes(todayName.toLowerCase());
-    const initials = getInitials(unit.operator);
 
     return (
         <tr className="group transition-colors hover:bg-slate-50/80">
@@ -628,9 +634,7 @@ function DesktopTableRow({ unit, todayName, isWeekend }) {
             {/* Column 2: Owner & Contact */}
             <td className="py-4 px-4 align-middle">
                 <div className="flex items-center gap-2.5">
-                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#182B62] to-[#25449B] text-[11px] font-black text-white shadow-2xs">
-                        {initials}
-                    </div>
+                    <Avatar name={unit.operator} src={unit.operator_photo} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#182B62] to-[#25449B] text-[11px] font-black text-white shadow-2xs" />
                     <div className="min-w-0">
                         <p className="truncate text-xs sm:text-[13px] font-bold text-slate-900 group-hover:text-[#182B62] transition-colors font-['Plus_Jakarta_Sans',sans-serif]">
                             {unit.operator}
@@ -715,7 +719,6 @@ function MobileUnitCard({ unit, todayName, isWeekend }) {
     const unitCode = unit.unit_code || `TRV-${String(unit.id).padStart(3, '0')}`;
     const stickerNumber = unit.coding_scheme_number;
     const isCodedToday = !isWeekend && unit.coding_day && unit.coding_day.toLowerCase().includes(todayName.toLowerCase());
-    const initials = getInitials(unit.operator);
 
     return (
         <div className={`rounded-2xl border border-slate-200/80 bg-white p-4 ${CARD_SHADOW} transition-all hover:border-slate-300`}>
@@ -734,9 +737,7 @@ function MobileUnitCard({ unit, todayName, isWeekend }) {
             {/* Owner Information */}
             <div className="mt-3 flex items-center justify-between gap-2">
                 <div className="flex items-center gap-2.5 min-w-0">
-                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#182B62] to-[#25449B] text-[11px] font-black text-white shadow-2xs">
-                        {initials}
-                    </div>
+                    <Avatar name={unit.operator} src={unit.operator_photo} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#182B62] to-[#25449B] text-[11px] font-black text-white shadow-2xs" />
                     <div className="min-w-0">
                         <p className="truncate text-xs font-bold text-slate-900 font-['Plus_Jakarta_Sans',sans-serif]">{unit.operator}</p>
                         {unit.contact && unit.contact !== 'N/A' ? (

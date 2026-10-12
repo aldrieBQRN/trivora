@@ -3,7 +3,6 @@
 namespace Tests\Feature;
 
 use App\Models\Operator;
-use App\Models\TodaZone;
 use App\Models\Tricycle;
 use App\Models\TricycleLocation;
 use App\Models\User;
@@ -22,17 +21,12 @@ class OperatorLiveTrackingPayloadTest extends TestCase
     use DatabaseTransactions;
 
     protected User $driverUser;
-    protected TodaZone $toda;
     protected Tricycle $tricycle;
 
     protected function setUp(): void
     {
         parent::setUp();
 
-        $this->toda = TodaZone::firstOrCreate(
-            ['code' => 'TODA-LIVE-TRACK-TEST'],
-            ['name' => 'Live Tracking Zone', 'barangay' => 'Poblacion', 'is_active' => true]
-        );
 
         $this->driverUser = User::create([
             'name' => 'Live Tracking Driver', 'email' => 'live.tracking.' . uniqid() . '@trivora.test',
@@ -40,15 +34,13 @@ class OperatorLiveTrackingPayloadTest extends TestCase
         ]);
 
         $operator = Operator::create([
-            'user_id' => $this->driverUser->id, 'toda_id' => $this->toda->id,
-            'first_name' => 'Live', 'last_name' => 'Tracking', 'contact_number' => '09170000062',
+            'user_id' => $this->driverUser->id, 'first_name' => 'Live', 'last_name' => 'Tracking', 'contact_number' => '09170000062',
             'address' => 'Poblacion', 'barangay' => 'Poblacion', 'date_of_birth' => '1990-01-01',
             'license_number' => 'LIC-LIVE-001', 'license_expiry_date' => '2028-01-01',
         ]);
 
         $this->tricycle = Tricycle::create([
-            'operator_id' => $operator->id, 'toda_zone_id' => $this->toda->id,
-            'plate_number' => 'LIV-0001', 'engine_number' => 'ENG-LIV-001', 'chassis_number' => 'CHS-LIV-001',
+            'operator_id' => $operator->id, 'plate_number' => 'LIV-0001', 'engine_number' => 'ENG-LIV-001', 'chassis_number' => 'CHS-LIV-001',
             'make' => 'Honda', 'model' => 'TMX', 'year_model' => 2022, 'body_color' => 'Red', 'body_type' => 'Standard',
             'or_number' => 'OR-LIV-001', 'cr_number' => 'CR-LIV-001', 'status' => 'active',
             'active_tracking_mode' => 'mobile_app',
@@ -64,18 +56,6 @@ class OperatorLiveTrackingPayloadTest extends TestCase
             'source' => 'mobile_app',
             'recorded_at' => now()->subSeconds($secondsAgo),
         ]);
-    }
-
-    #[Test]
-    public function the_tracking_payload_includes_the_units_assigned_toda_zone_name(): void
-    {
-        $response = $this->actingAs($this->driverUser)->get(route('operator.tracking'));
-
-        $response->assertOk()->assertInertia(fn ($page) => $page
-            ->component('Operator/LiveTracking')
-            ->where('tricycle.isFinalized', true)
-            ->where('tricycle.zone', $this->toda->name)
-        );
     }
 
     #[Test]

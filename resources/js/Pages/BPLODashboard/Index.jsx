@@ -39,7 +39,6 @@ export default function BPLODashboard({
     stats = {},
     weeklyIssuanceTrend = [],
     recentReleases = [],
-    todaStats = [],
 }) {
     // Silent background refresh so numbers stay accurate in real-time
     useBackgroundRefresh(['stats', 'weeklyIssuanceTrend', 'recentReleases']);
@@ -270,7 +269,7 @@ export default function BPLODashboard({
                                         MTOP Issuance Trend
                                     </h3>
                                     <p className="text-[11px] text-slate-500 font-medium">
-                                        Daily released franchise stickers &amp; permits this week
+                                        Daily released franchise stickers &amp; permits · last 7 days
                                     </p>
                                 </div>
                             </div>
@@ -383,7 +382,7 @@ export default function BPLODashboard({
                                                         )}
                                                     </div>
                                                     <div className="text-[11px] text-slate-500 truncate font-medium mt-0.5">
-                                                        {rel.operator_name} {rel.toda_name ? `• ${rel.toda_name}` : ''}
+                                                        {rel.operator_name}
                                                     </div>
                                                 </div>
                                             </div>

@@ -5,7 +5,6 @@ namespace Tests\Feature;
 use App\Models\ColorCodingScheme;
 use App\Models\FranchiseScheme;
 use App\Models\Operator;
-use App\Models\TodaZone;
 use App\Models\Tricycle;
 use App\Models\TricycleLocation;
 use App\Models\User;
@@ -35,10 +34,6 @@ class LiveMonitoringViolationDateTest extends TestCase
             'is_active' => true,
         ]);
 
-        $toda = TodaZone::firstOrCreate(
-            ['code' => 'TODA-LM-TEST'],
-            ['name' => 'TODA Live Monitor Test', 'barangay' => 'Poblacion', 'is_active' => true]
-        );
 
         $driverUser = User::create([
             'name'     => 'Driver ' . uniqid(),
@@ -49,7 +44,6 @@ class LiveMonitoringViolationDateTest extends TestCase
 
         $operator = Operator::create([
             'user_id'             => $driverUser->id,
-            'toda_id'             => $toda->id,
             'first_name'          => 'Juan',
             'last_name'           => 'Dela Cruz',
             'contact_number'      => '09171234567',
@@ -62,7 +56,6 @@ class LiveMonitoringViolationDateTest extends TestCase
 
         $this->tricycle = Tricycle::create([
             'operator_id'          => $operator->id,
-            'toda_zone_id'         => $toda->id,
             'coding_scheme_number' => '9999',
             'body_number'          => '9999',
             'plate_number'         => 'LM-9999',

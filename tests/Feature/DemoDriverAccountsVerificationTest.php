@@ -13,7 +13,6 @@ use App\Models\User;
 use Database\Seeders\ColorCodingSchemesSeeder;
 use Database\Seeders\DemoStageDriversSeeder;
 use Database\Seeders\TestAccountsSeeder;
-use Database\Seeders\TodaZonesSeeder;
 use Database\Seeders\UsersSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\Test;
@@ -28,7 +27,6 @@ class DemoDriverAccountsVerificationTest extends TestCase
         parent::setUp();
 
         $this->seed(ColorCodingSchemesSeeder::class);
-        $this->seed(TodaZonesSeeder::class);
         $this->seed(UsersSeeder::class);
         $this->seed(TestAccountsSeeder::class);
         $this->seed(DemoStageDriversSeeder::class);

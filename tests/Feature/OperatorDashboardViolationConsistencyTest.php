@@ -6,7 +6,6 @@ use App\Models\ColorCodingScheme;
 use App\Models\Driver;
 use App\Models\FranchiseScheme;
 use App\Models\Operator;
-use App\Models\TodaZone;
 use App\Models\Tricycle;
 use App\Models\User;
 use App\Models\Violation;
@@ -37,24 +36,19 @@ class OperatorDashboardViolationConsistencyTest extends TestCase
     {
         parent::setUp();
 
-        $toda = TodaZone::firstOrCreate(
-            ['code' => 'TODA-DASHVIOL-TEST'],
-            ['name' => 'Dashboard Violation Test Zone', 'barangay' => 'Poblacion', 'is_active' => true]
-        );
         $colorScheme = ColorCodingScheme::create([
             'name' => 'Dashboard Violation Test Scheme', 'color_hex' => '#FF0000',
             'restricted_days' => ['Monday'], 'is_active' => true,
         ]);
 
         $this->operator = Operator::create([
-            'toda_id' => $toda->id, 'first_name' => 'Dashboard', 'last_name' => 'Tester',
+            'first_name' => 'Dashboard', 'last_name' => 'Tester',
             'contact_number' => '09170000040', 'address' => 'Poblacion', 'barangay' => 'Poblacion',
             'date_of_birth' => '1990-01-01', 'license_number' => 'LIC-DASHVIOL-001', 'license_expiry_date' => '2028-01-01',
         ]);
 
         $this->tricycle = Tricycle::create([
-            'operator_id' => $this->operator->id, 'toda_zone_id' => $toda->id,
-            'plate_number' => 'DASH-0001', 'engine_number' => 'ENG-DASH-001', 'chassis_number' => 'CHS-DASH-001',
+            'operator_id' => $this->operator->id, 'plate_number' => 'DASH-0001', 'engine_number' => 'ENG-DASH-001', 'chassis_number' => 'CHS-DASH-001',
             'make' => 'Honda', 'model' => 'TMX', 'year_model' => 2021,
             'body_color' => 'Red', 'body_type' => 'Standard',
             'or_number' => 'OR-DASH-001', 'cr_number' => 'CR-DASH-001', 'status' => 'active',

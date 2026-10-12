@@ -165,7 +165,6 @@ class RegistrationController extends Controller
                 'date_of_birth'            => $request->date('birthday')->toDateString(), // Tricycle Owner's real birthday (date column)
                 'license_number'           => 'N' . str_pad(rand(1, 99), 2, '0', STR_PAD_LEFT) . '-' . str_pad(rand(0, 99999), 5, '0', STR_PAD_LEFT), // Generated license placeholder
                 'license_expiry_date'      => now()->addYears(3)->toDateString(),
-                'toda_id'                  => null,
             ]);
 
             // 3. Create Tricycle
@@ -184,7 +183,6 @@ class RegistrationController extends Controller
 
             $tricycle = \App\Models\Tricycle::create([
                 'operator_id'    => $operator->id,
-                'toda_zone_id'   => null,
                 'plate_number'   => $request->input('plate_number'),
                 'engine_number'  => $request->input('engine_number'),
                 'chassis_number' => $request->input('chassis_number'),

@@ -24,7 +24,7 @@ class MTOPRegistrationConsistencyTest extends TestCase
     {
         parent::setUp();
         Storage::fake('public');
-        $this->seedTodaAndColorScheme();
+        $this->seedColorScheme();
     }
 
     private function newUnitPayload(array $overrides = []): array
@@ -202,6 +202,5 @@ class MTOPRegistrationConsistencyTest extends TestCase
         $this->assertSame('Extended Sidecar', $tricycle->body_type);
         $this->assertSame('OR-VEH-UNIQUE', $tricycle->or_number);
         $this->assertSame('CR-VEH-UNIQUE', $tricycle->cr_number);
-        $this->assertNull($tricycle->toda_zone_id, 'Registration must not assign a TODA zone — TODA is a document requirement only.');
     }
 }

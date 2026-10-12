@@ -5,7 +5,6 @@ namespace Tests\Feature;
 use App\Models\AuditLog;
 use App\Models\ColorCodingScheme;
 use App\Models\FareConfiguration;
-use App\Models\TodaZone;
 use App\Models\User;
 use App\Services\AuditService;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
@@ -411,7 +410,7 @@ class SystemAuditLogTest extends TestCase
         $this->assertEquals($testUser->name, $logoutLog->actor_name);
     }
 
-    public function test_profile_update_and_password_update_generate_audit_logs(): void
+    public function test_password_update_generates_audit_log(): void
     {
         $testUser = User::factory()->create([
             'role'      => 'tricycle_driver',
@@ -421,25 +420,7 @@ class SystemAuditLogTest extends TestCase
             'is_active' => true,
         ]);
 
-        // 1. Profile Update
-        $profileResponse = $this->actingAs($testUser)->patch(route('profile.update'), [
-            'name'  => 'Driver Juan Updated',
-            'email' => 'driver.test.profile@trivora.ph',
-        ]);
-
-        $profileResponse->assertRedirect(route('profile.edit'));
-
-        $profileLog = AuditLog::where('action', 'profile.updated')
-            ->where('user_id', $testUser->id)
-            ->latest('id')
-            ->first();
-
-        $this->assertNotNull($profileLog);
-        $this->assertEquals('profile', $profileLog->module);
-        $this->assertEquals('Driver Juan Test', $profileLog->old_values['name']);
-        $this->assertEquals('Driver Juan Updated', $profileLog->new_values['name']);
-
-        // 2. Password Update
+        // Password Update (profile details are read-only in Account Settings)
         $passwordResponse = $this->actingAs($testUser)->put(route('password.update'), [
             'current_password'      => 'OldPassword123!',
             'password'              => 'NewSecurePass123!',

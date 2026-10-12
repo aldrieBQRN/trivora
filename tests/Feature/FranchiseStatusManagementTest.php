@@ -9,7 +9,6 @@ use App\Models\FranchiseScheme;
 use App\Models\FranchiseStatusHistory;
 use App\Models\Operator;
 use App\Models\Passenger;
-use App\Models\TodaZone;
 use App\Models\Tricycle;
 use App\Models\User;
 use App\Services\BookingDispatchService;
@@ -44,10 +43,6 @@ class FranchiseStatusManagementTest extends TestCase
     {
         parent::setUp();
 
-        $toda = TodaZone::firstOrCreate(
-            ['code' => 'TODA-FRANCHISE-TEST'],
-            ['name' => 'Franchise Status Test Zone', 'barangay' => 'Poblacion', 'is_active' => true]
-        );
 
         $colorScheme = ColorCodingScheme::create([
             'name' => 'Franchise Status Test Scheme', 'color_hex' => '#FF0000',
@@ -61,7 +56,6 @@ class FranchiseStatusManagementTest extends TestCase
 
         $this->operator = Operator::create([
             'user_id' => $this->driverUser->id,
-            'toda_id' => $toda->id,
             'first_name' => 'Franchise', 'last_name' => 'Driver',
             'contact_number' => '09170000070', 'address' => 'Poblacion', 'barangay' => 'Poblacion',
             'date_of_birth' => '1990-01-01',
@@ -69,8 +63,7 @@ class FranchiseStatusManagementTest extends TestCase
         ]);
 
         $this->tricycle = Tricycle::create([
-            'operator_id' => $this->operator->id, 'toda_zone_id' => $toda->id,
-            'coding_scheme_number' => '0003',
+            'operator_id' => $this->operator->id, 'coding_scheme_number' => '0003',
             'plate_number' => 'FRN-0003', 'engine_number' => 'ENG-FRN-003', 'chassis_number' => 'CHS-FRN-003',
             'make' => 'Honda', 'model' => 'TMX', 'year_model' => 2021,
             'body_color' => 'Red', 'body_type' => 'Standard',
@@ -584,15 +577,13 @@ class FranchiseStatusManagementTest extends TestCase
             'password' => bcrypt('password'), 'role' => 'tricycle_driver', 'is_active' => true,
         ]);
         $otherOperator = Operator::create([
-            'user_id' => $otherUser->id, 'toda_id' => $this->tricycle->toda_zone_id,
-            'first_name' => 'Untouched', 'last_name' => 'Driver',
+            'user_id' => $otherUser->id, 'first_name' => 'Untouched', 'last_name' => 'Driver',
             'contact_number' => '09170000098', 'address' => 'Poblacion', 'barangay' => 'Poblacion',
             'date_of_birth' => '1990-01-01',
             'license_number' => 'LIC-UNTOUCHED-FRAN-001', 'license_expiry_date' => '2028-01-01',
         ]);
         $otherTricycle = Tricycle::create([
-            'operator_id' => $otherOperator->id, 'toda_zone_id' => $this->tricycle->toda_zone_id,
-            'coding_scheme_number' => '0004',
+            'operator_id' => $otherOperator->id, 'coding_scheme_number' => '0004',
             'plate_number' => 'FRN-0004', 'engine_number' => 'ENG-FRN-004', 'chassis_number' => 'CHS-FRN-004',
             'make' => 'Honda', 'model' => 'TMX', 'year_model' => 2021,
             'body_color' => 'Blue', 'body_type' => 'Standard',

@@ -7,6 +7,7 @@ import {
     Search, X, RotateCcw, CheckCircle2, TrendingUp, Phone
 } from 'lucide-react';
 
+import Avatar from '@/Components/Avatar';
 const STATUS_OPTIONS = [
     { value: 'all', label: 'All Statuses' },
     { value: 'Pending', label: 'Pending Verification' },
@@ -24,6 +25,7 @@ export default function DocumentQueue({
 }) {
     const [query, setQuery] = useState('');
     const [statusFilter, setStatusFilter] = useState('all');
+    const [typeFilter, setTypeFilter] = useState('all');
     const [currentPage, setCurrentPage] = useState(1);
 
     // Silent background refresh for multi-officer synchronization
@@ -38,9 +40,10 @@ export default function DocumentQueue({
                 (a.operator && a.operator.toLowerCase().includes(q)) ||
                 (a.contact && a.contact.toLowerCase().includes(q));
             const matchesStatus = statusFilter === 'all' || a.status === statusFilter;
-            return matchesQuery && matchesStatus;
+            const matchesType = typeFilter === 'all' || (a.application_type || '').toLowerCase() === typeFilter;
+            return matchesQuery && matchesStatus && matchesType;
         });
-    }, [applications, query, statusFilter]);
+    }, [applications, query, statusFilter, typeFilter]);
 
     const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE) || 1;
     const activePage = Math.min(currentPage, totalPages);
@@ -48,11 +51,12 @@ export default function DocumentQueue({
     const endIndex = Math.min(startIndex + ITEMS_PER_PAGE, filtered.length);
     const paginated = filtered.slice(startIndex, endIndex);
 
-    const isFiltering = query.trim() !== '' || statusFilter !== 'all';
+    const isFiltering = query.trim() !== '' || statusFilter !== 'all' || typeFilter !== 'all';
 
     const handleClearAll = () => {
         setQuery('');
         setStatusFilter('all');
+        setTypeFilter('all');
         setCurrentPage(1);
     };
 
@@ -247,7 +251,21 @@ export default function DocumentQueue({
                             )}
                         </div>
 
-                        <div className="flex items-center gap-2">
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                            <select
+                                value={typeFilter}
+                                onChange={e => {
+                                    setTypeFilter(e.target.value);
+                                    setCurrentPage(1);
+                                }}
+                                aria-label="Filter by application type"
+                                className="h-10 w-full sm:w-auto sm:min-w-[160px] rounded-xl border border-slate-200 bg-slate-50/70 pl-3 pr-8 text-xs font-bold text-slate-700 transition-colors focus:border-[#182B62] focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#182B62] cursor-pointer"
+                            >
+                                <option value="all">All Application Types</option>
+                                <option value="new">New Franchise</option>
+                                <option value="renewal">Renewal Franchise</option>
+                            </select>
+
                             <select
                                 value={statusFilter}
                                 onChange={e => {
@@ -261,18 +279,6 @@ export default function DocumentQueue({
                                     <option key={opt.value} value={opt.value}>{opt.label}</option>
                                 ))}
                             </select>
-
-                            {isFiltering && (
-                                <button
-                                    type="button"
-                                    onClick={handleClearAll}
-                                    title="Reset filters"
-                                    className="inline-flex h-10 items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50/70 px-3.5 text-xs font-bold text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-colors shrink-0"
-                                >
-                                    <RotateCcw size={13} strokeWidth={2.2} />
-                                    <span>Reset</span>
-                                </button>
-                            )}
                         </div>
                     </div>
                 </div>
@@ -313,7 +319,7 @@ export default function DocumentQueue({
                                     <thead>
                                         <tr className="border-b border-slate-200/80 bg-slate-50/80 text-[11px] font-bold uppercase tracking-wider text-slate-400">
                                             <th scope="col" className="py-3.5 pl-6 pr-3">
-                                                Reference No. &amp; Type
+                                                Application No. &amp; Type
                                             </th>
                                             <th scope="col" className="py-3.5 px-4">
                                                 Applicant Operator
@@ -450,13 +456,6 @@ export default function DocumentQueue({
    SUBCOMPONENTS: Table Row, Mobile Card & Status Pill
 ───────────────────────────────────────────────────────────────────────── */
 
-function getInitials(name) {
-    if (!name || name === 'N/A') return 'OP';
-    const parts = name.trim().split(/\s+/);
-    if (parts.length === 1) return parts[0].substring(0, 2).toUpperCase();
-    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-}
-
 function StatusPill({ status }) {
     const isPending = status === 'Pending';
     return (
@@ -474,19 +473,18 @@ function StatusPill({ status }) {
 }
 
 function DesktopQueueRow({ app }) {
-    const initials = getInitials(app.operator);
     const isRenewal = (app.application_type || '').toLowerCase() === 'renewal';
 
     return (
         <tr className="group transition-colors hover:bg-slate-50/80">
-            {/* Column 1: Reference No. & Type (Type stacked directly under Reference No.) */}
+            {/* Column 1: Application No. & Type */}
             <td className="py-4 pl-6 pr-3 align-middle">
                 <div className="flex flex-col">
-                    <span className="font-mono text-xs sm:text-[13px] font-black tracking-wide text-slate-900 bg-slate-100 border border-slate-200/90 px-2 py-0.5 rounded-md w-fit shadow-2xs">
+                    <span className="font-mono text-xs sm:text-[13px] font-bold tracking-wide text-slate-900">
                         {app.reference}
                     </span>
                     <span className="mt-1 text-[11px] font-semibold text-slate-500">
-                        {isRenewal ? 'Franchise Renewal' : 'New Franchise'}
+                        {isRenewal ? 'Renewal Franchise' : 'New Franchise'}
                     </span>
                 </div>
             </td>
@@ -494,9 +492,7 @@ function DesktopQueueRow({ app }) {
             {/* Column 2: Applicant Operator & Contact (Consistent rounded-xl gradient profile + phone) */}
             <td className="py-4 px-4 align-middle">
                 <div className="flex items-center gap-2.5">
-                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#182B62] to-[#25449B] text-[11px] font-black text-white shadow-2xs">
-                        {initials}
-                    </div>
+                    <Avatar name={app.operator} src={app.operator_photo} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#182B62] to-[#25449B] text-[11px] font-black text-white shadow-2xs" />
                     <div className="min-w-0">
                         <p className="truncate text-xs sm:text-[13px] font-bold text-slate-900 group-hover:text-[#182B62] transition-colors">
                             {app.operator}
@@ -544,9 +540,10 @@ function DesktopQueueRow({ app }) {
             <td className="py-4 pl-3 pr-6 text-right align-middle">
                 <Link
                     href={`/tmo/review/docs/${app.id}`}
-                    className="inline-flex items-center justify-center rounded-xl bg-[#182B62] hover:bg-[#25449B] text-white px-4 py-1.5 text-xs font-bold shadow-2xs transition-all active:scale-[0.98]"
+                    className="inline-flex items-center justify-center gap-1 rounded-xl bg-[#182B62] hover:bg-[#25449B] text-white px-4 py-1.5 text-xs font-bold shadow-2xs transition-all active:scale-[0.98]"
                 >
                     <span>{app.status === 'Pending' ? 'Review' : 'Re-review'}</span>
+                    <ChevronRight size={13} strokeWidth={2.5} className="text-white/70" />
                 </Link>
             </td>
         </tr>
@@ -554,7 +551,6 @@ function DesktopQueueRow({ app }) {
 }
 
 function MobileQueueCard({ app }) {
-    const initials = getInitials(app.operator);
     const isRenewal = (app.application_type || '').toLowerCase() === 'renewal';
 
     return (
@@ -562,11 +558,11 @@ function MobileQueueCard({ app }) {
             {/* Top Row: Reference & Status (Type directly under Reference No.) */}
             <div className="flex items-start justify-between gap-2 border-b border-slate-100 pb-2.5">
                 <div className="flex flex-col">
-                    <span className="font-mono text-xs font-black text-slate-900 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded-md w-fit">
+                    <span className="font-mono text-xs sm:text-[13px] font-bold tracking-wide text-slate-900">
                         {app.reference}
                     </span>
                     <span className="mt-1 text-[11px] font-semibold text-slate-500">
-                        {isRenewal ? 'Franchise Renewal' : 'New Franchise Application'}
+                        {isRenewal ? 'Renewal Franchise' : 'New Franchise'}
                     </span>
                 </div>
                 <StatusPill status={app.status} />
@@ -575,9 +571,7 @@ function MobileQueueCard({ app }) {
             {/* Applicant Information & Contact */}
             <div className="mt-3 flex items-center justify-between gap-2">
                 <div className="flex items-center gap-2.5 min-w-0">
-                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#182B62] to-[#25449B] text-[11px] font-black text-white shadow-2xs">
-                        {initials}
-                    </div>
+                    <Avatar name={app.operator} src={app.operator_photo} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#182B62] to-[#25449B] text-[11px] font-black text-white shadow-2xs" />
                     <div className="min-w-0">
                         <p className="truncate text-xs font-bold text-slate-900">{app.operator}</p>
                         {app.contact && app.contact !== 'N/A' ? (
@@ -610,9 +604,10 @@ function MobileQueueCard({ app }) {
             <div className="mt-3 pt-2.5 border-t border-slate-100">
                 <Link
                     href={`/tmo/review/docs/${app.id}`}
-                    className="flex w-full items-center justify-center rounded-xl bg-[#182B62] hover:bg-[#25449B] text-white py-2 text-xs font-bold shadow-2xs transition-all active:scale-[0.98]"
+                    className="flex w-full items-center justify-center gap-1 rounded-xl bg-[#182B62] hover:bg-[#25449B] text-white py-2 text-xs font-bold shadow-2xs transition-all active:scale-[0.98]"
                 >
                     <span>{app.status === 'Pending' ? 'Review' : 'Re-review'}</span>
+                    <ChevronRight size={13} strokeWidth={2.5} className="text-white/70" />
                 </Link>
             </div>
         </div>

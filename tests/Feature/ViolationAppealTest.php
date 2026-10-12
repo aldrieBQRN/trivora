@@ -6,7 +6,6 @@ use App\Models\ColorCodingScheme;
 use App\Models\Driver;
 use App\Models\FranchiseScheme;
 use App\Models\Operator;
-use App\Models\TodaZone;
 use App\Models\Tricycle;
 use App\Models\User;
 use App\Models\Violation;
@@ -32,17 +31,12 @@ class ViolationAppealTest extends TestCase
         parent::setUp();
         Storage::fake('public');
 
-        $toda = TodaZone::firstOrCreate(
-            ['code' => 'TODA-APPEAL-TEST'],
-            ['name' => 'Test Appeal Zone', 'barangay' => 'Poblacion', 'is_active' => true]
-        );
 
         $colorScheme = ColorCodingScheme::create([
             'name' => 'Test Red', 'color_hex' => '#FF0000', 'restricted_days' => ['Monday'], 'is_active' => true,
         ]);
 
         $operator = Operator::create([
-            'toda_id' => $toda->id,
             'first_name' => 'Appeal', 'last_name' => 'Tester',
             'contact_number' => '09170000010', 'address' => 'Poblacion', 'barangay' => 'Poblacion',
             'date_of_birth' => '1990-01-01',
@@ -50,8 +44,7 @@ class ViolationAppealTest extends TestCase
         ]);
 
         $tricycle = Tricycle::create([
-            'operator_id' => $operator->id, 'toda_zone_id' => $toda->id,
-            'plate_number' => 'APL-0001', 'engine_number' => 'ENG-APL-001', 'chassis_number' => 'CHS-APL-001',
+            'operator_id' => $operator->id, 'plate_number' => 'APL-0001', 'engine_number' => 'ENG-APL-001', 'chassis_number' => 'CHS-APL-001',
             'make' => 'Honda', 'model' => 'TMX', 'year_model' => 2021,
             'body_color' => 'Red', 'body_type' => 'Standard',
             'or_number' => 'OR-APL-001', 'cr_number' => 'CR-APL-001', 'status' => 'active',
@@ -106,21 +99,16 @@ class ViolationAppealTest extends TestCase
     /** Second driver + tricycle + violation, entirely unrelated to $this->driver — for ownership tests. */
     private function makeOtherDriverWithViolation(): array
     {
-        $toda = TodaZone::firstOrCreate(
-            ['code' => 'TODA-APPEAL-TEST-2'],
-            ['name' => 'Other Zone', 'barangay' => 'Bucana', 'is_active' => true]
-        );
         $colorScheme = ColorCodingScheme::create([
             'name' => 'Other Scheme', 'color_hex' => '#00FF00', 'restricted_days' => ['Tuesday'], 'is_active' => true,
         ]);
         $operator = Operator::create([
-            'toda_id' => $toda->id, 'first_name' => 'Other', 'last_name' => 'Driver',
+            'first_name' => 'Other', 'last_name' => 'Driver',
             'contact_number' => '09170000099', 'address' => 'Bucana', 'barangay' => 'Bucana',
             'date_of_birth' => '1991-01-01', 'license_number' => 'LIC-OTHER-001', 'license_expiry_date' => '2028-01-01',
         ]);
         $tricycle = Tricycle::create([
-            'operator_id' => $operator->id, 'toda_zone_id' => $toda->id,
-            'plate_number' => 'OTH-0001', 'engine_number' => 'ENG-OTH-001', 'chassis_number' => 'CHS-OTH-001',
+            'operator_id' => $operator->id, 'plate_number' => 'OTH-0001', 'engine_number' => 'ENG-OTH-001', 'chassis_number' => 'CHS-OTH-001',
             'make' => 'Yamaha', 'model' => 'STX', 'year_model' => 2020,
             'body_color' => 'Green', 'body_type' => 'Standard',
             'or_number' => 'OR-OTH-001', 'cr_number' => 'CR-OTH-001', 'status' => 'active',
@@ -427,8 +415,7 @@ class ViolationAppealTest extends TestCase
     {
         // The OLDER tricycle Driver::tricycle_id still (incorrectly) points at.
         $staleTricycle = Tricycle::create([
-            'operator_id' => $this->driver->operator_id, 'toda_zone_id' => $this->driver->operator->toda_id,
-            'plate_number' => 'OLD-0001', 'engine_number' => 'ENG-OLD-001', 'chassis_number' => 'CHS-OLD-001',
+            'operator_id' => $this->driver->operator_id, 'plate_number' => 'OLD-0001', 'engine_number' => 'ENG-OLD-001', 'chassis_number' => 'CHS-OLD-001',
             'make' => 'Honda', 'model' => 'XRM', 'year_model' => 2018,
             'body_color' => 'Blue', 'body_type' => 'Standard',
             'or_number' => 'OR-OLD-001', 'cr_number' => 'CR-OLD-001', 'status' => 'suspended',

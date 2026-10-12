@@ -2,12 +2,16 @@ import React, { useMemo } from 'react';
 import { Head, Link } from '@inertiajs/react';
 import useBackgroundRefresh from '@/hooks/useBackgroundRefresh';
 import BPLOLayout from '@/Layouts/BPLOLayout';
+import Avatar from '@/Components/Avatar';
 import {
     ChevronLeft, Calendar, Bike, MapPin,
-    User, Phone, ShieldCheck,
+    User, Phone,
     Clock, FileBadge, Check, Mail,
     Navigation
 } from 'lucide-react';
+
+// Shared soft, layered shadow token — same elevation used across the other BPLO/TMO pages.
+const CARD_SHADOW = 'shadow-[0_1px_2px_0_rgba(15,23,42,0.04),0_8px_24px_-8px_rgba(15,23,42,0.10)]';
 
 /**
  * Determine coding day and scheme details from the Sticker Number or registry coding_day.
@@ -62,77 +66,42 @@ export default function RegistryDetails({ registry }) {
 
             <div className="mx-auto max-w-7xl space-y-6 pb-12">
 
-                {/* ══════════════════════════════════════════════════════════════
-                    1. TOP NAVIGATION BAR
-                   ══════════════════════════════════════════════════════════════ */}
-                <div className="flex flex-wrap items-center justify-between gap-3">
+                {/* ── Top Bar: Navigation ── */}
+                <div className="flex items-center justify-between gap-3 border-b border-slate-200/80 pb-4">
                     <Link
                         href="/bplo/registry"
-                        className="group inline-flex items-center gap-1.5 text-xs sm:text-sm font-semibold text-slate-500 hover:text-slate-900 transition-colors"
+                        className="group inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold text-slate-500 hover:text-slate-900 transition-colors"
                     >
                         <ChevronLeft size={16} strokeWidth={2.5} className="text-slate-400 group-hover:text-slate-700 transition-colors" />
                         <span>Back to Active Registry</span>
                     </Link>
-
-                    <div className="flex items-center gap-2">
-                        {registry?.plate_no && (
-                            <span className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-mono font-bold text-[#182B62] shadow-2xs">
-                                PLT-{registry.plate_no}
-                            </span>
-                        )}
-                    </div>
                 </div>
 
-                {/* ══════════════════════════════════════════════════════════════
-                    2. CLEAN PAGE HEADER (Consistent with BPLO Standard)
-                   ══════════════════════════════════════════════════════════════ */}
-                <div className="border-b border-slate-200/80 pb-5">
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                        <div>
-                            <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                                Municipality of Nasugbu &bull; BPLO Tricycle Record
-                            </div>
-                            <h1 className="mt-0.5 text-2xl sm:text-[28px] font-extrabold tracking-tight text-slate-900 leading-tight flex items-center gap-3">
-                                <span>Franchise Unit:</span>
-                                <span className="font-mono text-[#182B62]">No. {registry?.coding_scheme_number || '—'}</span>
+                {/* ── Page Hero: Unit Identification & Status ── */}
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                    <div>
+                        <div className="flex flex-wrap items-center gap-2.5">
+                            <h1 className="text-2xl sm:text-[28px] font-black tracking-tight text-slate-900 leading-tight">
+                                Franchise {registry?.sticker_no || '—'}
                             </h1>
-                            <div className="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs sm:text-sm text-slate-500">
-                                <span className="flex items-center gap-1.5 font-semibold text-slate-800">
-                                    <User size={13} className="text-slate-400 shrink-0" />
-                                    <span>{registry?.operator || 'Registered Tricycle Owner'}</span>
-                                </span>
-                                <span className="text-slate-300 hidden sm:inline">&bull;</span>
-                                <span className="flex items-center gap-1.5 text-slate-600">
-                                    <Bike size={13} className="text-slate-400 shrink-0" />
-                                    <span>{registry?.make || 'Standard Tricycle Unit'}</span>
-                                </span>
-                                <span className="text-slate-300 hidden sm:inline">&bull;</span>
-                                <span className="inline-flex items-center gap-1.5 font-semibold text-slate-800">
-                                    <span className="h-2 w-2 rounded-full shrink-0" style={codingInfo.dotStyle} />
-                                    <span>{codingInfo.day} Coding ({codingInfo.scheme})</span>
-                                </span>
-                            </div>
-                        </div>
-
-                        <div className="flex flex-wrap items-center gap-2 self-start sm:self-center shrink-0">
-                            <span className="inline-flex items-center px-2.5 py-1 rounded-lg bg-slate-900 text-white font-mono text-xs font-black tracking-wider shadow-2xs">
-                                {registry?.plate_no || '—'}
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-md bg-slate-900 text-white font-mono text-xs font-black tracking-wider">
+                                {registry?.plate_no || 'NO PLATE'}
                             </span>
-                            <span className="inline-flex items-center gap-1 rounded-lg bg-slate-100 px-2.5 py-1 font-mono text-xs font-bold text-slate-700 border border-slate-200">
-                                <FileBadge size={12} className="text-slate-400" />
-                                <span>{registry?.sticker_no || 'N/A'}</span>
-                            </span>
-                            {isActive ? (
-                                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200/80 shadow-2xs">
-                                    Active Franchise
-                                </span>
-                            ) : (
-                                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-rose-50 text-rose-700 border border-rose-200/80 shadow-2xs">
-                                    Suspended / Revoked
-                                </span>
-                            )}
                         </div>
+                        <p className="mt-1 text-xs sm:text-sm text-slate-500 font-medium">
+                            {registry?.make || 'Tricycle'} · Official Registry Record · Nasugbu, Batangas
+                        </p>
                     </div>
+
+                    {isActive ? (
+                        <span className="inline-flex items-center self-start sm:self-center px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200/80 shadow-2xs">
+                            Active Franchise
+                        </span>
+                    ) : (
+                        <span className="inline-flex items-center self-start sm:self-center px-3 py-1 rounded-full text-xs font-semibold bg-rose-50 text-rose-700 border border-rose-200/80 shadow-2xs">
+                            Suspended / Revoked
+                        </span>
+                    )}
                 </div>
 
                 {/* ══════════════════════════════════════════════════════════════
@@ -144,7 +113,7 @@ export default function RegistryDetails({ registry }) {
                     <div className="space-y-6">
 
                         {/* Card 1: Tricycle Owner Information */}
-                        <div className="overflow-hidden rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white shadow-xs">
+                        <div className={`overflow-hidden rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white ${CARD_SHADOW}`}>
                             <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50/75 px-5 py-3.5">
                                 <div className="flex items-center gap-2">
                                     <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-[#182B62]/[0.10] to-[#182B62]/[0.02] text-[#182B62]">
@@ -171,9 +140,11 @@ export default function RegistryDetails({ registry }) {
                                         <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Full Name</span>
                                         <span className="text-base font-bold text-slate-900 mt-0.5 block">{registry?.operator || '—'}</span>
                                     </div>
-                                    <div className="h-10 w-10 rounded-full bg-gradient-to-br from-[#182B62] to-[#25449B] text-white flex items-center justify-center text-sm font-bold shadow-2xs shrink-0">
-                                        {registry?.operator ? registry.operator.charAt(0).toUpperCase() : 'D'}
-                                    </div>
+                                    <Avatar
+                                        name={registry?.operator}
+                                        src={registry?.operator_photo}
+                                        className="h-12 w-12 rounded-full bg-gradient-to-br from-[#182B62] to-[#25449B] text-white flex items-center justify-center text-sm font-bold shadow-2xs shrink-0"
+                                    />
                                 </div>
 
                                 {/* First Name & Last Name */}
@@ -242,7 +213,7 @@ export default function RegistryDetails({ registry }) {
 
                         {/* Card 1b: Tricycle Driver — visually distinct from the owner card above;
                             only a separate person when the application says the owner isn't the driver */}
-                        <div className="overflow-hidden rounded-2xl sm:rounded-3xl border border-indigo-200/70 bg-indigo-50/30 shadow-xs">
+                        <div className={`overflow-hidden rounded-2xl sm:rounded-3xl border border-indigo-200/70 bg-indigo-50/30 ${CARD_SHADOW}`}>
                             <div className="flex items-center justify-between border-b border-indigo-100 bg-indigo-50/60 px-5 py-3.5">
                                 <div className="flex items-center gap-2">
                                     <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-indigo-500/[0.12] text-indigo-600">
@@ -307,7 +278,7 @@ export default function RegistryDetails({ registry }) {
                         </div>
 
                         {/* Card 2: Franchise & Route Information */}
-                        <div className="overflow-hidden rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white shadow-xs">
+                        <div className={`overflow-hidden rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white ${CARD_SHADOW}`}>
                             <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50/75 px-5 py-3.5">
                                 <div className="flex items-center gap-2">
                                     <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-500/[0.12] to-emerald-500/[0.02] text-emerald-600">
@@ -365,7 +336,7 @@ export default function RegistryDetails({ registry }) {
                     <div className="space-y-6">
 
                         {/* Card 1: Registered Tricycle Specifications */}
-                        <div className="overflow-hidden rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white shadow-xs">
+                        <div className={`overflow-hidden rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white ${CARD_SHADOW}`}>
                             <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50/75 px-5 py-3.5">
                                 <div className="flex items-center gap-2">
                                     <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-[#182B62]/[0.10] to-[#182B62]/[0.02] text-[#182B62]">
@@ -448,7 +419,7 @@ export default function RegistryDetails({ registry }) {
                         </div>
 
                         {/* Card 2: Color Coding & Traffic Schedule */}
-                        <div className="rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-4 sm:p-5 shadow-xs space-y-4">
+                        <div className={`rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-4 sm:p-5 space-y-4 ${CARD_SHADOW}`}>
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-2">
                                     <Clock size={16} className="text-[#182B62]" />
@@ -467,6 +438,10 @@ export default function RegistryDetails({ registry }) {
                             </div>
 
                             <div className="rounded-xl bg-slate-50 p-4 text-xs space-y-2.5">
+                                <div className="flex items-center justify-between">
+                                    <span className="text-slate-500 font-medium">Sticker Number:</span>
+                                    <span className="font-mono font-bold text-[#182B62]">{registry?.coding_scheme_number || '—'}</span>
+                                </div>
                                 <div className="flex items-center justify-between">
                                     <span className="text-slate-500 font-medium">Coding Day:</span>
                                     <span className="font-bold text-slate-900">{codingInfo.day}</span>

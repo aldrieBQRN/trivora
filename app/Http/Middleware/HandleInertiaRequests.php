@@ -51,7 +51,6 @@ class HandleInertiaRequests extends Middleware
                     'barangay',
                     'license_number',
                     'license_expiry_date',
-                    'toda_id',
                 ])
                 ->first();
 
@@ -73,6 +72,7 @@ class HandleInertiaRequests extends Middleware
                     'role'       => $user->role,
                     'is_active'  => $user->is_active,
                     'profile_photo_path' => $user->profile_photo_path,
+                    'profile_photo_url'  => $user->profile_photo_url,
                 ] : null,
                 'operator' => $operator,
             ],
@@ -80,6 +80,11 @@ class HandleInertiaRequests extends Middleware
             // Header notification bell (unread count + latest items) — lazy, so a partial reload
             // only computes it when asked for (useBackgroundRefresh includes it on every refresh).
             'notifications' => fn () => NotificationController::sharedFor($user),
+
+            // Driver panel sidebar "Download Driver App" card (null → card hidden).
+            'driverAppUrl' => $user && $user->role === 'tricycle_driver'
+                ? config('services.driver_app.download_url')
+                : null,
 
             // Flash messages available as toast notifications in React
             'flash' => [

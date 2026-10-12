@@ -8,7 +8,6 @@ use App\Models\ColorCodingScheme;
 use App\Models\Driver;
 use App\Models\FranchiseScheme;
 use App\Models\Operator;
-use App\Models\TodaZone;
 use App\Models\Tricycle;
 use App\Models\User;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
@@ -20,8 +19,6 @@ class DriverApiTest extends TestCase
 {
     use DatabaseTransactions;
 
-    protected TodaZone $todaA;
-    protected TodaZone $todaB;
     protected Operator $operatorA;
     protected Operator $operatorB;
     protected Tricycle $tricycleA;
@@ -35,15 +32,7 @@ class DriverApiTest extends TestCase
     {
         parent::setUp();
 
-        $this->todaA = TodaZone::firstOrCreate(
-            ['code' => 'TEST-TODA-01'],
-            ['name' => 'Test Toda Zone A', 'barangay' => 'Poblacion']
-        );
 
-        $this->todaB = TodaZone::firstOrCreate(
-            ['code' => 'TEST-TODA-02'],
-            ['name' => 'Test Toda Zone B', 'barangay' => 'Bucana']
-        );
 
         $this->colorScheme = ColorCodingScheme::firstOrCreate(
             ['name' => 'Test Red'],
@@ -60,7 +49,6 @@ class DriverApiTest extends TestCase
         $this->operatorA = Operator::firstOrCreate(
             ['license_number' => 'N01-TEST-123456'],
             [
-                'toda_id'             => $this->todaA->id,
                 'first_name'          => 'Juan',
                 'last_name'           => 'Dela Cruz',
                 'contact_number'      => '09171234567',
@@ -75,7 +63,6 @@ class DriverApiTest extends TestCase
             ['plate_number' => 'TST-1234'],
             [
                 'operator_id'    => $this->operatorA->id,
-                'toda_zone_id'   => $this->todaA->id,
                 'engine_number'  => 'ENG-TEST-12345',
                 'chassis_number' => 'CHS-TEST-12345',
                 'make'           => 'Kawasaki',
@@ -108,7 +95,6 @@ class DriverApiTest extends TestCase
         $this->operatorB = Operator::firstOrCreate(
             ['license_number' => 'N01-TEST-654321'],
             [
-                'toda_id'             => $this->todaB->id,
                 'first_name'          => 'Mario',
                 'last_name'           => 'Santos',
                 'contact_number'      => '09179876543',
@@ -123,7 +109,6 @@ class DriverApiTest extends TestCase
             ['plate_number' => 'TST-5678'],
             [
                 'operator_id'    => $this->operatorB->id,
-                'toda_zone_id'   => $this->todaB->id,
                 'engine_number'  => 'ENG-TEST-54321',
                 'chassis_number' => 'CHS-TEST-54321',
                 'make'           => 'Suzuki',
@@ -159,7 +144,6 @@ class DriverApiTest extends TestCase
         string $expiryDate
     ): FranchiseScheme {
         $operator = Operator::create([
-            'toda_id'             => $this->todaA->id,
             'first_name'          => 'Test',
             'last_name'           => 'Operator',
             'contact_number'      => '09170000000',
@@ -172,7 +156,6 @@ class DriverApiTest extends TestCase
 
         $tricycle = Tricycle::create([
             'operator_id'    => $operator->id,
-            'toda_zone_id'   => $this->todaA->id,
             'plate_number'   => $plateNumber,
             'engine_number'  => 'ENG-' . $plateNumber,
             'chassis_number' => 'CHS-' . $plateNumber,
@@ -341,15 +324,14 @@ class DriverApiTest extends TestCase
     }
 
     #[Test]
-    public function verified_franchise_returns_the_correct_tricycle_plate_and_toda()
+    public function verified_franchise_returns_the_correct_tricycle_plate()
     {
         $response = $this->postJson('/api/v1/driver/verify-eligibility', [
             'franchise_number' => 'FS-TEST-BBBB',
         ]);
 
         $response->assertStatus(200)
-            ->assertJsonFragment(['plate_number' => 'TST-5678'])
-            ->assertJsonFragment(['toda_zone' => 'Test Toda Zone B']);
+            ->assertJsonFragment(['plate_number' => 'TST-5678']);
     }
 
     #[Test]

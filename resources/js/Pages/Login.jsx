@@ -72,11 +72,8 @@ const CSS = `
   position: absolute;
   inset: 0;
   background-image:
-    linear-gradient(155deg, rgba(18, 40, 102, 0.92) 0%, rgba(37, 68, 155, 0.86) 55%, rgba(15, 33, 85, 0.95) 100%),
-    url('/images/nasugbu-bg.jpg');
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
+    linear-gradient(155deg, rgba(18, 40, 102, 0.92) 0%, rgba(37, 68, 155, 0.86) 55%, rgba(15, 33, 85, 0.95) 100%);
+  background-color: #1B3478;
   z-index: 0;
 }
 

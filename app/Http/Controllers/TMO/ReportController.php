@@ -15,7 +15,6 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
-use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Worksheet\PageSetup;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -70,104 +69,64 @@ class ReportController extends Controller
 
     public function exportViolationsExcel(Request $request): StreamedResponse
     {
+        $format = $this->exportFormat($request);
         [$from, $to] = $this->resolveDateRange($request);
         $data = $this->violationsReport($from, $to, $request);
+        $filename = $this->exportFilename('trivora_violations_report_' . $from->toDateString() . '_to_' . $to->toDateString(), $format);
 
-        $spreadsheet = new Spreadsheet();
-        $spreadsheet->getDefaultStyle()->getFont()->setName('Segoe UI');
-        $sheet = $spreadsheet->getActiveSheet();
-        $sheet->setTitle('Violations Report');
-        $sheet->getPageSetup()->setOrientation(PageSetup::ORIENTATION_LANDSCAPE);
+        $this->logReportExport($format, $filename, 'Violations & Compliance', [
+            'report'        => 'violations',
+            'from'          => $from->toDateString(),
+            'to'            => $to->toDateString(),
+            'total_records' => count($data['records']),
+        ], " ({$from->toDateString()} to {$to->toDateString()})");
 
-        $row = $this->writeReportHeader(
-            $sheet,
-            'Violations & Compliance Report',
-            'Period: ' . $from->format('F d, Y') . ' to ' . $to->format('F d, Y'),
-            11
-        );
-
-        $row = $this->writeKpiRow($sheet, $row, [
-            'Total Violations' => number_format($data['kpis']['total_violations']),
-            'Fines Assessed'   => 'PHP ' . number_format($data['kpis']['fines_assessed'], 2),
-            'Fines Collected'  => 'PHP ' . number_format($data['kpis']['fines_collected'], 2),
-            'Collection Rate'  => number_format($data['kpis']['collection_rate'], 1) . '%',
-            'Appeals Filed'    => number_format($data['kpis']['appeals_filed']),
-        ], [2, 2, 2, 2, 3]);
-
-        $row = $this->writeSectionTitle($sheet, $row, 'Violation Status Breakdown');
-        $row = $this->writeTable(
-            $sheet,
-            $row,
-            ['Status', 'Violations Count'],
-            collect($data['by_status'])->map(fn ($s) => [$s['label'], (int) $s['count']])->all()
-        );
-
-        $row = $this->writeSectionTitle($sheet, $row, 'Official Violation Log');
-        $row = $this->writeTable(
-            $sheet,
-            $row,
-            ['Ticket No.', 'Date', 'Time', 'Type', 'Detection Method', 'Operator', 'Plate No.', 'Fine Amount (PHP)', 'Paid', 'Appeal Status'],
-            $data['records']->map(fn ($r) => [
-                $r['id'],
-                $r['date'],
-                $r['time'],
-                $r['type'],
-                $r['detection_method'],
-                $r['operator'],
-                $r['plate'],
-                (float) $r['fine'],
-                $r['is_paid'] ? 'Paid' : 'Unpaid',
-                $r['appeal_status'] ? ucfirst(str_replace('_', ' ', $r['appeal_status'])) : 'None',
-            ])->all(),
-            true
-        );
-
-        $filename = 'trivora_violations_report_' . $from->toDateString() . '_to_' . $to->toDateString() . '.xlsx';
-
-        AuditService::log(
-            module: 'reports',
-            action: 'report.exported_excel',
-            record: null,
-            description: "Exported Violations & Compliance Excel Report ({$from->toDateString()} to {$to->toDateString()})",
-            oldValues: null,
-            newValues: null,
-            targetReference: $filename,
-            metadata: [
-                'report' => 'violations',
-                'filename' => $filename,
-                'from' => $from->toDateString(),
-                'to' => $to->toDateString(),
-                'total_records' => count($data['records']),
-            ]
-        );
-
-        return $this->streamExcel($spreadsheet, $filename);
+        return $this->streamMunicipalReport($format, [
+            'title'      => 'Violations & Compliance Report',
+            'subtitle'   => 'Period: ' . $from->format('F d, Y') . ' to ' . $to->format('F d, Y'),
+            'sheetTitle' => 'Violations Report',
+            'docRef'     => 'LGU-NAS-TMO-VIOLATIONS-RPT',
+            'columns'    => 11,
+            'kpis'       => [
+                'Total Violations' => number_format($data['kpis']['total_violations']),
+                'Fines Assessed'   => 'PHP ' . number_format($data['kpis']['fines_assessed'], 2),
+                'Fines Collected'  => 'PHP ' . number_format($data['kpis']['fines_collected'], 2),
+                'Collection Rate'  => number_format($data['kpis']['collection_rate'], 1) . '%',
+                'Appeals Filed'    => number_format($data['kpis']['appeals_filed']),
+            ],
+            'kpiSpans'   => [2, 2, 2, 2, 3],
+            'sections'   => [
+                [
+                    'title'   => 'Violation Status Breakdown',
+                    'headers' => ['Status', 'Violations Count'],
+                    'rows'    => collect($data['by_status'])->map(fn ($s) => [$s['label'], (int) $s['count']])->all(),
+                ],
+                [
+                    'title'   => 'Official Violation Log',
+                    'headers' => ['Ticket No.', 'Date', 'Time', 'Type', 'Detection Method', 'Operator', 'Plate No.', 'Fine Amount (PHP)', 'Paid', 'Appeal Status'],
+                    'rows'    => $data['records']->map(fn ($r) => [
+                        $r['id'],
+                        $r['date'],
+                        $r['time'],
+                        $r['type'],
+                        $r['detection_method'],
+                        $r['operator'],
+                        $r['plate'],
+                        $format === 'pdf' ? 'PHP ' . number_format((float) $r['fine'], 2) : (float) $r['fine'],
+                        $r['is_paid'] ? 'Paid' : 'Unpaid',
+                        $r['appeal_status'] ? ucfirst(str_replace('_', ' ', $r['appeal_status'])) : 'None',
+                    ])->all(),
+                ],
+            ],
+        ], $filename);
     }
 
     public function exportApplicationsExcel(Request $request): StreamedResponse
     {
+        $format = $this->exportFormat($request);
         [$from, $to] = $this->resolveDateRange($request);
         $data = $this->applicationsReport($from, $to, $request);
-
-        $spreadsheet = new Spreadsheet();
-        $spreadsheet->getDefaultStyle()->getFont()->setName('Segoe UI');
-        $sheet = $spreadsheet->getActiveSheet();
-        $sheet->setTitle('Applications Report');
-        $sheet->getPageSetup()->setOrientation(PageSetup::ORIENTATION_PORTRAIT);
-
-        $row = $this->writeReportHeader(
-            $sheet,
-            'Franchise & Applications Report',
-            'Period: ' . $from->format('F d, Y') . ' to ' . $to->format('F d, Y'),
-            4
-        );
-
-        $row = $this->writeKpiRow($sheet, $row, [
-            'Applications Submitted' => number_format($data['kpis']['submitted']),
-            'Completed Franchises'   => number_format($data['kpis']['completed']),
-            'Rejection Rate'         => number_format($data['kpis']['rejection_rate'], 1) . '%',
-            'Avg. Processing Time'   => $data['kpis']['avg_processing_days'] !== null ? number_format($data['kpis']['avg_processing_days'], 1) . ' days' : 'N/A',
-        ], [1, 1, 1, 1]);
+        $filename = $this->exportFilename('trivora_applications_report_' . $from->toDateString() . '_to_' . $to->toDateString(), $format);
 
         $totalSubmitted = max($data['kpis']['submitted'], 1);
         $stagePhases = [
@@ -180,175 +139,161 @@ class ReportController extends Controller
             'Completed'            => 'Franchise Issued',
         ];
 
-        $row = $this->writeSectionTitle($sheet, $row, 'Current Stage Breakdown');
-        $row = $this->writeTable(
-            $sheet,
-            $row,
-            ['Application Stage', 'Workflow Phase', 'Applications Count', 'Share of Total'],
-            $data['by_stage']->map(fn ($s) => [
-                $s['stage'],
-                $stagePhases[$s['stage']] ?? 'Processing',
-                (int) $s['count'],
-                number_format(($s['count'] / $totalSubmitted) * 100, 1) . '%',
-            ])->all()
-        );
-
-        $row = $this->writeSectionTitle($sheet, $row, 'Application Type Distribution');
-        $row = $this->writeTable(
-            $sheet,
-            $row,
-            ['Application Type', 'Applicant Category', 'Applications Count', 'Share of Total'],
+        $sections = [
             [
-                ['New Franchise', 'First-time Applicant', (int) $data['type_split']['new'], number_format(($data['type_split']['new'] / $totalSubmitted) * 100, 1) . '%'],
-                ['Renewal', 'Existing Franchise Renewal', (int) $data['type_split']['renewal'], number_format(($data['type_split']['renewal'] / $totalSubmitted) * 100, 1) . '%'],
-            ]
-        );
+                'title'   => 'Current Stage Breakdown',
+                'headers' => ['Application Stage', 'Workflow Phase', 'Applications Count', 'Share of Total'],
+                'rows'    => $data['by_stage']->map(fn ($s) => [
+                    $s['stage'],
+                    $stagePhases[$s['stage']] ?? 'Processing',
+                    (int) $s['count'],
+                    number_format(($s['count'] / $totalSubmitted) * 100, 1) . '%',
+                ])->all(),
+            ],
+            [
+                'title'   => 'Application Type Distribution',
+                'headers' => ['Application Type', 'Applicant Category', 'Applications Count', 'Share of Total'],
+                'rows'    => [
+                    ['New Franchise', 'First-time Applicant', (int) $data['type_split']['new'], number_format(($data['type_split']['new'] / $totalSubmitted) * 100, 1) . '%'],
+                    ['Renewal', 'Existing Franchise Renewal', (int) $data['type_split']['renewal'], number_format(($data['type_split']['renewal'] / $totalSubmitted) * 100, 1) . '%'],
+                ],
+            ],
+        ];
 
         if (count($data['avg_time_in_stage'])) {
-            $row = $this->writeSectionTitle($sheet, $row, 'Average Processing Time by Stage');
-            $row = $this->writeTable(
-                $sheet,
-                $row,
-                ['Workflow Status', 'Category', 'Avg. Hours in Stage', 'Equivalent Days'],
-                $data['avg_time_in_stage']->map(fn ($s) => [
+            $sections[] = [
+                'title'   => 'Average Processing Time by Stage',
+                'headers' => ['Workflow Status', 'Category', 'Avg. Hours in Stage', 'Equivalent Days'],
+                'rows'    => $data['avg_time_in_stage']->map(fn ($s) => [
                     $s['status'],
                     'Stage SLA Metric',
                     (float) $s['avg_hours'],
                     number_format($s['avg_hours'] / 24, 1) . ' days',
-                ])->all()
-            );
+                ])->all(),
+            ];
         }
 
-        $filename = 'trivora_applications_report_' . $from->toDateString() . '_to_' . $to->toDateString() . '.xlsx';
+        $this->logReportExport($format, $filename, 'Franchise & Applications', [
+            'report' => 'applications',
+            'from'   => $from->toDateString(),
+            'to'     => $to->toDateString(),
+        ], " ({$from->toDateString()} to {$to->toDateString()})");
 
-        AuditService::log(
-            module: 'reports',
-            action: 'report.exported_excel',
-            record: null,
-            description: "Exported Franchise & Applications Excel Report ({$from->toDateString()} to {$to->toDateString()})",
-            oldValues: null,
-            newValues: null,
-            targetReference: $filename,
-            metadata: [
-                'report' => 'applications',
-                'filename' => $filename,
-                'from' => $from->toDateString(),
-                'to' => $to->toDateString(),
-            ]
-        );
-
-        return $this->streamExcel($spreadsheet, $filename);
+        return $this->streamMunicipalReport($format, [
+            'title'       => 'Franchise & Applications Report',
+            'subtitle'    => 'Period: ' . $from->format('F d, Y') . ' to ' . $to->format('F d, Y'),
+            'sheetTitle'  => 'Applications Report',
+            'docRef'      => 'LGU-NAS-TMO-APPLICATIONS-RPT',
+            'orientation' => PageSetup::ORIENTATION_PORTRAIT,
+            'columns'     => 4,
+            'kpis'        => [
+                'Applications Submitted' => number_format($data['kpis']['submitted']),
+                'Completed Franchises'   => number_format($data['kpis']['completed']),
+                'Rejection Rate'         => number_format($data['kpis']['rejection_rate'], 1) . '%',
+                'Avg. Processing Time'   => $data['kpis']['avg_processing_days'] !== null ? number_format($data['kpis']['avg_processing_days'], 1) . ' days' : 'N/A',
+            ],
+            'kpiSpans'    => [1, 1, 1, 1],
+            'sections'    => $sections,
+        ], $filename);
     }
 
     public function exportFleetExcel(Request $request): StreamedResponse
     {
+        $format = $this->exportFormat($request);
         [$from, $to] = $this->resolveOptionalDateRange($request);
         $data = $this->fleetReport($from, $to, $request);
-
-        $spreadsheet = new Spreadsheet();
-        $spreadsheet->getDefaultStyle()->getFont()->setName('Segoe UI');
-        $sheet = $spreadsheet->getActiveSheet();
-        $sheet->setTitle('Fleet Report');
-        $sheet->getPageSetup()->setOrientation(PageSetup::ORIENTATION_LANDSCAPE);
-
-        $row = $this->writeReportHeader(
-            $sheet,
-            'Fleet & Franchise Registry Report',
-            ($from && $to)
-                ? 'Registered: ' . $from->format('F d, Y') . ' to ' . $to->format('F d, Y')
-                : 'As of: ' . now()->format('F d, Y \a\t h:i A'),
-            5
-        );
-
-        $row = $this->writeKpiRow($sheet, $row, [
-            'Total Registered'   => number_format($data['kpis']['total']),
-            'Active Units'       => number_format($data['kpis']['active']),
-            'Unregistered Units' => number_format($data['kpis']['unregistered']),
-            'Suspended Units'    => number_format($data['kpis']['suspended']),
-            'Revoked Units'      => number_format($data['kpis']['revoked']),
-        ], [1, 1, 1, 1, 1]);
+        $filename = $this->exportFilename(($from && $to)
+            ? 'trivora_fleet_report_' . $from->toDateString() . '_to_' . $to->toDateString()
+            : 'trivora_fleet_report_' . now()->toDateString(), $format);
 
         $totalFleet = max($data['kpis']['total'], 1);
 
-        $row = $this->writeSectionTitle($sheet, $row, 'Fleet Status Breakdown');
-        $row = $this->writeTable(
-            $sheet,
-            $row,
-            ['Status', 'Units Count'],
-            collect($data['by_status'])->map(fn ($s) => [$s['label'], (int) $s['count']])->all()
-        );
-
-        $row = $this->writeSectionTitle($sheet, $row, 'Registry Activity (Daily)');
-        $row = $this->writeTable(
-            $sheet,
-            $row,
-            ['Date', 'Units Registered'],
-            collect($data['registration_trend'])->map(fn ($t) => [$t['date'], (int) $t['count']])->all()
-        );
-
-        $row = $this->writeSectionTitle($sheet, $row, 'Fleet by Color Coding Scheme');
-        $row = $this->writeTable(
-            $sheet,
-            $row,
-            ['Color Coding Scheme', 'Color Hex Code', 'Units Assigned', 'Fleet Share', 'Scheme Status'],
-            $data['by_color_scheme']->map(fn ($s) => [
-                $s['scheme'],
-                $s['color'] ?: 'Standard',
-                (int) $s['count'],
-                number_format(($s['count'] / $totalFleet) * 100, 1) . '%',
-                'Designated Route',
-            ])->all()
-        );
-
-        $row = $this->writeSectionTitle($sheet, $row, 'Tracking Method Adoption');
-        $row = $this->writeTable(
-            $sheet,
-            $row,
-            ['Tracking Method', 'Technology Type', 'Units Count', 'Adoption Share', 'Compliance Mode'],
+        $sections = [
             [
-                ['IoT GPS Device', 'Dedicated Hardware Telemetry', (int) $data['tracking_split']['iot'], number_format($data['kpis']['iot_pct'], 1) . '%', 'Compliant'],
-                ['Mobile Driver App', 'Smartphone GPS Telemetry', (int) $data['tracking_split']['mobile'], number_format($data['kpis']['mobile_pct'], 1) . '%', 'Compliant'],
-            ]
-        );
+                'title'   => 'Fleet Status Breakdown',
+                'headers' => ['Status', 'Units Count'],
+                'rows'    => collect($data['by_status'])->map(fn ($s) => [$s['label'], (int) $s['count']])->all(),
+            ],
+            [
+                'title'   => 'Registry Activity (Daily)',
+                'headers' => ['Date', 'Units Registered'],
+                'rows'    => collect($data['registration_trend'])->map(fn ($t) => [$t['date'], (int) $t['count']])->all(),
+            ],
+            [
+                'title'   => 'Fleet by Color Coding Scheme',
+                'headers' => ['Color Coding Scheme', 'Color Hex Code', 'Units Assigned', 'Fleet Share', 'Scheme Status'],
+                'rows'    => $data['by_color_scheme']->map(fn ($s) => [
+                    $s['scheme'],
+                    $s['color'] ?: 'Standard',
+                    (int) $s['count'],
+                    number_format(($s['count'] / $totalFleet) * 100, 1) . '%',
+                    'Designated Route',
+                ])->all(),
+            ],
+            [
+                'title'   => 'Tracking Method Adoption',
+                'headers' => ['Tracking Method', 'Technology Type', 'Units Count', 'Adoption Share', 'Compliance Mode'],
+                'rows'    => [
+                    ['IoT GPS Device', 'Dedicated Hardware Telemetry', (int) $data['tracking_split']['iot'], number_format($data['kpis']['iot_pct'], 1) . '%', 'Compliant'],
+                    ['Mobile Driver App', 'Smartphone GPS Telemetry', (int) $data['tracking_split']['mobile'], number_format($data['kpis']['mobile_pct'], 1) . '%', 'Compliant'],
+                ],
+            ],
+        ];
 
         if (count($data['expiring'])) {
-            $row = $this->writeSectionTitle($sheet, $row, 'Franchises Expiring Within 90 Days');
-            $row = $this->writeTable(
-                $sheet,
-                $row,
-                ['Franchise No.', 'Operator Name', 'Plate No.', 'Expiry Date', 'Days Left'],
-                $data['expiring']->map(fn ($e) => [
+            $sections[] = [
+                'title'   => 'Franchises Expiring Within 90 Days',
+                'headers' => ['Franchise No.', 'Operator Name', 'Plate No.', 'Expiry Date', 'Days Left'],
+                'rows'    => $data['expiring']->map(fn ($e) => [
                     $e['franchise_number'],
                     $e['operator'],
                     $e['plate'],
                     $e['expiry_date'],
                     (int) $e['days_left'],
-                ])->all()
-            );
+                ])->all(),
+            ];
         }
 
-        $filename = ($from && $to)
-            ? 'trivora_fleet_report_' . $from->toDateString() . '_to_' . $to->toDateString() . '.xlsx'
-            : 'trivora_fleet_report_' . now()->toDateString() . '.xlsx';
+        $this->logReportExport($format, $filename, 'Fleet & Franchise Registry', [
+            'report'      => 'fleet',
+            'from'        => $from?->toDateString(),
+            'to'          => $to?->toDateString(),
+            'total_units' => $data['kpis']['total'],
+        ]);
 
+        return $this->streamMunicipalReport($format, [
+            'title'      => 'Fleet & Franchise Registry Report',
+            'subtitle'   => ($from && $to)
+                ? 'Registered: ' . $from->format('F d, Y') . ' to ' . $to->format('F d, Y')
+                : 'As of: ' . now()->format('F d, Y \a\t h:i A'),
+            'sheetTitle' => 'Fleet Report',
+            'docRef'     => 'LGU-NAS-TMO-FLEET-RPT',
+            'columns'    => 5,
+            'kpis'       => [
+                'Total Registered'   => number_format($data['kpis']['total']),
+                'Active Units'       => number_format($data['kpis']['active']),
+                'Unregistered Units' => number_format($data['kpis']['unregistered']),
+                'Suspended Units'    => number_format($data['kpis']['suspended']),
+                'Revoked Units'      => number_format($data['kpis']['revoked']),
+            ],
+            'kpiSpans'   => [1, 1, 1, 1, 1],
+            'sections'   => $sections,
+        ], $filename);
+    }
+
+    /** Records a report export (Excel or PDF) in the system activity log. */
+    private function logReportExport(string $format, string $filename, string $reportName, array $metadata, string $periodSuffix = ''): void
+    {
         AuditService::log(
             module: 'reports',
-            action: 'report.exported_excel',
+            action: 'report.exported_' . $format,
             record: null,
-            description: 'Exported Fleet & Franchise Registry Excel Report',
+            description: "Exported {$reportName} " . ($format === 'pdf' ? 'PDF' : 'Excel') . " Report{$periodSuffix}",
             oldValues: null,
             newValues: null,
             targetReference: $filename,
-            metadata: [
-                'report'      => 'fleet',
-                'filename'    => $filename,
-                'from'        => $from?->toDateString(),
-                'to'          => $to?->toDateString(),
-                'total_units' => $data['kpis']['total'],
-            ]
+            metadata: ['filename' => $filename, 'format' => $format] + $metadata
         );
-
-        return $this->streamExcel($spreadsheet, $filename);
     }
 
     // -------------------------------------------------------------------------

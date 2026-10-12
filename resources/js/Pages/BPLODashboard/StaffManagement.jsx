@@ -7,13 +7,20 @@ import {
     Users, UserPlus, Search, ShieldCheck, CheckCircle2,
     XCircle, Clock, Edit2, Trash2, Key, Mail,
     User, Lock, X, AlertCircle, RotateCcw,
-    ChevronLeft, ChevronRight,
+    ChevronLeft, ChevronRight, Eye, EyeOff, Loader2,
 } from 'lucide-react';
-import { Modal, Button, Label, ErrorText, Input } from '@/Components/TMO';
+import { Modal } from '@/Components/TMO';
 
+import Avatar from '@/Components/Avatar';
 // Shared soft, layered shadow token — same elevation language used across the redesigned TMO
 // panel pages, so BPLO cards read as part of the same product.
 const CARD_SHADOW = 'shadow-[0_1px_2px_0_rgba(15,23,42,0.04),0_8px_24px_-8px_rgba(15,23,42,0.10)]';
+
+const STATUS_OPTIONS = [
+    { value: 'all', label: 'All Staff' },
+    { value: 'active', label: 'Active' },
+    { value: 'inactive', label: 'Inactive' },
+];
 
 export default function StaffManagement({
     users = [],
@@ -245,7 +252,7 @@ export default function StaffManagement({
                     <button
                         type="button"
                         onClick={() => setAddModalOpen(true)}
-                        className="inline-flex items-center gap-2 rounded-xl bg-[#182B62] hover:bg-[#25449B] px-4 py-2.5 text-xs font-bold text-white shadow-xs transition-all cursor-pointer"
+                        className="inline-flex items-center gap-2 rounded-xl bg-[#182B62] hover:bg-[#25449B] px-4 py-2.5 text-xs font-bold text-white shadow-xs transition-all active:scale-[0.98] cursor-pointer"
                     >
                         <UserPlus size={15} strokeWidth={2.2} />
                         <span>Add BPLO Staff</span>
@@ -254,99 +261,150 @@ export default function StaffManagement({
             </div>
 
             {/* ══════════════════════════════════════════════════════════════
-                2. PREMIUM KPI CARD DECK (TMO Staff Management style)
+                2. COMPACT OPERATIONAL KPI DECK (1 card per row on mobile)
                ══════════════════════════════════════════════════════════════ */}
-            <div className="mb-5 grid grid-cols-1 gap-3.5 sm:gap-4 sm:grid-cols-2 lg:grid-cols-4 items-stretch">
-                <div className="flex flex-col justify-between rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-4 sm:p-5 shadow-xs hover:border-slate-300 transition-all">
-                    <div className="flex items-center justify-between">
-                        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-[#182B62]/[0.10] to-[#182B62]/[0.02] text-[#182B62]">
-                            <Users size={16} strokeWidth={2.2} />
+            <div className="mb-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4 items-stretch">
+                {/* Card 1: Total Staff */}
+                <div className={`flex flex-col justify-between rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-4 sm:p-5 lg:p-6 ${CARD_SHADOW} transition-all hover:border-slate-300 hover:shadow-[0_4px_6px_-1px_rgba(15,23,42,0.06),0_12px_28px_-8px_rgba(15,23,42,0.14)]`}>
+                    <div>
+                        <div className="flex items-center justify-between border-b border-slate-100 pb-2 sm:pb-2.5">
+                            <span className="font-['Plus_Jakarta_Sans',sans-serif] text-[10px] sm:text-[10.5px] font-bold uppercase tracking-wider text-slate-400">
+                                Total Staff
+                            </span>
+                            <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-xl bg-indigo-50 border border-indigo-100 text-[#182B62]">
+                                <Users size={15} strokeWidth={2.2} />
+                            </div>
                         </div>
-                        <span className="text-[11px] font-semibold text-slate-400">All-Time</span>
+                        <div className="mt-2 sm:mt-2.5 flex items-baseline gap-1.5 sm:gap-2">
+                            <span className="font-['Plus_Jakarta_Sans',sans-serif] text-xl sm:text-2xl lg:text-3xl font-black tracking-tight tabular-nums text-slate-900 leading-none">
+                                {stats.total}
+                            </span>
+                            <span className="font-['Plus_Jakarta_Sans',sans-serif] text-[9.5px] sm:text-[10.5px] font-extrabold uppercase tracking-wider text-slate-400">
+                                {stats.total === 1 ? 'Officer' : 'Personnel'}
+                            </span>
+                        </div>
+                        <p className="mt-1 text-[10px] sm:text-[11px] font-medium text-slate-500 font-['Plus_Jakarta_Sans',sans-serif] line-clamp-1">
+                            Authorized municipal BPLO staff
+                        </p>
                     </div>
-                    <div className="mt-3">
-                        <span className="text-2xl sm:text-3xl font-extrabold tracking-tight tabular-nums text-slate-900">
-                            {stats.total}
+
+                    <div className="mt-3 rounded-xl bg-slate-50 border border-slate-100/90 px-2.5 py-1.5 sm:p-2.5 flex items-center justify-between text-[10.5px] sm:text-xs">
+                        <span className="font-['Plus_Jakarta_Sans',sans-serif] font-semibold text-slate-400 shrink-0">Roster:</span>
+                        <span className="font-['Plus_Jakarta_Sans',sans-serif] font-bold text-slate-800 shrink-0">
+                            All Officers
                         </span>
-                        <p className="mt-0.5 text-xs font-semibold text-slate-700">Total Staff</p>
-                    </div>
-                    <div className="mt-3.5 flex items-center justify-between border-t border-slate-100 pt-2.5 text-[11px]">
-                        <span className="text-slate-400">Roster</span>
-                        <span className="font-semibold text-slate-700">Licensing Unit</span>
                     </div>
                 </div>
 
-                <div className="flex flex-col justify-between rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-4 sm:p-5 shadow-xs hover:border-slate-300 transition-all">
-                    <div className="flex items-center justify-between">
-                        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-500/[0.14] to-emerald-500/[0.02] text-emerald-600">
-                            <CheckCircle2 size={16} strokeWidth={2.2} />
+                {/* Card 2: Active Officers */}
+                <div className={`flex flex-col justify-between rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-4 sm:p-5 lg:p-6 ${CARD_SHADOW} transition-all hover:border-slate-300 hover:shadow-[0_4px_6px_-1px_rgba(15,23,42,0.06),0_12px_28px_-8px_rgba(15,23,42,0.14)]`}>
+                    <div>
+                        <div className="flex items-center justify-between border-b border-slate-100 pb-2 sm:pb-2.5">
+                            <span className="font-['Plus_Jakarta_Sans',sans-serif] text-[10px] sm:text-[10.5px] font-bold uppercase tracking-wider text-slate-400">
+                                Active Officers
+                            </span>
+                            <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-xl bg-emerald-50 border border-emerald-100 text-emerald-600">
+                                <CheckCircle2 size={15} strokeWidth={2.2} />
+                            </div>
                         </div>
-                        <span className="inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-0.5 text-[10px] font-bold text-emerald-700 border border-emerald-200/70">
-                            Signed In
-                        </span>
+                        <div className="mt-2 sm:mt-2.5 flex items-baseline gap-1.5 sm:gap-2">
+                            <span className="font-['Plus_Jakarta_Sans',sans-serif] text-xl sm:text-2xl lg:text-3xl font-black tracking-tight tabular-nums text-emerald-600 leading-none">
+                                {stats.active}
+                            </span>
+                            <span className="font-['Plus_Jakarta_Sans',sans-serif] text-[9.5px] sm:text-[10.5px] font-extrabold uppercase tracking-wider text-slate-400">
+                                {stats.active === 1 ? 'Active' : 'Active'}
+                            </span>
+                        </div>
+                        <p className="mt-1 text-[10px] sm:text-[11px] font-medium text-slate-500 font-['Plus_Jakarta_Sans',sans-serif] line-clamp-1">
+                            Personnel with sign-in access
+                        </p>
                     </div>
-                    <div className="mt-3">
-                        <span className="text-2xl sm:text-3xl font-extrabold tracking-tight tabular-nums text-slate-900">
-                            {stats.active}
+
+                    <div className="mt-3 rounded-xl bg-slate-50 border border-slate-100/90 px-2.5 py-1.5 sm:p-2.5 flex items-center justify-between text-[10.5px] sm:text-xs">
+                        <span className="font-['Plus_Jakarta_Sans',sans-serif] font-semibold text-slate-400 shrink-0">Access:</span>
+                        <span className="font-['Plus_Jakarta_Sans',sans-serif] font-bold text-emerald-700 shrink-0">
+                            Can Sign In
                         </span>
-                        <p className="mt-0.5 text-xs font-semibold text-slate-700">Active Officers</p>
-                    </div>
-                    <div className="mt-3.5 flex items-center justify-between border-t border-slate-100 pt-2.5 text-[11px]">
-                        <span className="text-slate-400">Access</span>
-                        <span className="font-semibold text-emerald-700">Can Sign In</span>
                     </div>
                 </div>
 
-                <div className="flex flex-col justify-between rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-4 sm:p-5 shadow-xs hover:border-slate-300 transition-all">
-                    <div className="flex items-center justify-between">
-                        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-rose-500/[0.14] to-rose-500/[0.02] text-rose-600">
-                            <XCircle size={16} strokeWidth={2.2} />
+                {/* Card 3: Inactive Accounts */}
+                <div className={`flex flex-col justify-between rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-4 sm:p-5 lg:p-6 ${CARD_SHADOW} transition-all hover:border-slate-300 hover:shadow-[0_4px_6px_-1px_rgba(15,23,42,0.06),0_12px_28px_-8px_rgba(15,23,42,0.14)]`}>
+                    <div>
+                        <div className="flex items-center justify-between border-b border-slate-100 pb-2 sm:pb-2.5">
+                            <span className="font-['Plus_Jakarta_Sans',sans-serif] text-[10px] sm:text-[10.5px] font-bold uppercase tracking-wider text-slate-400">
+                                Inactive Accounts
+                            </span>
+                            <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-xl bg-rose-50 border border-rose-100 text-rose-600">
+                                <XCircle size={15} strokeWidth={2.2} />
+                            </div>
                         </div>
-                        <span className="inline-flex items-center rounded-full bg-rose-50 px-2 py-0.5 text-[10px] font-bold text-rose-700 border border-rose-200/70">
-                            Disabled
-                        </span>
+                        <div className="mt-2 sm:mt-2.5 flex items-baseline gap-1.5 sm:gap-2">
+                            <span className={`font-['Plus_Jakarta_Sans',sans-serif] text-xl sm:text-2xl lg:text-3xl font-black tracking-tight tabular-nums leading-none ${
+                                stats.inactive > 0 ? 'text-rose-600' : 'text-slate-900'
+                            }`}>
+                                {stats.inactive}
+                            </span>
+                            <span className="font-['Plus_Jakarta_Sans',sans-serif] text-[9.5px] sm:text-[10.5px] font-extrabold uppercase tracking-wider text-slate-400">
+                                {stats.inactive === 1 ? 'Disabled' : 'Disabled'}
+                            </span>
+                        </div>
+                        <p className="mt-1 text-[10px] sm:text-[11px] font-medium text-slate-500 font-['Plus_Jakarta_Sans',sans-serif] line-clamp-1">
+                            Suspended or revoked access
+                        </p>
                     </div>
-                    <div className="mt-3">
-                        <span className="text-2xl sm:text-3xl font-extrabold tracking-tight tabular-nums text-slate-900">
-                            {stats.inactive}
+
+                    <div className="mt-3 rounded-xl bg-slate-50 border border-slate-100/90 px-2.5 py-1.5 sm:p-2.5 flex items-center justify-between text-[10.5px] sm:text-xs">
+                        <span className="font-['Plus_Jakarta_Sans',sans-serif] font-semibold text-slate-400 shrink-0">Access:</span>
+                        <span className={`font-['Plus_Jakarta_Sans',sans-serif] font-bold shrink-0 ${
+                            stats.inactive > 0 ? 'text-rose-700' : 'text-slate-600'
+                        }`}>
+                            Sign-In Blocked
                         </span>
-                        <p className="mt-0.5 text-xs font-semibold text-slate-700">Inactive Accounts</p>
-                    </div>
-                    <div className="mt-3.5 flex items-center justify-between border-t border-slate-100 pt-2.5 text-[11px]">
-                        <span className="text-slate-400">Access</span>
-                        <span className="font-semibold text-rose-700">Sign-In Blocked</span>
                     </div>
                 </div>
 
-                <div className="flex flex-col justify-between rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-4 sm:p-5 shadow-xs hover:border-slate-300 transition-all">
-                    <div className="flex items-center justify-between">
-                        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500/[0.14] to-indigo-500/[0.02] text-indigo-600">
-                            <Clock size={16} strokeWidth={2.2} />
+                {/* Card 4: New This Month */}
+                <div className={`flex flex-col justify-between rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-4 sm:p-5 lg:p-6 ${CARD_SHADOW} transition-all hover:border-slate-300 hover:shadow-[0_4px_6px_-1px_rgba(15,23,42,0.06),0_12px_28px_-8px_rgba(15,23,42,0.14)]`}>
+                    <div>
+                        <div className="flex items-center justify-between border-b border-slate-100 pb-2 sm:pb-2.5">
+                            <span className="font-['Plus_Jakarta_Sans',sans-serif] text-[10px] sm:text-[10.5px] font-bold uppercase tracking-wider text-slate-400">
+                                New This Month
+                            </span>
+                            <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-xl bg-indigo-50 border border-indigo-100 text-[#182B62]">
+                                <Clock size={15} strokeWidth={2.2} />
+                            </div>
                         </div>
-                        <span className="text-[11px] font-semibold text-slate-400">This Month</span>
+                        <div className="mt-2 sm:mt-2.5 flex items-baseline gap-1.5 sm:gap-2">
+                            <span className="font-['Plus_Jakarta_Sans',sans-serif] text-xl sm:text-2xl lg:text-3xl font-black tracking-tight tabular-nums text-slate-900 leading-none">
+                                {stats.new_this_month}
+                            </span>
+                            <span className="font-['Plus_Jakarta_Sans',sans-serif] text-[9.5px] sm:text-[10.5px] font-extrabold uppercase tracking-wider text-slate-400">
+                                {stats.new_this_month === 1 ? 'Account' : 'Accounts'}
+                            </span>
+                        </div>
+                        <p className="mt-1 text-[10px] sm:text-[11px] font-medium text-slate-500 font-['Plus_Jakarta_Sans',sans-serif] line-clamp-1">
+                            Joined municipal roster recently
+                        </p>
                     </div>
-                    <div className="mt-3">
-                        <span className="text-2xl sm:text-3xl font-extrabold tracking-tight tabular-nums text-slate-900">
-                            {stats.new_this_month}
+
+                    <div className="mt-3 rounded-xl bg-slate-50 border border-slate-100/90 px-2.5 py-1.5 sm:p-2.5 flex items-center justify-between text-[10.5px] sm:text-xs">
+                        <span className="font-['Plus_Jakarta_Sans',sans-serif] font-semibold text-slate-400 shrink-0">Onboarding:</span>
+                        <span className="font-['Plus_Jakarta_Sans',sans-serif] font-bold text-slate-800 shrink-0">
+                            Joined Recently
                         </span>
-                        <p className="mt-0.5 text-xs font-semibold text-slate-700">Joined This Month</p>
-                    </div>
-                    <div className="mt-3.5 flex items-center justify-between border-t border-slate-100 pt-2.5 text-[11px]">
-                        <span className="text-slate-400">Onboarding</span>
-                        <span className="font-semibold text-indigo-700">Joined Recently</span>
                     </div>
                 </div>
             </div>
 
             {/* ══════════════════════════════════════════════════════════════
-                3. FILTER & SEARCH DECK
+                3. SEARCH & FILTER TOOLBAR
                ══════════════════════════════════════════════════════════════ */}
-            <div className="mb-4 rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-3 sm:p-4 shadow-xs">
-                <div className="flex flex-col lg:flex-row lg:items-center gap-2.5">
-                    {/* Search input */}
-                    <div className="relative flex-1 min-w-[220px]">
+            <div className={`mb-5 rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-3.5 sm:p-4 ${CARD_SHADOW}`}>
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
+                    <div className="relative flex-1 min-w-0">
                         <Search
-                            size={16}
+                            size={14}
                             strokeWidth={2.2}
                             className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"
                         />
@@ -354,30 +412,30 @@ export default function StaffManagement({
                             type="text"
                             value={search}
                             onChange={handleSearch}
-                            placeholder="Search staff by name or official email..."
-                            className="h-10 w-full rounded-lg border border-slate-200 bg-slate-50/50 pl-10 pr-9 text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 shadow-2xs transition-all focus:border-[#182B62] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#182B62]/10"
+                            placeholder="Search by staff name, employee ID, or email…"
+                            className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50/70 pl-10 pr-9 text-xs sm:text-sm font-medium text-slate-900 placeholder:text-slate-400 transition-colors focus:border-[#182B62] focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#182B62]"
                         />
                         {search && (
                             <button
                                 type="button"
                                 onClick={handleClearSearch}
-                                className="absolute right-3 top-1/2 flex h-5 w-5 -translate-y-1/2 items-center justify-center rounded-full text-slate-400 hover:bg-slate-200 hover:text-slate-700"
+                                className="absolute right-3 top-1/2 flex h-5 w-5 -translate-y-1/2 items-center justify-center rounded-full text-slate-400 hover:bg-slate-200 hover:text-slate-700 cursor-pointer"
                             >
                                 <X size={12} strokeWidth={2.5} />
                             </button>
                         )}
                     </div>
 
-                    {/* Status filter */}
                     <div className="flex items-center gap-2">
                         <select
                             value={filter}
                             onChange={e => handleFilter(e.target.value)}
-                            className="h-10 w-full sm:w-40 rounded-lg border border-slate-200 bg-white px-3 pr-8 text-xs font-semibold text-slate-700 shadow-2xs transition-colors focus:border-[#182B62] focus:outline-none focus:ring-2 focus:ring-[#182B62]/10 cursor-pointer"
+                            aria-label="Filter staff by account status"
+                            className="h-10 w-full sm:w-auto sm:min-w-[140px] rounded-xl border border-slate-200 bg-slate-50/70 pl-3 pr-8 text-xs font-bold text-slate-700 transition-colors focus:border-[#182B62] focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#182B62] cursor-pointer"
                         >
-                            <option value="all">All Staff ({stats.total})</option>
-                            <option value="active">Active ({stats.active})</option>
-                            <option value="inactive">Inactive ({stats.inactive})</option>
+                            {STATUS_OPTIONS.map(opt => (
+                                <option key={opt.value} value={opt.value}>{opt.label}</option>
+                            ))}
                         </select>
                     </div>
                 </div>
@@ -401,7 +459,7 @@ export default function StaffManagement({
             ) : (
                 <>
                     {/* ── DESKTOP & TABLET DATA TABLE (md: 768px and up) ── */}
-                    <div className="hidden md:block overflow-hidden rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white shadow-xs">
+                    <div className={`hidden md:block overflow-hidden rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white ${CARD_SHADOW}`}>
                         <div className="overflow-x-auto">
                             <table className="w-full border-collapse text-left text-xs">
                                 <thead>
@@ -538,118 +596,106 @@ export default function StaffManagement({
                 show={addModalOpen}
                 onClose={() => setAddModalOpen(false)}
                 title="Add BPLO Staff Member"
+                description="Create a licensing officer account with system sign-in credentials"
+                maxWidth="2xl"
                 footer={
-                    <>
-                        <Button variant="secondary" onClick={() => setAddModalOpen(false)}>Cancel</Button>
-                        <Button
-                            variant="primary"
-                            icon={addForm.processing ? undefined : UserPlus}
-                            loading={addForm.processing}
-                            onClick={handleAddSubmit}
-                        >
-                            Create Account
-                        </Button>
-                    </>
+                    <ModalFooter
+                        onCancel={() => setAddModalOpen(false)}
+                        onSubmit={handleAddSubmit}
+                        processing={addForm.processing}
+                        icon={UserPlus}
+                        label="Create Account"
+                    />
                 }
             >
-                <div className="flex flex-col gap-4">
-                    <div>
-                        <Label required>Full Name</Label>
-                        <Input
-                            type="text"
-                            value={addForm.data.name}
-                            error={addForm.errors.name}
-                            onChange={(e) => addForm.setData('name', e.target.value)}
-                            placeholder="e.g. Officer Maria Clara"
-                            required
-                        />
-                        <ErrorText>{addForm.errors.name}</ErrorText>
-                        <p className="mt-1.5 text-[11px] text-tmo-subtle">Employee ID is generated automatically once the account is created.</p>
-                    </div>
+                <form
+                    onSubmit={(e) => { e.preventDefault(); handleAddSubmit(); }}
+                    className="space-y-5"
+                >
+                    <ModalSection icon={User} title="Personal Information">
+                        <FormField label="Full Name" required error={addForm.errors.name} hint="Employee ID is generated automatically once the account is created." className="sm:col-span-2">
+                            <input
+                                type="text"
+                                value={addForm.data.name}
+                                onChange={(e) => addForm.setData('name', e.target.value)}
+                                placeholder="e.g. Officer Maria Clara"
+                                className={fieldClass(addForm.errors.name)}
+                                autoFocus
+                                required
+                            />
+                        </FormField>
 
-                    <div>
-                        <Label>Position / Designation</Label>
-                        <Input
-                            type="text"
-                            value={addForm.data.position}
-                            error={addForm.errors.position}
-                            onChange={(e) => addForm.setData('position', e.target.value)}
-                            placeholder="e.g. Licensing Officer"
-                        />
-                        <ErrorText>{addForm.errors.position}</ErrorText>
-                    </div>
+                        <FormField label="Position / Designation" error={addForm.errors.position}>
+                            <input
+                                type="text"
+                                value={addForm.data.position}
+                                onChange={(e) => addForm.setData('position', e.target.value)}
+                                placeholder="e.g. Licensing Officer"
+                                className={fieldClass(addForm.errors.position)}
+                            />
+                        </FormField>
 
-                    <div>
-                        <Label>Contact Number</Label>
-                        <Input
-                            type="text"
-                            value={addForm.data.contact_number}
-                            error={addForm.errors.contact_number}
-                            onChange={(e) => addForm.setData('contact_number', e.target.value)}
-                            placeholder="e.g. 0917 123 4567"
-                        />
-                        <ErrorText>{addForm.errors.contact_number}</ErrorText>
-                    </div>
-                    <div>
-                        <Label>Birthday</Label>
-                        <Input
-                            type="date"
-                            max={new Date(Date.now() - 86400000).toISOString().slice(0, 10)}
-                            value={addForm.data.birthday}
-                            error={addForm.errors.birthday}
-                            onChange={(e) => addForm.setData('birthday', e.target.value)}
-                        />
-                        <ErrorText>{addForm.errors.birthday}</ErrorText>
-                    </div>
+                        <FormField label="Contact Number" error={addForm.errors.contact_number}>
+                            <input
+                                type="tel"
+                                value={addForm.data.contact_number}
+                                onChange={(e) => addForm.setData('contact_number', e.target.value)}
+                                placeholder="e.g. 0917 123 4567"
+                                className={fieldClass(addForm.errors.contact_number)}
+                            />
+                        </FormField>
 
-                    <div>
-                        <Label>Address</Label>
-                        <Input
-                            type="text"
-                            value={addForm.data.address}
-                            error={addForm.errors.address}
-                            onChange={(e) => addForm.setData('address', e.target.value)}
-                            placeholder="e.g. Barangay Poblacion 1, Nasugbu, Batangas"
-                        />
-                        <ErrorText>{addForm.errors.address}</ErrorText>
-                    </div>
+                        <FormField label="Birthday" error={addForm.errors.birthday}>
+                            <input
+                                type="date"
+                                max={MAX_BIRTHDAY}
+                                value={addForm.data.birthday}
+                                onChange={(e) => addForm.setData('birthday', e.target.value)}
+                                className={fieldClass(addForm.errors.birthday)}
+                            />
+                        </FormField>
 
-                    <div>
-                        <Label required>Official Email Address</Label>
-                        <Input
-                            type="email"
-                            value={addForm.data.email}
-                            error={addForm.errors.email}
-                            onChange={(e) => addForm.setData('email', e.target.value)}
-                            placeholder="e.g. bplo.mclara@trivora.gov.ph"
-                            required
-                        />
-                        <ErrorText>{addForm.errors.email}</ErrorText>
-                    </div>
+                        <FormField label="Residential Address" error={addForm.errors.address}>
+                            <input
+                                type="text"
+                                value={addForm.data.address}
+                                onChange={(e) => addForm.setData('address', e.target.value)}
+                                placeholder="e.g. Poblacion 1, Nasugbu"
+                                className={fieldClass(addForm.errors.address)}
+                            />
+                        </FormField>
+                    </ModalSection>
 
-                    <div>
-                        <Label required>Initial Password</Label>
-                        <Input
-                            type="password"
-                            value={addForm.data.password}
-                            error={addForm.errors.password}
-                            onChange={(e) => addForm.setData('password', e.target.value)}
-                            placeholder="Enter secure initial password"
-                            required
-                        />
-                        <ErrorText>{addForm.errors.password}</ErrorText>
-                    </div>
+                    <ModalSection icon={Key} title="Account Access">
+                        <FormField label="Official Email" required error={addForm.errors.email} className="sm:col-span-2">
+                            <input
+                                type="email"
+                                value={addForm.data.email}
+                                onChange={(e) => addForm.setData('email', e.target.value)}
+                                placeholder="e.g. bplo.mclara@trivora.gov.ph"
+                                className={fieldClass(addForm.errors.email)}
+                                required
+                            />
+                        </FormField>
 
-                    <label className="flex items-center gap-2.5 text-[13px] font-semibold text-slate-800">
-                        <input
-                            type="checkbox"
+                        <FormField label="Initial Password" required error={addForm.errors.password} className="sm:col-span-2">
+                            <PasswordInput
+                                value={addForm.data.password}
+                                onChange={(e) => addForm.setData('password', e.target.value)}
+                                placeholder="Enter a secure initial password"
+                                error={addForm.errors.password}
+                                required
+                            />
+                        </FormField>
+
+                        <ActiveToggle
                             checked={addForm.data.is_active}
-                            onChange={(e) => addForm.setData('is_active', e.target.checked)}
-                            className="h-4 w-4 accent-[#182B62]"
+                            onChange={(checked) => addForm.setData('is_active', checked)}
+                            label="Activate account immediately"
+                            hint="The officer can sign in as soon as the account is created."
                         />
-                        Activate account immediately upon creation
-                    </label>
-                </div>
+                    </ModalSection>
+                </form>
             </Modal>
 
             {/* ══════════════════════════════════════════════════════════════
@@ -659,128 +705,123 @@ export default function StaffManagement({
                 show={editModalOpen && !!editingUser}
                 onClose={() => setEditModalOpen(false)}
                 title="Edit BPLO Staff Account"
+                description={editingUser ? `Update profile and access for ${editingUser.name}` : ''}
+                maxWidth="2xl"
                 footer={
-                    <>
-                        <Button variant="secondary" onClick={() => setEditModalOpen(false)}>Cancel</Button>
-                        <Button
-                            variant="primary"
-                            icon={editForm.processing ? undefined : Edit2}
-                            loading={editForm.processing}
-                            onClick={handleEditSubmit}
-                        >
-                            Save Changes
-                        </Button>
-                    </>
+                    <ModalFooter
+                        onCancel={() => setEditModalOpen(false)}
+                        onSubmit={handleEditSubmit}
+                        processing={editForm.processing}
+                        icon={Edit2}
+                        label="Save Changes"
+                    />
                 }
             >
                 {editingUser && (
-                    <div className="flex flex-col gap-4">
-                        <div>
-                            <Label required>Full Name</Label>
-                            <Input
-                                type="text"
-                                value={editForm.data.name}
-                                error={editForm.errors.name}
-                                onChange={(e) => editForm.setData('name', e.target.value)}
-                                required
-                            />
-                            <ErrorText>{editForm.errors.name}</ErrorText>
+                    <form
+                        onSubmit={(e) => { e.preventDefault(); handleEditSubmit(); }}
+                        className="space-y-5"
+                    >
+                        {/* Employee ID (read-only, system-generated) */}
+                        <div className="flex items-center justify-between gap-3 rounded-xl border border-slate-200/80 bg-slate-50/70 p-3">
+                            <div className="flex items-center gap-2.5 min-w-0">
+                                <Avatar name={editingUser.name} src={editingUser.profile_photo_url} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#182B62] to-[#25449B] text-[11px] font-bold text-white shadow-2xs" />
+                                <div className="min-w-0">
+                                    <span className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                                        Official Employee ID
+                                    </span>
+                                    <span className="block truncate font-mono text-sm font-bold text-slate-900">
+                                        {editingUser.employee_id || '— not yet assigned —'}
+                                    </span>
+                                </div>
+                            </div>
+                            <span className="inline-flex shrink-0 items-center gap-1 rounded-md border border-slate-200 bg-white px-2 py-0.5 text-[10.5px] font-semibold text-slate-400">
+                                <Lock size={10} /> System Generated
+                            </span>
                         </div>
 
-                        <div>
-                            <Label>Employee ID</Label>
-                            <Input
-                                type="text"
-                                value={editingUser.employee_id || '— not yet assigned —'}
-                                disabled
-                                className="disabled:cursor-not-allowed disabled:bg-tmo-bg disabled:text-tmo-subtle"
-                            />
-                            <p className="mt-1.5 text-[11px] text-tmo-subtle">System-generated. Cannot be changed.</p>
-                        </div>
-
-                        <div>
-                            <Label>Position / Designation</Label>
-                            <Input
-                                type="text"
-                                value={editForm.data.position}
-                                error={editForm.errors.position}
-                                onChange={(e) => editForm.setData('position', e.target.value)}
-                                placeholder="e.g. Licensing Officer"
-                            />
-                            <ErrorText>{editForm.errors.position}</ErrorText>
-                        </div>
-
-                        <div>
-                            <Label>Contact Number</Label>
-                            <Input
-                                type="text"
-                                value={editForm.data.contact_number}
-                                error={editForm.errors.contact_number}
-                                onChange={(e) => editForm.setData('contact_number', e.target.value)}
-                                placeholder="e.g. 0917 123 4567"
-                            />
-                            <ErrorText>{editForm.errors.contact_number}</ErrorText>
-                        </div>
-                    <div>
-                        <Label>Birthday</Label>
-                        <Input
-                            type="date"
-                            max={new Date(Date.now() - 86400000).toISOString().slice(0, 10)}
-                            value={editForm.data.birthday}
-                            error={editForm.errors.birthday}
-                            onChange={(e) => editForm.setData('birthday', e.target.value)}
-                        />
-                        <ErrorText>{editForm.errors.birthday}</ErrorText>
-                    </div>
-
-                        <div>
-                            <Label>Address</Label>
-                            <Input
-                                type="text"
-                                value={editForm.data.address}
-                                error={editForm.errors.address}
-                                onChange={(e) => editForm.setData('address', e.target.value)}
-                                placeholder="e.g. Barangay Poblacion 1, Nasugbu, Batangas"
-                            />
-                            <ErrorText>{editForm.errors.address}</ErrorText>
-                        </div>
-
-                        <div>
-                            <Label required>Official Email Address</Label>
-                            <Input
-                                type="email"
-                                value={editForm.data.email}
-                                error={editForm.errors.email}
-                                onChange={(e) => editForm.setData('email', e.target.value)}
-                                required
-                            />
-                            <ErrorText>{editForm.errors.email}</ErrorText>
-                        </div>
-
-                        <div>
-                            <Label>New Password (leave blank to keep unchanged)</Label>
-                            <Input
-                                type="password"
-                                value={editForm.data.password}
-                                error={editForm.errors.password}
-                                onChange={(e) => editForm.setData('password', e.target.value)}
-                                placeholder="Optional: enter new password"
-                            />
-                            <ErrorText>{editForm.errors.password}</ErrorText>
-                        </div>
-
-                        {!editingUser.is_current_user && (
-                            <label className="flex items-center gap-2.5 text-[13px] font-semibold text-slate-800">
+                        <ModalSection icon={User} title="Personal Information">
+                            <FormField label="Full Name" required error={editForm.errors.name} className="sm:col-span-2">
                                 <input
-                                    type="checkbox"
-                                    checked={editForm.data.is_active}
-                                    onChange={(e) => editForm.setData('is_active', e.target.checked)}
-                                    className="h-4 w-4 accent-[#182B62]"
+                                    type="text"
+                                    value={editForm.data.name}
+                                    onChange={(e) => editForm.setData('name', e.target.value)}
+                                    className={fieldClass(editForm.errors.name)}
+                                    required
                                 />
-                                Account is active
-                            </label>
-                        )}
-                    </div>
+                            </FormField>
+
+                            <FormField label="Position / Designation" error={editForm.errors.position}>
+                                <input
+                                    type="text"
+                                    value={editForm.data.position}
+                                    onChange={(e) => editForm.setData('position', e.target.value)}
+                                    placeholder="e.g. Licensing Officer"
+                                    className={fieldClass(editForm.errors.position)}
+                                />
+                            </FormField>
+
+                            <FormField label="Contact Number" error={editForm.errors.contact_number}>
+                                <input
+                                    type="tel"
+                                    value={editForm.data.contact_number}
+                                    onChange={(e) => editForm.setData('contact_number', e.target.value)}
+                                    placeholder="e.g. 0917 123 4567"
+                                    className={fieldClass(editForm.errors.contact_number)}
+                                />
+                            </FormField>
+
+                            <FormField label="Birthday" error={editForm.errors.birthday}>
+                                <input
+                                    type="date"
+                                    max={MAX_BIRTHDAY}
+                                    value={editForm.data.birthday}
+                                    onChange={(e) => editForm.setData('birthday', e.target.value)}
+                                    className={fieldClass(editForm.errors.birthday)}
+                                />
+                            </FormField>
+
+                            <FormField label="Residential Address" error={editForm.errors.address}>
+                                <input
+                                    type="text"
+                                    value={editForm.data.address}
+                                    onChange={(e) => editForm.setData('address', e.target.value)}
+                                    placeholder="e.g. Poblacion 1, Nasugbu"
+                                    className={fieldClass(editForm.errors.address)}
+                                />
+                            </FormField>
+                        </ModalSection>
+
+                        <ModalSection icon={Key} title="Account Access">
+                            <FormField label="Official Email" required error={editForm.errors.email} className="sm:col-span-2">
+                                <input
+                                    type="email"
+                                    value={editForm.data.email}
+                                    onChange={(e) => editForm.setData('email', e.target.value)}
+                                    className={fieldClass(editForm.errors.email)}
+                                    required
+                                />
+                            </FormField>
+
+                            <FormField label="New Password" optionalNote="Leave blank to keep unchanged" error={editForm.errors.password} className="sm:col-span-2">
+                                <PasswordInput
+                                    value={editForm.data.password}
+                                    onChange={(e) => editForm.setData('password', e.target.value)}
+                                    placeholder="Enter a new password only if updating"
+                                    error={editForm.errors.password}
+                                />
+                            </FormField>
+
+                            {!editingUser.is_current_user && (
+                                <ActiveToggle
+                                    checked={editForm.data.is_active}
+                                    onChange={(checked) => editForm.setData('is_active', checked)}
+                                    label="Account is active"
+                                    hint="Turn off to block this officer from signing in."
+                                />
+                            )}
+                        </ModalSection>
+                    </form>
                 )}
             </Modal>
         </BPLOLayout>
@@ -790,13 +831,6 @@ export default function StaffManagement({
 /* ─────────────────────────────────────────────────────────────────────────
    SUBCOMPONENTS: StatusPill, DesktopStaffRow, MobileStaffCard
    ───────────────────────────────────────────────────────────────────────── */
-
-function getInitials(name) {
-    if (!name) return 'ST';
-    const parts = name.trim().split(/\s+/);
-    if (parts.length === 1) return parts[0].substring(0, 2).toUpperCase();
-    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-}
 
 function StatusPill({ user, onToggleStatus }) {
     const isActive = !!user.is_active;
@@ -818,16 +852,13 @@ function StatusPill({ user, onToggleStatus }) {
 
 function DesktopStaffRow({ u, user: userProp, onEdit, onToggleStatus, onDelete }) {
     const user = u || userProp;
-    const initials = getInitials(user.name);
 
     return (
         <tr className="group transition-colors hover:bg-slate-50/80">
             {/* Column 1: Staff Member */}
             <td className="py-3.5 pl-5 pr-3 align-middle">
                 <div className="flex items-center gap-2.5">
-                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#182B62] to-[#25449B] text-[11px] font-bold text-white shadow-2xs">
-                        {initials}
-                    </div>
+                    <Avatar name={user.name} src={user.profile_photo_url} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#182B62] to-[#25449B] text-[11px] font-bold text-white shadow-2xs" />
                     <div className="min-w-0">
                         <div className="flex items-center gap-1.5">
                             <p className="truncate text-xs sm:text-[13px] font-semibold text-slate-900 group-hover:text-slate-950">
@@ -921,16 +952,13 @@ function DesktopStaffRow({ u, user: userProp, onEdit, onToggleStatus, onDelete }
 
 function MobileStaffCard({ u, user: userProp, onEdit, onToggleStatus, onDelete }) {
     const user = u || userProp;
-    const initials = getInitials(user.name);
 
     return (
-        <div className="rounded-2xl border border-slate-200/80 bg-white p-3.5 shadow-xs transition-all hover:border-slate-300">
+        <div className={`rounded-2xl border border-slate-200/80 bg-white p-3.5 transition-all hover:border-slate-300 ${CARD_SHADOW}`}>
             {/* Top Row: Staff & Status */}
             <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-2">
                 <div className="flex items-center gap-2 min-w-0">
-                    <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#182B62] to-[#25449B] text-[10px] font-bold text-white shadow-2xs">
-                        {initials}
-                    </div>
+                    <Avatar name={user.name} src={user.profile_photo_url} className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#182B62] to-[#25449B] text-[10px] font-bold text-white shadow-2xs" />
                     <div className="min-w-0">
                         <div className="flex items-center gap-1.5">
                             <p className="truncate text-xs font-semibold text-slate-900">{user.name}</p>
@@ -997,6 +1025,113 @@ function MobileStaffCard({ u, user: userProp, onEdit, onToggleStatus, onDelete }
                     <span>Delete</span>
                 </button>
             </div>
+        </div>
+    );
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   SUBCOMPONENTS: Add / Edit Staff modal form pieces
+───────────────────────────────────────────────────────────────────────── */
+
+// Latest allowed birthday (yesterday) for the date pickers.
+const MAX_BIRTHDAY = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+
+function fieldClass(error) {
+    return `w-full rounded-xl border bg-slate-50/50 px-3.5 py-2.5 text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:bg-white focus:outline-none focus:ring-2 transition-all ${
+        error ? 'border-rose-300 focus:border-rose-500 focus:ring-rose-200' : 'border-slate-200 focus:border-[#182B62] focus:ring-[#182B62]/10'
+    }`;
+}
+
+function ModalSection({ icon: Icon, title, children }) {
+    return (
+        <section>
+            <div className="mb-3 flex items-center gap-2 border-b border-slate-100 pb-2">
+                <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-indigo-50 border border-indigo-100 text-[#182B62]">
+                    <Icon size={12} strokeWidth={2.4} />
+                </div>
+                <h3 className="text-[11px] font-bold uppercase tracking-wider text-slate-500">{title}</h3>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">{children}</div>
+        </section>
+    );
+}
+
+function FormField({ label, required = false, optionalNote, hint, error, className = '', children }) {
+    return (
+        <div className={className}>
+            <label className="mb-1 block text-xs font-bold text-slate-900">
+                {label} {required && <span className="text-rose-600">*</span>}
+                {optionalNote && <span className="font-normal text-slate-400"> ({optionalNote})</span>}
+            </label>
+            {children}
+            {error ? (
+                <p className="mt-1 flex items-center gap-1 text-[11px] font-semibold text-rose-600">
+                    <AlertCircle size={12} /> {error}
+                </p>
+            ) : hint ? (
+                <p className="mt-1 text-[11px] text-slate-400">{hint}</p>
+            ) : null}
+        </div>
+    );
+}
+
+function PasswordInput({ error, ...props }) {
+    const [visible, setVisible] = useState(false);
+    return (
+        <div className="relative">
+            <input {...props} type={visible ? 'text' : 'password'} className={`${fieldClass(error)} pr-10`} />
+            <button
+                type="button"
+                onClick={() => setVisible((v) => !v)}
+                aria-label={visible ? 'Hide password' : 'Show password'}
+                className="absolute right-2.5 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-700 cursor-pointer"
+            >
+                {visible ? <EyeOff size={15} /> : <Eye size={15} />}
+            </button>
+        </div>
+    );
+}
+
+function ActiveToggle({ checked, onChange, label, hint }) {
+    return (
+        <label className="sm:col-span-2 flex cursor-pointer items-center justify-between gap-3 rounded-xl border border-slate-200/80 bg-slate-50/70 p-3 transition-colors hover:border-slate-300">
+            <div className="min-w-0">
+                <p className="text-xs font-bold text-slate-900">{label}</p>
+                <p className="mt-0.5 text-[11px] text-slate-500">{hint}</p>
+            </div>
+            <span className="relative inline-flex shrink-0 items-center">
+                <input
+                    type="checkbox"
+                    checked={checked}
+                    onChange={(e) => onChange(e.target.checked)}
+                    className="peer sr-only"
+                />
+                <span className="h-5 w-9 rounded-full bg-slate-300 transition-colors peer-checked:bg-emerald-500 peer-focus-visible:ring-2 peer-focus-visible:ring-[#182B62]/30" />
+                <span className="absolute left-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-transform peer-checked:translate-x-4" />
+            </span>
+        </label>
+    );
+}
+
+function ModalFooter({ onCancel, onSubmit, processing, icon: Icon, label }) {
+    return (
+        <div className="flex w-full items-center justify-end gap-2.5">
+            <button
+                type="button"
+                onClick={onCancel}
+                className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-700 transition-colors hover:bg-slate-50 cursor-pointer"
+            >
+                Cancel
+            </button>
+            <button
+                type="button"
+                disabled={processing}
+                onClick={onSubmit}
+                className="inline-flex items-center gap-1.5 rounded-xl bg-[#182B62] px-5 py-2 text-xs font-bold text-white shadow-2xs transition-all hover:bg-[#25449B] active:scale-[0.98] cursor-pointer disabled:opacity-50"
+            >
+                {processing ? <Loader2 size={14} className="animate-spin" /> : <Icon size={14} />}
+                <span>{label}</span>
+            </button>
         </div>
     );
 }

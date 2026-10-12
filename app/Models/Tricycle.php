@@ -12,7 +12,6 @@ class Tricycle extends Model
 {
     protected $fillable = [
         'operator_id',
-        'toda_zone_id',
         'coding_scheme_number',
         'plate_number',
         'qr_token',
@@ -140,13 +139,6 @@ class Tricycle extends Model
         return $this->belongsTo(Operator::class);
     }
 
-    /**
-     * The TODA zone this tricycle is assigned to.
-     */
-    public function todaZone(): BelongsTo
-    {
-        return $this->belongsTo(TodaZone::class, 'toda_zone_id');
-    }
 
     /**
      * All franchise applications submitted for this tricycle.

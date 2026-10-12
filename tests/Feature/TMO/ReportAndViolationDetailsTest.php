@@ -169,6 +169,14 @@ class ReportAndViolationDetailsTest extends TestCase
         $response->assertOk();
         $this->assertStringContainsString('spreadsheet', $response->headers->get('content-type'));
 
+        // Every TMO export also renders as a PDF via ?format=pdf
+        foreach (['tmo.reports.export-violations-excel', 'tmo.reports.export-applications-excel', 'tmo.reports.export-fleet-excel', 'tmo.registry.export-excel', 'tmo.violations.export-excel'] as $routeName) {
+            $response = $this->actingAs($this->tmoUser)->get(route($routeName, ['format' => 'pdf']));
+            $response->assertOk();
+            $this->assertStringContainsString('application/pdf', $response->headers->get('content-type'), $routeName);
+            $this->assertStringStartsWith('%PDF', $response->streamedContent(), $routeName);
+        }
+
         // BPLO Active Registry export (replaces the old client-side CSV button)
         $bploUser = User::create([
             'name'      => 'BPLO Export Officer',
@@ -180,6 +188,11 @@ class ReportAndViolationDetailsTest extends TestCase
         $response = $this->actingAs($bploUser)->get(route('bplo.registry.export-excel'));
         $response->assertOk();
         $this->assertStringContainsString('spreadsheet', $response->headers->get('content-type'));
+
+        $response = $this->actingAs($bploUser)->get(route('bplo.registry.export-excel', ['format' => 'pdf']));
+        $response->assertOk();
+        $this->assertStringContainsString('application/pdf', $response->headers->get('content-type'));
+        $this->assertStringStartsWith('%PDF', $response->streamedContent());
 
         // Collections Excel Export route no longer exists (404)
         $response = $this->actingAs($this->tmoUser)->get('/tmo/reports/export/collections-excel');

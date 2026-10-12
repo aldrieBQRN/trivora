@@ -27,7 +27,7 @@ class InspectionController extends Controller
         // append-only application_status_histories table's own created_at is the true, immutable
         // "entered this phase" timestamp. Oldest-entered first, so the longest-waiting unit is
         // processed first.
-        $applications = Application::with(['operator', 'tricycle', 'inspections'])
+        $applications = Application::with(['operator.user', 'tricycle', 'inspections'])
             ->whereIn('status', ['pending_inspection', 'under_inspection', 'failed_inspection'])
             ->addSelect(['queue_entered_at' => ApplicationStatusHistory::select('created_at')
                 ->whereColumn('application_id', 'applications.id')
@@ -49,7 +49,9 @@ class InspectionController extends Controller
                 return [
                     'id'             => $app->id,
                     'reference'      => $app->reference_number,
+                    'application_type' => $app->application_type,
                     'operator'       => $app->operator ? $app->operator->full_name : 'N/A',
+                    'operator_photo' => $app->operator?->profile_photo_url,
                     'contact'        => $app->operator ? $app->operator->contact_number : 'N/A',
                     'make'           => $app->tricycle ? trim("{$app->tricycle->make} {$app->tricycle->model}") : 'N/A',
                     'plate'          => $app->tricycle ? ($app->tricycle->plate_number ?: '—') : '—',
@@ -93,7 +95,7 @@ class InspectionController extends Controller
      */
     public function show(Application $application): Response
     {
-        $application->load(['operator', 'tricycle', 'tricycleDriver', 'inspections']);
+        $application->load(['operator.user', 'tricycle', 'tricycleDriver', 'inspections']);
 
         $operator = $application->operator;
         $tricycle = $application->tricycle;
@@ -111,6 +113,7 @@ class InspectionController extends Controller
             'id'                        => $application->id,
             'reference'                 => $application->reference_number,
             'operator'                  => $operator ? $operator->full_name : 'N/A',
+            'operator_photo'            => $operator?->profile_photo_url,
             'owner'                     => $application->ownerDetails(),
             'ownerIsDriver'             => (bool) $application->owner_is_driver,
             'tricycleDriver'            => $application->driverDetails(),

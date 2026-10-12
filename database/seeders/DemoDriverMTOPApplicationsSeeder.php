@@ -10,7 +10,6 @@ use App\Models\FranchiseScheme;
 use App\Models\Inspection;
 use App\Models\Operator;
 use App\Models\Payment;
-use App\Models\TodaZone;
 use App\Models\Tricycle;
 use App\Models\User;
 use Illuminate\Database\Seeder;
@@ -67,7 +66,6 @@ class DemoDriverMTOPApplicationsSeeder extends Seeder
         $tmo  = User::where('email', 'tmo.jdelacruz@trivora.gov.ph')->first();
         $bplo = User::where('email', 'bplo.areyes@trivora.gov.ph')->first();
 
-        $todaBucana = TodaZone::where('code', 'TODA-BUCANA')->orWhere('name', 'TODA Bucana')->first();
 
         $redScheme = ColorCodingScheme::where('name', 'Red')->first();
 
@@ -98,7 +96,6 @@ class DemoDriverMTOPApplicationsSeeder extends Seeder
             ['plate_number' => 'PLT-6005'],
             [
                 'operator_id'    => $operator->id,
-                'toda_zone_id'   => $todaBucana?->id,
                 'make'           => 'Honda',
                 'model'          => 'TMX Alpha',
                 'year_model'     => 2024,

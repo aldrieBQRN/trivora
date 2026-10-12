@@ -28,7 +28,7 @@ class PublicFranchiseRegistrationTest extends TestCase
     {
         parent::setUp();
         Storage::fake('public');
-        $this->seedTodaAndColorScheme();
+        $this->seedColorScheme();
     }
 
     #[Test]
@@ -183,12 +183,7 @@ class PublicFranchiseRegistrationTest extends TestCase
     }
 
     /**
-     * Regression test for the fix: RegistrationController::store() used to map the `toda` field
-     * through single-letter codes ('A'-'D' -> TodaZone.code 'TODA-01'..'TODA-04'), but the
-     * dropdown actually submits the zone's full display name (e.g. "TODA Brgy. 8"), and no zone
-     * in this database is even coded 'TODA-01'..'04' — so the lookup always missed and every
-     * registration silently got toda_id/toda_zone_id = NULL regardless of what was picked. It now
-     * resolves TodaZone by name directly, matching what the dropdown actually sends.
+     * Registration has no TODA zone selection — only the TODA clearance document is required.
      */
     #[Test]
     public function registration_succeeds_without_toda_selection_while_requiring_toda_clearance(): void

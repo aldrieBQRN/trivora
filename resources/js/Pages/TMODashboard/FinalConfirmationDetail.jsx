@@ -10,14 +10,8 @@ import {
 } from 'lucide-react';
 import { Textarea, Label } from '@/Components/TMO';
 
+import Avatar from '@/Components/Avatar';
 const CARD_SHADOW = 'shadow-[0_1px_2px_0_rgba(15,23,42,0.04),0_8px_24px_-8px_rgba(15,23,42,0.10)]';
-
-function getInitials(name) {
-    if (!name || name === 'N/A') return 'TD';
-    const parts = name.trim().split(/\s+/);
-    if (parts.length === 1) return parts[0].substring(0, 2).toUpperCase();
-    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-}
 
 // Reflects only what the backend has actually received (Tricycle::gpsStatus())
 function GpsStatusBadge({ status, lastSeenAt }) {
@@ -182,7 +176,6 @@ export default function FinalConfirmationDetail({ application }) {
         });
     };
 
-    const operatorInitials = getInitials(application.owner?.full_name || application.operator_name);
 
     return (
         <TrivoraLayout title="Final Confirmation" role="TMO Officer">
@@ -537,9 +530,7 @@ export default function FinalConfirmationDetail({ application }) {
 
                             {/* Owner Summary */}
                             <div className="flex items-center gap-3 pb-3 border-b border-slate-100">
-                                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#182B62] to-[#25449B] text-xs font-black text-white shadow-2xs">
-                                    {operatorInitials}
-                                </div>
+                                <Avatar name={application.owner?.full_name || application.operator_name} src={application.operator_photo} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#182B62] to-[#25449B] text-xs font-black text-white shadow-2xs" />
                                 <div className="min-w-0 flex-1">
                                     <p className="truncate text-xs sm:text-sm font-bold text-slate-900">
                                         {application.owner?.full_name || application.operator_name}

@@ -6,7 +6,6 @@ use App\Models\Application;
 use App\Models\ColorCodingScheme;
 use App\Models\FranchiseScheme;
 use App\Models\Operator;
-use App\Models\TodaZone;
 use App\Models\Tricycle;
 use App\Models\User;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
@@ -35,10 +34,6 @@ class DriverApplicationTrackingTest extends TestCase
     {
         parent::setUp();
 
-        $toda = TodaZone::firstOrCreate(
-            ['code' => 'TODA-TRACK-TEST'],
-            ['name' => 'Tracking Test Zone', 'barangay' => 'Poblacion', 'is_active' => true]
-        );
 
         $this->driverUser = User::create([
             'name' => 'Tracking Driver', 'email' => 'track.driver.' . uniqid() . '@trivora.test',
@@ -46,15 +41,13 @@ class DriverApplicationTrackingTest extends TestCase
         ]);
 
         $operator = Operator::create([
-            'user_id' => $this->driverUser->id, 'toda_id' => $toda->id,
-            'first_name' => 'Tracking', 'last_name' => 'Driver', 'contact_number' => '09170000050',
+            'user_id' => $this->driverUser->id, 'first_name' => 'Tracking', 'last_name' => 'Driver', 'contact_number' => '09170000050',
             'address' => 'Poblacion', 'barangay' => 'Poblacion', 'date_of_birth' => '1990-01-01',
             'license_number' => 'LIC-TRACK-001', 'license_expiry_date' => '2028-01-01',
         ]);
 
         $tricycle = Tricycle::create([
-            'operator_id' => $operator->id, 'toda_zone_id' => $toda->id,
-            'plate_number' => 'TRK-0001', 'engine_number' => 'ENG-TRK-001', 'chassis_number' => 'CHS-TRK-001',
+            'operator_id' => $operator->id, 'plate_number' => 'TRK-0001', 'engine_number' => 'ENG-TRK-001', 'chassis_number' => 'CHS-TRK-001',
             'make' => 'Honda', 'model' => 'TMX', 'year_model' => 2021, 'body_color' => 'Red', 'body_type' => 'Standard',
             'or_number' => 'OR-TRK-001', 'cr_number' => 'CR-TRK-001', 'status' => 'unregistered',
         ]);

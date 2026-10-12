@@ -2,23 +2,17 @@ import React, { useState, useMemo } from 'react';
 import { Link, usePage, router } from '@inertiajs/react';
 import NotificationBell from '@/Components/NotificationBell';
 import {
-    Bell, Menu, Settings, LogOut,
+    Bell, Menu, Settings, LogOut, Smartphone, Download,
     ChevronDown, ChevronRight,
     LayoutDashboard, ShieldAlert,
     FileText, Bike, X
 } from 'lucide-react';
 
+import Avatar from '@/Components/Avatar';
 /* ─────────────────────────────────────────────────────────────────────────
    Driver / Operator Panel shell — sidebar + header chrome matching TMO & BPLO.
    Brand token: `#182B62` (Deep Royal Navy).
 ───────────────────────────────────────────────────────────────────────── */
-
-function getInitials(name) {
-    if (!name || name === 'Driver') return 'DR';
-    const parts = name.trim().split(/\s+/);
-    if (parts.length === 1) return parts[0].substring(0, 2).toUpperCase();
-    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-}
 
 export default function OperatorLayout({
     children,
@@ -31,7 +25,6 @@ export default function OperatorLayout({
     const displayName = (operatorName && operatorName !== "Driver")
         ? operatorName
         : (user?.name || "Driver");
-    const initials = getInitials(displayName);
 
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [profileOpen, setProfileOpen] = useState(false);
@@ -270,30 +263,43 @@ export default function OperatorLayout({
                         ))}
                     </div>
 
-                    {/* Bottom Logout Dock */}
-                    <div className="shrink-0 border-t border-white/10 p-3">
-                        <button
-                            onClick={handleLogout}
-                            className="group flex w-full items-center justify-between rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2.5 text-left transition-all duration-200 hover:border-rose-500/30 hover:bg-rose-500/10 active:scale-[0.99]"
-                        >
-                            <div className="flex items-center gap-2.5 min-w-0">
-                                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-white/10 text-white/70 transition-colors group-hover:bg-rose-500/20 group-hover:text-rose-300">
-                                    <LogOut size={14} strokeWidth={2.2} />
+                    {/* Download Driver App — Sign Out lives in the header account menu.
+                        Link comes from DRIVER_APP_DOWNLOAD_URL; hidden until it is set. */}
+                    {props?.driverAppUrl && (
+                        <div className="shrink-0 border-t border-white/10 p-3">
+                            <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-white/[0.10] via-white/[0.04] to-emerald-400/[0.08] p-3.5">
+                                {/* Soft glow accent */}
+                                <div className="pointer-events-none absolute -right-6 -top-6 h-20 w-20 rounded-full bg-emerald-400/20 blur-2xl" aria-hidden="true" />
+
+                                <div className="relative flex items-center gap-2.5">
+                                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white p-1.5 shadow-md ring-1 ring-white/20">
+                                        <img src="/images/logo.png" alt="" className="h-full w-full object-contain" />
+                                    </div>
+                                    <div className="min-w-0">
+                                        <p className="truncate text-[13px] font-extrabold leading-tight text-white">Trivora Driver</p>
+                                        <p className="mt-0.5 inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-300">
+                                            <Smartphone size={10} strokeWidth={2.4} />
+                                            Android · Free
+                                        </p>
+                                    </div>
                                 </div>
-                                <div className="flex flex-col min-w-0">
-                                    <span className="text-xs font-bold text-white transition-colors group-hover:text-rose-200 leading-tight">
-                                        Sign Out
-                                    </span>
-                                    <span className="text-[10px] font-medium text-white/40 group-hover:text-rose-300/70 transition-colors leading-tight">
-                                        End session
-                                    </span>
-                                </div>
+
+                                <p className="relative mt-2.5 text-[11px] leading-snug text-white/60">
+                                    Go online, accept rides and share your GPS location on the road.
+                                </p>
+
+                                <a
+                                    href={props.driverAppUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="relative mt-3 flex w-full items-center justify-center gap-1.5 rounded-xl bg-emerald-500 py-2 text-xs font-bold text-white transition-all hover:bg-emerald-400 active:scale-[0.98]"
+                                >
+                                    <Download size={14} strokeWidth={2.4} />
+                                    Download APK
+                                </a>
                             </div>
-                            <span className="rounded bg-white/10 px-2 py-0.5 text-[9.5px] font-bold text-white/60 transition-colors group-hover:bg-rose-500/25 group-hover:text-rose-200 shrink-0">
-                                Exit
-                            </span>
-                        </button>
-                    </div>
+                        </div>
+                    )}
                 </nav>
             </aside>
 
@@ -362,9 +368,7 @@ export default function OperatorLayout({
                                 className="flex items-center gap-2.5 rounded-full py-1 pl-1 pr-3 hover:bg-slate-100/80 transition-all border border-transparent hover:border-slate-200/60"
                                 onClick={() => setProfileOpen(p => !p)}
                             >
-                                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#182B62] to-[#25449B] text-[11px] font-bold tracking-wide text-white shadow-xs">
-                                    {initials}
-                                </div>
+                                <Avatar name={displayName} src={user?.profile_photo_url} fallback="DR" className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#182B62] to-[#25449B] text-[11px] font-bold tracking-wide text-white shadow-xs" />
 
                                 <div className="hidden text-left leading-tight md:block">
                                     <p className="max-w-[160px] truncate text-[12.5px] font-bold text-slate-800">{displayName}</p>

@@ -7,10 +7,11 @@ import {
     PieChart, Pie, Cell,
 } from 'recharts';
 import {
-    FileSpreadsheet, Tag, ClipboardList, Timer, Hourglass, TrendingUp, PackageCheck,
+    Download, Tag, ClipboardList, Timer, Hourglass, TrendingUp, PackageCheck,
 } from 'lucide-react';
 import ReportCard from './ReportCard';
 import DateRangeFilter from './DateRangeFilter';
+import ExportDialog from '@/Components/ExportDialog';
 
 const STATUS_COLORS = { pending: '#CBD5E1', released: '#182B62' };
 const GRANULARITIES = ['day', 'week', 'month'];
@@ -19,11 +20,12 @@ const CARD_SHADOW = 'shadow-[0_1px_2px_0_rgba(15,23,42,0.04),0_8px_24px_-8px_rgb
 function ChartTooltip({ active, payload, label }) {
     if (!active || !payload || !payload.length) return null;
     return (
-        <div className="rounded-lg border border-slate-200 bg-white px-3 py-2 shadow-lg">
-            <p className="text-[11px] font-bold text-slate-900">{label}</p>
+        <div className="rounded-xl border border-slate-200 bg-white/95 backdrop-blur-xs px-3.5 py-2.5 shadow-xl font-['Plus_Jakarta_Sans',sans-serif]">
+            <p className="text-xs font-black text-slate-900 border-b border-slate-100 pb-1 mb-1.5">{label}</p>
             {payload.map((p) => (
-                <p key={p.dataKey} className="text-xs text-slate-500">
-                    {p.name}: <span className="font-bold text-slate-900">{p.value}</span>
+                <p key={p.dataKey} className="text-xs text-slate-500 font-medium flex items-center justify-between gap-3">
+                    <span>{p.name}:</span>
+                    <span className="font-bold text-slate-900 tabular-nums">{p.value}</span>
                 </p>
             ))}
         </div>
@@ -32,19 +34,31 @@ function ChartTooltip({ active, payload, label }) {
 
 function KpiTile({ label, value, hint, icon: Icon }) {
     return (
-        <div className="flex flex-col justify-between rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-4 sm:p-5 shadow-xs hover:border-slate-300 transition-all">
+        <div className={`flex flex-col justify-between rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-4 sm:p-5 lg:p-6 ${CARD_SHADOW} transition-all hover:border-slate-300 hover:shadow-[0_4px_6px_-1px_rgba(15,23,42,0.06),0_12px_28px_-8px_rgba(15,23,42,0.14)]`}>
             <div>
-                <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">{label}</span>
+                <div className="flex items-center justify-between border-b border-slate-100 pb-2 sm:pb-2.5">
+                    <span className="font-['Plus_Jakarta_Sans',sans-serif] text-[10px] sm:text-[10.5px] font-bold uppercase tracking-wider text-slate-400">
+                        {label}
+                    </span>
                     {Icon && (
-                        <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-[#182B62]/[0.10] to-[#182B62]/[0.02] text-[#182B62]">
-                            <Icon size={14} />
-                        </span>
+                        <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-xl bg-indigo-50 border border-indigo-100 text-[#182B62]">
+                            <Icon size={15} strokeWidth={2.2} />
+                        </div>
                     )}
                 </div>
-                <p className="mt-2 text-2xl sm:text-3xl font-extrabold tracking-tight tabular-nums text-slate-900">{value}</p>
+                <div className="mt-2.5 sm:mt-3">
+                    <p className="font-['Plus_Jakarta_Sans',sans-serif] text-xl sm:text-2xl lg:text-3xl font-black tracking-tight tabular-nums text-slate-900 leading-none">
+                        {value}
+                    </p>
+                </div>
             </div>
-            {hint && <p className="mt-3 border-t border-slate-100 pt-2 text-[11px] text-slate-400">{hint}</p>}
+            {hint && (
+                <div className="mt-3 rounded-xl bg-slate-50 border border-slate-100/90 px-2.5 py-1.5 sm:p-2.5 flex items-center justify-between text-[10.5px] sm:text-xs">
+                    <span className="font-['Plus_Jakarta_Sans',sans-serif] text-slate-500 font-medium truncate">
+                        {hint}
+                    </span>
+                </div>
+            )}
         </div>
     );
 }
@@ -97,6 +111,7 @@ function formatBucketLabel(dateStr, granularity) {
 
 export default function BPLOReportsIndex({ from, to, filters, reportData }) {
     const [granularity, setGranularity] = useState('day');
+    const [exportOpen, setExportOpen] = useState(false);
 
     // Background refresh of the summary/counters only. `from`/`to`/`filters` are read from the
     // URL, which a partial reload re-reads unchanged, so the selected date range and granularity
@@ -143,25 +158,26 @@ export default function BPLOReportsIndex({ from, to, filters, reportData }) {
                     </p>
                 </div>
                 <div className="flex items-center gap-2">
-                    <a
-                        href={exportUrl}
-                        className="inline-flex items-center gap-2 rounded-xl border border-slate-200/80 bg-white px-3.5 py-2 text-xs font-bold text-slate-700 shadow-xs hover:bg-slate-50 hover:border-slate-300 hover:text-slate-900 transition-all"
+                    <button
+                        type="button"
+                        onClick={() => setExportOpen(true)}
+                        className="inline-flex items-center gap-2 rounded-xl bg-[#182B62] hover:bg-[#25449B] px-4 py-2.5 text-xs font-bold text-white shadow-xs transition-all active:scale-[0.98] cursor-pointer"
                     >
-                        <FileSpreadsheet size={14} strokeWidth={2.2} className="text-slate-500" />
-                        <span>Export to Excel</span>
-                    </a>
+                        <Download size={15} strokeWidth={2.2} className="text-white" />
+                        <span>Export</span>
+                    </button>
                 </div>
             </div>
 
             {/* Filter toolbar — Quick Range | From | To | Status */}
-            <div className="mb-6 rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-3 sm:p-4 shadow-xs print:hidden">
+            <div className={`mb-6 rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-3.5 sm:p-4 ${CARD_SHADOW} print:hidden`}>
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div className="flex flex-1 flex-wrap items-center gap-2.5">
                         <DateRangeFilter from={from} to={to} onChange={handleDateChange} />
                         <select
                             value={filters.status || ''}
                             onChange={(e) => handleStatusChange(e.target.value)}
-                            className="h-10 w-full shrink-0 rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 shadow-2xs focus:border-[#182B62] focus:outline-none focus:ring-2 focus:ring-[#182B62]/10 sm:w-44 cursor-pointer"
+                            className="h-10 w-full shrink-0 rounded-xl border border-slate-200 bg-slate-50/70 pl-3 pr-8 text-xs font-bold text-slate-700 transition-colors focus:border-[#182B62] focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#182B62] sm:w-44 cursor-pointer"
                         >
                             <option value="">All Statuses</option>
                             <option value="pending">Pending Release</option>
@@ -182,7 +198,7 @@ export default function BPLOReportsIndex({ from, to, filters, reportData }) {
                 <p className="text-[11px] font-bold uppercase tracking-wide text-slate-400">Releasing Overview</p>
                 <p className="text-[11px] font-semibold text-slate-500">{from} – {to}</p>
             </div>
-                    <div className="mb-6 grid grid-cols-1 gap-3.5 sm:grid-cols-2 lg:grid-cols-4">
+                    <div className="mb-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4 items-stretch">
                         <KpiTile
                             label="Total for BPLO Release"
                             value={overview.total_for_bplo}
@@ -217,14 +233,14 @@ export default function BPLOReportsIndex({ from, to, filters, reportData }) {
                             subtitle={`Sticker/plate releases · ${from} – ${to}`}
                             className="lg:col-span-2"
                             action={(
-                                <div className="flex items-center gap-1 rounded-xl border border-slate-200 bg-slate-50/50 p-1">
+                                <div className="flex items-center gap-1 rounded-xl border border-slate-200 bg-slate-100/70 p-1 font-['Plus_Jakarta_Sans',sans-serif]">
                                     {GRANULARITIES.map((g) => (
                                         <button
                                             key={g}
                                             type="button"
                                             onClick={() => setGranularity(g)}
-                                            className={`rounded-lg px-2.5 py-1 text-[11px] font-semibold capitalize transition-all ${
-                                                granularity === g ? 'bg-[#182B62] text-white shadow-xs' : 'text-slate-500 hover:text-slate-900'
+                                            className={`rounded-lg px-2.5 py-1 text-[11px] font-bold capitalize transition-all ${
+                                                granularity === g ? 'bg-[#182B62] text-white shadow-2xs' : 'text-slate-500 hover:text-slate-900 hover:bg-white/50'
                                             }`}
                                         >
                                             {g}
@@ -357,6 +373,16 @@ export default function BPLOReportsIndex({ from, to, filters, reportData }) {
                             </div>
                         </div>
                     </ReportCard>
+            <ExportDialog
+                show={exportOpen}
+                onClose={() => setExportOpen(false)}
+                title="Export Releasing Report"
+                recordLabel="releases in period"
+                recordCount={overview.activity_in_period}
+                scopeNote={`${from} – ${to}${filters.status ? ` · ${filters.status === 'pending' ? 'Pending Release' : 'Released'}` : ''}`}
+                exportUrl={exportUrl}
+                fallbackName="trivora_bplo_releasing_report"
+            />
         </BPLOLayout>
     );
 }

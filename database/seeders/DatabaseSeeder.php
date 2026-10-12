@@ -12,20 +12,15 @@ class DatabaseSeeder extends Seeder
      * Execution order respects foreign key dependencies:
      *
      *  1. ColorCodingSchemesSeeder  — no FK deps
-     *  2. TodaZonesSeeder           — no FK deps. TODA zones remain descriptive/historical
-     *                                  registry metadata only (operator/tricycle assignment) —
-     *                                  they no longer drive booking dispatch or route matching
-     *                                  (see BookingDispatchService, which dispatches purely by
-     *                                  nearest-driver distance) or GPS route matching.
-     *  3. UsersSeeder               — depends on TodaZones (for operator toda_id)
-     *  4. TricyclesSeeder           — depends on Operators + TodaZones
-     *  5. ApplicationsSeeder        — depends on Operators, Tricycles, Users, ColorCodingSchemes
-     *  6. ViolationsSeeder          — depends on Tricycles, FranchiseSchemes, ColorCodingSchemes, Users
-     *  7. MobileAppDataSeeder       — depends on Drivers/Operators/Tricycles (passenger bookings,
+     *  2. UsersSeeder               — no FK deps beyond ColorCodingSchemes
+     *  3. TricyclesSeeder           — depends on Operators
+     *  4. ApplicationsSeeder        — depends on Operators, Tricycles, Users, ColorCodingSchemes
+     *  5. ViolationsSeeder          — depends on Tricycles, FranchiseSchemes, ColorCodingSchemes, Users
+     *  6. MobileAppDataSeeder       — depends on Drivers/Operators/Tricycles (passenger bookings,
      *                                  ride history, GPS breadcrumb pings)
-     *  8. TestAccountsSeeder        — depends on TodaZones (one demo online driver per zone) and
+     *  7. TestAccountsSeeder        — demo online drivers and
      *                                  seeds the universal driver.test@/passenger.test@ QA logins
-     *  9. DemoStageDriversSeeder    — depends on TodaZones/ColorCodingSchemes + TMO/BPLO users;
+     *  8. DemoStageDriversSeeder    — depends on ColorCodingSchemes + TMO/BPLO users;
      *                                  FIVE demo driver logins, one per Application Tracker status
      */
     public function run(): void
@@ -36,7 +31,6 @@ class DatabaseSeeder extends Seeder
 
         $this->call([
             ColorCodingSchemesSeeder::class,
-            TodaZonesSeeder::class,
             UsersSeeder::class,
             TricyclesSeeder::class,
             ApplicationsSeeder::class,

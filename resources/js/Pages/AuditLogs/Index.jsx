@@ -1,41 +1,17 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState } from 'react';
 import { Head, router, usePage } from '@inertiajs/react';
 import useBackgroundRefresh from '@/hooks/useBackgroundRefresh';
 import TrivoraLayout from '@/Layouts/TrivoraLayout';
-import { Modal, Button } from '@/Components/TMO';
+import { Modal } from '@/Components/TMO';
+import ExportDialog from '@/Components/ExportDialog';
 import {
     ScrollText, Search, X, RotateCcw, Eye, ShieldCheck,
-    Users, Clock, Activity, FileSpreadsheet, ArrowRight,
-    Filter, Calendar, ChevronLeft, ChevronRight, Loader2, Check,
-    Download, ChevronDown, FileText, Printer
+    Users, Clock, Activity, ArrowRight,
+    ChevronLeft, ChevronRight,
+    Download
 } from 'lucide-react';
 
 const CARD_SHADOW = 'shadow-[0_1px_2px_0_rgba(15,23,42,0.04),0_8px_24px_-8px_rgba(15,23,42,0.10)]';
-
-const FORMAT_META = {
-    excel: {
-        id: 'excel',
-        label: 'Excel Spreadsheet',
-        ext: '.xlsx',
-        mime: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        desc: 'Official municipal workbook with non-sticky table header',
-        badge: '.XLSX',
-        badgeColor: 'text-emerald-700 bg-emerald-50 border-emerald-200',
-        iconColor: 'text-emerald-600 bg-emerald-50 border-emerald-200',
-        icon: FileSpreadsheet,
-    },
-    pdf: {
-        id: 'pdf',
-        label: 'Landscape PDF Report',
-        ext: '.pdf',
-        mime: 'application/pdf',
-        desc: 'Official municipal document formatted in landscape A4 table',
-        badge: '.PDF',
-        badgeColor: 'text-rose-700 bg-rose-50 border-rose-200',
-        iconColor: 'text-rose-600 bg-rose-50 border-rose-200',
-        icon: FileText,
-    },
-};
 
 export default function Index({
     logs = { data: [], current_page: 1, last_page: 1, total: 0, per_page: 15 },
@@ -52,16 +28,11 @@ export default function Index({
     const layoutProps = { title: 'System Activity Logs', role: 'TMO Personnel' };
 
     const [selectedLog, setSelectedLog] = useState(null);
-    const [exportOptionsModalOpen, setExportOptionsModalOpen] = useState(false);
-    const [selectedFormat, setSelectedFormat] = useState('excel');
-    const [exportModalOpen, setExportModalOpen] = useState(false);
-    const [exportStatus, setExportStatus] = useState('idle'); // 'idle' | 'loading' | 'success' | 'error'
-    const [exportProgress, setExportProgress] = useState(0);
-    const [exportFormat, setExportFormat] = useState('excel'); // 'excel' | 'pdf' | 'csv' | 'json'
+    const [exportOpen, setExportOpen] = useState(false);
 
     // Background refresh
     useBackgroundRefresh(['logs', 'stats'], {
-        paused: Boolean(selectedLog) || exportOptionsModalOpen || exportModalOpen,
+        paused: Boolean(selectedLog) || exportOpen,
     });
 
     // Filters state
@@ -137,83 +108,17 @@ export default function Index({
         });
     };
 
-    const handleCloseExportModal = () => {
-        if (exportStatus === 'loading') return;
-        setExportModalOpen(false);
-        setTimeout(() => {
-            setExportStatus('idle');
-            setExportProgress(0);
-        }, 300);
-    };
-
-    const handleExport = async (format = 'excel') => {
-        setExportFormat(format);
-        if (exportStatus === 'loading') return;
-
-        setExportProgress(12);
-        setExportStatus('loading');
-        setExportModalOpen(true);
-
-        // Smooth simulated progress increments while server prepares export
-        const interval = setInterval(() => {
-            setExportProgress((prev) => {
-                if (prev >= 88) return prev;
-                return prev + Math.floor(Math.random() * 10) + 6;
-            });
-        }, 220);
-
-        try {
-            const params = new URLSearchParams();
-            params.set('format', format);
-            if (search) params.set('search', search);
-            if (module) params.set('module', module);
-            if (role) params.set('role', role);
-            if (from) params.set('from', from);
-            if (to) params.set('to', to);
-
-            const url = `${exportUrl}?${params.toString()}`;
-            const meta = FORMAT_META[format] || FORMAT_META.excel;
-
-            const response = await fetch(url, {
-                method: 'GET',
-                headers: {
-                    Accept: meta.mime,
-                },
-            });
-
-            if (!response.ok) {
-                throw new Error(`Export request failed with status: ${response.status}`);
-            }
-
-            clearInterval(interval);
-            setExportProgress(100);
-
-            let filename = `trivora_system_activity_logs${meta.ext}`;
-            const disposition = response.headers.get('content-disposition');
-            if (disposition && disposition.includes('filename=')) {
-                const matches = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/.exec(disposition);
-                if (matches && matches[1]) {
-                    filename = matches[1].replace(/['"]/g, '');
-                }
-            }
-
-            const blob = await response.blob();
-            const downloadUrl = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = downloadUrl;
-            a.download = filename;
-            document.body.appendChild(a);
-            a.click();
-            a.remove();
-            window.URL.revokeObjectURL(downloadUrl);
-
-            setExportStatus('success');
-        } catch (err) {
-            clearInterval(interval);
-            console.error('Failed to export report:', err);
-            setExportStatus('error');
-        }
-    };
+    // Export endpoint carrying the current filters; the ExportDialog appends ?format=excel|pdf.
+    const filteredExportUrl = (() => {
+        const params = new URLSearchParams();
+        if (search) params.set('search', search);
+        if (module) params.set('module', module);
+        if (role) params.set('role', role);
+        if (from) params.set('from', from);
+        if (to) params.set('to', to);
+        const query = params.toString();
+        return query ? `${exportUrl}?${query}` : exportUrl;
+    })();
 
     const isFiltering = Boolean(search || module || role || from || to);
 
@@ -289,6 +194,8 @@ export default function Index({
             'application.approved': 'Application Approved',
             'profile.updated': 'Profile Updated',
             'profile.password_updated': 'Password Changed',
+            'profile.photo_updated': 'Profile Photo Updated',
+            'profile.photo_removed': 'Profile Photo Removed',
             'report.exported_excel': 'Excel Report Exported',
             'report.exported_pdf': 'PDF Report Exported',
             'report.exported_csv': 'CSV Report Exported',
@@ -456,11 +363,11 @@ export default function Index({
 
                     <button
                         type="button"
-                        onClick={() => setExportOptionsModalOpen(true)}
-                        className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 px-4 py-2.5 text-xs sm:text-sm font-bold text-slate-700 shadow-2xs transition-all active:scale-[0.98] self-start sm:self-center shrink-0 cursor-pointer"
+                        onClick={() => setExportOpen(true)}
+                        className="inline-flex items-center gap-2 rounded-xl bg-[#182B62] hover:bg-[#25449B] px-4 py-2.5 text-xs font-bold text-white shadow-xs transition-all active:scale-[0.98] self-start sm:self-center shrink-0 cursor-pointer"
                         title="Export activity logs"
                     >
-                        <Download size={15} className="text-[#182B62] shrink-0" />
+                        <Download size={15} strokeWidth={2.2} className="text-white" />
                         <span>Export</span>
                     </button>
                 </div>
@@ -680,17 +587,6 @@ export default function Index({
                                     title="Date to"
                                 />
                             </div>
-
-                            {isFiltering && (
-                                <button
-                                    type="button"
-                                    onClick={handleReset}
-                                    className="col-span-2 sm:col-span-auto inline-flex h-10 items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 px-3 text-xs font-bold text-slate-700 shadow-2xs transition-colors cursor-pointer"
-                                >
-                                    <RotateCcw size={12} strokeWidth={2.2} />
-                                    <span>Reset</span>
-                                </button>
-                            )}
                         </div>
                     </div>
                 </div>
@@ -762,11 +658,9 @@ export default function Index({
                                                     {/* User & Role */}
                                                     <td className="py-3.5 px-4 align-middle">
                                                         <div className="font-bold text-slate-900">{log.actor_name}</div>
-                                                        <span
-                                                            className={`mt-0.5 inline-flex items-center rounded-md border px-1.5 py-0.5 text-[10.5px] font-semibold uppercase tracking-wider ${roleMeta.className}`}
-                                                        >
+                                                        <div className="text-[11px] font-medium text-slate-500">
                                                             {roleMeta.label}
-                                                        </span>
+                                                        </div>
                                                     </td>
 
                                                     {/* Action & Module */}
@@ -803,9 +697,11 @@ export default function Index({
                                                         <button
                                                             type="button"
                                                             onClick={() => setSelectedLog(log)}
-                                                            className="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-3.5 py-1.5 text-xs font-bold text-slate-700 shadow-2xs hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900 transition-all active:scale-[0.98] cursor-pointer"
+                                                            className="inline-flex h-8 w-8 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 shadow-2xs hover:border-slate-300 hover:bg-slate-50 hover:text-[#182B62] transition-all active:scale-[0.98] cursor-pointer"
+                                                            aria-label="View log details"
+                                                            title="View log details"
                                                         >
-                                                            View
+                                                            <Eye size={15} strokeWidth={2.2} />
                                                         </button>
                                                     </td>
                                                 </tr>
@@ -894,9 +790,9 @@ export default function Index({
                                         <div className="flex items-start justify-between gap-2 border-b border-slate-100 pb-2.5">
                                             <div className="min-w-0">
                                                 <div className="font-bold text-slate-900 text-sm truncate">{log.actor_name}</div>
-                                                <span className={`mt-0.5 inline-flex items-center rounded-md border px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider ${roleMeta.className}`}>
+                                                <div className="text-[11px] font-medium text-slate-500">
                                                     {roleMeta.label}
-                                                </span>
+                                                </div>
                                             </div>
                                             <div className="text-right shrink-0">
                                                 <div className="text-xs font-bold text-slate-900">{log.created_at}</div>
@@ -936,9 +832,11 @@ export default function Index({
                                         <button
                                             type="button"
                                             onClick={() => setSelectedLog(log)}
-                                            className="flex w-full items-center justify-center rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100/80 py-2 text-xs font-bold text-slate-700 shadow-2xs transition-all active:scale-[0.98] cursor-pointer"
+                                            className="flex w-full items-center justify-center rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100/80 py-2 text-slate-600 hover:text-[#182B62] shadow-2xs transition-all active:scale-[0.98] cursor-pointer"
+                                            aria-label="View log details"
+                                            title="View log details"
                                         >
-                                            View
+                                            <Eye size={15} strokeWidth={2.2} />
                                         </button>
                                     </div>
                                 );
@@ -1283,205 +1181,18 @@ export default function Index({
                 </Modal>
 
                 {/* ══════════════════════════════════════════════════════════════
-                    6. EXPORT FORMAT SELECTION MODAL
+                    6. EXPORT DIALOG (format choice → exporting → download ready)
                    ══════════════════════════════════════════════════════════════ */}
-                <Modal
-                    show={exportOptionsModalOpen}
-                    onClose={() => setExportOptionsModalOpen(false)}
+                <ExportDialog
+                    show={exportOpen}
+                    onClose={() => setExportOpen(false)}
                     title="Export Activity Logs"
-                    description={`Choose a file format to export ${logs.total ?? 0} activity records.`}
-                    maxWidth="lg"
-                    footer={
-                        <div className="flex w-full items-center justify-between gap-3">
-                            <button
-                                type="button"
-                                onClick={() => setExportOptionsModalOpen(false)}
-                                className="rounded-xl border border-slate-200 bg-white hover:bg-slate-50 px-4 py-2 text-xs font-bold text-slate-700 transition-colors cursor-pointer"
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    setExportOptionsModalOpen(false);
-                                    handleExport(selectedFormat);
-                                }}
-                                className="inline-flex items-center gap-1.5 rounded-xl bg-[#182B62] hover:bg-[#25449B] text-white px-5 py-2 text-xs font-bold shadow-2xs transition-all active:scale-[0.98] cursor-pointer"
-                            >
-                                <Download size={14} />
-                                <span>Export</span>
-                            </button>
-                        </div>
-                    }
-                >
-                    <div className="space-y-4 py-1 font-['Plus_Jakarta_Sans',sans-serif]">
-                        {/* Active Filters Context */}
-                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 rounded-2xl border border-slate-200/80 bg-slate-50/70 p-3.5 text-xs">
-                            <div className="flex items-center gap-2 text-slate-700">
-                                <Filter size={14} className="text-slate-400 shrink-0" />
-                                <span className="font-medium">
-                                    Export Scope: <span className="font-bold text-slate-900">{logs.total ?? 0} matching records</span>
-                                </span>
-                            </div>
-                            {isFiltering ? (
-                                <span className="inline-flex items-center self-start sm:self-auto rounded-md bg-amber-50 px-2 py-0.5 text-[10.5px] font-bold text-amber-700 border border-amber-200/70">
-                                    Current Filters Applied
-                                </span>
-                            ) : (
-                                <span className="inline-flex items-center self-start sm:self-auto rounded-md bg-slate-100 px-2 py-0.5 text-[10.5px] font-semibold text-slate-600">
-                                    Entire Activity Log
-                                </span>
-                            )}
-                        </div>
-
-                        {/* Format Options Grid */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            {Object.values(FORMAT_META).map((item) => {
-                                const isSelected = selectedFormat === item.id;
-                                const IconComponent = item.icon;
-                                return (
-                                    <div
-                                        key={item.id}
-                                        onClick={() => setSelectedFormat(item.id)}
-                                        className={`relative flex flex-col justify-between rounded-2xl border p-4 cursor-pointer transition-all ${
-                                            isSelected
-                                                ? 'border-[#182B62] bg-[#182B62]/[0.02] ring-2 ring-[#182B62]/20 shadow-xs'
-                                                : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50/50'
-                                        }`}
-                                    >
-                                        <div>
-                                            <div className="flex items-center justify-between mb-2">
-                                                <div className={`flex h-8 w-8 items-center justify-center rounded-xl border ${item.iconColor}`}>
-                                                    <IconComponent size={16} strokeWidth={2.2} />
-                                                </div>
-                                                <span className={`inline-flex items-center rounded-md border px-1.5 py-0.5 text-[10px] font-bold ${item.badgeColor}`}>
-                                                    {item.badge}
-                                                </span>
-                                            </div>
-                                            <h4 className="text-xs font-bold text-slate-900">
-                                                {item.label}
-                                            </h4>
-                                            <p className="mt-1 text-[11px] text-slate-500 leading-relaxed">
-                                                {item.desc}
-                                            </p>
-                                        </div>
-
-                                        <div className="mt-3.5 flex items-center justify-between border-t border-slate-100 pt-2.5">
-                                            <span className="text-[10.5px] font-medium text-slate-400">
-                                                {isSelected ? 'Selected' : 'Click to select'}
-                                            </span>
-                                            <div className={`h-4 w-4 rounded-full border flex items-center justify-center transition-all ${
-                                                isSelected ? 'border-[#182B62] bg-[#182B62]' : 'border-slate-300'
-                                            }`}>
-                                                {isSelected && <span className="h-1.5 w-1.5 rounded-full bg-white" />}
-                                            </div>
-                                        </div>
-                                    </div>
-                                );
-                            })}
-                        </div>
-                    </div>
-                </Modal>
-
-                {/* ══════════════════════════════════════════════════════════════
-                    7. EXPORT PROGRESS MODAL
-                   ══════════════════════════════════════════════════════════════ */}
-                <Modal
-                    show={exportModalOpen}
-                    onClose={handleCloseExportModal}
-                    closeable={exportStatus !== 'loading'}
-                    maxWidth="md"
-                    title={
-                        exportStatus === 'success'
-                            ? 'Download Ready'
-                            : exportStatus === 'error'
-                            ? 'Export Failed'
-                            : `Exporting to ${FORMAT_META[exportFormat]?.label || 'File'}`
-                    }
-                    description={
-                        exportStatus === 'success'
-                            ? `Your ${FORMAT_META[exportFormat]?.label || 'file'} has been downloaded successfully.`
-                            : exportStatus === 'error'
-                            ? 'An error occurred while preparing your export.'
-                            : `Please wait while we gather and prepare your activity records in ${FORMAT_META[exportFormat]?.label || 'file'} format.`
-                    }
-                    footer={
-                        exportStatus !== 'loading' && (
-                            <div className="flex w-full justify-end">
-                                <button
-                                    type="button"
-                                    onClick={handleCloseExportModal}
-                                    className={`rounded-xl px-5 py-2 text-xs font-bold shadow-2xs transition-colors cursor-pointer ${
-                                        exportStatus === 'error'
-                                            ? 'border border-slate-200 bg-white hover:bg-slate-50 text-slate-700'
-                                            : 'bg-[#182B62] hover:bg-[#25449B] text-white'
-                                    }`}
-                                >
-                                    {exportStatus === 'success' ? 'Done' : 'Close'}
-                                </button>
-                            </div>
-                        )
-                    }
-                >
-                    <div className="py-2 font-['Plus_Jakarta_Sans',sans-serif]">
-                        {exportStatus === 'loading' && (
-                            <div className="space-y-4">
-                                <div className="flex items-center gap-3">
-                                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-[#182B62] border border-slate-200">
-                                        <Loader2 size={20} className="animate-spin" />
-                                    </div>
-                                    <div className="min-w-0 flex-1">
-                                        <div className="flex items-center justify-between">
-                                            <span className="text-xs font-semibold text-slate-700">
-                                                Preparing {FORMAT_META[exportFormat]?.label || 'file'}...
-                                            </span>
-                                            <span className="text-xs font-bold text-[#182B62] tabular-nums">
-                                                {exportProgress}%
-                                            </span>
-                                        </div>
-                                        <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-slate-100">
-                                            <div
-                                                className="h-full rounded-full bg-[#182B62] transition-all duration-300 ease-out"
-                                                style={{ width: `${exportProgress}%` }}
-                                            />
-                                        </div>
-                                    </div>
-                                </div>
-                                <p className="text-[11px] text-slate-500 leading-relaxed">
-                                    Formatting rows with your selected filters. Your download will start automatically once ready.
-                                </p>
-                            </div>
-                        )}
-
-                        {exportStatus === 'success' && (
-                            <div className="flex items-center gap-3 rounded-2xl border border-emerald-200/80 bg-emerald-50/60 p-4">
-                                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700">
-                                    <Check size={20} strokeWidth={2.5} />
-                                </div>
-                                <div>
-                                    <h4 className="text-xs font-bold text-emerald-900">Download Complete</h4>
-                                    <p className="mt-0.5 text-[11px] text-emerald-700 leading-relaxed">
-                                        Your {FORMAT_META[exportFormat]?.label || 'file'} has been saved to your downloads folder.
-                                    </p>
-                                </div>
-                            </div>
-                        )}
-
-                        {exportStatus === 'error' && (
-                            <div className="flex items-center gap-3 rounded-2xl border border-rose-200/80 bg-rose-50/60 p-4">
-                                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-rose-100 text-rose-700">
-                                    <X size={20} strokeWidth={2.5} />
-                                </div>
-                                <div>
-                                    <h4 className="text-xs font-bold text-rose-900">Failed to Export</h4>
-                                    <p className="mt-0.5 text-[11px] text-rose-700 leading-relaxed">
-                                        We couldn't generate the file. Please check your connection and try again.
-                                    </p>
-                                </div>
-                            </div>
-                        )}
-                    </div>
-                </Modal>
+                    recordLabel="activity records"
+                    recordCount={logs.total ?? 0}
+                    scopeNote={isFiltering ? 'Current Filters Applied' : 'Entire Activity Log'}
+                    exportUrl={filteredExportUrl}
+                    fallbackName="trivora_system_activity_logs"
+                />
             </div>
         </Layout>
     );

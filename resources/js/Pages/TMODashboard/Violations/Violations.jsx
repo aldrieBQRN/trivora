@@ -2,12 +2,14 @@ import React, { useState, useMemo } from 'react';
 import { Head, Link } from '@inertiajs/react';
 import useBackgroundRefresh from '@/hooks/useBackgroundRefresh';
 import TrivoraLayout from '@/Layouts/TrivoraLayout';
+import ExportDialog from '@/Components/ExportDialog';
 import {
     ShieldAlert, AlertCircle, CheckCircle2, Clock, ChevronRight, ChevronLeft,
     Search, X, RotateCcw, MapPin, Scale, Phone, Bike, SlidersHorizontal, ArrowUpRight,
-    FileSpreadsheet,
+    Download,
 } from 'lucide-react';
 
+import Avatar from '@/Components/Avatar';
 // Shared soft, layered shadow token — same elevation language used across the redesigned TMO
 // pages (Dashboard, Live Fleet Monitoring, shared KpiCard/DataTable components), so this page
 // reads as one consistent product rather than a different template.
@@ -22,6 +24,7 @@ export default function Violations({ initialViolations = [], summaryStats = null
     const [detectionFilter, setDetectionFilter] = useState('all');
     const [onlyUnsettled, setOnlyUnsettled] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
+    const [exportOpen, setExportOpen] = useState(false);
     const itemsPerPage = 10;
 
     // Silent background refresh — a new automated coding detection or a TMO appeal decision
@@ -132,13 +135,14 @@ export default function Violations({ initialViolations = [], summaryStats = null
                     </p>
                 </div>
                 <div className="flex items-center gap-2">
-                    <a
-                        href={route('tmo.violations.export-excel')}
-                        className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 text-xs font-bold text-slate-700 shadow-2xs hover:bg-slate-50 hover:text-slate-900 transition-colors font-['Plus_Jakarta_Sans',sans-serif]"
+                    <button
+                        type="button"
+                        onClick={() => setExportOpen(true)}
+                        className="inline-flex items-center gap-2 rounded-xl bg-[#182B62] hover:bg-[#25449B] px-4 py-2.5 text-xs font-bold text-white shadow-xs transition-all active:scale-[0.98] cursor-pointer"
                     >
-                        <FileSpreadsheet size={14} className="text-emerald-600" />
-                        <span>Export to Excel</span>
-                    </a>
+                        <Download size={15} strokeWidth={2.2} className="text-white" />
+                        <span>Export</span>
+                    </button>
                 </div>
             </div>
 
@@ -365,19 +369,6 @@ export default function Violations({ initialViolations = [], summaryStats = null
                                 {unsettledCount}
                             </span>
                         </button>
-
-                        {/* Reset All Filters Button */}
-                        {isFiltering && (
-                            <button
-                                type="button"
-                                onClick={handleClearFilters}
-                                className="col-span-2 sm:col-span-1 inline-flex h-10 items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50/70 px-3.5 text-xs font-bold text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-colors"
-                                title="Reset all filters"
-                            >
-                                <RotateCcw size={13} strokeWidth={2.2} />
-                                <span className="hidden sm:inline">Reset</span>
-                            </button>
-                        )}
                     </div>
                 </div>
             </div>
@@ -550,6 +541,16 @@ export default function Violations({ initialViolations = [], summaryStats = null
                     </div>
                 </>
             )}
+            <ExportDialog
+                show={exportOpen}
+                onClose={() => setExportOpen(false)}
+                title="Export Violation Records"
+                recordLabel="violation records"
+                recordCount={initialViolations.length}
+                scopeNote="All Violation Records"
+                exportUrl={route('tmo.violations.export-excel')}
+                fallbackName="trivora_violation_records"
+            />
         </TrivoraLayout>
     );
 }
@@ -557,13 +558,6 @@ export default function Violations({ initialViolations = [], summaryStats = null
 /* ─────────────────────────────────────────────────────────────────────────
    SUBCOMPONENTS: Table Row, Mobile Card & Status Pill
 ───────────────────────────────────────────────────────────────────────── */
-
-function getInitials(name) {
-    if (!name || name === 'N/A') return 'DR';
-    const parts = name.trim().split(/\s+/);
-    if (parts.length === 1) return parts[0].substring(0, 2).toUpperCase();
-    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-}
 
 function StatusPill({ record }) {
     const isAppealed = record.appeal_status === 'under_review' || record.raw_status === 'contested';
@@ -593,7 +587,6 @@ function StatusPill({ record }) {
 }
 
 function DesktopViolationRow({ record }) {
-    const initials = getInitials(record.operator);
 
     return (
         <tr className="group transition-colors hover:bg-slate-50/80">
@@ -613,9 +606,7 @@ function DesktopViolationRow({ record }) {
             {/* Column 2: Tricycle & Driver */}
             <td className="py-4 px-4 align-middle">
                 <div className="flex items-center gap-2.5">
-                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#182B62] to-[#25449B] text-[11px] font-black text-white shadow-2xs">
-                        {initials}
-                    </div>
+                    <Avatar name={record.operator} src={record.operator_photo} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#182B62] to-[#25449B] text-[11px] font-black text-white shadow-2xs" />
                     <div className="min-w-0">
                         <div className="flex items-center gap-1.5">
                             {record.tricycle_id ? (
@@ -696,7 +687,6 @@ function DesktopViolationRow({ record }) {
 }
 
 function MobileViolationCard({ record }) {
-    const initials = getInitials(record.operator);
 
     return (
         <div className={`rounded-2xl border border-slate-200/80 bg-white p-4 ${CARD_SHADOW} transition-all hover:border-slate-300`}>
@@ -715,9 +705,7 @@ function MobileViolationCard({ record }) {
             {/* Operator Information */}
             <div className="mt-3 flex items-center justify-between gap-2">
                 <div className="flex items-center gap-2.5 min-w-0">
-                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#182B62] to-[#25449B] text-[11px] font-black text-white shadow-2xs">
-                        {initials}
-                    </div>
+                    <Avatar name={record.operator} src={record.operator_photo} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#182B62] to-[#25449B] text-[11px] font-black text-white shadow-2xs" />
                     <div className="min-w-0">
                         <p className="truncate text-xs font-bold text-slate-900 font-['Plus_Jakarta_Sans',sans-serif]">{record.operator}</p>
                         {record.coding_scheme_number && (

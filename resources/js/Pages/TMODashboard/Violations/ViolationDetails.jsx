@@ -12,6 +12,7 @@ import {
     Phone, ShieldAlert, Scale, ChevronLeft, FileText, Wallet,
 } from 'lucide-react';
 
+import Avatar from '@/Components/Avatar';
 // Custom Pulsing Pin for the Violation Location
 const createViolationIcon = () => {
     return L.divIcon({
@@ -52,7 +53,6 @@ export default function ViolationDetails({ violationId = 'VIO-26-0001', initialR
         lat: 14.0725,
         lng: 120.6321,
         speed_kmh: 22.0,
-        location_desc: 'Nasugbu Highway, Zone 1',
         operator: 'Pedro Ramos',
         operator_contact: '0917-555-0192',
         coding_scheme_number: '0142',
@@ -79,7 +79,6 @@ export default function ViolationDetails({ violationId = 'VIO-26-0001', initialR
     const appeal = record.appeal;
     const isSettled = record.status === 'settled';
     const isAppealed = appeal && appeal.status === 'under_review';
-    const initials = getInitials(record.owner_name || record.operator);
 
     // Plain confirmation only — no receipt/OR details are captured here. The cashier's
     // official receipt stays a physical, offline record; this just marks the fine settled.
@@ -259,7 +258,7 @@ export default function ViolationDetails({ violationId = 'VIO-26-0001', initialR
                             </div>
                         </div>
                         <p className="mt-2 text-base sm:text-lg font-black text-slate-900 truncate font-['Plus_Jakarta_Sans',sans-serif]" title={record.location_desc || record.toda || undefined}>
-                            {record.location_desc || record.toda || 'Nasugbu Zone'}
+                            Nasugbu, Batangas
                         </p>
                     </div>
                     <div className="mt-3 rounded-xl bg-slate-50 border border-slate-100/90 px-2.5 py-1.5 flex items-center justify-between text-xs font-mono">
@@ -352,7 +351,7 @@ export default function ViolationDetails({ violationId = 'VIO-26-0001', initialR
                                 {/* Floating Location Overlay */}
                                 <div className="pointer-events-none absolute bottom-3 left-3 z-[1000] flex items-center gap-2 rounded-xl bg-slate-900/90 backdrop-blur-xs px-3 py-1.5 text-xs font-bold text-white shadow-md font-['Plus_Jakarta_Sans',sans-serif]">
                                     <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-                                    <span>{record.location_desc || record.toda || 'Location recorded'}</span>
+                                    <span>Location recorded</span>
                                 </div>
                             </div>
                         ) : (
@@ -449,9 +448,7 @@ export default function ViolationDetails({ violationId = 'VIO-26-0001', initialR
                                         Tricycle Owner
                                     </p>
                                     <div className="flex items-center gap-3">
-                                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#182B62] text-xs font-black text-white shadow-2xs font-['Plus_Jakarta_Sans',sans-serif]">
-                                            {initials}
-                                        </div>
+                                        <Avatar name={record.owner_name || record.operator} src={record.operator_photo} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#182B62] text-xs font-black text-white shadow-2xs font-['Plus_Jakarta_Sans',sans-serif]" />
                                         <div className="min-w-0 flex-1">
                                             <p className="truncate text-xs sm:text-sm font-bold text-slate-900 font-['Plus_Jakarta_Sans',sans-serif]">
                                                 {record.owner_name || record.operator}

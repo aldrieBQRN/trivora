@@ -41,4 +41,10 @@ return [
         'enable_fallback' => env('OVERPASS_ENABLE_FALLBACK', null),
     ],
 
+    // Public link to the latest Trivora Driver Android build (an EAS build/APK URL). Shown as the
+    // "Download Driver App" card in the Driver panel sidebar; the card is hidden while unset.
+    'driver_app' => [
+        'download_url' => env('DRIVER_APP_DOWNLOAD_URL'),
+    ],
+
 ];

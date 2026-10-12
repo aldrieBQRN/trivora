@@ -292,7 +292,6 @@ class DriverAuthController extends Controller
                 'id'             => $operator->id,
                 'full_name'      => $operator->full_name,
                 'license_number' => $operator->license_number,
-                'toda_zone'      => $operator->todaZone ? $operator->todaZone->name : 'Unassigned',
                 'barangay'       => $operator->barangay,
             ],
             'tricycle' => [
@@ -302,7 +301,6 @@ class DriverAuthController extends Controller
                 'body_number'          => $tricycle->coding_scheme_number, // legacy key — kept for shipped app builds
                 'status'       => $tricycle->status,
                 'make_model'   => "{$tricycle->make} {$tricycle->model}",
-                'toda_zone'    => $tricycle->todaZone ? $tricycle->todaZone->name : null,
             ],
         ], 200);
     }
@@ -544,7 +542,6 @@ class DriverAuthController extends Controller
                     'id'             => $operator->id,
                     'full_name'      => $operator->full_name,
                     'license_number' => $operator->license_number,
-                    'toda_zone'      => $operator->todaZone ? $operator->todaZone->name : 'Unassigned',
                 ],
                 'tricycle' => [
                     'id'                   => $tricycle->id,
@@ -553,7 +550,6 @@ class DriverAuthController extends Controller
                     'plate_number'         => $tricycle->plate_number,
                     'make_model'           => "{$tricycle->make} {$tricycle->model}",
                     'status'               => $tricycle->status,
-                    'toda_zone'            => $tricycle->todaZone ? $tricycle->todaZone->name : null,
                     'active_tracking_mode' => $tricycle->active_tracking_mode,
                     'tracking_capability'  => $tricycle->tracking_capability,
                     'iot_device_id'        => $tricycle->iot_device_id,
@@ -691,13 +687,6 @@ class DriverAuthController extends Controller
         }
         $tricycle = $driver ? $driver->tricycle : null;
 
-        $todaName = 'TODA Brgy. 8';
-        if ($tricycle && $tricycle->todaZone) {
-            $todaName = $tricycle->todaZone->name;
-        } elseif ($operator && $operator->todaZone) {
-            $todaName = $operator->todaZone->name;
-        }
-
         $codingStatus = $tricycle ? ColorCodingRuleService::evaluateTricycle($tricycle) : null;
         if ($driver) {
             // Every new login starts Offline until the driver manually taps Go Online.
@@ -722,7 +711,6 @@ class DriverAuthController extends Controller
                 'id'             => $operator->id,
                 'full_name'      => $operator->full_name,
                 'license_number' => $operator->license_number,
-                'toda_zone'      => $todaName,
             ] : null,
             'tricycle' => $tricycle ? [
                 'id'                   => $tricycle->id,
@@ -731,7 +719,6 @@ class DriverAuthController extends Controller
                 'plate_number'         => $tricycle->plate_number,
                 'make_model'           => "{$tricycle->make} {$tricycle->model}",
                 'status'               => $tricycle->status,
-                'toda_zone'            => $todaName,
                 'tracking_capability'  => $tricycle->tracking_capability ?: 'mobile_only',
                 'active_tracking_mode' => $tricycle->active_tracking_mode ?: ($tricycle->tracking_capability === 'iot_enabled' ? 'iot_device' : 'mobile_app'),
                 'iot_device_id'        => $tricycle->iot_device_id,
@@ -768,7 +755,7 @@ class DriverAuthController extends Controller
         // resolveAndValidateFranchise for why the tricycle's own operator_id FK, not an
         // Application/"first tricycle" lookup, is the only safe ownership source of truth).
         if ($driver) {
-            $driver->load(['tricycle.todaZone', 'tricycle.franchiseScheme']);
+            $driver->load(['tricycle.franchiseScheme']);
         }
         $tricycle = $driver ? $driver->tricycle : null;
 
@@ -798,7 +785,6 @@ class DriverAuthController extends Controller
                 'license_number' => $operator->license_number,
                 'contact_number' => $operator->contact_number,
                 'barangay'       => $operator->barangay,
-                'toda_zone'      => $operator->todaZone ? $operator->todaZone->name : 'N/A',
             ] : null,
             'tricycle' => $tricycle ? [
                 'id'                   => $tricycle->id,
@@ -807,7 +793,6 @@ class DriverAuthController extends Controller
                 'plate_number'         => $tricycle->plate_number,
                 'make_model'           => "{$tricycle->make} {$tricycle->model}",
                 'status'               => $tricycle->status,
-                'toda_name'            => $tricycle->todaZone ? $tricycle->todaZone->name : 'Unassigned',
                 'active_tracking_mode' => $tricycle->active_tracking_mode ?: ($tricycle->tracking_capability === 'iot_enabled' ? 'iot_device' : 'mobile_app'),
                 'tracking_capability'  => $tricycle->tracking_capability ?: 'mobile_only',
                 'iot_device_id'        => $tricycle->iot_device_id,

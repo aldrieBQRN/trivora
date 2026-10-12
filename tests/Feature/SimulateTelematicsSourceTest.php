@@ -3,7 +3,6 @@
 namespace Tests\Feature;
 
 use App\Models\Operator;
-use App\Models\TodaZone;
 use App\Models\Tricycle;
 use App\Models\TricycleLocation;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
@@ -26,13 +25,8 @@ class SimulateTelematicsSourceTest extends TestCase
     {
         parent::setUp();
 
-        $toda = TodaZone::firstOrCreate(
-            ['code' => 'TODA-SIM-TEST'],
-            ['name' => 'Sim Telematics Zone', 'barangay' => 'Poblacion', 'is_active' => true]
-        );
 
         $operator = Operator::create([
-            'toda_id' => $toda->id,
             'first_name' => 'Sim', 'last_name' => 'Tester',
             'contact_number' => '09170000063', 'address' => 'Poblacion', 'barangay' => 'Poblacion',
             'date_of_birth' => '1990-01-01',
@@ -40,8 +34,7 @@ class SimulateTelematicsSourceTest extends TestCase
         ]);
 
         $this->tricycle = Tricycle::create([
-            'operator_id' => $operator->id, 'toda_zone_id' => $toda->id,
-            'plate_number' => 'SIM-0001', 'engine_number' => 'ENG-SIM-001', 'chassis_number' => 'CHS-SIM-001',
+            'operator_id' => $operator->id, 'plate_number' => 'SIM-0001', 'engine_number' => 'ENG-SIM-001', 'chassis_number' => 'CHS-SIM-001',
             'make' => 'Honda', 'model' => 'TMX', 'year_model' => 2022, 'body_color' => 'Red', 'body_type' => 'Standard',
             'or_number' => 'OR-SIM-001', 'cr_number' => 'CR-SIM-001', 'status' => 'active',
             'active_tracking_mode' => 'mobile_app',
@@ -67,8 +60,7 @@ class SimulateTelematicsSourceTest extends TestCase
         // the simulator must map it onto the real 'gps_device' enum member rather than writing the
         // mode verbatim (which would blank/fail the column).
         $iotTricycle = Tricycle::create([
-            'operator_id' => $this->tricycle->operator_id, 'toda_zone_id' => $this->tricycle->toda_zone_id,
-            'plate_number' => 'SIM-0002', 'engine_number' => 'ENG-SIM-002', 'chassis_number' => 'CHS-SIM-002',
+            'operator_id' => $this->tricycle->operator_id, 'plate_number' => 'SIM-0002', 'engine_number' => 'ENG-SIM-002', 'chassis_number' => 'CHS-SIM-002',
             'make' => 'Honda', 'model' => 'TMX', 'year_model' => 2022, 'body_color' => 'Blue', 'body_type' => 'Standard',
             'or_number' => 'OR-SIM-002', 'cr_number' => 'CR-SIM-002', 'status' => 'active',
             'active_tracking_mode' => 'iot_device',

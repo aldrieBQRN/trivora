@@ -6,7 +6,6 @@ use App\Models\ColorCodingScheme;
 use App\Models\Driver;
 use App\Models\FranchiseScheme;
 use App\Models\Operator;
-use App\Models\TodaZone;
 use App\Models\Tricycle;
 use App\Models\User;
 use Carbon\Carbon;
@@ -30,10 +29,6 @@ trait BuildsViolationNotificationFixtures
     {
         $suffix = uniqid();
 
-        $toda = TodaZone::firstOrCreate(
-            ['code' => 'TODA-VIO-MAIL-TEST'],
-            ['name' => 'Violation Mail Test Zone', 'barangay' => 'Poblacion', 'is_active' => true]
-        );
 
         $this->colorScheme = ColorCodingScheme::create([
             'name' => 'Violation Mail Scheme ' . $suffix, 'color_hex' => '#FF0000',
@@ -48,7 +43,6 @@ trait BuildsViolationNotificationFixtures
 
         $this->operator = Operator::create([
             'user_id' => $this->driverUser->id,
-            'toda_id' => $toda->id,
             'first_name' => 'Juan', 'last_name' => 'Dela Cruz',
             'contact_number' => '09170000777', 'address' => 'Poblacion', 'barangay' => 'Poblacion',
             'date_of_birth' => '1990-01-01',
@@ -56,8 +50,7 @@ trait BuildsViolationNotificationFixtures
         ]);
 
         $this->tricycle = Tricycle::create([
-            'operator_id' => $this->operator->id, 'toda_zone_id' => $toda->id,
-            'coding_scheme_number' => '0002',
+            'operator_id' => $this->operator->id, 'coding_scheme_number' => '0002',
             'plate_number' => 'VM-' . substr($suffix, -6), 'engine_number' => 'ENG-VM-' . $suffix, 'chassis_number' => 'CHS-VM-' . $suffix,
             'make' => 'Honda', 'model' => 'TMX', 'year_model' => 2021,
             'body_color' => 'Red', 'body_type' => 'Standard',

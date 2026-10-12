@@ -4,12 +4,14 @@ namespace Tests\Feature;
 
 use App\Models\User;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
 /**
- * Account Settings (/profile): the signed-in user's own real record, profile updates, password
+ * Account Settings (/profile): the signed-in user's own real record (read-only profile), password
  * change and validation.
  */
 class AccountSettingsTest extends TestCase
@@ -60,42 +62,19 @@ class AccountSettingsTest extends TestCase
     }
 
     #[Test]
-    public function staff_can_update_name_email_mobile_and_address(): void
+    public function profile_details_cannot_be_changed_from_account_settings(): void
     {
-        $bplo = $this->user('bplo_staff');
-        $email = 'updated.' . uniqid() . '@trivora.test';
+        $bplo = $this->user('bplo_staff', ['contact_number' => '0917 111 2222', 'address' => 'Bucana']);
 
+        // Account Settings is read-only for profile data — there is no update route at all.
         $this->actingAs($bplo)->patch('/profile', [
-            'name' => 'Updated Name', 'email' => $email, 'contact_number' => '0917 333 4444', 'address' => 'Poblacion, Nasugbu',
-        ])->assertSessionHasNoErrors()->assertRedirect('/profile');
+            'name' => 'Changed Name', 'email' => 'changed.' . uniqid() . '@trivora.test', 'contact_number' => '0917 333 4444',
+        ])->assertStatus(405);
 
-        $bplo->refresh();
-        $this->assertSame('Updated Name', $bplo->name);
-        $this->assertSame($email, $bplo->email);
-        $this->assertSame('0917 333 4444', $bplo->contact_number);
-        $this->assertSame('Poblacion, Nasugbu', $bplo->address);
-    }
-
-    #[Test]
-    public function drivers_mobile_number_is_not_changed_from_account_settings(): void
-    {
-        $driver = $this->user('tricycle_driver');
-        $this->actingAs($driver)->patch('/profile', [
-            'name' => 'Driver Name', 'email' => $driver->email, 'contact_number' => '09999999999',
-        ])->assertSessionHasNoErrors();
-
-        $this->assertNull($driver->fresh()->contact_number);
-        $this->assertFalse($this->account($driver)['is_staff']);
-    }
-
-    #[Test]
-    public function profile_validation_rejects_bad_input(): void
-    {
-        $tmo = $this->user('tmo_personnel');
-        $taken = $this->user('tmo_personnel');
-
-        $this->actingAs($tmo)->patch('/profile', ['name' => '', 'email' => $taken->email, 'contact_number' => 'call me'])
-            ->assertSessionHasErrors(['name', 'email', 'contact_number']);
+        $fresh = $bplo->fresh();
+        $this->assertSame($bplo->name, $fresh->name);
+        $this->assertSame($bplo->email, $fresh->email);
+        $this->assertSame('0917 111 2222', $fresh->contact_number);
     }
 
     #[Test]
@@ -137,8 +116,56 @@ class AccountSettingsTest extends TestCase
         $this->actingAs($tmo)->get('/profile?user=' . $other->id)->assertOk()
             ->assertInertia(function ($page) use (&$a) { $a = $page->toArray()['props']['account']; });
         $this->assertSame($tmo->email, $a['email']);
+    }
 
-        $this->actingAs($tmo)->patch('/profile', ['name' => 'Mine', 'email' => $tmo->email, 'id' => $other->id]);
-        $this->assertSame('Settings bplo_staff', $other->fresh()->name);
+    #[Test]
+    public function any_user_can_upload_replace_and_remove_their_profile_photo(): void
+    {
+        Storage::fake('public');
+        $bplo = $this->user('bplo_staff');
+
+        $this->actingAs($bplo)->post('/profile/photo', ['photo' => UploadedFile::fake()->image('first.jpg', 300, 300)])
+            ->assertSessionHasNoErrors()->assertRedirect('/profile');
+        $first = $bplo->fresh()->profile_photo_path;
+        Storage::disk('public')->assertExists($first);
+        $this->assertNotNull($this->account($bplo)['profile_photo_url']);
+
+        // Replacing deletes the old file.
+        $this->actingAs($bplo)->post('/profile/photo', ['photo' => UploadedFile::fake()->image('second.png', 300, 300)])
+            ->assertSessionHasNoErrors();
+        $second = $bplo->fresh()->profile_photo_path;
+        Storage::disk('public')->assertMissing($first);
+        Storage::disk('public')->assertExists($second);
+
+        $this->actingAs($bplo)->delete('/profile/photo')->assertRedirect('/profile');
+        $this->assertNull($bplo->fresh()->profile_photo_path);
+        Storage::disk('public')->assertMissing($second);
+    }
+
+    #[Test]
+    public function profile_photo_must_be_a_small_image(): void
+    {
+        Storage::fake('public');
+        $tmo = $this->user('tmo_personnel');
+
+        $this->actingAs($tmo)->post('/profile/photo', ['photo' => UploadedFile::fake()->create('cv.pdf', 100, 'application/pdf')])
+            ->assertSessionHasErrors('photo');
+        $this->actingAs($tmo)->post('/profile/photo', ['photo' => UploadedFile::fake()->image('huge.jpg')->size(6000)])
+            ->assertSessionHasErrors('photo');
+
+        $this->assertNull($tmo->fresh()->profile_photo_path);
+    }
+
+    #[Test]
+    public function drivers_see_their_registered_barangay(): void
+    {
+        $driver = $this->user('tricycle_driver');
+        \App\Models\Operator::create([
+            'user_id' => $driver->id, 'first_name' => 'Brgy', 'last_name' => 'Driver',
+            'contact_number' => '09175551111', 'address' => 'Wawa', 'barangay' => 'Wawa',
+            'date_of_birth' => '1990-01-01', 'license_number' => 'LIC-BRGY-' . uniqid(), 'license_expiry_date' => '2029-01-01',
+        ]);
+
+        $this->assertSame('Wawa', $this->account($driver)['registration']['barangay']);
     }
 }

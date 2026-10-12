@@ -6,7 +6,6 @@ use App\Models\ColorCodingScheme;
 use App\Models\Driver;
 use App\Models\FranchiseScheme;
 use App\Models\Operator;
-use App\Models\TodaZone;
 use App\Models\Tricycle;
 use App\Models\User;
 use App\Models\Violation;
@@ -33,10 +32,6 @@ class DriverTelematicsBatchTest extends TestCase
     {
         parent::setUp();
 
-        $toda = TodaZone::firstOrCreate(
-            ['code' => 'TODA-BATCH-TEST'],
-            ['name' => 'Batch Test Zone', 'barangay' => 'Poblacion', 'is_active' => true]
-        );
 
         $colorScheme = ColorCodingScheme::create([
             'name' => 'Batch Test Scheme', 'color_hex' => '#FF0000',
@@ -50,7 +45,6 @@ class DriverTelematicsBatchTest extends TestCase
 
         $operator = Operator::create([
             'user_id' => $this->driverUser->id,
-            'toda_id' => $toda->id,
             'first_name' => 'Batch', 'last_name' => 'Driver',
             'contact_number' => '09170000030', 'address' => 'Poblacion', 'barangay' => 'Poblacion',
             'date_of_birth' => '1990-01-01',
@@ -58,8 +52,7 @@ class DriverTelematicsBatchTest extends TestCase
         ]);
 
         $this->tricycle = Tricycle::create([
-            'operator_id' => $operator->id, 'toda_zone_id' => $toda->id,
-            'coding_scheme_number' => '0002',
+            'operator_id' => $operator->id, 'coding_scheme_number' => '0002',
             'plate_number' => 'BAT-0002', 'engine_number' => 'ENG-BAT-002', 'chassis_number' => 'CHS-BAT-002',
             'make' => 'Honda', 'model' => 'TMX', 'year_model' => 2021,
             'body_color' => 'Red', 'body_type' => 'Standard',

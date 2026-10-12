@@ -3,7 +3,6 @@
 namespace Database\Seeders;
 
 use App\Models\Operator;
-use App\Models\TodaZone;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
@@ -161,9 +160,6 @@ class UsersSeeder extends Seeder
         // ---------------------------------------------------------------------
         // 5. Tricycle Drivers (with Operator profiles)
         // ---------------------------------------------------------------------
-        $toda1 = TodaZone::where('code', 'TODA-BRGY1')->first() ?? TodaZone::first();
-        $toda2 = TodaZone::where('code', 'TODA-BRGY2')->first() ?? TodaZone::first();
-        $toda3 = TodaZone::where('code', 'TODA-BRGY3')->first() ?? TodaZone::first();
 
         $drivers = [
             [
@@ -182,7 +178,6 @@ class UsersSeeder extends Seeder
                     'license_number'           => 'N01-85-123456',
                     'license_expiry_date'      => '2027-06-15',
                     'license_restriction_code' => '1,2',
-                    'toda_id'                  => $toda1?->id,
                 ],
             ],
             [
@@ -201,7 +196,6 @@ class UsersSeeder extends Seeder
                     'license_number'           => 'N01-90-234567',
                     'license_expiry_date'      => '2026-03-22',
                     'license_restriction_code' => '1',
-                    'toda_id'                  => $toda2?->id,
                 ],
             ],
             [
@@ -220,7 +214,6 @@ class UsersSeeder extends Seeder
                     'license_number'           => 'N01-78-345678',
                     'license_expiry_date'      => '2025-11-05',
                     'license_restriction_code' => '1,2,3',
-                    'toda_id'                  => $toda3?->id,
                 ],
             ],
             [
@@ -239,7 +232,6 @@ class UsersSeeder extends Seeder
                     'license_number'           => 'N01-95-456789',
                     'license_expiry_date'      => '2028-05-10',
                     'license_restriction_code' => '1',
-                    'toda_id'                  => $toda1?->id,
                 ],
             ],
             [
@@ -258,7 +250,6 @@ class UsersSeeder extends Seeder
                     'license_number'           => 'N01-88-567890',
                     'license_expiry_date'      => '2027-12-12',
                     'license_restriction_code' => '1,2',
-                    'toda_id'                  => $toda2?->id,
                 ],
             ],
         ];
@@ -336,7 +327,6 @@ class UsersSeeder extends Seeder
                 'date_of_birth'            => '1992-08-20',
                 'license_expiry_date'      => '2028-08-20',
                 'license_restriction_code' => '1,2',
-                'toda_id'                  => $toda1?->id,
             ]
         );
         $unlinkedOp->applications()->firstOrCreate([
@@ -361,7 +351,6 @@ class UsersSeeder extends Seeder
                 'date_of_birth'            => '1991-04-15',
                 'license_expiry_date'      => '2028-04-15',
                 'license_restriction_code' => '1,2',
-                'toda_id'                  => $toda1?->id,
             ]
         );
         $unlinkedOp2->applications()->firstOrCreate([

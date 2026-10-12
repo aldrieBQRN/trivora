@@ -34,7 +34,6 @@ class Booking extends Model
         'driver_id',
         'tricycle_id',
         'ride_session_id',
-        'toda_zone_id',
         'pickup_name',
         'pickup_lat',
         'pickup_lng',
@@ -138,11 +137,6 @@ class Booking extends Model
     public function rideSession(): BelongsTo
     {
         return $this->belongsTo(RideSession::class);
-    }
-
-    public function todaZone(): BelongsTo
-    {
-        return $this->belongsTo(TodaZone::class);
     }
 
     public function rating(): HasOne

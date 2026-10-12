@@ -22,7 +22,7 @@ class ApplicationsReportStageBreakdownTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->seedTodaAndColorScheme();
+        $this->seedColorScheme();
     }
 
     #[Test]

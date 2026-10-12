@@ -6,7 +6,6 @@ use App\Models\ColorCodingScheme;
 use App\Models\Driver;
 use App\Models\FranchiseScheme;
 use App\Models\Operator;
-use App\Models\TodaZone;
 use App\Models\Tricycle;
 use App\Models\TricycleLocation;
 use App\Models\User;
@@ -32,17 +31,12 @@ class GpsTelemetryChainTest extends TestCase
     protected User $driverUser;
     protected Operator $operator;
     protected Tricycle $tricycle;
-    protected TodaZone $toda;
 
     /** Tricycle Sticker Number ends in 2, which ColorCodingRuleService restricts on Mondays. */
     protected function setUp(): void
     {
         parent::setUp();
 
-        $this->toda = TodaZone::firstOrCreate(
-            ['code' => 'TODA-GPSCHAIN-TEST'],
-            ['name' => 'GPS Chain Test Zone', 'barangay' => 'Poblacion', 'is_active' => true]
-        );
 
         $this->driverUser = User::create([
             'name' => 'GPS Chain Driver', 'email' => 'gpschain.driver.' . uniqid() . '@trivora.test',
@@ -51,7 +45,6 @@ class GpsTelemetryChainTest extends TestCase
 
         $this->operator = Operator::create([
             'user_id' => $this->driverUser->id,
-            'toda_id' => $this->toda->id,
             'first_name' => 'Gps', 'last_name' => 'Chain',
             'contact_number' => '09170000030', 'address' => 'Poblacion', 'barangay' => 'Poblacion',
             'date_of_birth' => '1990-01-01',
@@ -59,8 +52,7 @@ class GpsTelemetryChainTest extends TestCase
         ]);
 
         $this->tricycle = Tricycle::create([
-            'operator_id' => $this->operator->id, 'toda_zone_id' => $this->toda->id,
-            'coding_scheme_number' => '0002',
+            'operator_id' => $this->operator->id, 'coding_scheme_number' => '0002',
             'plate_number' => 'GPS-0002', 'engine_number' => 'ENG-GPS-002', 'chassis_number' => 'CHS-GPS-002',
             'make' => 'Honda', 'model' => 'TMX', 'year_model' => 2021,
             'body_color' => 'Red', 'body_type' => 'Standard',

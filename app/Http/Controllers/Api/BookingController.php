@@ -40,7 +40,6 @@ class BookingController extends Controller
             'estimated_duration_mins' => 'nullable|integer',
             'passenger_notes' => 'nullable|string',
             'payment_method' => 'nullable|string|in:cash,gcash,wallet',
-            'toda_zone_id' => 'nullable|integer',
         ]);
 
         // This endpoint requires auth:sanctum (see routes/api.php), so $request->user() is
@@ -81,7 +80,6 @@ class BookingController extends Controller
         $booking = Booking::create([
             'booking_code' => $bookingCode,
             'passenger_id' => $passenger->id,
-            'toda_zone_id' => null,
             'pickup_name' => $validated['pickup_name'],
             'pickup_lat' => $validated['pickup_lat'],
             'pickup_lng' => $validated['pickup_lng'],

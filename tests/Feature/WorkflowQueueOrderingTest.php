@@ -27,7 +27,7 @@ class WorkflowQueueOrderingTest extends TestCase
     {
         parent::setUp();
         Storage::fake('public');
-        $this->seedTodaAndColorScheme();
+        $this->seedColorScheme();
     }
 
     /** Backdates the LATEST status-history row for this application by $minutes, so it reads as
@@ -216,25 +216,19 @@ class WorkflowQueueOrderingTest extends TestCase
     #[Test]
     public function tricycle_registry_shows_the_newest_record_first(): void
     {
-        $toda = \App\Models\TodaZone::firstOrCreate(
-            ['code' => 'TODA-REGORDER-TEST'],
-            ['name' => 'Registry Order Test Zone', 'barangay' => 'Poblacion', 'is_active' => true]
-        );
         $operator = \App\Models\Operator::create([
-            'toda_id' => $toda->id, 'first_name' => 'Registry', 'last_name' => 'Order',
+            'first_name' => 'Registry', 'last_name' => 'Order',
             'contact_number' => '09170000050', 'address' => 'Poblacion', 'barangay' => 'Poblacion',
             'date_of_birth' => '1990-01-01', 'license_number' => 'LIC-REGORDER-001', 'license_expiry_date' => '2028-01-01',
         ]);
 
         $older = Tricycle::create([
-            'operator_id' => $operator->id, 'toda_zone_id' => $toda->id,
-            'plate_number' => 'REG-OLDER', 'engine_number' => 'ENG-REG-OLDER', 'chassis_number' => 'CHS-REG-OLDER',
+            'operator_id' => $operator->id, 'plate_number' => 'REG-OLDER', 'engine_number' => 'ENG-REG-OLDER', 'chassis_number' => 'CHS-REG-OLDER',
             'make' => 'Honda', 'model' => 'TMX', 'year_model' => 2020, 'body_color' => 'Blue', 'body_type' => 'Standard',
             'or_number' => 'OR-REG-OLDER', 'cr_number' => 'CR-REG-OLDER', 'status' => 'active',
         ]);
         $newer = Tricycle::create([
-            'operator_id' => $operator->id, 'toda_zone_id' => $toda->id,
-            'plate_number' => 'REG-NEWER', 'engine_number' => 'ENG-REG-NEWER', 'chassis_number' => 'CHS-REG-NEWER',
+            'operator_id' => $operator->id, 'plate_number' => 'REG-NEWER', 'engine_number' => 'ENG-REG-NEWER', 'chassis_number' => 'CHS-REG-NEWER',
             'make' => 'Honda', 'model' => 'TMX', 'year_model' => 2024, 'body_color' => 'Red', 'body_type' => 'Standard',
             'or_number' => 'OR-REG-NEWER', 'cr_number' => 'CR-REG-NEWER', 'status' => 'active',
         ]);

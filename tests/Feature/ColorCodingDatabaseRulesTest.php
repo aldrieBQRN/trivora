@@ -7,7 +7,6 @@ use App\Models\ColorCodingScheme;
 use App\Models\Driver;
 use App\Models\FranchiseScheme;
 use App\Models\Operator;
-use App\Models\TodaZone;
 use App\Models\Tricycle;
 use App\Models\User;
 use App\Models\Violation;
@@ -165,11 +164,9 @@ class ColorCodingDatabaseRulesTest extends TestCase
     #[Test]
     public function test_0001_evaluates_coding_scheme_number_not_plate_number(): void
     {
-        $toda = TodaZone::firstOrCreate(['code' => 'TODA-TEST-0001'], ['name' => 'Zone 0001', 'barangay' => 'Pob', 'is_active' => true]);
         $user = User::factory()->create();
         $operator = Operator::create([
             'user_id' => $user->id,
-            'toda_id' => $toda->id,
             'first_name' => 'Test',
             'last_name' => 'Owner',
             'contact_number' => '09170000011',
@@ -184,7 +181,6 @@ class ColorCodingDatabaseRulesTest extends TestCase
 
         $tricycle = $this->createTricycleFixture([
             'operator_id'          => $operator->id,
-            'toda_zone_id'         => $toda->id,
             'plate_number'         => 'TEST-0001',
             'coding_scheme_number' => '9999',
         ]);
@@ -285,10 +281,6 @@ class ColorCodingDatabaseRulesTest extends TestCase
     #[Test]
     public function telemetry_violation_uses_database_fine_and_deduplicates(): void
     {
-        $toda = TodaZone::firstOrCreate(
-            ['code' => 'TODA-RULES-TEST'],
-            ['name' => 'Rules Test Zone', 'barangay' => 'Poblacion', 'is_active' => true]
-        );
 
         $customFine = 850.00;
         $scheme = ColorCodingScheme::create([
@@ -309,7 +301,6 @@ class ColorCodingDatabaseRulesTest extends TestCase
 
         $operator = Operator::create([
             'user_id' => $user->id,
-            'toda_id' => $toda->id,
             'first_name' => 'Rule',
             'last_name' => 'Driver',
             'contact_number' => '09170000099',
@@ -322,7 +313,6 @@ class ColorCodingDatabaseRulesTest extends TestCase
 
         $tricycle = $this->createTricycleFixture([
             'operator_id'          => $operator->id,
-            'toda_zone_id'         => $toda->id,
             'plate_number'         => 'RULE-9999',
             'coding_scheme_number' => '1001', // last digit 1 -> matches scheme
         ]);
@@ -403,10 +393,8 @@ class ColorCodingDatabaseRulesTest extends TestCase
     public function driver_auth_api_returns_authoritative_coding_status(): void
     {
         $user = User::factory()->create(['role' => 'tricycle_driver']);
-        $toda = TodaZone::firstOrCreate(['code' => 'TODA-API'], ['name' => 'API Zone', 'barangay' => 'Pob', 'is_active' => true]);
         $operator = Operator::create([
             'user_id' => $user->id,
-            'toda_id' => $toda->id,
             'first_name' => 'Api',
             'last_name' => 'Driver',
             'contact_number' => '09170000088',
@@ -421,7 +409,6 @@ class ColorCodingDatabaseRulesTest extends TestCase
 
         $tricycle = $this->createTricycleFixture([
             'operator_id'          => $operator->id,
-            'toda_zone_id'         => $toda->id,
             'plate_number'         => 'API-0001',
             'coding_scheme_number' => '9999',
         ]);
@@ -469,13 +456,11 @@ class ColorCodingDatabaseRulesTest extends TestCase
         $sat = Carbon::parse('next Saturday 10:00:00');
         Carbon::setTestNow($sat);
 
-        $toda = TodaZone::firstOrCreate(['code' => 'TODA-SAT'], ['name' => 'Sat Zone', 'barangay' => 'Pob', 'is_active' => true]);
         $redScheme = ColorCodingScheme::where('name', 'Red')->firstOrFail();
 
         $user = User::factory()->create(['role' => 'tricycle_driver']);
         $operator = Operator::create([
             'user_id' => $user->id,
-            'toda_id' => $toda->id,
             'first_name' => 'Sat',
             'last_name' => 'Driver',
             'contact_number' => '09170000077',
@@ -488,7 +473,6 @@ class ColorCodingDatabaseRulesTest extends TestCase
 
         $tricycle = $this->createTricycleFixture([
             'operator_id'          => $operator->id,
-            'toda_zone_id'         => $toda->id,
             'plate_number'         => 'SAT-0001',
             'coding_scheme_number' => '1001', // Red scheme
         ]);

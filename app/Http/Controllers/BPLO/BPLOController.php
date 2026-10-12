@@ -12,11 +12,11 @@ use App\Models\Tricycle;
 use App\Models\TricycleLocation;
 use App\Services\AuditService;
 use App\Services\ColorCodingRuleService;
+use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
@@ -40,46 +40,47 @@ class BPLOController extends Controller
             ->whereDate('created_at', today())
             ->count();
 
-        // Weekly MTOP Issuance trend (Mon-Sun for current week)
+        // MTOP Issuance trend — rolling last 7 days ending today (not the Mon–Sun calendar week,
+        // which on a Monday would be all future days and always read zero). A release is the
+        // BPLO → awaiting_tmo_confirmation status transition, the same event Recent Releases uses.
+        $trendStart = today()->subDays(6);
+        $releasesPerDay = ApplicationStatusHistory::where('to_status', 'awaiting_tmo_confirmation')
+            ->where('created_at', '>=', $trendStart)
+            ->selectRaw('DATE(created_at) as day, COUNT(*) as total')
+            ->groupBy('day')
+            ->pluck('total', 'day');
+
         $weeklyIssuanceTrend = [];
-        $startOfWeek = now()->startOfWeek();
         for ($i = 0; $i < 7; $i++) {
-            $dayDate = (clone $startOfWeek)->addDays($i);
-            $dayCount = ApplicationStatusHistory::where('to_status', 'awaiting_tmo_confirmation')
-                ->whereDate('created_at', $dayDate->toDateString())
-                ->count();
+            $dayDate = $trendStart->copy()->addDays($i);
             $weeklyIssuanceTrend[] = [
                 'day'    => $dayDate->format('D'),
                 'date'   => $dayDate->format('M d'),
-                'issued' => $dayCount,
+                'issued' => (int) ($releasesPerDay[$dayDate->toDateString()] ?? 0),
             ];
         }
 
-        // Recent releases (real records from Application)
-        $recentReleases = Application::with(['operator.todaZone', 'tricycle'])
+        // Recent releases — timed and ordered by the actual BPLO release event, not the
+        // application's updated_at (which later TMO steps keep bumping).
+        $recentReleases = Application::with(['operator', 'tricycle'])
             ->whereIn('status', ['awaiting_tmo_confirmation', 'completed', 'active'])
             ->whereNotNull('sticker_number')
-            ->orderByDesc('updated_at')
+            ->withMax(['statusHistories as released_at' => fn ($q) => $q->where('to_status', 'awaiting_tmo_confirmation')], 'created_at')
+            ->orderByDesc('released_at')
             ->limit(5)
             ->get()
             ->map(function ($app) {
+                $releasedAt = $app->released_at ? Carbon::parse($app->released_at) : $app->updated_at;
+
                 return [
                     'id'             => $app->id,
                     'reference'      => $app->reference_number,
                     'sticker_number' => $app->sticker_number,
                     'operator_name'  => $app->operator ? $app->operator->full_name : 'N/A',
-                    'toda_name'      => ($app->operator && $app->operator->todaZone) ? $app->operator->todaZone->name : 'General',
                     'plate_number'   => $app->tricycle ? $app->tricycle->plate_number : 'N/A',
-                    'released_at'    => $app->updated_at ? $app->updated_at->diffForHumans() : 'Recently',
+                    'released_at'    => $releasedAt ? $releasedAt->diffForHumans() : 'Recently',
                 ];
             });
-
-        // TODA distribution stats
-        $todaStats = DB::table('toda_zones')
-            ->leftJoin('tricycles', 'toda_zones.id', '=', 'tricycles.toda_zone_id')
-            ->select('toda_zones.name', 'toda_zones.code', DB::raw('count(tricycles.id) as unit_count'))
-            ->groupBy('toda_zones.id', 'toda_zones.name', 'toda_zones.code')
-            ->get();
 
         return Inertia::render('BPLODashboard/Index', [
             'stats' => [
@@ -91,7 +92,6 @@ class BPLOController extends Controller
             ],
             'weeklyIssuanceTrend' => $weeklyIssuanceTrend,
             'recentReleases'      => $recentReleases,
-            'todaStats'           => $todaStats,
         ]);
     }
 
@@ -103,7 +103,7 @@ class BPLOController extends Controller
         // See TMO\InspectionController::index() for why this is the status-history timestamp
         // rather than updated_at — the true, immutable "entered this queue" moment, so an
         // unrelated edit can never silently bump an application to the back of the line.
-        $applications = Application::with(['operator.todaZone', 'tricycle', 'latestInspection'])
+        $applications = Application::with(['operator.user', 'tricycle', 'latestInspection'])
             ->where('status', 'pending_bplo_release')
             ->addSelect(['queue_entered_at' => ApplicationStatusHistory::select('created_at')
                 ->whereColumn('application_id', 'applications.id')
@@ -117,8 +117,10 @@ class BPLOController extends Controller
                 return [
                     'id'            => $app->id,
                     'reference'     => $app->reference_number,
+                    'is_renewal'    => $app->application_type === 'renewal',
                     'operator'      => $app->operator ? $app->operator->full_name : 'N/A',
-                    'toda'          => ($app->operator && $app->operator->todaZone) ? $app->operator->todaZone->name : 'Unassigned',
+                    'operator_photo' => $app->operator?->profile_photo_url,
+                    'contact'       => $app->operator?->contact_number ?: 'N/A',
                     'make'          => $app->tricycle ? "{$app->tricycle->make} {$app->tricycle->model}" : 'N/A',
                     'plate'         => $app->tricycle ? $app->tricycle->plate_number : 'N/A',
                     'tmo_passed_at' => $app->latestInspection?->inspection_date ? \Carbon\Carbon::parse($app->latestInspection->inspection_date)->format('M d, Y') : 'Passed',
@@ -147,54 +149,10 @@ class BPLOController extends Controller
      */
     public function showReleaseForm(Application $application): Response
     {
-        $application->load(['operator.todaZone', 'tricycle', 'tricycleDriver']);
+        $application->load(['operator', 'tricycle', 'tricycleDriver']);
 
         $isRenewal = $application->application_type === 'renewal';
-        $suggestedCodingNo = null;
-
-        // 1. If Renewal, preserve the tricycle's existing 4-digit municipal coding number
-        if ($isRenewal && $application->tricycle && !empty($application->tricycle->coding_scheme_number)) {
-            $suggestedCodingNo = str_pad($application->tricycle->coding_scheme_number, 4, '0', STR_PAD_LEFT);
-        } elseif ($isRenewal && $application->tricycle_id) {
-            $prevSchemeNo = FranchiseScheme::where('tricycle_id', $application->tricycle_id)
-                ->latest()
-                ->value('franchise_number');
-            if (!empty($prevSchemeNo) && preg_match('/^\d+$/', (string)$prevSchemeNo)) {
-                $suggestedCodingNo = str_pad($prevSchemeNo, 4, '0', STR_PAD_LEFT);
-            }
-        }
-
-        // 2. For new units (or if no existing number found), auto-suggest next sequential 4-digit number (< 9000 to exclude test fixtures)
-        if (!$suggestedCodingNo) {
-            $schemeNumbers = FranchiseScheme::where('franchise_number', 'not like', '%-%')
-                ->pluck('franchise_number')
-                ->filter(fn ($n) => preg_match('/^\d+$/', (string)$n) && (int)$n < 9000)
-                ->map(fn ($n) => (int)$n);
-
-            $tricycleNumbers = Tricycle::whereNotNull('coding_scheme_number')
-                ->pluck('coding_scheme_number')
-                ->filter(fn ($n) => preg_match('/^\d+$/', (string)$n) && (int)$n < 9000)
-                ->map(fn ($n) => (int)$n);
-
-            $allNumbers = $schemeNumbers->merge($tricycleNumbers);
-            $maxNum = $allNumbers->max() ?: 841;
-
-            $candidate = $maxNum + 1;
-            do {
-                $candidatePadded = str_pad($candidate, 4, '0', STR_PAD_LEFT);
-                $taken = FranchiseScheme::where('franchise_number', $candidatePadded)
-                    ->where('is_active', true)
-                    ->exists()
-                    || Tricycle::where('coding_scheme_number', $candidatePadded)
-                    ->where('status', 'active')
-                    ->exists();
-                if ($taken) {
-                    $candidate++;
-                }
-            } while ($taken);
-
-            $suggestedCodingNo = str_pad($candidate, 4, '0', STR_PAD_LEFT);
-        }
+        $suggestedCodingNo = $this->resolveCodingNumber($application);
 
         // Auto-generate the unique Franchise Number (STK-YYYY-NNNN) if not yet persisted or if collision exists
         $year = date('Y');
@@ -250,7 +208,6 @@ class BPLOController extends Controller
             'owner'                   => $application->ownerDetails(),
             'ownerIsDriver'           => (bool) $application->owner_is_driver,
             'tricycleDriver'          => $application->driverDetails(),
-            'toda'                    => ($application->operator && $application->operator->todaZone) ? $application->operator->todaZone->name : 'Unassigned',
             'make'                    => $application->tricycle ? "{$application->tricycle->make} {$application->tricycle->model}" : 'N/A',
             'plate_number'            => $application->tricycle ? $application->tricycle->plate_number : 'N/A',
             'engine_number'           => $application->tricycle ? $application->tricycle->engine_number : 'N/A',
@@ -267,6 +224,64 @@ class BPLOController extends Controller
     }
 
     /**
+     * The Sticker Number (municipal coding scheme number) is always system-generated: a renewal keeps
+     * the tricycle's existing number, a new unit gets the next free 4-digit sequence. Used by both the
+     * release form (display) and release() (persist), so the officer never types it and a tampered
+     * request can't override it.
+     */
+    private function resolveCodingNumber(Application $application): string
+    {
+        $isRenewal = $application->application_type === 'renewal';
+        $suggestedCodingNo = null;
+
+        // 1. If Renewal, preserve the tricycle's existing 4-digit municipal coding number
+        if ($isRenewal && $application->tricycle && !empty($application->tricycle->coding_scheme_number)) {
+            $suggestedCodingNo = str_pad($application->tricycle->coding_scheme_number, 4, '0', STR_PAD_LEFT);
+        } elseif ($isRenewal && $application->tricycle_id) {
+            $prevSchemeNo = FranchiseScheme::where('tricycle_id', $application->tricycle_id)
+                ->latest()
+                ->value('franchise_number');
+            if (!empty($prevSchemeNo) && preg_match('/^\d+$/', (string)$prevSchemeNo)) {
+                $suggestedCodingNo = str_pad($prevSchemeNo, 4, '0', STR_PAD_LEFT);
+            }
+        }
+
+        // 2. For new units (or if no existing number found), auto-suggest next sequential 4-digit number (< 9000 to exclude test fixtures)
+        if (!$suggestedCodingNo) {
+            $schemeNumbers = FranchiseScheme::where('franchise_number', 'not like', '%-%')
+                ->pluck('franchise_number')
+                ->filter(fn ($n) => preg_match('/^\d+$/', (string)$n) && (int)$n < 9000)
+                ->map(fn ($n) => (int)$n);
+
+            $tricycleNumbers = Tricycle::whereNotNull('coding_scheme_number')
+                ->pluck('coding_scheme_number')
+                ->filter(fn ($n) => preg_match('/^\d+$/', (string)$n) && (int)$n < 9000)
+                ->map(fn ($n) => (int)$n);
+
+            $allNumbers = $schemeNumbers->merge($tricycleNumbers);
+            $maxNum = $allNumbers->max() ?: 841;
+
+            $candidate = $maxNum + 1;
+            do {
+                $candidatePadded = str_pad($candidate, 4, '0', STR_PAD_LEFT);
+                $taken = FranchiseScheme::where('franchise_number', $candidatePadded)
+                    ->where('is_active', true)
+                    ->exists()
+                    || Tricycle::where('coding_scheme_number', $candidatePadded)
+                    ->where('status', 'active')
+                    ->exists();
+                if ($taken) {
+                    $candidate++;
+                }
+            } while ($taken);
+
+            $suggestedCodingNo = str_pad($candidate, 4, '0', STR_PAD_LEFT);
+        }
+
+        return $suggestedCodingNo;
+    }
+
+    /**
      * Finalize BPLO approval, issue the Sticker Number, and release the Franchise Number.
      * Note: BPLO does NOT issue the IoT device. Driver returns to TMO for Final Confirmation.
      */
@@ -275,25 +290,11 @@ class BPLOController extends Controller
         $tricycle = $application->tricycle;
         $isRenewal = $application->application_type === 'renewal';
 
-        // Uniqueness check for sticker / coding number:
-        // Only OTHER currently-active tricycles should block this assignment.
-        // If this tricycle already holds that number (e.g. renewal or re-processing), it is permitted.
-        $franchiseNumberRule = Rule::unique('franchise_schemes', 'franchise_number')->where('is_active', true);
-        if ($tricycle) {
-            $franchiseNumberRule->where(fn ($query) => $query->where('tricycle_id', '!=', $tricycle->id));
-        }
-
-        $numberKey = $request->has('coding_scheme_number') ? 'coding_scheme_number' : 'body_number';
-
         $request->validate([
-            $numberKey       => ['required', 'string', 'max:20', $franchiseNumberRule],
             'sticker_number' => 'nullable|string|max:50',
-        ], [
-            "{$numberKey}.required" => 'The Sticker / Coding Scheme Number is required.',
-            "{$numberKey}.unique"   => 'This Sticker / Coding Scheme Number is already actively assigned to another tricycle.',
         ]);
 
-        $codingNumber = str_pad(trim($request->input($numberKey)), 4, '0', STR_PAD_LEFT);
+        $codingNumber = $this->resolveCodingNumber($application);
         $franchiseNumber = trim($request->input('sticker_number') ?: ($application->sticker_number ?: ''));
 
         $year = date('Y');
@@ -450,7 +451,7 @@ class BPLOController extends Controller
      */
     private function activeRegistryList()
     {
-        return Tricycle::with(['operator.todaZone', 'franchiseSchemes.colorCodingScheme', 'franchiseSchemes.application'])
+        return Tricycle::with(['operator.user', 'franchiseSchemes.colorCodingScheme', 'franchiseSchemes.application'])
             ->where('status', 'active')
             ->get()
             ->map(function ($tri) {
@@ -462,9 +463,12 @@ class BPLOController extends Controller
                     'coding_scheme_number' => $tri->coding_scheme_number,
                     'sticker_no' => $scheme?->sticker_number ?: $scheme?->application?->sticker_number ?: 'N/A', // Franchise Number — real stored value only, never fabricated
                     'operator'   => $tri->operator ? $tri->operator->full_name : 'N/A',
-                    'toda'       => $tri->todaZone ? $tri->todaZone->name : 'Unassigned',
+                    'operator_photo' => $tri->operator?->profile_photo_url,
+                    'contact'    => $tri->operator?->contact_number ?: 'N/A',
                     'make'       => "{$tri->make} {$tri->model}",
                     'issue_date' => $issueDate,
+                    // issue_date is a date-only column, so the time comes from when the franchise record was created.
+                    'issue_time' => ($scheme ?? $tri)->created_at?->format('h:i A'),
                     'status'     => 'active',
                 ];
             });
@@ -477,9 +481,55 @@ class BPLOController extends Controller
      * every other office export (shared ExportsMunicipalExcelReports trait), fed by the
      * exact same rows the on-screen masterlist renders.
      */
-    public function exportActiveRegistryExcel(): StreamedResponse
+    public function exportActiveRegistryExcel(Request $request): StreamedResponse
     {
+        $format = $request->query('format') === 'pdf' ? 'pdf' : 'excel';
         $registryList = $this->activeRegistryList();
+        $revokedCount = Tricycle::where('status', 'inactive')->count();
+
+        $title = 'BPLO Active Registry Masterlist';
+        $asOf = 'As of: ' . now()->format('F d, Y \a\t h:i A');
+        $kpis = [
+            'Active Units'    => number_format($registryList->count()),
+            'Revoked Units'   => number_format($revokedCount),
+            'Issued This Yr'  => number_format($registryList->filter(fn ($u) => str_contains($u['issue_date'], (string) now()->year))->count()),
+        ];
+        $headers = ['Franchise Number', 'Sticker Number', 'Plate No.', 'Tricycle Owner', 'Contact No.', 'Make & Model', 'Issue Date', 'Status'];
+        $rows = $registryList->map(fn ($u) => [
+            $u['sticker_no'],
+            $u['coding_scheme_number'],
+            $u['plate_no'],
+            $u['operator'],
+            $u['contact'],
+            $u['make'],
+            trim($u['issue_date'] . ' ' . ($u['issue_time'] ?? '')),
+            ucfirst($u['status']),
+        ])->all();
+
+        $filename = 'bplo_active_registry_' . now()->toDateString() . ($format === 'pdf' ? '.pdf' : '.xlsx');
+
+        AuditService::log(
+            module: 'reports',
+            action: 'report.exported_' . $format,
+            record: null,
+            description: 'Exported BPLO Active Registry ' . ($format === 'pdf' ? 'PDF' : 'Excel') . ' Report (' . count($rows) . ' units)',
+            oldValues: null,
+            newValues: null,
+            targetReference: $filename,
+            metadata: ['report' => 'bplo_active_registry', 'filename' => $filename, 'format' => $format, 'row_count' => count($rows)]
+        );
+
+        if ($format === 'pdf') {
+            return $this->streamMunicipalPdf([
+                'officeName'  => 'BUSINESS PERMITS AND LICENSING OFFICE (BPLO)',
+                'footerCode'  => 'BPLO',
+                'docRef'      => 'LGU-NAS-BPLO-REGISTRY',
+                'reportTitle' => $title,
+                'periodLabel' => $asOf,
+                'kpis'        => $kpis,
+                'sections'    => [['title' => 'Approved MTOP Masterlist', 'headers' => $headers, 'rows' => $rows]],
+            ], $filename);
+        }
 
         $spreadsheet = new Spreadsheet();
         $spreadsheet->getDefaultStyle()->getFont()->setName('Segoe UI');
@@ -487,42 +537,11 @@ class BPLOController extends Controller
         $sheet->setTitle('BPLO Active Registry');
         $sheet->getPageSetup()->setOrientation(PageSetup::ORIENTATION_LANDSCAPE);
 
-        $revokedCount = Tricycle::where('status', 'inactive')->count();
-
-        $row = $this->writeReportHeader(
-            $sheet,
-            'BPLO Active Registry Masterlist',
-            'As of: ' . now()->format('F d, Y \a\t h:i A'),
-            8,
-            'BUSINESS PERMITS AND LICENSING OFFICE (BPLO)',
-            'BPLO'
-        );
-
-        $row = $this->writeKpiRow($sheet, $row, [
-            'Active Units'    => number_format($registryList->count()),
-            'Revoked Units'   => number_format($revokedCount),
-            'Issued This Yr'  => number_format($registryList->filter(fn ($u) => str_contains($u['issue_date'], (string) now()->year))->count()),
-        ], [3, 3, 2]);
-
+        $row = $this->writeReportHeader($sheet, $title, $asOf, count($headers), 'BUSINESS PERMITS AND LICENSING OFFICE (BPLO)', 'BPLO');
+        $row = $this->writeKpiRow($sheet, $row, $kpis, [3, 3, 2]);
         $row = $this->writeSectionTitle($sheet, $row, 'Approved MTOP Masterlist');
-        $row = $this->writeTable(
-            $sheet,
-            $row,
-            ['Sticker Number', 'Plate No.', 'Tricycle Owner', 'Make & Model', 'TODA Zone', 'Franchise Number', 'Issue Date', 'Status'],
-            $registryList->map(fn ($u) => [
-                $u['coding_scheme_number'],
-                $u['plate_no'],
-                $u['operator'],
-                $u['make'],
-                $u['toda'],
-                $u['sticker_no'],
-                $u['issue_date'],
-                ucfirst($u['status']),
-            ])->all(),
-            true
-        );
-
-        $filename = 'bplo_active_registry_' . now()->toDateString() . '.xlsx';
+        // Non-sticky header: the table scrolls normally with the rest of the sheet.
+        $this->writeTable($sheet, $row, $headers, $rows);
 
         return $this->streamExcel($spreadsheet, $filename);
     }
@@ -532,7 +551,7 @@ class BPLOController extends Controller
      */
     public function registryDetails($plateNo): Response
     {
-        $tricycle = Tricycle::with(['operator.todaZone', 'operator.user', 'franchiseSchemes.colorCodingScheme', 'franchiseSchemes.application', 'applications.documents'])
+        $tricycle = Tricycle::with(['operator.user', 'franchiseSchemes.colorCodingScheme', 'franchiseSchemes.application', 'applications.documents'])
             ->where('plate_number', $plateNo)
             ->firstOrFail();
 
@@ -585,6 +604,7 @@ class BPLOController extends Controller
             'coding_scheme_number' => $tricycle->coding_scheme_number,
             'sticker_no'           => $scheme?->sticker_number ?: $scheme?->application?->sticker_number ?: 'N/A', // Franchise Number — real stored value only, never fabricated
             'operator'          => $operator ? $operator->full_name : 'N/A',
+            'operator_photo'    => $operator?->profile_photo_url,
             'first_name'        => $operator ? $operator->first_name : '',
             'last_name'         => $operator ? $operator->last_name : '',
             'contact'           => $operator ? $operator->contact_number : 'N/A',

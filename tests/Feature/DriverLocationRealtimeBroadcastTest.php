@@ -9,7 +9,6 @@ use App\Models\Driver;
 use App\Models\FranchiseScheme;
 use App\Models\Operator;
 use App\Models\Passenger;
-use App\Models\TodaZone;
 use App\Models\Tricycle;
 use App\Models\User;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
@@ -25,7 +24,6 @@ class DriverLocationRealtimeBroadcastTest extends TestCase
     protected Driver $driver;
     protected Operator $operator;
     protected Tricycle $tricycle;
-    protected TodaZone $toda;
 
     protected User $passengerUser;
     protected Passenger $passenger;
@@ -37,10 +35,6 @@ class DriverLocationRealtimeBroadcastTest extends TestCase
     {
         parent::setUp();
 
-        $this->toda = TodaZone::firstOrCreate(
-            ['code' => 'TODA-RT-TEST'],
-            ['name' => 'Realtime Test Zone', 'barangay' => 'Poblacion', 'is_active' => true]
-        );
 
         $colorScheme = ColorCodingScheme::create([
             'name'            => 'Realtime Scheme ' . uniqid(),
@@ -66,7 +60,6 @@ class DriverLocationRealtimeBroadcastTest extends TestCase
 
         $this->operator = Operator::create([
             'user_id'             => $this->driverUser->id,
-            'toda_id'             => $this->toda->id,
             'first_name'          => 'Realtime',
             'last_name'           => 'Driver',
             'contact_number'      => '09170000041',
@@ -79,7 +72,6 @@ class DriverLocationRealtimeBroadcastTest extends TestCase
 
         $this->tricycle = Tricycle::create([
             'operator_id'          => $this->operator->id,
-            'toda_zone_id'         => $this->toda->id,
             'coding_scheme_number' => '0041',
             'plate_number'         => 'RT-0041',
             'engine_number'        => 'ENG-RT-041',
@@ -174,7 +166,6 @@ class DriverLocationRealtimeBroadcastTest extends TestCase
             'passenger_id'            => $this->passenger->id,
             'driver_id'               => $this->driver->id,
             'tricycle_id'             => $this->tricycle->id,
-            'toda_zone_id'            => $this->toda->id,
             'pickup_name'             => 'Test Pickup',
             'pickup_lat'              => 14.0680,
             'pickup_lng'              => 120.6280,

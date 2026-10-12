@@ -3,7 +3,6 @@
 namespace Tests\Feature;
 
 use App\Models\Operator;
-use App\Models\TodaZone;
 use App\Models\Tricycle;
 use App\Models\TricycleLocation;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
@@ -25,13 +24,8 @@ class TricycleGpsStatusTest extends TestCase
     {
         parent::setUp();
 
-        $toda = TodaZone::firstOrCreate(
-            ['code' => 'TODA-GPSSTATUS-TEST'],
-            ['name' => 'GPS Status Test Zone', 'barangay' => 'Poblacion', 'is_active' => true]
-        );
 
         $operator = Operator::create([
-            'toda_id' => $toda->id,
             'first_name' => 'Status', 'last_name' => 'Tester',
             'contact_number' => '09170000040', 'address' => 'Poblacion', 'barangay' => 'Poblacion',
             'date_of_birth' => '1990-01-01',
@@ -39,8 +33,7 @@ class TricycleGpsStatusTest extends TestCase
         ]);
 
         $this->tricycle = Tricycle::create([
-            'operator_id' => $operator->id, 'toda_zone_id' => $toda->id,
-            'plate_number' => 'GPS-0001', 'engine_number' => 'ENG-GPS-001', 'chassis_number' => 'CHS-GPS-001',
+            'operator_id' => $operator->id, 'plate_number' => 'GPS-0001', 'engine_number' => 'ENG-GPS-001', 'chassis_number' => 'CHS-GPS-001',
             'make' => 'Honda', 'model' => 'TMX', 'year_model' => 2021,
             'body_color' => 'Red', 'body_type' => 'Standard',
             'or_number' => 'OR-GPS-001', 'cr_number' => 'CR-GPS-001', 'status' => 'active',

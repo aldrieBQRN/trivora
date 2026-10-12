@@ -12,7 +12,6 @@ use App\Models\FranchiseScheme;
 use App\Models\Inspection;
 use App\Models\Operator;
 use App\Models\Payment;
-use App\Models\TodaZone;
 use App\Models\Tricycle;
 use App\Models\TricycleLocation;
 use App\Models\User;
@@ -52,12 +51,6 @@ class DemoStageDriversSeeder extends Seeder
 {
     public function run(): void
     {
-        $zones = TodaZone::where('is_active', true)->get()->keyBy('code');
-
-        if ($zones->isEmpty()) {
-            $this->command->error('DemoStageDriversSeeder: no active TODA zones found — run TodaZonesSeeder first.');
-            return;
-        }
 
         $tmo  = User::where('email', 'tmo.jdelacruz@trivora.gov.ph')->first();
         $bplo = User::where('email', 'bplo.areyes@trivora.gov.ph')->first();
@@ -74,7 +67,7 @@ class DemoStageDriversSeeder extends Seeder
                 'license' => 'N01-26-700005',
                 'phone'   => '09171234605',
                 'dob'     => '1994-09-17',
-                'zone'    => 'TODA-BRGY5',
+                'barangay' => 'Brgy. 5',
                 'plate'   => 'STG-0005',
                 'coding'  => '2105',
                 'make'    => 'Suzuki',
@@ -94,7 +87,7 @@ class DemoStageDriversSeeder extends Seeder
                 'license' => 'N01-26-700001',
                 'phone'   => '09171234601',
                 'dob'     => '1986-02-14',
-                'zone'    => 'TODA-BRGY1',
+                'barangay' => 'Brgy. 1',
                 'plate'   => 'STG-0001',
                 'coding'  => '2101',
                 'make'    => 'Honda',
@@ -114,7 +107,7 @@ class DemoStageDriversSeeder extends Seeder
                 'license' => 'N01-26-700006',
                 'phone'   => '09171234606',
                 'dob'     => '1985-05-20',
-                'zone'    => 'TODA-BRGY6',
+                'barangay' => 'Brgy. 6',
                 'plate'   => 'STG-0006',
                 'coding'  => '2106',
                 'make'    => 'Honda',
@@ -134,7 +127,7 @@ class DemoStageDriversSeeder extends Seeder
                 'license' => 'N01-26-700002',
                 'phone'   => '09171234602',
                 'dob'     => '1979-07-23',
-                'zone'    => 'TODA-BRGY2',
+                'barangay' => 'Brgy. 2',
                 'plate'   => 'STG-0002',
                 'coding'  => '2102',
                 'make'    => 'Yamaha',
@@ -154,7 +147,7 @@ class DemoStageDriversSeeder extends Seeder
                 'license' => 'N01-26-700007',
                 'phone'   => '09171234607',
                 'dob'     => '1982-10-12',
-                'zone'    => 'TODA-BRGY7',
+                'barangay' => 'Brgy. 7',
                 'plate'   => 'STG-0007',
                 'coding'  => '2107',
                 'make'    => 'Kawasaki',
@@ -174,7 +167,7 @@ class DemoStageDriversSeeder extends Seeder
                 'license' => 'N01-26-700003',
                 'phone'   => '09171234603',
                 'dob'     => '1992-11-08',
-                'zone'    => 'TODA-BRGY3',
+                'barangay' => 'Brgy. 3',
                 'plate'   => 'STG-0003',
                 'coding'  => '2103',
                 'make'    => 'Kawasaki',
@@ -194,7 +187,7 @@ class DemoStageDriversSeeder extends Seeder
                 'license' => 'N01-26-700004',
                 'phone'   => '09171234604',
                 'dob'     => '1968-04-30',
-                'zone'    => 'TODA-BRGY4',
+                'barangay' => 'Brgy. 4',
                 'plate'   => 'STG-0004',
                 'coding'  => '2104',
                 'make'    => 'Honda',
@@ -215,7 +208,7 @@ class DemoStageDriversSeeder extends Seeder
                 'license'  => 'N01-26-700008',
                 'phone'    => '09171234608',
                 'dob'      => '1975-08-25',
-                'zone'     => 'TODA-BRGY8',
+                'barangay' => 'Brgy. 8',
                 'plate'    => 'STG-0008',
                 'coding'   => '2108',
                 'make'     => 'Yamaha',
@@ -229,12 +222,6 @@ class DemoStageDriversSeeder extends Seeder
         $appIds = [];
 
         foreach ($stages as $stage) {
-            $zone = $zones->get($stage['zone']);
-            if (! $zone) {
-                $this->command->warn("DemoStageDriversSeeder: {$stage['zone']} not found — skipping {$stage['email']}.");
-                continue;
-            }
-
             // 1. Login account (role tricycle_driver logs into the operator dashboard)
             $user = User::updateOrCreate(
                 ['email' => $stage['email']],
@@ -251,13 +238,12 @@ class DemoStageDriversSeeder extends Seeder
                 ['license_number' => $stage['license']],
                 [
                     'user_id'                  => $user->id,
-                    'toda_id'                  => $zone->id,
                     'first_name'               => $stage['first'],
                     'middle_name'              => $stage['middle'],
                     'last_name'                => $stage['last'],
                     'contact_number'           => $stage['phone'],
-                    'address'                  => $zone->name . ' Terminal Area, ' . $zone->barangay . ', Nasugbu',
-                    'barangay'                 => $zone->barangay,
+                    'address'                  => $stage['barangay'] . ', Nasugbu',
+                    'barangay'                 => $stage['barangay'],
                     'date_of_birth'            => $stage['dob'],
                     'license_expiry_date'      => now()->addYears(3)->toDateString(),
                     'license_restriction_code' => '1,2',
@@ -271,7 +257,6 @@ class DemoStageDriversSeeder extends Seeder
                 ['plate_number' => $stage['plate']],
                 [
                     'operator_id'          => $op->id,
-                    'toda_zone_id'         => $zone->id,
                     'coding_scheme_number' => $stage['coding'],
                     'engine_number'        => 'ENG-' . $stage['plate'],
                     'chassis_number'       => 'CHS-' . $stage['plate'],
@@ -326,7 +311,7 @@ class DemoStageDriversSeeder extends Seeder
                         'last_name'      => 'Dizon',
                         'date_of_birth'  => '1990-03-05',
                         'contact_number' => '09171234644',
-                        'barangay'       => $zone->barangay ?: 'Bucana',
+                        'barangay'       => $stage['barangay'],
                     ]
                 );
             } else {
