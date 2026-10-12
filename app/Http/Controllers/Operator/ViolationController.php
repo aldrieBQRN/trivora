@@ -32,8 +32,17 @@ class ViolationController extends Controller
         $triIds = Tricycle::where('operator_id', $operator->id)->pluck('id');
 
         $violations = Violation::whereIn('tricycle_id', $triIds)
-            ->whereNull('fine_paid_at')
-            ->whereNotIn('status', ['dismissed', 'resolved'])
+            ->where(function ($q) {
+                // Show open/actionable violations or settled/paid violations,
+                // while excluding dismissed violations and appeals resolved without a fine.
+                $q->where(function ($sub) {
+                    $sub->whereNull('fine_paid_at')
+                        ->whereNotIn('status', ['dismissed', 'resolved']);
+                })->orWhere(function ($sub) {
+                    $sub->whereNotNull('fine_paid_at')
+                        ->orWhere('status', 'paid');
+                });
+            })
             ->with(['tricycle.franchiseScheme.colorCodingScheme', 'locationSnapshot', 'appeal'])
             ->orderByDesc('detected_at')
             ->get()
@@ -45,10 +54,13 @@ class ViolationController extends Controller
                     $location = 'TODA Route Boundary — Border Gate';
                 }
 
-                $status = match ($v->appeal?->status) {
-                    'under_review' => 'appeal_pending',
-                    'rejected'     => 'appeal_rejected',
-                    default        => 'unpaid',
+                $isPaid = $v->is_fine_paid || !is_null($v->fine_paid_at) || $v->status === 'paid';
+
+                $status = match (true) {
+                    $isPaid => 'paid',
+                    $v->appeal?->status === 'under_review' => 'appeal_pending',
+                    $v->appeal?->status === 'rejected'     => 'appeal_rejected',
+                    default                                => 'unpaid',
                 };
 
                 return [
@@ -68,6 +80,8 @@ class ViolationController extends Controller
                     'colorHex'   => $v->tricycle?->franchiseScheme?->colorCodingScheme ? $v->tricycle->franchiseScheme->colorCodingScheme->color_hex : '#94A3B8',
                     'fine'       => (float)$v->fine_amount,
                     'status'     => $status,
+                    'is_paid'    => $isPaid,
+                    'paid_at'    => $v->fine_paid_at ? $v->fine_paid_at->format('M d, Y') : null,
                 ];
             });
 

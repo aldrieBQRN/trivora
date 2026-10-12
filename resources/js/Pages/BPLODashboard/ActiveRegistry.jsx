@@ -83,13 +83,17 @@ export default function ActiveRegistry({
                         Masterlist and official vehicle records of approved Municipal Tricycle Operator's Permits (MTOP)
                     </p>
                 </div>
-                <div className="flex items-center gap-2.5">
+                <div className="flex flex-wrap items-center gap-2.5">
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200/80 shadow-2xs">
+                        <CheckCircle2 size={13} strokeWidth={2.2} />
+                        <span>{activeCount} Active Units</span>
+                    </span>
                     <a
                         href={exportUrl}
-                        className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-xs font-bold text-slate-700 shadow-2xs hover:bg-slate-50 hover:text-slate-900 transition-colors"
+                        className="inline-flex items-center gap-2 rounded-xl border border-slate-200/80 bg-white px-3.5 py-1.5 text-xs font-bold text-slate-700 shadow-xs hover:bg-slate-50 hover:border-slate-300 hover:text-slate-900 transition-all"
                     >
                         <FileSpreadsheet size={14} strokeWidth={2.2} className="text-slate-500" />
-                        Export to Excel
+                        <span>Export to Excel</span>
                     </a>
                 </div>
             </div>
@@ -97,9 +101,9 @@ export default function ActiveRegistry({
             {/* ══════════════════════════════════════════════════════════════
                 2. PREMIUM KPI CARD DECK (TMO Operations style)
                ══════════════════════════════════════════════════════════════ */}
-            <div className="mb-5 grid grid-cols-1 gap-3.5 sm:gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <div className="mb-5 grid grid-cols-1 gap-3.5 sm:gap-4 sm:grid-cols-2 lg:grid-cols-4 items-stretch">
                 {/* Card 1: Total Issued Units */}
-                <div className={`flex flex-col justify-between rounded-2xl border border-slate-200/70 bg-white p-4 sm:p-5 ${CARD_SHADOW}`}>
+                <div className="flex flex-col justify-between rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-4 sm:p-5 shadow-xs hover:border-slate-300 transition-all">
                     <div>
                         <div className="flex items-center justify-between">
                             <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
@@ -129,7 +133,7 @@ export default function ActiveRegistry({
                 </div>
 
                 {/* Card 2: Active Franchises */}
-                <div className={`flex flex-col justify-between rounded-2xl border border-slate-200/70 bg-white p-4 sm:p-5 ${CARD_SHADOW}`}>
+                <div className="flex flex-col justify-between rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-4 sm:p-5 shadow-xs hover:border-slate-300 transition-all">
                     <div>
                         <div className="flex items-center justify-between">
                             <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
@@ -159,7 +163,7 @@ export default function ActiveRegistry({
                 </div>
 
                 {/* Card 3: Revoked / Suspended */}
-                <div className={`flex flex-col justify-between rounded-2xl border border-slate-200/70 bg-white p-4 sm:p-5 ${CARD_SHADOW}`}>
+                <div className="flex flex-col justify-between rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-4 sm:p-5 shadow-xs hover:border-slate-300 transition-all">
                     <div>
                         <div className="flex items-center justify-between">
                             <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
@@ -191,7 +195,7 @@ export default function ActiveRegistry({
                 </div>
 
                 {/* Card 4: Jurisdiction Coverage */}
-                <div className={`flex flex-col justify-between rounded-2xl border border-slate-200/70 bg-white p-4 sm:p-5 ${CARD_SHADOW}`}>
+                <div className="flex flex-col justify-between rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-4 sm:p-5 shadow-xs hover:border-slate-300 transition-all">
                     <div>
                         <div className="flex items-center justify-between">
                             <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
@@ -224,7 +228,7 @@ export default function ActiveRegistry({
             {/* ══════════════════════════════════════════════════════════════
                 3. FILTER & SEARCH DECK
                ══════════════════════════════════════════════════════════════ */}
-            <div className={`mb-4 rounded-2xl border border-slate-200/70 bg-white p-3 sm:p-3.5 ${CARD_SHADOW}`}>
+            <div className="mb-4 rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-3 sm:p-4 shadow-xs">
                 <div className="flex flex-col lg:flex-row lg:items-center gap-2.5">
                     {/* Search bar */}
                     <div className="relative flex-1 min-w-[220px]">
@@ -313,7 +317,7 @@ export default function ActiveRegistry({
             ) : (
                 <>
                     {/* ── DESKTOP & TABLET DATA TABLE (md: 768px and up) ── */}
-                    <div className={`hidden md:block overflow-hidden rounded-2xl border border-slate-200/70 bg-white ${CARD_SHADOW}`}>
+                    <div className="hidden md:block overflow-hidden rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white shadow-xs">
                         <div className="overflow-x-auto">
                             <table className="w-full text-left border-collapse">
                                 <thead>
@@ -549,9 +553,9 @@ function DesktopRegistryRow({ unit }) {
             <td className="py-3.5 pl-3 pr-5 text-right align-middle">
                 <Link
                     href={`/bplo/registry/${unit.plate_no}`}
-                    className="inline-flex items-center gap-1 rounded-full bg-[#182B62] hover:bg-[#25449B] text-white px-3.5 py-1.5 text-xs font-semibold shadow-2xs transition-all active:scale-[0.98]"
+                    className="inline-flex items-center gap-1 rounded-xl bg-[#182B62] hover:bg-[#25449B] text-white px-3 py-1.5 text-xs font-semibold shadow-xs transition-all active:scale-[0.98]"
                 >
-                    <span>View Details</span>
+                    <span>View</span>
                     <ChevronRight size={13} strokeWidth={2.5} className="text-slate-300" />
                 </Link>
             </td>
@@ -563,7 +567,7 @@ function MobileRegistryCard({ unit }) {
     const initials = getInitials(unit.operator);
 
     return (
-        <div className={`rounded-2xl border border-slate-200/70 bg-white p-3.5 ${CARD_SHADOW} transition-all hover:border-slate-300`}>
+        <div className="rounded-2xl border border-slate-200/80 bg-white p-3.5 shadow-xs transition-all hover:border-slate-300">
             {/* Top Row: Sticker Number, Plate & Status */}
             <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-2">
                 <div className="flex items-center gap-2">
@@ -605,7 +609,7 @@ function MobileRegistryCard({ unit }) {
             <div className="mt-2.5 pt-2 border-t border-slate-100">
                 <Link
                     href={`/bplo/registry/${unit.plate_no}`}
-                    className="flex w-full items-center justify-center gap-1.5 rounded-full bg-[#182B62] hover:bg-[#25449B] text-white py-2 text-xs font-bold shadow-2xs transition-all active:scale-[0.98]"
+                    className="flex w-full items-center justify-center gap-1.5 rounded-xl bg-[#182B62] hover:bg-[#25449B] text-white py-2 text-xs font-bold shadow-xs transition-all active:scale-[0.98]"
                 >
                     <span>View Details</span>
                     <ChevronRight size={13} strokeWidth={2.5} className="text-slate-300" />

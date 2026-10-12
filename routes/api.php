@@ -54,7 +54,7 @@ Route::prefix('v1/driver')->group(function () {
         // from $request->user() (see BookingController), never a client-supplied driver_id/
         // user_id. Used to be registered outside auth:sanctum and trust query params instead,
         // which let any caller read/spoof another driver's requests, history, or location.
-        // getPendingRequests/updateStatus/acceptBooking/updateDriverLocation are all "operate"
+        // getPendingRequests/updateStatus/acceptBooking are all "operate"
         // actions and gated by franchise.operational; getActiveBooking/history stay read-only and
         // available even when the driver's franchise is suspended/revoked (so they can still
         // see/settle history).
@@ -62,7 +62,6 @@ Route::prefix('v1/driver')->group(function () {
         Route::post('/bookings/{id}/status', [BookingController::class, 'updateStatus'])->middleware('franchise.operational');
         Route::get('/bookings/active', [BookingController::class, 'getActiveBooking']);
         Route::get('/bookings/history', [BookingController::class, 'history']);
-        Route::post('/location', [BookingController::class, 'updateDriverLocation'])->middleware('franchise.operational');
 
         // Real-Time & Offline GPS Telematics — transmitting a real position is an "operate"
         // action; checking/changing the tracking MODE configuration is not, so only store/

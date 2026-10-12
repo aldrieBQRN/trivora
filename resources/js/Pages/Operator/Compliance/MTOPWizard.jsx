@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Head, Link, useForm, router, usePage } from '@inertiajs/react';
 import Swal from 'sweetalert2';
 import OperatorLayout from '@/Layouts/OperatorLayout';
-import { PageHeader, BackLink, Button } from '@/Components/TMO';
+import { BackLink, Button } from '@/Components/TMO';
 import {
     CheckCircle2,
     Bike,
@@ -191,14 +191,23 @@ export default function MTOPWizard({ applicationType = 'new', tricycleUnit = nul
 
                 {step < 3 && (
                     <>
-                        <PageHeader
-                            eyebrow="Franchise &amp; Compliance"
-                            title={isRenewal ? 'Franchise Renewal Application' : 'New Unit Registration'}
-                            subtitle={isRenewal
-                                ? `Submit your application to renew the municipal MTOP franchise certificate for unit ${data.plate_number ? `(${data.plate_number})` : ''}.`
-                                : 'Complete the steps below to submit your application for a new tricycle unit.'}
-                            backLink={<BackLink href={route('operator.mtop')}>{`Cancel ${isRenewal ? 'Renewal' : 'Registration'}`}</BackLink>}
-                        />
+                        <div className="mb-6 border-b border-slate-200/80 pb-5">
+                            <div className="mb-3">
+                                <BackLink href={route('operator.mtop')}>{`Cancel ${isRenewal ? 'Renewal' : 'Registration'}`}</BackLink>
+                            </div>
+                            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                                <div>
+                                    <h1 className="text-2xl font-black tracking-tight text-slate-900 sm:text-3xl">
+                                        {isRenewal ? 'Franchise Renewal Application' : 'New Unit Registration'}
+                                    </h1>
+                                    <p className="mt-1 text-sm font-medium text-slate-500">
+                                        {isRenewal
+                                            ? `Submit your application to renew the municipal MTOP franchise certificate for unit ${data.plate_number ? `(${data.plate_number})` : ''}.`
+                                            : 'Complete the steps below to submit your application for a new tricycle unit.'}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
 
                         {/* Stepper — Public Registration's step style, light version */}
                         <div className="pa-hstep-list">
@@ -211,7 +220,7 @@ export default function MTOPWizard({ applicationType = 'new', tricycleUnit = nul
 
                 {/* ── STEP 1: VEHICLE (+ owner/driver) ── */}
                 {step === 1 && (
-                    <div className="pa-panel">
+                    <div className={`pa-panel ${CARD_SHADOW}`}>
                         <div className="pa-panel-inner">
                             <div className="pa-card">
                                 <div className="pa-card-top">
@@ -393,7 +402,7 @@ export default function MTOPWizard({ applicationType = 'new', tricycleUnit = nul
 
                 {/* ── STEP 2: DOCUMENTS & SUBMIT ── */}
                 {step === 2 && (
-                    <div className="pa-panel">
+                    <div className={`pa-panel ${CARD_SHADOW}`}>
                         <div className="pa-panel-inner">
                             <div className="pa-card">
                                 <div className="pa-card-top">
@@ -515,7 +524,7 @@ export default function MTOPWizard({ applicationType = 'new', tricycleUnit = nul
                             </ul>
                         </div>
 
-                        <Button as={Link} href={route('operator.mtop')} variant="primary" size="lg" icon={ArrowRight} iconPosition="right">
+                        <Button as={Link} href={route('operator.mtop')} variant="primary" size="lg" icon={ArrowRight} iconPosition="right" className="!rounded-xl shadow-sm">
                             Return to Application Tracker
                         </Button>
                     </div>

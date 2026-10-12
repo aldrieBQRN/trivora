@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\FareService;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -12,6 +13,17 @@ class FareConfiguration extends Model
     use HasFactory;
 
     protected $table = 'fare_configurations';
+
+    /**
+     * Any write to a fare configuration invalidates the cached active-fare lookups, so every writer
+     * (controller, factory, direct model call) stays consistent. Deferred until the surrounding
+     * transaction commits in production — see FareService::forgetActiveFareCacheAfterCommit().
+     */
+    protected static function booted(): void
+    {
+        static::saved(fn () => FareService::forgetActiveFareCacheAfterCommit());
+        static::deleted(fn () => FareService::forgetActiveFareCacheAfterCommit());
+    }
 
     protected $fillable = [
         'base_fare',

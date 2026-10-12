@@ -49,7 +49,7 @@ class Operator extends Model
      * first/last name, birthday (display date), mobile number, and Nasugbu barangay.
      * Used for the Tricycle OWNER (this record is always the owner, never the driver).
      *
-     * @return array{first_name: ?string, last_name: ?string, full_name: ?string, birthday: ?string, contact_number: ?string, barangay: ?string}
+     * @return array{first_name: ?string, last_name: ?string, full_name: ?string, birthday: ?string, contact_number: ?string, barangay: ?string, email: ?string}
      */
     public function personDetails(): array
     {
@@ -57,9 +57,10 @@ class Operator extends Model
             'first_name'     => $this->first_name,
             'last_name'      => $this->last_name,
             'full_name'      => $this->full_name,
-            'birthday'       => $this->date_of_birth?->format('M d, Y'),
+            'birthday'       => $this->date_of_birth?->format('m/d/Y'),
             'contact_number' => $this->contact_number,
             'barangay'       => $this->barangay,
+            'email'          => $this->user?->email,
         ];
     }
 

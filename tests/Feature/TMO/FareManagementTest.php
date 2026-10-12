@@ -144,6 +144,58 @@ class FareManagementTest extends TestCase
     }
 
     /**
+     * 3b. Caching: repeated active-fare reads reuse the cache, and any fare write invalidates it
+     *     so a calculation can never run against a stale configuration.
+     */
+    public function test_active_fare_reads_are_cached_and_any_fare_write_invalidates_the_cache(): void
+    {
+        $first = FareService::getActiveFare();
+        $second = FareService::getActiveFare();
+
+        $this->assertSame($first, $second, 'the second read is served from the cache');
+
+        FareConfiguration::create([
+            'base_fare' => 70.00,
+            'base_fare_per_passenger' => 35.00,
+            'included_distance_km' => 2.00,
+            'rate_per_km' => 9.00,
+            'effective_date' => now()->toDateString(),
+            'is_active' => true,
+        ]);
+
+        $refreshed = FareService::getActiveFare();
+
+        $this->assertNotSame($first, $refreshed, 'a fare write invalidates the cached lookup');
+        $this->assertEquals(70.0, (float) $refreshed->base_fare);
+    }
+
+    /**
+     * 3c. Caching: an explicit as-of lookup is cached under its own key and never shadows "now".
+     */
+    public function test_explicit_as_of_lookups_are_cached_independently_of_the_current_fare(): void
+    {
+        $futureDate = now()->addDays(7);
+
+        FareConfiguration::create([
+            'base_fare' => 90.00,
+            'base_fare_per_passenger' => 45.00,
+            'included_distance_km' => 4.00,
+            'rate_per_km' => 8.00,
+            'effective_date' => $futureDate->toDateString(),
+            'is_active' => true,
+        ]);
+
+        $futureFirst = FareService::getActiveFare($futureDate);
+        $futureSecond = FareService::getActiveFare($futureDate);
+
+        $this->assertSame($futureFirst, $futureSecond, 'the explicit as-of lookup is cached');
+        $this->assertEquals(90.0, (float) $futureFirst->base_fare);
+
+        // "now" is cached separately and still resolves the baseline configuration.
+        $this->assertEquals(50.0, (float) FareService::getActiveFare()->base_fare);
+    }
+
+    /**
      * 4. 1 Passenger calculation: Uses configurable 1 passenger base fare.
      */
     public function test_one_passenger_calculation(): void

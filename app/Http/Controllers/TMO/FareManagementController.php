@@ -169,6 +169,10 @@ class FareManagementController extends Controller
                 ],
                 targetReference: 'Fare #' . $newFare->id
             );
+
+            // The active-fare cache is invalidated by the FareConfiguration model's saved event once
+            // this transaction commits (FareConfiguration::booted → FareService), so a rolled-back
+            // write can never leave the cache pointing at a config that was never persisted.
         });
 
         return redirect()->route('tmo.fares')

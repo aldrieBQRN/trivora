@@ -9,6 +9,7 @@ use App\Models\FranchiseScheme;
 use App\Models\Operator;
 use App\Models\TodaZone;
 use App\Models\Tricycle;
+use App\Models\TricycleLocation;
 use App\Models\User;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use PHPUnit\Framework\Attributes\Test;
@@ -153,6 +154,47 @@ class MyTricyclesApplicationStateTest extends TestCase
             ->where('tricycles.0.vehicleStatus', 'expired')
             ->where('tricycles.0.franchiseExpired', true)
             ->where('tricycles.0.franchiseExpiry', $scheme->expiry_date->toDateString())
+        );
+    }
+
+    #[Test]
+    public function the_fleet_last_signal_recent_flag_uses_the_configured_fleet_signal_lost_threshold(): void
+    {
+        $unit = $this->makeTricycle('FLEET-0301', 'active');
+        $this->makeApplication($unit, 'completed', 5);
+
+        $threshold = (int) config('tracking.fleet_signal_lost_seconds', 60);
+
+        // Older than the configured threshold — reads as not recent, matching TMO Live Monitoring.
+        TricycleLocation::create([
+            'tricycle_id' => $unit->id,
+            'latitude' => 14.07, 'longitude' => 120.63,
+            'speed_kmh' => 10, 'heading_deg' => 0, 'accuracy_m' => 5,
+            'source' => 'mobile_app',
+            'recorded_at' => now()->subSeconds($threshold + 5),
+        ]);
+
+        $response = $this->actingAs($this->driverUser)->get(route('operator.fleet'));
+
+        $response->assertOk()->assertInertia(fn ($page) => $page
+            ->component('Operator/Fleet')
+            ->where('tricycles.0.lastSignal.isRecent', false)
+        );
+
+        // A ping within the threshold flips it back to recent.
+        TricycleLocation::create([
+            'tricycle_id' => $unit->id,
+            'latitude' => 14.07, 'longitude' => 120.63,
+            'speed_kmh' => 10, 'heading_deg' => 0, 'accuracy_m' => 5,
+            'source' => 'mobile_app',
+            'recorded_at' => now()->subSeconds($threshold - 5),
+        ]);
+
+        $again = $this->actingAs($this->driverUser)->get(route('operator.fleet'));
+
+        $again->assertOk()->assertInertia(fn ($page) => $page
+            ->component('Operator/Fleet')
+            ->where('tricycles.0.lastSignal.isRecent', true)
         );
     }
 

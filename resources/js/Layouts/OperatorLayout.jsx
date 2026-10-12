@@ -253,14 +253,16 @@ export default function OperatorLayout({
                                         <Link
                                             key={link.name}
                                             href={link.path}
-                                            className={`mb-1 flex items-center gap-3 rounded-lg px-3 py-2.5 text-[13.5px] font-medium transition-colors ${
+                                            className={`mb-1 flex items-center rounded-xl px-3.5 py-2.5 text-[13.5px] font-semibold transition-all duration-150 ${
                                                 isActive
-                                                    ? 'bg-white font-semibold text-[#182B62]'
-                                                    : 'text-white/80 hover:bg-white/10 hover:text-white'
+                                                    ? 'bg-white text-[#182B62] shadow-xs font-bold'
+                                                    : 'text-white/75 hover:bg-white/[0.09] hover:text-white font-medium'
                                             }`}
                                         >
-                                            <Icon size={16} strokeWidth={isActive ? 2.5 : 1.8} className="shrink-0" />
-                                            <span>{link.name}</span>
+                                            <div className="flex items-center gap-3 min-w-0">
+                                                <Icon size={17} strokeWidth={isActive ? 2.5 : 2} className="shrink-0" />
+                                                <span className="truncate">{link.name}</span>
+                                            </div>
                                         </Link>
                                     );
                                 })}
@@ -299,12 +301,12 @@ export default function OperatorLayout({
             <div className="flex min-w-0 flex-1 flex-col">
 
                 {/* Header */}
-                <header className="sticky top-0 z-30 flex h-16 shrink-0 items-center justify-between border-b border-slate-200 bg-white px-3.5 print:hidden sm:px-8">
+                <header className="sticky top-0 z-30 flex h-16 shrink-0 items-center justify-between border-b border-slate-200/80 bg-white/95 backdrop-blur-md px-4 print:hidden sm:px-8 shadow-[0_1px_3px_0_rgba(15,23,42,0.03)]">
 
                     {/* Left: Mobile Toggle & Dynamic Breadcrumbs */}
                     <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 pr-4">
                         <button
-                            className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 text-slate-500 hover:border-slate-300 hover:text-slate-800 lg:hidden shrink-0"
+                            className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 text-slate-500 hover:border-slate-300 hover:text-slate-800 lg:hidden shrink-0 transition-colors"
                             onClick={() => setSidebarOpen(true)}
                         >
                             <Menu size={18} strokeWidth={2} />
@@ -330,7 +332,7 @@ export default function OperatorLayout({
                                             <span
                                                 className={`truncate ${
                                                     isLast
-                                                        ? 'text-[#182B62] font-bold'
+                                                        ? 'text-[#182B62] font-extrabold tracking-tight'
                                                         : 'text-slate-500 font-medium'
                                                 }`}
                                             >
@@ -344,24 +346,24 @@ export default function OperatorLayout({
                     </div>
 
                     {/* Right: Notifications & Profile Menu */}
-                    <div className="flex items-center gap-2 shrink-0">
+                    <div className="flex items-center gap-3 shrink-0">
                         <NotificationBell />
 
-                        <div className="mx-1 h-7 w-px bg-slate-200" />
+                        <div className="h-6 w-px bg-slate-200" />
 
                         {/* Profile Menu */}
                         <div className="relative">
                             <button
-                                className="flex items-center gap-2.5 rounded-full py-1 pl-1 pr-3 hover:bg-slate-100"
+                                className="flex items-center gap-2.5 rounded-full py-1 pl-1 pr-3 hover:bg-slate-100/80 transition-all border border-transparent hover:border-slate-200/60"
                                 onClick={() => setProfileOpen(p => !p)}
                             >
-                                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#182B62] text-[11px] font-bold tracking-wide text-white">
+                                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#182B62] to-[#25449B] text-[11px] font-bold tracking-wide text-white shadow-xs">
                                     {initials}
                                 </div>
 
                                 <div className="hidden text-left leading-tight md:block">
-                                    <p className="text-[12.5px] font-bold text-slate-900">{displayName}</p>
-                                    <p className="text-[9.5px] font-semibold uppercase tracking-wide text-slate-400">Tricycle Driver</p>
+                                    <p className="max-w-[160px] truncate text-[12.5px] font-bold text-slate-800">{displayName}</p>
+                                    <p className="text-[9.5px] font-bold uppercase tracking-wider text-slate-400">Tricycle Driver</p>
                                 </div>
 
                                 <ChevronDown
@@ -372,22 +374,23 @@ export default function OperatorLayout({
                             </button>
 
                             {profileOpen && (
-                                <div className="absolute right-0 top-[calc(100%+8px)] z-50 w-56 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg">
+                                <div className="absolute right-0 top-[calc(100%+8px)] z-50 w-56 overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-lg">
                                     <div className="border-b border-slate-100 px-4 py-3">
-                                        <p className="text-[9px] font-bold uppercase tracking-wide text-slate-400">Driver Account</p>
-                                        <p className="text-sm font-bold text-slate-900 truncate">{displayName}</p>
+                                        <p className="text-[9px] font-bold uppercase tracking-wider text-slate-400">Driver Account</p>
+                                        <p className="truncate text-sm font-bold text-slate-900">{displayName}</p>
+                                        {user?.email && <p className="truncate text-[11px] text-slate-400 mt-0.5">{user.email}</p>}
                                     </div>
                                     <div className="p-1.5">
                                         <Link
                                             href="/profile"
-                                            className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                                            className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors"
                                         >
                                             <Settings size={14} strokeWidth={1.8} />
                                             Account Settings
                                         </Link>
                                         <button
                                             onClick={handleLogout}
-                                            className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-[13px] font-medium text-rose-600 hover:bg-rose-50"
+                                            className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-[13px] font-medium text-rose-600 hover:bg-rose-50 transition-colors"
                                         >
                                             <LogOut size={14} strokeWidth={1.8} />
                                             Sign Out
@@ -400,7 +403,7 @@ export default function OperatorLayout({
                 </header>
 
                 {/* Page content */}
-                <main className="flex-1 overflow-y-auto px-4 py-6 sm:px-8 sm:py-8">
+                <main className="flex-1 overflow-y-auto px-3.5 py-4 sm:px-6 sm:py-6 lg:px-8 lg:py-8 custom-scrollbar">
                     <div className="mx-auto max-w-[1500px]">
                         {children}
                     </div>

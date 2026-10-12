@@ -205,13 +205,13 @@ export default function TrivoraLayout({ children, title, role = "TMO Personnel",
 
     return (
         <div
-            className="flex h-screen overflow-hidden bg-tmo-bg font-sans"
+            className="flex h-screen overflow-hidden bg-[#F8FAFC] font-['Inter',sans-serif] text-slate-800"
             style={{ opacity: isExiting ? 0 : 1, transition: 'opacity .4s' }}
         >
             {/* Mobile overlay */}
             {sidebarOpen && (
                 <div
-                    className="fixed inset-0 z-40 bg-black/30 lg:hidden"
+                    className="fixed inset-0 z-40 bg-slate-950/40 backdrop-blur-xs lg:hidden"
                     onClick={() => setSidebarOpen(false)}
                 />
             )}
@@ -222,16 +222,16 @@ export default function TrivoraLayout({ children, title, role = "TMO Personnel",
                     sidebarOpen ? 'translate-x-0' : '-translate-x-full'
                 }`}
             >
-                <div className="flex h-[72px] shrink-0 items-center justify-between px-4">
+                <div className="flex h-[72px] shrink-0 items-center justify-between px-4 border-b border-white/[0.08]">
                     <Link href="/tmo-dashboard" className="flex items-center gap-3 group">
-                        <div className="flex h-10 shrink-0 items-center justify-center rounded-xl bg-white px-2.5 py-1 shadow-xs ring-1 ring-white/10 transition-transform group-hover:scale-105">
+                        <div className="flex h-10 shrink-0 items-center justify-center rounded-xl bg-white px-2.5 py-1 shadow-sm ring-1 ring-white/10 transition-transform group-hover:scale-105">
                             <img src="/images/logo.png" alt="Trivora" className="h-6 w-auto object-contain" />
                         </div>
                         <div className="flex flex-col justify-center">
-                            <span className="text-sm font-black tracking-wider text-white leading-tight">
+                            <span className="font-['Plus_Jakarta_Sans',sans-serif] text-sm font-black tracking-wider text-white leading-tight">
                                 TRIVORA
                             </span>
-                            <span className="text-[9.5px] font-bold uppercase tracking-[0.14em] text-white/60 leading-tight mt-0.5">
+                            <span className="font-['Plus_Jakarta_Sans',sans-serif] text-[9.5px] font-extrabold uppercase tracking-[0.16em] text-white/60 leading-tight mt-0.5">
                                 TMO Portal
                             </span>
                         </div>
@@ -244,7 +244,7 @@ export default function TrivoraLayout({ children, title, role = "TMO Personnel",
                     </button>
                 </div>
 
-                <nav className="flex flex-1 flex-col overflow-y-auto px-3.5 pb-3.5 pt-2">
+                <nav className="flex flex-1 flex-col overflow-y-auto px-3.5 pb-3.5 pt-2 custom-scrollbar-dark">
                     <div className="flex-1">
                         {navigation.map((group, gi) => (
                             <div key={gi} className="mb-7">
@@ -262,14 +262,16 @@ export default function TrivoraLayout({ children, title, role = "TMO Personnel",
                                         <Link
                                             key={link.name}
                                             href={link.route}
-                                            className={`mb-1 flex items-center gap-3 rounded-lg px-3 py-2.5 text-[13.5px] font-medium transition-colors ${
+                                            className={`mb-1 flex items-center rounded-xl px-3.5 py-2.5 text-[13.5px] font-semibold transition-all duration-150 ${
                                                 isActive
-                                                    ? 'bg-white font-semibold text-[#182B62]'
-                                                    : 'text-white/80 hover:bg-white/10 hover:text-white'
+                                                    ? 'bg-white text-[#182B62] shadow-sm font-bold'
+                                                    : 'text-white/75 hover:bg-white/[0.09] hover:text-white'
                                             }`}
                                         >
-                                            <Icon size={16} strokeWidth={isActive ? 2.5 : 1.8} className="shrink-0" />
-                                            <span>{link.name}</span>
+                                            <div className="flex items-center gap-3 min-w-0">
+                                                <Icon size={17} strokeWidth={isActive ? 2.5 : 2} className="shrink-0" />
+                                                <span className="truncate">{link.name}</span>
+                                            </div>
                                         </Link>
                                     );
                                 })}
@@ -308,12 +310,12 @@ export default function TrivoraLayout({ children, title, role = "TMO Personnel",
             <div className="flex min-w-0 flex-1 flex-col">
 
                 {/* Header */}
-                <header className="sticky top-0 z-30 flex h-16 shrink-0 items-center justify-between border-b border-tmo-border bg-white px-3.5 print:hidden sm:px-8">
+                <header className="sticky top-0 z-30 flex h-16 shrink-0 items-center justify-between border-b border-slate-200/80 bg-white/95 backdrop-blur-md px-4 print:hidden sm:px-8 shadow-[0_1px_3px_0_rgba(15,23,42,0.03)]">
 
                     {/* Left: Mobile Toggle & Page Breadcrumbs */}
                     <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 pr-4">
                         <button
-                            className="flex h-9 w-9 items-center justify-center rounded-lg border border-tmo-border text-tmo-muted hover:border-tmo-borderStrong hover:text-tmo-ink lg:hidden shrink-0"
+                            className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 text-slate-500 hover:border-slate-300 hover:text-slate-800 lg:hidden shrink-0"
                             onClick={() => setSidebarOpen(true)}
                         >
                             <Menu size={18} strokeWidth={2} />
@@ -339,7 +341,7 @@ export default function TrivoraLayout({ children, title, role = "TMO Personnel",
                                             <span
                                                 className={`truncate ${
                                                     isLast
-                                                        ? 'text-[#182B62] font-bold'
+                                                        ? 'text-[#182B62] font-extrabold tracking-tight font-[\'Plus_Jakarta_Sans\',sans-serif]'
                                                         : 'text-slate-500 font-medium'
                                                 }`}
                                             >
@@ -353,30 +355,30 @@ export default function TrivoraLayout({ children, title, role = "TMO Personnel",
                     </div>
 
                     {/* Right: Notifications & Profile Menu */}
-                    <div className="flex items-center gap-2 shrink-0">
+                    <div className="flex items-center gap-3 shrink-0">
                         <NotificationBell />
 
-                        <div className="mx-1 h-7 w-px bg-tmo-border" />
+                        <div className="h-6 w-px bg-slate-200" />
 
                         {/* Profile */}
                         <div className="relative">
                             <button
-                                className="flex items-center gap-2.5 rounded-full py-1 pl-1 pr-3 hover:bg-tmo-bg"
+                                className="flex items-center gap-2.5 rounded-full py-1 pl-1 pr-3 hover:bg-slate-100/80 transition-all border border-transparent hover:border-slate-200/60"
                                 onClick={() => setProfileOpen(p => !p)}
                             >
-                                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#182B62] text-[11px] font-bold tracking-wide text-white">
+                                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#182B62] to-[#25449B] text-[11px] font-bold tracking-wide text-white shadow-xs">
                                     {accountInitials}
                                 </div>
 
                                 <div className="hidden text-left leading-tight md:block">
-                                    <p className="max-w-[160px] truncate text-[12.5px] font-bold text-tmo-ink">{accountName}</p>
-                                    <p className="text-[9.5px] font-semibold uppercase tracking-wide text-tmo-subtle">{role}</p>
+                                    <p className="max-w-[160px] truncate text-[12.5px] font-bold text-slate-800 font-[\'Plus_Jakarta_Sans\',sans-serif]">{accountName}</p>
+                                    <p className="text-[9.5px] font-bold uppercase tracking-wider text-slate-400">{role}</p>
                                 </div>
 
                                 <ChevronDown
                                     size={13}
                                     strokeWidth={2.5}
-                                    className={`shrink-0 text-tmo-subtle transition-transform ${profileOpen ? 'rotate-180' : ''}`}
+                                    className={`shrink-0 text-slate-400 transition-transform ${profileOpen ? 'rotate-180' : ''}`}
                                 />
                             </button>
 
@@ -407,7 +409,7 @@ export default function TrivoraLayout({ children, title, role = "TMO Personnel",
                 </header>
 
                 {/* Page content */}
-                <main className="flex-1 overflow-y-auto px-3.5 py-4 sm:px-8 sm:py-7">
+                <main className="flex-1 overflow-y-auto px-3.5 py-4 sm:px-6 sm:py-6 lg:px-8 lg:py-8 custom-scrollbar">
                     <div className="mx-auto max-w-[1500px]">
                         {children}
                     </div>

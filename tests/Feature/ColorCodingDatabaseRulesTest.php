@@ -25,6 +25,35 @@ class ColorCodingDatabaseRulesTest extends TestCase
 
     protected ?User $defaultIssuer = null;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->ensureRequiredColorCodingSchemes();
+    }
+
+    /**
+     * Ensure required color coding schemes exist for tests that rely on specific scheme names/days.
+     */
+    protected function ensureRequiredColorCodingSchemes(): void
+    {
+        $schemes = [
+            ['name' => 'Red', 'color_hex' => '#EF4444', 'restricted_days' => ['Monday'], 'restricted_digits' => [1, 2], 'fine_amount' => 500.00, 'is_active' => true],
+            ['name' => 'Blue', 'color_hex' => '#3B82F6', 'restricted_days' => ['Tuesday'], 'restricted_digits' => [3, 4], 'fine_amount' => 500.00, 'is_active' => true],
+            ['name' => 'Yellow', 'color_hex' => '#EAB308', 'restricted_days' => ['Wednesday'], 'restricted_digits' => [5, 6], 'fine_amount' => 500.00, 'is_active' => true],
+            ['name' => 'Green', 'color_hex' => '#22C55E', 'restricted_days' => ['Thursday'], 'restricted_digits' => [7, 8], 'fine_amount' => 500.00, 'is_active' => true],
+            ['name' => 'White', 'color_hex' => '#94A3B8', 'restricted_days' => ['Friday'], 'restricted_digits' => [9, 0], 'fine_amount' => 500.00, 'is_active' => true],
+            ['name' => 'Orange', 'color_hex' => '#F97316', 'restricted_days' => [], 'restricted_digits' => [], 'fine_amount' => 500.00, 'is_active' => false],
+            ['name' => 'Violet', 'color_hex' => '#8B5CF6', 'restricted_days' => [], 'restricted_digits' => [], 'fine_amount' => 500.00, 'is_active' => false],
+        ];
+
+        foreach ($schemes as $scheme) {
+            \App\Models\ColorCodingScheme::updateOrCreate(
+                ['name' => $scheme['name']],
+                $scheme
+            );
+        }
+    }
+
     protected function getIssuer(): User
     {
         if (!$this->defaultIssuer) {

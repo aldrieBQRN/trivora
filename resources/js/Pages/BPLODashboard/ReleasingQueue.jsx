@@ -63,136 +63,144 @@ export default function ReleasingQueue({
                ══════════════════════════════════════════════════════════════ */}
             <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-slate-200/80 pb-5">
                 <div>
-                    <h1 className="text-2xl sm:text-[28px] font-extrabold tracking-tight text-slate-900 leading-tight">
+                    <h1 className="text-2xl sm:text-[28px] font-black tracking-tight text-slate-900 leading-tight">
                         Releasing Queue
                     </h1>
-                    <p className="mt-1 text-xs sm:text-sm text-slate-500 max-w-2xl leading-relaxed">
+                    <p className="mt-1 text-xs sm:text-sm text-slate-500 max-w-2xl leading-relaxed font-medium">
                         Assign the Sticker Number and release official MTOP permits for verified, roadworthy units
                     </p>
+                </div>
+                <div className="flex items-center gap-2 self-start sm:self-auto shrink-0">
+                    <span className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-bold text-slate-700 shadow-2xs">
+                        <Award size={13} className="text-[#182B62]" />
+                        <span>{pendingCount} Awaiting Sticker</span>
+                    </span>
                 </div>
             </div>
 
             {/* ══════════════════════════════════════════════════════════════
-                2. PREMIUM KPI CARD DECK (TMO Operations style)
+                2. PREMIUM KPI CARD DECK (Strict 1-per-row on Mobile < 640px)
                ══════════════════════════════════════════════════════════════ */}
-            <div className="mb-5 grid grid-cols-1 gap-3.5 sm:gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <div className="mb-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4 items-stretch">
                 {/* Card 1: Pending Issuance */}
-                <div className={`flex flex-col justify-between rounded-2xl border border-slate-200/70 bg-white p-4 sm:p-5 ${CARD_SHADOW}`}>
+                <div className={`flex flex-col justify-between rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-4 sm:p-5 lg:p-6 ${CARD_SHADOW}`}>
                     <div>
-                        <div className="flex items-center justify-between">
-                            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                        <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
+                            <span className="text-[10px] sm:text-[10.5px] font-bold uppercase tracking-wider text-slate-400">
                                 Pending Issuance
                             </span>
-                            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500/[0.12] to-blue-500/[0.02] text-blue-700">
-                                <Award size={14} />
+                            <span className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-xl bg-blue-50 border border-blue-100 text-blue-700">
+                                <Award size={15} strokeWidth={2.2} />
                             </span>
                         </div>
-                        <div className="mt-2 flex items-baseline gap-2">
-                            <span className="text-2xl sm:text-3xl font-extrabold tracking-tight tabular-nums text-slate-900">
+                        <div className="mt-2.5 flex items-baseline gap-2">
+                            <span className="text-2xl sm:text-3xl font-black tracking-tight tabular-nums text-slate-900 leading-none">
                                 {pendingCount}
                             </span>
-                            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                            <span className="text-[10px] sm:text-[10.5px] font-extrabold uppercase tracking-wider text-slate-400">
                                 Awaiting Sticker
                             </span>
                         </div>
-                        <p className="mt-1 text-[11px] text-slate-500">
+                        <p className="mt-1 text-[11px] font-medium text-slate-500 line-clamp-1">
                             Cleared inspection, ready for release
                         </p>
                     </div>
 
-                    <div className="mt-3 rounded-xl bg-slate-50 p-2.5 flex items-center justify-between text-xs">
-                        <span className="text-[11px] font-medium text-slate-500">Status:</span>
-                        <span className="inline-flex items-center gap-1.5 font-bold text-blue-700 text-xs">
-                            {pendingCount > 0 && <span className="h-1.5 w-1.5 rounded-full bg-blue-500 animate-pulse" />}
+                    <div className="mt-3.5 rounded-xl bg-slate-50 border border-slate-100/90 px-3 py-2 flex items-center justify-between text-xs">
+                        <span className="font-semibold text-slate-400 text-[11px]">Status:</span>
+                        <span className="font-bold text-blue-700 text-xs">
                             {pendingCount > 0 ? 'Action Needed' : 'All Clear'}
                         </span>
                     </div>
                 </div>
 
                 {/* Card 2: Issued Today */}
-                <div className={`flex flex-col justify-between rounded-2xl border border-slate-200/70 bg-white p-4 sm:p-5 ${CARD_SHADOW}`}>
+                <div className={`flex flex-col justify-between rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-4 sm:p-5 lg:p-6 ${CARD_SHADOW}`}>
                     <div>
-                        <div className="flex items-center justify-between">
-                            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                        <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
+                            <span className="text-[10px] sm:text-[10.5px] font-bold uppercase tracking-wider text-slate-400">
                                 Issued Today
                             </span>
-                            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-500/[0.14] to-emerald-500/[0.02] text-emerald-600">
-                                <CheckCircle2 size={14} />
-                            </span>
+                            <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-xl bg-emerald-50 border border-emerald-100 text-emerald-600">
+                                <CheckCircle2 size={15} strokeWidth={2.2} />
+                            </div>
                         </div>
-                        <div className="mt-2 flex items-baseline gap-2">
-                            <span className="text-2xl sm:text-3xl font-extrabold tracking-tight tabular-nums text-slate-900">
+                        <div className="mt-2.5 flex items-baseline gap-2">
+                            <span className="text-2xl sm:text-3xl font-black tracking-tight tabular-nums text-emerald-600 leading-none">
                                 {issuedTodayCount}
                             </span>
-                            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                                Completed
+                            <span className="text-[10px] sm:text-[10.5px] font-extrabold uppercase tracking-wider text-slate-400">
+                                Released
                             </span>
                         </div>
-                        <p className="mt-1 text-[11px] text-slate-500">
+                        <p className="mt-1 text-[11px] font-medium text-slate-500 line-clamp-1">
                             Stickers handed over to drivers
                         </p>
                     </div>
 
-                    <div className="mt-3 rounded-xl bg-slate-50 p-2.5 flex items-center justify-between text-xs">
-                        <span className="text-[11px] font-medium text-slate-500">Session:</span>
-                        <span className="text-xs font-bold text-emerald-700">Active</span>
+                    <div className="mt-3.5 rounded-xl bg-slate-50 border border-slate-100/90 px-3 py-2 flex items-center justify-between text-xs">
+                        <span className="font-semibold text-slate-400 text-[11px]">Session:</span>
+                        <span className="font-bold text-emerald-700 text-xs">Active Output</span>
                     </div>
                 </div>
 
                 {/* Card 3: Active Masterlist Registry */}
-                <div className={`flex flex-col justify-between rounded-2xl border border-slate-200/70 bg-white p-4 sm:p-5 ${CARD_SHADOW}`}>
+                <div className={`flex flex-col justify-between rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-4 sm:p-5 lg:p-6 ${CARD_SHADOW}`}>
                     <div>
-                        <div className="flex items-center justify-between">
-                            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                        <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
+                            <span className="text-[10px] sm:text-[10.5px] font-bold uppercase tracking-wider text-slate-400">
                                 Active Registry
                             </span>
-                            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-[#182B62]/[0.10] to-[#182B62]/[0.02] text-[#182B62]">
-                                <FolderCheck size={14} />
-                            </span>
+                            <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-xl bg-indigo-50 border border-indigo-100 text-[#182B62]">
+                                <FolderCheck size={15} strokeWidth={2.2} />
+                            </div>
                         </div>
-                        <div className="mt-2 flex items-baseline gap-2">
-                            <span className="text-2xl sm:text-3xl font-extrabold tracking-tight tabular-nums text-[#182B62]">
+                        <div className="mt-2.5 flex items-baseline gap-2">
+                            <span className="text-2xl sm:text-3xl font-black tracking-tight tabular-nums text-[#182B62] leading-none">
                                 {activeRegistryCount}
                             </span>
-                            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                            <span className="text-[10px] sm:text-[10.5px] font-extrabold uppercase tracking-wider text-slate-400">
                                 Total Units
                             </span>
                         </div>
-                        <p className="mt-1 text-[11px] text-slate-500">
+                        <p className="mt-1 text-[11px] font-medium text-slate-500 line-clamp-1">
                             Official franchises on record
                         </p>
                     </div>
 
-                    <div className="mt-3 rounded-xl bg-slate-50 p-2.5 flex items-center justify-between text-xs">
-                        <span className="text-[11px] font-medium text-slate-500">Registry:</span>
-                        <span className="text-xs font-bold text-slate-700">Synced</span>
+                    <div className="mt-3.5 rounded-xl bg-slate-50 border border-slate-100/90 px-3 py-2 flex items-center justify-between text-xs">
+                        <span className="font-semibold text-slate-400 text-[11px]">Masterlist:</span>
+                        <span className="font-bold text-slate-800 text-xs">Synced</span>
                     </div>
                 </div>
 
                 {/* Card 4: Issuance Progress */}
-                <div className={`flex flex-col justify-between rounded-2xl border border-slate-200/70 bg-white p-4 sm:p-5 ${CARD_SHADOW}`}>
+                <div className={`flex flex-col justify-between rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-4 sm:p-5 lg:p-6 ${CARD_SHADOW}`}>
                     <div>
-                        <div className="flex items-center justify-between">
-                            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                        <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
+                            <span className="text-[10px] sm:text-[10.5px] font-bold uppercase tracking-wider text-slate-400">
                                 Issuance Progress
                             </span>
-                            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-[#182B62]/[0.10] to-[#182B62]/[0.02] text-[#182B62]">
-                                <TrendingUp size={14} />
-                            </span>
+                            <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-xl bg-amber-50 border border-amber-100 text-amber-600">
+                                <TrendingUp size={15} strokeWidth={2.2} />
+                            </div>
                         </div>
-                        <div className="mt-2 flex items-baseline gap-2">
-                            <span className="text-2xl sm:text-3xl font-extrabold tracking-tight tabular-nums text-slate-900">
+                        <div className="mt-2.5 flex items-baseline gap-2">
+                            <span className="text-2xl sm:text-3xl font-black tracking-tight tabular-nums text-slate-900 leading-none">
                                 {(pendingCount + issuedTodayCount) > 0 ? Math.round((issuedTodayCount / (pendingCount + issuedTodayCount)) * 100) : 100}%
                             </span>
+                            <span className="text-[10px] sm:text-[10.5px] font-extrabold uppercase tracking-wider text-slate-400">
+                                Cleared
+                            </span>
                         </div>
-                        <p className="mt-1 text-[11px] text-slate-500">
+                        <p className="mt-1 text-[11px] font-medium text-slate-500 line-clamp-1">
                             Share of today's queue completed
                         </p>
                     </div>
 
-                    <div className="mt-3 rounded-xl bg-slate-50 p-2.5 flex items-center justify-between text-xs">
-                        <span className="text-[11px] font-medium text-slate-500">Today's progress:</span>
-                        <span className="text-xs font-bold text-slate-700">{issuedTodayCount} of {pendingCount + issuedTodayCount} done</span>
+                    <div className="mt-3.5 rounded-xl bg-slate-50 border border-slate-100/90 px-3 py-2 flex items-center justify-between text-xs">
+                        <span className="font-semibold text-slate-400 text-[11px]">Daily:</span>
+                        <span className="font-bold text-slate-800 text-xs">{issuedTodayCount} of {pendingCount + issuedTodayCount} done</span>
                     </div>
                 </div>
             </div>
@@ -481,9 +489,9 @@ function DesktopReleasingRow({ app }) {
             <td className="py-3.5 pl-3 pr-5 text-right align-middle">
                 <Link
                     href={`/bplo/issue/${app.id}`}
-                    className="inline-flex items-center gap-1 rounded-full bg-[#182B62] hover:bg-[#25449B] text-white px-3.5 py-1.5 text-xs font-semibold shadow-2xs transition-all active:scale-[0.98]"
+                    className="inline-flex items-center gap-1 rounded-xl bg-[#182B62] hover:bg-[#25449B] text-white px-3.5 py-1.5 text-xs font-bold shadow-2xs transition-all active:scale-[0.98]"
                 >
-                    <span>Issue Sticker Number</span>
+                    <span>Issue</span>
                     <ChevronRight size={13} strokeWidth={2.5} className="text-slate-300" />
                 </Link>
             </td>
@@ -536,9 +544,9 @@ function MobileReleasingCard({ app }) {
             <div className="mt-2.5 pt-2 border-t border-slate-100">
                 <Link
                     href={`/bplo/issue/${app.id}`}
-                    className="flex w-full items-center justify-center gap-1.5 rounded-full bg-[#182B62] hover:bg-[#25449B] text-white py-2 text-xs font-bold shadow-2xs transition-all active:scale-[0.98]"
+                    className="flex w-full items-center justify-center gap-1.5 rounded-xl bg-[#182B62] hover:bg-[#25449B] text-white py-2 text-xs font-bold shadow-2xs transition-all active:scale-[0.98]"
                 >
-                    <span>Issue Sticker Number</span>
+                    <span>Issue Sticker</span>
                     <ChevronRight size={13} strokeWidth={2.5} className="text-slate-300" />
                 </Link>
             </div>

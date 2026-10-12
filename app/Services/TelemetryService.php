@@ -143,6 +143,11 @@ class TelemetryService
             throw $e;
         }
 
+        // Reached only after a successful insert (a same-day duplicate returned above). Emails the
+        // TMO and the driver after commit when VIOLATION_EMAILS_ENABLED; never throws, so the
+        // result below is unaffected.
+        ViolationNotifier::colorCodingViolationRecorded($violation);
+
         return [
             'flagged'  => true,
             'type'     => 'color_coding',

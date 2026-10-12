@@ -580,6 +580,23 @@ class ReportController extends Controller
                 'plate'            => $fs->tricycle?->plate_number ?: 'N/A',
                 'expiry_date'      => $fs->expiry_date->format('M d, Y'),
                 'days_left'        => (int) now()->startOfDay()->diffInDays($fs->expiry_date, false),
+                'tricycle_id'      => $fs->tricycle_id,
+            ])
+            ->values();
+
+        $records = (clone $base)
+            ->with(['operator', 'franchiseScheme.colorCodingScheme'])
+            ->orderByDesc('tricycles.created_at')
+            ->get()
+            ->map(fn ($t) => [
+                'id'              => $t->id,
+                'plate'           => $t->plate_number,
+                'operator'        => $t->operator?->full_name ?: 'N/A',
+                'status'          => $t->status,
+                'tracking_mode'   => $t->active_tracking_mode === 'iot_device' ? 'Installed GPS Tracker' : ($t->active_tracking_mode === 'mobile_app' ? 'Driver Mobile GPS' : 'Not Configured'),
+                'color_scheme'    => $t->franchiseScheme?->colorCodingScheme?->name ?: 'Standard',
+                'franchise_no'    => $t->franchiseScheme?->franchise_number ?: 'Pending',
+                'registered_date' => $t->created_at->format('M d, Y'),
             ])
             ->values();
 
@@ -599,6 +616,7 @@ class ReportController extends Controller
             'by_color_scheme'    => $byColorScheme,
             'tracking_split'     => ['iot' => $iotCount, 'mobile' => $mobileCount],
             'expiring'           => $expiring,
+            'records'            => $records,
         ];
     }
 
@@ -675,6 +693,23 @@ class ReportController extends Controller
             ])
             ->values();
 
+        $records = (clone $base)
+            ->with(['operator', 'tricycle'])
+            ->orderByDesc('submitted_at')
+            ->get()
+            ->map(fn ($app) => [
+                'id'           => $app->reference_number,
+                'db_id'        => $app->id,
+                'date'         => $app->submitted_at?->format('M d, Y') ?? 'N/A',
+                'time'         => $app->submitted_at?->format('h:i A') ?? '',
+                'type'         => $app->application_type === 'new' ? 'New Franchise' : 'Renewal',
+                'operator'     => $app->operator?->full_name ?? 'N/A',
+                'plate'        => $app->tricycle?->plate_number ?? 'Pending Unit',
+                'status'       => $app->status,
+                'status_label' => ucwords(str_replace('_', ' ', $app->status)),
+            ])
+            ->values();
+
         return [
             'kpis' => [
                 'submitted'           => $submitted,
@@ -686,6 +721,7 @@ class ReportController extends Controller
             'by_stage'          => $byStage,
             'type_split'        => ['new' => $newCount, 'renewal' => $renewalCount],
             'avg_time_in_stage' => $avgTimeInStage,
+            'records'           => $records,
         ];
     }
 }

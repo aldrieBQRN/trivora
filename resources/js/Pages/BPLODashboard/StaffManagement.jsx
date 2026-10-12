@@ -245,10 +245,10 @@ export default function StaffManagement({
                     <button
                         type="button"
                         onClick={() => setAddModalOpen(true)}
-                        className="inline-flex items-center gap-2 rounded-lg bg-[#182B62] px-3.5 py-2 text-xs font-bold text-white shadow-2xs hover:bg-[#2A3B5C] transition-colors cursor-pointer"
+                        className="inline-flex items-center gap-2 rounded-xl bg-[#182B62] hover:bg-[#25449B] px-4 py-2.5 text-xs font-bold text-white shadow-xs transition-all cursor-pointer"
                     >
                         <UserPlus size={15} strokeWidth={2.2} />
-                        Add BPLO Staff
+                        <span>Add BPLO Staff</span>
                     </button>
                 </div>
             </div>
@@ -256,8 +256,8 @@ export default function StaffManagement({
             {/* ══════════════════════════════════════════════════════════════
                 2. PREMIUM KPI CARD DECK (TMO Staff Management style)
                ══════════════════════════════════════════════════════════════ */}
-            <div className="mb-5 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
-                <div className={`group rounded-2xl border border-slate-200/70 bg-white p-4 sm:p-5 ${CARD_SHADOW} transition-all hover:border-slate-300`}>
+            <div className="mb-5 grid grid-cols-1 gap-3.5 sm:gap-4 sm:grid-cols-2 lg:grid-cols-4 items-stretch">
+                <div className="flex flex-col justify-between rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-4 sm:p-5 shadow-xs hover:border-slate-300 transition-all">
                     <div className="flex items-center justify-between">
                         <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-[#182B62]/[0.10] to-[#182B62]/[0.02] text-[#182B62]">
                             <Users size={16} strokeWidth={2.2} />
@@ -276,13 +276,12 @@ export default function StaffManagement({
                     </div>
                 </div>
 
-                <div className={`group rounded-2xl border border-slate-200/70 bg-white p-4 sm:p-5 ${CARD_SHADOW} transition-all hover:border-slate-300`}>
+                <div className="flex flex-col justify-between rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-4 sm:p-5 shadow-xs hover:border-slate-300 transition-all">
                     <div className="flex items-center justify-between">
                         <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-500/[0.14] to-emerald-500/[0.02] text-emerald-600">
                             <CheckCircle2 size={16} strokeWidth={2.2} />
                         </div>
-                        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700 border border-emerald-200/70">
-                            <span className="h-1 w-1 rounded-full bg-emerald-500 animate-pulse" />
+                        <span className="inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-0.5 text-[10px] font-bold text-emerald-700 border border-emerald-200/70">
                             Signed In
                         </span>
                     </div>
@@ -298,7 +297,7 @@ export default function StaffManagement({
                     </div>
                 </div>
 
-                <div className={`group rounded-2xl border border-slate-200/70 bg-white p-4 sm:p-5 ${CARD_SHADOW} transition-all hover:border-slate-300`}>
+                <div className="flex flex-col justify-between rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-4 sm:p-5 shadow-xs hover:border-slate-300 transition-all">
                     <div className="flex items-center justify-between">
                         <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-rose-500/[0.14] to-rose-500/[0.02] text-rose-600">
                             <XCircle size={16} strokeWidth={2.2} />
@@ -319,7 +318,7 @@ export default function StaffManagement({
                     </div>
                 </div>
 
-                <div className={`group rounded-2xl border border-slate-200/70 bg-white p-4 sm:p-5 ${CARD_SHADOW} transition-all hover:border-slate-300`}>
+                <div className="flex flex-col justify-between rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-4 sm:p-5 shadow-xs hover:border-slate-300 transition-all">
                     <div className="flex items-center justify-between">
                         <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500/[0.14] to-indigo-500/[0.02] text-indigo-600">
                             <Clock size={16} strokeWidth={2.2} />
@@ -342,7 +341,7 @@ export default function StaffManagement({
             {/* ══════════════════════════════════════════════════════════════
                 3. FILTER & SEARCH DECK
                ══════════════════════════════════════════════════════════════ */}
-            <div className={`mb-4 rounded-2xl border border-slate-200/70 bg-white p-3 sm:p-3.5 ${CARD_SHADOW}`}>
+            <div className="mb-4 rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-3 sm:p-4 shadow-xs">
                 <div className="flex flex-col lg:flex-row lg:items-center gap-2.5">
                     {/* Search input */}
                     <div className="relative flex-1 min-w-[220px]">
@@ -402,7 +401,7 @@ export default function StaffManagement({
             ) : (
                 <>
                     {/* ── DESKTOP & TABLET DATA TABLE (md: 768px and up) ── */}
-                    <div className={`hidden md:block overflow-hidden rounded-2xl border border-slate-200/70 bg-white ${CARD_SHADOW}`}>
+                    <div className="hidden md:block overflow-hidden rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white shadow-xs">
                         <div className="overflow-x-auto">
                             <table className="w-full border-collapse text-left text-xs">
                                 <thead>
@@ -447,6 +446,39 @@ export default function StaffManagement({
                                     <ChevronLeft size={13} strokeWidth={2.5} />
                                     <span>Prev</span>
                                 </button>
+
+                                <div className="flex items-center gap-1">
+                                    {Array.from({ length: totalPages }, (_, i) => i + 1)
+                                        .filter(p => {
+                                            if (totalPages <= 5) return true;
+                                            if (p === 1 || p === totalPages) return true;
+                                            return Math.abs(p - activePage) <= 1;
+                                        })
+                                        .map((p, idx, arr) => {
+                                            const prev = arr[idx - 1];
+                                            const hasGap = prev && p - prev > 1;
+
+                                            return (
+                                                <React.Fragment key={p}>
+                                                    {hasGap && (
+                                                        <span className="px-0.5 text-xs text-slate-400">…</span>
+                                                    )}
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setCurrentPage(p)}
+                                                        className={`flex h-8 w-8 items-center justify-center rounded-md text-xs font-bold transition-all ${
+                                                            activePage === p
+                                                                ? 'bg-[#182B62] text-white shadow-sm'
+                                                                : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
+                                                        }`}
+                                                    >
+                                                        {p}
+                                                    </button>
+                                                </React.Fragment>
+                                            );
+                                        })}
+                                </div>
+
                                 <button
                                     type="button"
                                     disabled={activePage >= totalPages}
@@ -793,7 +825,7 @@ function DesktopStaffRow({ u, user: userProp, onEdit, onToggleStatus, onDelete }
             {/* Column 1: Staff Member */}
             <td className="py-3.5 pl-5 pr-3 align-middle">
                 <div className="flex items-center gap-2.5">
-                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#182B62] to-[#2A3560] text-[11px] font-bold text-white">
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#182B62] to-[#25449B] text-[11px] font-bold text-white shadow-2xs">
                         {initials}
                     </div>
                     <div className="min-w-0">
@@ -892,11 +924,11 @@ function MobileStaffCard({ u, user: userProp, onEdit, onToggleStatus, onDelete }
     const initials = getInitials(user.name);
 
     return (
-        <div className={`rounded-2xl border border-slate-200/70 bg-white p-3.5 transition-all hover:border-slate-300 ${CARD_SHADOW}`}>
+        <div className="rounded-2xl border border-slate-200/80 bg-white p-3.5 shadow-xs transition-all hover:border-slate-300">
             {/* Top Row: Staff & Status */}
             <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-2">
                 <div className="flex items-center gap-2 min-w-0">
-                    <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#182B62] to-[#2A3560] text-[10px] font-bold text-white">
+                    <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#182B62] to-[#25449B] text-[10px] font-bold text-white shadow-2xs">
                         {initials}
                     </div>
                     <div className="min-w-0">
@@ -950,7 +982,7 @@ function MobileStaffCard({ u, user: userProp, onEdit, onToggleStatus, onDelete }
                 <button
                     type="button"
                     onClick={() => onEdit(user)}
-                    className="flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white py-2 text-xs font-semibold text-slate-700 active:scale-[0.98]"
+                    className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-slate-200/80 bg-white py-2 text-xs font-semibold text-slate-700 shadow-2xs hover:bg-slate-50 active:scale-[0.98] transition-all"
                 >
                     <Edit2 size={13} strokeWidth={2.2} />
                     <span>Edit</span>
@@ -959,7 +991,7 @@ function MobileStaffCard({ u, user: userProp, onEdit, onToggleStatus, onDelete }
                     type="button"
                     onClick={() => onDelete(user)}
                     disabled={user.is_current_user}
-                    className="flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-rose-200 bg-rose-50 py-2 text-xs font-semibold text-rose-700 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-40"
+                    className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-rose-200 bg-rose-50 py-2 text-xs font-semibold text-rose-700 shadow-2xs active:scale-[0.98] transition-all disabled:pointer-events-none disabled:opacity-40"
                 >
                     <Trash2 size={13} strokeWidth={2.2} />
                     <span>Delete</span>

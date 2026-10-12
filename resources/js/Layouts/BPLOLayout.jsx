@@ -194,7 +194,7 @@ export default function BPLOLayout({ children, title, role = "BPLO Officer", bre
                 </div>
 
                 {/* Nav Links */}
-                <nav className="flex flex-1 flex-col overflow-y-auto px-3.5 pb-3.5 pt-2">
+                <nav className="flex flex-1 flex-col overflow-y-auto px-3.5 pb-3.5 pt-2 custom-scrollbar-dark">
                     <div className="flex-1">
                         {navigation.map((group, gi) => (
                             <div key={gi} className="mb-7">
@@ -212,14 +212,16 @@ export default function BPLOLayout({ children, title, role = "BPLO Officer", bre
                                         <Link
                                             key={link.name}
                                             href={link.route}
-                                            className={`mb-1 flex items-center gap-3 rounded-lg px-3 py-2.5 text-[13.5px] font-medium transition-colors ${
+                                            className={`mb-1 flex items-center rounded-xl px-3.5 py-2.5 text-[13.5px] font-semibold transition-all duration-150 ${
                                                 isActive
-                                                    ? 'bg-white font-semibold text-[#182B62]'
-                                                    : 'text-white/80 hover:bg-white/10 hover:text-white'
+                                                    ? 'bg-white text-[#182B62] shadow-sm font-bold'
+                                                    : 'text-white/75 hover:bg-white/[0.09] hover:text-white'
                                             }`}
                                         >
-                                            <Icon size={16} strokeWidth={isActive ? 2.5 : 1.8} className="shrink-0" />
-                                            <span>{link.name}</span>
+                                            <div className="flex items-center gap-3 min-w-0">
+                                                <Icon size={17} strokeWidth={isActive ? 2.5 : 2} className="shrink-0" />
+                                                <span className="truncate">{link.name}</span>
+                                            </div>
                                         </Link>
                                     );
                                 })}
@@ -258,12 +260,12 @@ export default function BPLOLayout({ children, title, role = "BPLO Officer", bre
             <div className="flex min-w-0 flex-1 flex-col">
 
                 {/* Header */}
-                <header className="sticky top-0 z-30 flex h-16 shrink-0 items-center justify-between border-b border-slate-200 bg-white px-3.5 print:hidden sm:px-8">
+                <header className="sticky top-0 z-30 flex h-16 shrink-0 items-center justify-between border-b border-slate-200/80 bg-white/95 backdrop-blur-md px-4 print:hidden sm:px-8 shadow-[0_1px_3px_0_rgba(15,23,42,0.03)]">
 
                     {/* Left: Mobile Toggle & Dynamic Breadcrumbs */}
                     <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 pr-4">
                         <button
-                            className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 text-slate-500 hover:border-slate-300 hover:text-slate-800 lg:hidden shrink-0"
+                            className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 text-slate-500 hover:border-slate-300 hover:text-slate-800 lg:hidden shrink-0"
                             onClick={() => setSidebarOpen(true)}
                         >
                             <Menu size={18} strokeWidth={2} />
@@ -289,7 +291,7 @@ export default function BPLOLayout({ children, title, role = "BPLO Officer", bre
                                             <span
                                                 className={`truncate ${
                                                     isLast
-                                                        ? 'text-[#182B62] font-bold'
+                                                        ? 'text-[#182B62] font-extrabold tracking-tight font-[\'Plus_Jakarta_Sans\',sans-serif]'
                                                         : 'text-slate-500 font-medium'
                                                 }`}
                                             >
@@ -303,24 +305,24 @@ export default function BPLOLayout({ children, title, role = "BPLO Officer", bre
                     </div>
 
                     {/* Right: Notifications & Profile Menu */}
-                    <div className="flex items-center gap-2 shrink-0">
+                    <div className="flex items-center gap-3 shrink-0">
                         <NotificationBell />
 
-                        <div className="mx-1 h-7 w-px bg-slate-200" />
+                        <div className="h-6 w-px bg-slate-200" />
 
                         {/* Profile */}
                         <div className="relative">
                             <button
-                                className="flex items-center gap-2.5 rounded-full py-1 pl-1 pr-3 hover:bg-slate-100"
+                                className="flex items-center gap-2.5 rounded-full py-1 pl-1 pr-3 hover:bg-slate-100/80 transition-all border border-transparent hover:border-slate-200/60"
                                 onClick={() => setProfileOpen(p => !p)}
                             >
-                                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#182B62] text-[11px] font-bold tracking-wide text-white">
+                                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#182B62] to-[#25449B] text-[11px] font-bold tracking-wide text-white shadow-xs">
                                     {accountInitials}
                                 </div>
 
                                 <div className="hidden text-left leading-tight md:block">
-                                    <p className="max-w-[160px] truncate text-[12.5px] font-bold text-slate-900">{accountName}</p>
-                                    <p className="text-[9.5px] font-semibold uppercase tracking-wide text-slate-400">{role}</p>
+                                    <p className="max-w-[160px] truncate text-[12.5px] font-bold text-slate-800 font-['Plus_Jakarta_Sans',sans-serif]">{accountName}</p>
+                                    <p className="text-[9.5px] font-bold uppercase tracking-wider text-slate-400">{role}</p>
                                 </div>
 
                                 <ChevronDown
@@ -331,13 +333,13 @@ export default function BPLOLayout({ children, title, role = "BPLO Officer", bre
                             </button>
 
                             {profileOpen && (
-                                <div className="absolute right-0 top-[calc(100%+8px)] z-50 w-56 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg">
+                                <div className="absolute right-0 top-[calc(100%+8px)] z-50 w-56 overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-lg">
                                     <div className="border-b border-slate-100 px-4 py-3">
                                         <p className="text-[9px] font-bold uppercase tracking-wide text-slate-400">{role}</p>
-                                        <p className="truncate text-sm font-bold text-slate-900">{accountName}</p>
+                                        <p className="truncate text-sm font-bold text-slate-900 font-['Plus_Jakarta_Sans',sans-serif]">{accountName}</p>
                                         {authUser?.email && <p className="truncate text-[11px] text-slate-400">{authUser.email}</p>}
                                     </div>
-                                    <div className="p-1.5">
+                                    <div className="p-1.5 font-['Plus_Jakarta_Sans',sans-serif]">
                                         <Link href={route('profile.edit')} className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900">
                                             <Settings size={14} strokeWidth={1.8} />
                                             Account Settings
@@ -357,7 +359,7 @@ export default function BPLOLayout({ children, title, role = "BPLO Officer", bre
                 </header>
 
                 {/* Page content */}
-                <main className="flex-1 overflow-y-auto px-3.5 py-4 sm:px-8 sm:py-7">
+                <main className="flex-1 overflow-y-auto px-3.5 py-4 sm:px-6 sm:py-6 lg:px-8 lg:py-8 custom-scrollbar">
                     <div className="mx-auto max-w-[1500px]">
                         {children}
                     </div>

@@ -67,13 +67,19 @@ class SimulateTelematics extends Command
                 $speed = rand(18, 35);
                 $heading = rand(0, 359);
 
+                // tricycle_locations.source is an enum('gps_device','mobile_app','manual') — map the
+                // unit's active tracking mode onto it. active_tracking_mode uses 'iot_device', which
+                // is NOT a valid source value, so writing it raw would fail/blank the column on an
+                // IoT unit. The simulated ping must honestly carry the source its mode implies.
+                $source = $trike->active_tracking_mode === 'iot_device' ? 'gps_device' : 'mobile_app';
+
                 TricycleLocation::create([
                     'tricycle_id'   => $trike->id,
                     'latitude'       => $lat,
                     'longitude'      => $lng,
                     'speed_kmh'      => $speed,
                     'heading'        => $heading,
-                    'tracking_source' => $trike->active_tracking_mode ?? 'mobile_app',
+                    'source'          => $source,
                     'recorded_at'    => now(),
                 ]);
             }

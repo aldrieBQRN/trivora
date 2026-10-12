@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import { Head, Link } from '@inertiajs/react';
 import useBackgroundRefresh from '@/hooks/useBackgroundRefresh';
 import OperatorLayout from '@/Layouts/OperatorLayout';
@@ -13,11 +13,15 @@ import {
     Satellite,
     Info,
     Clock,
+    ShieldCheck,
+    Search,
+    X,
+    RotateCcw,
 } from 'lucide-react';
 
 // Shared soft, layered shadow token — same elevation language used across TMODashboard, so this
 // panel reads as one consistent product rather than a different template.
-const CARD_SHADOW = 'shadow-[0_1px_2px-0_rgba(15,23,42,0.04),0_8px_24px_-8px_rgba(15,23,42,0.10)]';
+const CARD_SHADOW = 'shadow-[0_1px_2px_0_rgba(15,23,42,0.04),0_8px_24px_-8px_rgba(15,23,42,0.10)]';
 
 // Registered units only — vehicleStatus is derived server-side from the driver's actual
 // application/franchise relationship (see routes/web.php operator.fleet), including 'expired'
@@ -61,6 +65,8 @@ function formatDate(isoDate) {
 
 export default function MyTricycles({ tricycles = [], auth }) {
     const operatorName = auth?.user?.name || 'Driver';
+    const [query, setQuery] = useState('');
+    const [fleetFilter, setFleetFilter] = useState('all');
 
     // Background refresh of the driver's own tricycles: an approval or activation completed by
     // BPLO/TMO elsewhere moves an item from Pending to Registered without a manual reload.
@@ -72,48 +78,309 @@ export default function MyTricycles({ tricycles = [], auth }) {
     const registered = tricycles.filter((t) => t.isRegistered);
     const pending = tricycles.filter((t) => !t.isRegistered);
 
+    // KPI Metrics
+    const totalCount = tricycles.length;
+    const activeCount = registered.filter((t) => !t.franchiseExpired).length;
+    const expiredCount = registered.filter((t) => t.franchiseExpired).length;
+    const pendingCount = pending.length;
+    const onlineCount = registered.filter((t) => t.lastSignal && t.lastSignal.isRecent).length;
+    const activePct = totalCount > 0 ? Math.round((activeCount / totalCount) * 100) : 0;
+
+    const filteredRegistered = useMemo(() => {
+        return registered.filter((t) => {
+            const q = query.trim().toLowerCase();
+            const matchesQuery = !q || (
+                (t.plateNo && String(t.plateNo).toLowerCase().includes(q)) ||
+                (t.id && String(t.id).toLowerCase().includes(q)) ||
+                (t.driver && String(t.driver).toLowerCase().includes(q)) ||
+                (t.makeModel && String(t.makeModel).toLowerCase().includes(q))
+            );
+            const matchesFilter = fleetFilter === 'all' ||
+                fleetFilter === 'registered' ||
+                (fleetFilter === 'active' && !t.franchiseExpired) ||
+                (fleetFilter === 'expired' && t.franchiseExpired) ||
+                (fleetFilter === 'online' && t.lastSignal?.isRecent);
+            return matchesQuery && matchesFilter;
+        });
+    }, [registered, query, fleetFilter]);
+
+    const filteredPending = useMemo(() => {
+        if (fleetFilter === 'registered' || fleetFilter === 'active' || fleetFilter === 'expired' || fleetFilter === 'online') {
+            return [];
+        }
+        return pending.filter((t) => {
+            const q = query.trim().toLowerCase();
+            const matchesQuery = !q || (
+                (t.plateNo && String(t.plateNo).toLowerCase().includes(q)) ||
+                (t.id && String(t.id).toLowerCase().includes(q)) ||
+                (t.driver && String(t.driver).toLowerCase().includes(q)) ||
+                (t.makeModel && String(t.makeModel).toLowerCase().includes(q))
+            );
+            return matchesQuery;
+        });
+    }, [pending, query, fleetFilter]);
+
     return (
         <OperatorLayout title="My Tricycles" operatorName={operatorName}>
             <Head title="My Tricycles | TRIVORA" />
 
             <div className="mx-auto max-w-[1500px] pb-10">
-                <PageHeader
-                    eyebrow="Unit Management"
-                    title="My Tricycles"
-                    subtitle={
-                        registered.length > 0
-                            ? `${registered.length} registered unit${registered.length !== 1 ? 's' : ''} • each tracked via IoT GPS or Mobile GPS.`
-                            : 'Registered tricycle units linked to your approved franchise applications.'
-                    }
-                />
+                {/* ══════════════════════════════════════════════════════════════
+                    1. PAGE HEADER
+                   ══════════════════════════════════════════════════════════════ */}
+                <div className="mb-6 flex flex-col gap-3 border-b border-slate-200/80 pb-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                        <h1 className="font-['Plus_Jakarta_Sans',sans-serif] text-2xl sm:text-[28px] font-black tracking-tight text-slate-900 leading-tight">
+                            My Tricycles
+                        </h1>
+                        <p className="mt-1 text-xs sm:text-sm text-slate-500 max-w-2xl leading-relaxed">
+                            {registered.length > 0
+                                ? `${registered.length} registered unit${registered.length !== 1 ? 's' : ''} • Franchise specs & live tracking connectivity`
+                                : 'Registered tricycle units linked to your approved franchise applications.'}
+                        </p>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2.5">
+                        <Link
+                            href={route('operator.mtop.create')}
+                            className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-xl bg-[#182B62] px-3.5 text-xs font-bold text-white shadow-2xs hover:bg-[#25449B] transition-colors font-['Plus_Jakarta_Sans',sans-serif]"
+                        >
+                            <span>Register New Unit</span>
+                        </Link>
+                    </div>
+                </div>
+
+                {/* ══════════════════════════════════════════════════════════════
+                    2. COMPACT OPERATIONAL KPI DECK
+                   ══════════════════════════════════════════════════════════════ */}
+                <div className="mb-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4 items-stretch">
+                    {/* ─ Card 1: Total Fleet ─ */}
+                    <div className={`flex flex-col justify-between rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-4 sm:p-5 lg:p-6 ${CARD_SHADOW} transition-all hover:border-slate-300 hover:shadow-[0_4px_6px_-1px_rgba(15,23,42,0.06),0_12px_28px_-8px_rgba(15,23,42,0.14)]`}>
+                        <div>
+                            <div className="flex items-center justify-between border-b border-slate-100 pb-2 sm:pb-2.5">
+                                <span className="font-['Plus_Jakarta_Sans',sans-serif] text-[10px] sm:text-[10.5px] font-bold uppercase tracking-wider text-slate-400">
+                                    Total Fleet
+                                </span>
+                                <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-xl bg-indigo-50 border border-indigo-100 text-[#182B62]">
+                                    <Bike size={15} strokeWidth={2.2} />
+                                </div>
+                            </div>
+                            <div className="mt-2 sm:mt-2.5 flex items-baseline gap-1.5 sm:gap-2">
+                                <span className="font-['Plus_Jakarta_Sans',sans-serif] text-xl sm:text-2xl lg:text-3xl font-black tracking-tight tabular-nums text-slate-900 leading-none">
+                                    {totalCount}
+                                </span>
+                                <span className="font-['Plus_Jakarta_Sans',sans-serif] text-[9.5px] sm:text-[10.5px] font-extrabold uppercase tracking-wider text-slate-400">
+                                    Units
+                                </span>
+                            </div>
+                            <p className="mt-1 text-[10px] sm:text-[11px] font-medium text-slate-500 font-['Plus_Jakarta_Sans',sans-serif] line-clamp-1">
+                                Tricycle units linked to account
+                            </p>
+                        </div>
+
+                        <div className="mt-3 rounded-xl bg-slate-50 border border-slate-100/90 px-2.5 py-1.5 sm:p-2.5 flex items-center justify-between text-[10.5px] sm:text-xs">
+                            <span className="font-['Plus_Jakarta_Sans',sans-serif] font-semibold text-slate-500 truncate">Registered:</span>
+                            <span className="font-['Plus_Jakarta_Sans',sans-serif] font-bold text-slate-900 tabular-nums shrink-0">{registered.length} of {totalCount}</span>
+                        </div>
+                    </div>
+
+                    {/* ─ Card 2: Active Franchises ─ */}
+                    <div className={`flex flex-col justify-between rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-4 sm:p-5 lg:p-6 ${CARD_SHADOW} transition-all hover:border-slate-300 hover:shadow-[0_4px_6px_-1px_rgba(15,23,42,0.06),0_12px_28px_-8px_rgba(15,23,42,0.14)]`}>
+                        <div>
+                            <div className="flex items-center justify-between border-b border-slate-100 pb-2 sm:pb-2.5">
+                                <span className="font-['Plus_Jakarta_Sans',sans-serif] text-[10px] sm:text-[10.5px] font-bold uppercase tracking-wider text-slate-400">
+                                    Active Franchises
+                                </span>
+                                <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-xl bg-emerald-50 border border-emerald-100 text-emerald-600">
+                                    <ShieldCheck size={15} strokeWidth={2.2} />
+                                </div>
+                            </div>
+                            <div className="mt-2 sm:mt-2.5 flex items-baseline gap-1.5 sm:gap-2">
+                                <span className="font-['Plus_Jakarta_Sans',sans-serif] text-xl sm:text-2xl lg:text-3xl font-black tracking-tight tabular-nums text-emerald-600 leading-none">
+                                    {activeCount}
+                                </span>
+                                <span className="font-['Plus_Jakarta_Sans',sans-serif] text-[9.5px] sm:text-[10.5px] font-extrabold uppercase tracking-wider text-slate-400">
+                                    Valid
+                                </span>
+                            </div>
+                            <p className="mt-1 text-[10px] sm:text-[11px] font-medium text-slate-500 font-['Plus_Jakarta_Sans',sans-serif] line-clamp-1">
+                                Permits currently in good standing
+                            </p>
+                        </div>
+
+                        <div className="mt-3 rounded-xl bg-slate-50 border border-slate-100/90 px-2.5 py-1.5 sm:p-2.5 flex items-center justify-between text-[10.5px] sm:text-xs">
+                            <span className="font-['Plus_Jakarta_Sans',sans-serif] font-semibold text-slate-500 truncate">Standing:</span>
+                            <span className="font-['Plus_Jakarta_Sans',sans-serif] font-bold text-slate-900 tabular-nums shrink-0">{activePct}% Valid</span>
+                        </div>
+                    </div>
+
+                    {/* ─ Card 3: In-Flight Units ─ */}
+                    <div className={`flex flex-col justify-between rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-4 sm:p-5 lg:p-6 ${CARD_SHADOW} transition-all hover:border-slate-300 hover:shadow-[0_4px_6px_-1px_rgba(15,23,42,0.06),0_12px_28px_-8px_rgba(15,23,42,0.14)]`}>
+                        <div>
+                            <div className="flex items-center justify-between border-b border-slate-100 pb-2 sm:pb-2.5">
+                                <span className="font-['Plus_Jakarta_Sans',sans-serif] text-[10px] sm:text-[10.5px] font-bold uppercase tracking-wider text-slate-400">
+                                    In-Flight Units
+                                </span>
+                                <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-xl bg-amber-50 border border-amber-100 text-amber-600">
+                                    <Clock size={15} strokeWidth={2.2} />
+                                </div>
+                            </div>
+                            <div className="mt-2 sm:mt-2.5 flex items-baseline gap-1.5 sm:gap-2">
+                                <span className="font-['Plus_Jakarta_Sans',sans-serif] text-xl sm:text-2xl lg:text-3xl font-black tracking-tight tabular-nums text-amber-600 leading-none">
+                                    {pendingCount}
+                                </span>
+                                <span className="font-['Plus_Jakarta_Sans',sans-serif] text-[9.5px] sm:text-[10.5px] font-extrabold uppercase tracking-wider text-slate-400">
+                                    Pending
+                                </span>
+                            </div>
+                            <p className="mt-1 text-[10px] sm:text-[11px] font-medium text-slate-500 font-['Plus_Jakarta_Sans',sans-serif] line-clamp-1">
+                                Applications moving through pipeline
+                            </p>
+                        </div>
+
+                        <div className="mt-3 rounded-xl bg-slate-50 border border-slate-100/90 px-2.5 py-1.5 sm:p-2.5 flex items-center justify-between text-[10.5px] sm:text-xs">
+                            <span className="font-['Plus_Jakarta_Sans',sans-serif] font-semibold text-slate-500 truncate">Queue:</span>
+                            <span className="font-['Plus_Jakarta_Sans',sans-serif] font-bold text-slate-800 tabular-nums shrink-0">{pendingCount} Processing</span>
+                        </div>
+                    </div>
+
+                    {/* ─ Card 4: GPS Telemetry ─ */}
+                    <div className={`flex flex-col justify-between rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-4 sm:p-5 lg:p-6 ${CARD_SHADOW} transition-all hover:border-slate-300 hover:shadow-[0_4px_6px_-1px_rgba(15,23,42,0.06),0_12px_28px_-8px_rgba(15,23,42,0.14)]`}>
+                        <div>
+                            <div className="flex items-center justify-between border-b border-slate-100 pb-2 sm:pb-2.5">
+                                <span className="font-['Plus_Jakarta_Sans',sans-serif] text-[10px] sm:text-[10.5px] font-bold uppercase tracking-wider text-slate-400">
+                                    GPS Telemetry
+                                </span>
+                                <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-xl bg-blue-50 border border-blue-100 text-[#182B62]">
+                                    <Satellite size={15} strokeWidth={2.2} />
+                                </div>
+                            </div>
+                            <div className="mt-2 sm:mt-2.5 flex items-baseline gap-1.5 sm:gap-2">
+                                <span className="font-['Plus_Jakarta_Sans',sans-serif] text-xl sm:text-2xl lg:text-3xl font-black tracking-tight tabular-nums text-slate-900 leading-none">
+                                    {onlineCount}
+                                </span>
+                                <span className="font-['Plus_Jakarta_Sans',sans-serif] text-[9.5px] sm:text-[10.5px] font-extrabold uppercase tracking-wider text-slate-400">
+                                    Online
+                                </span>
+                            </div>
+                            <p className="mt-1 text-[10px] sm:text-[11px] font-medium text-slate-500 font-['Plus_Jakarta_Sans',sans-serif] line-clamp-1">
+                                Reporting live location telemetry
+                            </p>
+                        </div>
+
+                        <div className="mt-3 rounded-xl bg-slate-50 border border-slate-100/90 px-2.5 py-1.5 sm:p-2.5 flex items-center justify-between text-[10.5px] sm:text-xs">
+                            <span className="font-['Plus_Jakarta_Sans',sans-serif] font-semibold text-slate-500 truncate">Signal:</span>
+                            <span className="font-['Plus_Jakarta_Sans',sans-serif] font-bold text-slate-800 tabular-nums shrink-0">{onlineCount} of {registered.length} Live</span>
+                        </div>
+                    </div>
+                </div>
+
+                {/* ══════════════════════════════════════════════════════════════
+                    3. MULTI-DIMENSIONAL COMMAND & FILTER TOOLBAR
+                   ══════════════════════════════════════════════════════════════ */}
+                <div className={`mb-5 rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-3.5 sm:p-4 ${CARD_SHADOW}`}>
+                    <div className="flex flex-col lg:flex-row lg:items-center gap-2.5">
+                        {/* Primary Search Input */}
+                        <div className="relative flex-1 min-w-0">
+                            <Search
+                                size={14}
+                                strokeWidth={2.2}
+                                className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"
+                            />
+                            <input
+                                type="text"
+                                value={query}
+                                onChange={(e) => setQuery(e.target.value)}
+                                placeholder="Search by plate number, unit ID, make/model, or driver..."
+                                className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50/70 pl-10 pr-9 text-xs sm:text-sm font-medium text-slate-900 placeholder:text-slate-400 transition-colors focus:border-[#182B62] focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#182B62]"
+                            />
+                            {query && (
+                                <button
+                                    type="button"
+                                    onClick={() => setQuery('')}
+                                    className="absolute right-3 top-1/2 flex h-5 w-5 -translate-y-1/2 items-center justify-center rounded-full text-slate-400 hover:bg-slate-200 hover:text-slate-700"
+                                >
+                                    <X size={12} strokeWidth={2.5} />
+                                </button>
+                            )}
+                        </div>
+
+                        {/* Filter Controls Row */}
+                        <div className="grid grid-cols-1 sm:flex sm:items-center gap-2">
+                            <select
+                                value={fleetFilter}
+                                onChange={(e) => setFleetFilter(e.target.value)}
+                                aria-label="Filter by unit status"
+                                className="h-10 w-full sm:w-auto sm:min-w-[170px] rounded-xl border border-slate-200 bg-slate-50/70 pl-3 pr-8 text-xs font-bold text-slate-700 transition-colors focus:border-[#182B62] focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#182B62] cursor-pointer"
+                            >
+                                <option value="all">All Units ({totalCount})</option>
+                                <option value="registered">Registered ({registered.length})</option>
+                                <option value="active">Active Franchises ({activeCount})</option>
+                                {expiredCount > 0 && <option value="expired">Expired Franchises ({expiredCount})</option>}
+                                <option value="pending">Pending ({pendingCount})</option>
+                                <option value="online">Online GPS ({onlineCount})</option>
+                            </select>
+
+                            {(query || fleetFilter !== 'all') && (
+                                <button
+                                    type="button"
+                                    onClick={() => { setQuery(''); setFleetFilter('all'); }}
+                                    className="inline-flex h-10 items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50/70 px-3.5 text-xs font-bold text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-colors"
+                                >
+                                    <RotateCcw size={13} strokeWidth={2.2} />
+                                    <span>Reset</span>
+                                </button>
+                            )}
+                        </div>
+                    </div>
+                </div>
 
                 {/* ── Registered units: Driver → Application → Approved/Active Franchise ── */}
-                {registered.length === 0 ? (
+                {totalCount === 0 ? (
                     <div className={`rounded-2xl border border-dashed border-slate-300 bg-white ${CARD_SHADOW}`}>
                         <EmptyState
                             icon={Bike}
                             title="No registered tricycle"
                             description="You don't have an approved/active franchise unit linked to your account yet."
                             action={
-                                <Button as={Link} href={route('operator.mtop')} variant="primary">
+                                <Link
+                                    href={route('operator.mtop')}
+                                    className="inline-flex items-center justify-center rounded-xl bg-[#182B62] px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-[#25449B] transition-colors"
+                                >
                                     View Permit Status
-                                </Button>
+                                </Link>
+                            }
+                        />
+                    </div>
+                ) : filteredRegistered.length === 0 && filteredPending.length === 0 ? (
+                    <div className={`rounded-2xl border border-dashed border-slate-300 bg-white ${CARD_SHADOW}`}>
+                        <EmptyState
+                            icon={Bike}
+                            title="No units found"
+                            description="We couldn't find any tricycles or pending applications matching your search or filter."
+                            action={
+                                <button
+                                    type="button"
+                                    onClick={() => { setQuery(''); setFleetFilter('all'); }}
+                                    className="inline-flex items-center justify-center rounded-xl bg-[#182B62] px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-[#25449B] transition-colors"
+                                >
+                                    Clear Filters
+                                </button>
                             }
                         />
                     </div>
                 ) : (
                     <div className="space-y-8">
-                        {registered.map((tricycle, index) => (
+                        {filteredRegistered.map((tricycle, index) => (
                             <TricycleSection key={tricycle.db_id} tricycle={tricycle} index={index} />
                         ))}
                     </div>
                 )}
 
                 {/* ── Pending applications: real units, but NOT registered tricycles ── */}
-                {pending.length > 0 && (
+                {filteredPending.length > 0 && (
                     <div className="mt-10">
                         <p className="mb-1 text-[11px] font-bold uppercase tracking-wide text-amber-600">
-                            Pending Application — Not Yet Registered
+                            Pending Application — Not Yet Registered ({filteredPending.length})
                         </p>
                         <p className="mb-4 max-w-3xl text-[12.5px] leading-relaxed text-slate-500">
                             These units have applications still in progress — document review, physical inspection,
@@ -121,7 +388,7 @@ export default function MyTricycles({ tricycles = [], auth }) {
                             registered tricycles once TMO completes Final Confirmation for the application.
                         </p>
                         <div className="space-y-8">
-                            {pending.map((tricycle, index) => (
+                            {filteredPending.map((tricycle, index) => (
                                 <TricycleSection key={tricycle.db_id} tricycle={tricycle} index={index} pending />
                             ))}
                         </div>
@@ -153,11 +420,11 @@ function TricycleSection({ tricycle, index, pending = false }) {
                 Tricycle {index + 1}
             </p>
 
-            <div className={`overflow-hidden rounded-2xl border ${pending ? 'border-amber-200/80' : 'border-slate-200/70'} bg-white ${CARD_SHADOW}`}>
-                <div className="flex flex-col gap-4 border-b border-dashed border-slate-200 bg-slate-50 px-6 py-6 sm:flex-row sm:items-start sm:justify-between sm:px-8">
+            <div className={`overflow-hidden rounded-2xl sm:rounded-3xl border ${pending ? 'border-amber-200/90' : 'border-slate-200/80'} bg-white ${CARD_SHADOW}`}>
+                <div className="flex flex-col gap-4 border-b border-slate-100 bg-slate-50/70 px-6 py-5 sm:flex-row sm:items-start sm:justify-between sm:px-8">
                     <div className="flex items-start gap-4">
-                        <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#182B62]/[0.10] to-[#182B62]/[0.02] text-[#182B62]">
-                            <Bike size={28} strokeWidth={2.5} />
+                        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#182B62]/[0.08] text-[#182B62]">
+                            <Bike size={24} strokeWidth={2.4} />
                         </div>
                         <div>
                             <h2 className="text-xl font-bold leading-tight text-slate-900">{tricycle.plateNo}</h2>
@@ -178,7 +445,7 @@ function TricycleSection({ tricycle, index, pending = false }) {
                         {tricycle.isFinalized ? (
                             <>
                                 <div>
-                                    <h3 className="mb-3 text-sm font-bold text-slate-900">Tracking</h3>
+                                    <h3 className="mb-3 text-sm font-bold text-slate-900">Tracking Connectivity</h3>
 
                                     <TrackingCard tricycle={tricycle} status={tracking} />
 
@@ -190,7 +457,7 @@ function TricycleSection({ tricycle, index, pending = false }) {
                                     </p>
                                 </div>
 
-                                <div className="space-y-3 border-t border-dashed border-slate-200 pt-5">
+                                <div className="space-y-3 border-t border-slate-100 pt-5">
                                     <InfoTile icon={User} label="Tricycle Owner" value={tricycle.driver} />
                                     <InfoTile
                                         icon={Users}
@@ -216,24 +483,28 @@ function TricycleSection({ tricycle, index, pending = false }) {
                                     />
                                 </div>
 
-                                <div className="border-t border-dashed border-slate-200 pt-5">
-                                    <Button as={Link} href={route('operator.tracking', { unit: tricycle.db_id })} variant="primary" size="lg" icon={Navigation2} className="w-full">
+                                <div className="border-t border-slate-100 pt-5">
+                                    <Link
+                                        href={route('operator.tracking', { unit: tricycle.db_id })}
+                                        className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#182B62] px-4 py-3 text-xs font-bold text-white shadow-xs hover:bg-[#25449B] transition-colors"
+                                    >
+                                        <Navigation2 size={15} />
                                         Open Live GPS Tracking
-                                    </Button>
+                                    </Link>
                                 </div>
                             </>
                         ) : (
                             <>
                                 <div>
                                     <h3 className="mb-3 text-sm font-bold text-slate-900">Tracking</h3>
-                                    <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50/70 p-5 text-center">
+                                    <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/70 p-5 text-center">
                                         <p className="text-[13px] font-semibold text-slate-600">Not available yet</p>
                                         <p className="mt-1.5 text-[11px] leading-relaxed text-slate-400">
                                             Live tracking, color coding, and franchise details become available once TMO completes Final Confirmation for this unit.
                                         </p>
                                     </div>
                                 </div>
-                                <div className="space-y-3 border-t border-dashed border-slate-200 pt-5">
+                                <div className="space-y-3 border-t border-slate-100 pt-5">
                                     <InfoTile icon={User} label="Tricycle Owner" value={tricycle.driver} />
                                     <InfoTile
                                         icon={Users}

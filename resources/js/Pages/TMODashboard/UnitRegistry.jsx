@@ -4,24 +4,20 @@ import useBackgroundRefresh from '@/hooks/useBackgroundRefresh';
 import TrivoraLayout from '@/Layouts/TrivoraLayout';
 import {
     Bike, Phone, Search, X, ChevronRight, ChevronLeft,
-    MapPin, Calendar, RotateCcw, ShieldAlert, ShieldCheck, SlidersHorizontal,
+    Calendar, RotateCcw, ShieldAlert, ShieldCheck,
     FileSpreadsheet
 } from 'lucide-react';
 
 const WEEKDAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
-// Shared soft, layered shadow token — same elevation language used across the redesigned TMO
-// pages (Dashboard.jsx, Index.jsx) so this page reads as part of the same product.
+// Layered soft shadow matching Live Fleet Monitoring and Dashboard
 const CARD_SHADOW = 'shadow-[0_1px_2px_0_rgba(15,23,42,0.04),0_8px_24px_-8px_rgba(15,23,42,0.10)]';
 
 export default function TricycleRegistry({ initialUnits = [], activeCodingSchemes = [] }) {
     const units = initialUnits || [];
 
-    // Silent background refresh — a newly activated/suspended tricycle from another session
-    // should appear here without a manual reload. Search/filter/pagination state below is local
-    // React state, untouched by this prop refresh.
+    // Silent background refresh
     useBackgroundRefresh(['initialUnits']);
-
 
     // Filters state
     const [query, setQuery] = useState('');
@@ -74,7 +70,7 @@ export default function TricycleRegistry({ initialUnits = [], activeCodingScheme
             });
     }, [activeCodingSchemes, units]);
 
-    // Fast, immediate multi-dimensional filtering
+    // Multi-dimensional filtering
     const filtered = useMemo(() => {
         const q = query.trim().toLowerCase();
         return units.filter(u => {
@@ -84,6 +80,8 @@ export default function TricycleRegistry({ initialUnits = [], activeCodingScheme
                 (u.operator && String(u.operator).toLowerCase().includes(q)) ||
                 (u.id && String(u.id).toLowerCase().includes(q)) ||
                 (u.unit_code && String(u.unit_code).toLowerCase().includes(q)) ||
+                (u.franchise_number && String(u.franchise_number).toLowerCase().includes(q)) ||
+                (u.validity_term && String(u.validity_term).toLowerCase().includes(q)) ||
                 (u.contact && String(u.contact).toLowerCase().includes(q)) ||
                 (u.coding_day && String(u.coding_day).toLowerCase().includes(q)) ||
                 (u.coding_color && String(u.coding_color).toLowerCase().includes(q))
@@ -106,13 +104,8 @@ export default function TricycleRegistry({ initialUnits = [], activeCodingScheme
     const totalCount = units.length;
     const activeCount = units.filter(u => u.status === 'active').length;
     const suspendedCount = units.filter(u => u.status === 'suspended').length;
-    // A unit's franchise being revoked (App\Models\FranchiseScheme::STATUS_REVOKED) is overlaid
-    // onto this row's status server-side (DashboardController::registryListData) — takes
-    // precedence over the tricycle's own base status when the franchise itself is suspended/
-    // revoked.
     const revokedCount = units.filter(u => u.status === 'revoked').length;
     const activePct = totalCount > 0 ? Math.round((activeCount / totalCount) * 100) : 0;
-    const suspendedPct = totalCount > 0 ? Math.round((suspendedCount / totalCount) * 100) : 0;
 
     // Units restricted under today's ordinance
     const codedTodayCount = useMemo(() => {
@@ -142,25 +135,25 @@ export default function TricycleRegistry({ initialUnits = [], activeCodingScheme
             <Head title="Active Tricycle Registry | TRIVORA" />
 
             {/* ══════════════════════════════════════════════════════════════
-                1. CLEAN HEADER (Without redundant label or tags)
+                1. PAGE HEADER
                ══════════════════════════════════════════════════════════════ */}
-            <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-slate-200/80 pb-5">
+            <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-slate-200/80 pb-4">
                 <div>
-                    <h1 className="text-2xl sm:text-[28px] font-extrabold tracking-tight text-slate-900 leading-tight">
+                    <h1 className="font-['Plus_Jakarta_Sans',sans-serif] text-2xl sm:text-[28px] font-black tracking-tight text-slate-900 leading-tight">
                         Active Tricycle Registry
                     </h1>
                     <p className="mt-1 text-xs sm:text-sm text-slate-500 max-w-2xl leading-relaxed">
-                        Master record of all registered and operating tricycles in Nasugbu
+                        Official registry of registered tricycles operating in Nasugbu.
                     </p>
                 </div>
-                {/* Real server-side .xlsx export (DashboardController::exportRegistryExcel),
-                    same shared municipal styling as the Reports exports. */}
-                <div className="flex items-center gap-2">
+
+                <div className="flex items-center gap-2.5">
                     <a
                         href={route('tmo.registry.export-excel')}
-                        className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 shadow-2xs hover:bg-slate-50 hover:text-slate-900 transition-colors"
+                        className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 text-xs font-bold text-slate-700 shadow-2xs hover:bg-slate-50 hover:text-slate-900 transition-colors font-['Plus_Jakarta_Sans',sans-serif]"
                     >
-                        <FileSpreadsheet size={13} /> Export to Excel
+                        <FileSpreadsheet size={14} className="text-emerald-600" />
+                        <span>Export to Excel</span>
                     </a>
                 </div>
             </div>
@@ -168,152 +161,156 @@ export default function TricycleRegistry({ initialUnits = [], activeCodingScheme
             {/* ══════════════════════════════════════════════════════════════
                 2. COMPACT OPERATIONAL KPI DECK
                ══════════════════════════════════════════════════════════════ */}
-            <div className="mb-5 grid grid-cols-1 gap-3 sm:gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <div className="mb-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4 items-stretch">
 
-                {/* ─ Total Units (Franchised Fleet) ─ */}
-                <div className={`flex flex-col justify-between rounded-2xl border border-slate-200/70 bg-white p-4 sm:p-5 ${CARD_SHADOW}`}>
+                {/* ─ Card 1: Total Units ─ */}
+                <div className={`flex flex-col justify-between rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-4 sm:p-5 lg:p-6 ${CARD_SHADOW} transition-all`}>
                     <div>
-                        <div className="flex items-center justify-between">
-                            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                                Total Units
+                        <div className="flex items-center justify-between border-b border-slate-100 pb-2 sm:pb-2.5">
+                            <span className="font-['Plus_Jakarta_Sans',sans-serif] text-[10px] sm:text-[10.5px] font-bold uppercase tracking-wider text-slate-400">
+                                Total Registered
                             </span>
-                            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-[#182B62]/[0.10] to-[#182B62]/[0.02] text-[#182B62]">
-                                <Bike size={14} />
-                            </span>
+                            <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-xl bg-indigo-50 border border-indigo-100 text-[#182B62]">
+                                <Bike size={15} strokeWidth={2.2} />
+                            </div>
                         </div>
-                        <div className="mt-2 flex items-baseline gap-2">
-                            <span className="text-2xl sm:text-3xl font-extrabold tracking-tight tabular-nums text-slate-900">
+                        <div className="mt-2 sm:mt-2.5 flex items-baseline gap-1.5 sm:gap-2">
+                            <span className="font-['Plus_Jakarta_Sans',sans-serif] text-xl sm:text-2xl lg:text-3xl font-black tracking-tight tabular-nums text-slate-900 leading-none">
                                 {totalCount}
                             </span>
-                            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                                Units
+                            <span className="font-['Plus_Jakarta_Sans',sans-serif] text-[9.5px] sm:text-[10.5px] font-extrabold uppercase tracking-wider text-slate-400">
+                                Tricycles
                             </span>
                         </div>
-                        <p className="mt-1 text-[11px] text-slate-500">
-                            Franchised fleet in the registry
+                        <p className="mt-1 text-[10px] sm:text-[11px] font-medium text-slate-500 font-['Plus_Jakarta_Sans',sans-serif] line-clamp-1">
+                            Registered in municipal system
                         </p>
                     </div>
 
-                    <div className="mt-3 rounded-xl bg-slate-50 p-2.5 flex items-center justify-between text-xs">
-                        <span className="text-[11px] font-medium text-slate-500">Road-Ready:</span>
-                        <span className="font-bold text-slate-900 tabular-nums">{activePct}%</span>
+                    <div className="mt-3 rounded-xl bg-slate-50 border border-slate-100/90 px-2.5 py-1.5 sm:p-2.5 flex items-center justify-between text-[10.5px] sm:text-xs">
+                        <span className="font-['Plus_Jakarta_Sans',sans-serif] font-semibold text-slate-500 truncate">Allowed:</span>
+                        <span className="font-['Plus_Jakarta_Sans',sans-serif] font-bold text-slate-900 tabular-nums shrink-0">{activePct}%</span>
                     </div>
                 </div>
 
-                {/* ─ Active ─ */}
-                <div className={`flex flex-col justify-between rounded-2xl border border-slate-200/70 bg-white p-4 sm:p-5 ${CARD_SHADOW}`}>
+                {/* ─ Card 2: Active Fleet ─ */}
+                <div className={`flex flex-col justify-between rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-4 sm:p-5 lg:p-6 ${CARD_SHADOW} transition-all`}>
                     <div>
-                        <div className="flex items-center justify-between">
-                            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                                Active
+                        <div className="flex items-center justify-between border-b border-slate-100 pb-2 sm:pb-2.5">
+                            <span className="font-['Plus_Jakarta_Sans',sans-serif] text-[10px] sm:text-[10.5px] font-bold uppercase tracking-wider text-slate-400">
+                                Active Tricycles
                             </span>
-                            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-[#182B62]/[0.10] to-[#182B62]/[0.02] text-[#182B62]">
-                                <ShieldCheck size={14} />
-                            </span>
+                            <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-xl bg-emerald-50 border border-emerald-100 text-emerald-600">
+                                <ShieldCheck size={15} strokeWidth={2.2} />
+                            </div>
                         </div>
-                        <div className="mt-2 flex items-baseline gap-2">
-                            <span className="text-2xl sm:text-3xl font-extrabold tracking-tight tabular-nums text-emerald-600">
+                        <div className="mt-2 sm:mt-2.5 flex items-baseline gap-1.5 sm:gap-2">
+                            <span className="font-['Plus_Jakarta_Sans',sans-serif] text-xl sm:text-2xl lg:text-3xl font-black tracking-tight tabular-nums text-emerald-600 leading-none">
                                 {activeCount}
                             </span>
-                            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                            <span className="font-['Plus_Jakarta_Sans',sans-serif] text-[9.5px] sm:text-[10.5px] font-extrabold uppercase tracking-wider text-slate-400">
                                 Active
                             </span>
                         </div>
-                        <p className="mt-1 text-[11px] text-slate-500">
-                            {activeCount} of {totalCount} units cleared to operate
+                        <p className="mt-1 text-[10px] sm:text-[11px] font-medium text-slate-500 font-['Plus_Jakarta_Sans',sans-serif] line-clamp-1">
+                            {activeCount} of {totalCount} active and running
                         </p>
                     </div>
 
-                    <div className="mt-3 rounded-xl bg-slate-50 p-2.5 flex items-center justify-between text-xs">
-                        <span className="text-[11px] font-medium text-slate-500">Share of Fleet:</span>
-                        <span className="font-bold text-slate-900 tabular-nums">{activePct}%</span>
+                    <div className="mt-3 rounded-xl bg-slate-50 border border-slate-100/90 px-2.5 py-1.5 sm:p-2.5 flex items-center justify-between text-[10.5px] sm:text-xs">
+                        <span className="font-['Plus_Jakarta_Sans',sans-serif] font-semibold text-slate-500 truncate">Share:</span>
+                        <span className="font-['Plus_Jakarta_Sans',sans-serif] font-bold text-slate-900 tabular-nums shrink-0">{activePct}%</span>
                     </div>
                 </div>
 
-                {/* ─ Suspended ─ */}
-                <div className={`flex flex-col justify-between rounded-2xl border border-slate-200/70 bg-white p-4 sm:p-5 ${CARD_SHADOW}`}>
+                {/* ─ Card 3: Restricted Units ─ */}
+                <div className={`flex flex-col justify-between rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-4 sm:p-5 lg:p-6 ${CARD_SHADOW} transition-all`}>
                     <div>
-                        <div className="flex items-center justify-between">
-                            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                                Suspended
+                        <div className="flex items-center justify-between border-b border-slate-100 pb-2 sm:pb-2.5">
+                            <span className="font-['Plus_Jakarta_Sans',sans-serif] text-[10px] sm:text-[10.5px] font-bold uppercase tracking-wider text-slate-400">
+                                Suspended / Revoked
                             </span>
-                            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-[#182B62]/[0.10] to-[#182B62]/[0.02] text-[#182B62]">
-                                <ShieldAlert size={14} />
+                            <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-xl bg-amber-50 border border-amber-100 text-amber-600">
+                                <ShieldAlert size={15} strokeWidth={2.2} />
+                            </div>
+                        </div>
+                        <div className="mt-2 sm:mt-2.5 flex items-baseline gap-1.5 sm:gap-2">
+                            <span className="font-['Plus_Jakarta_Sans',sans-serif] text-xl sm:text-2xl lg:text-3xl font-black tracking-tight tabular-nums text-amber-600 leading-none">
+                                {suspendedCount + revokedCount}
+                            </span>
+                            <span className="font-['Plus_Jakarta_Sans',sans-serif] text-[9.5px] sm:text-[10.5px] font-extrabold uppercase tracking-wider text-slate-400">
+                                Restricted
                             </span>
                         </div>
-                        <div className="mt-2 flex items-baseline gap-2">
-                            <span className="text-2xl sm:text-3xl font-extrabold tracking-tight tabular-nums text-amber-600">
-                                {suspendedCount}
-                            </span>
-                            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                                Suspended
-                            </span>
-                        </div>
-                        <p className="mt-1 text-[11px] text-slate-500">
-                            Not cleared to operate
+                        <p className="mt-1 text-[10px] sm:text-[11px] font-medium text-slate-500 font-['Plus_Jakarta_Sans',sans-serif] line-clamp-1">
+                            Currently held or revoked
                         </p>
                     </div>
 
-                    <div className="mt-3 rounded-xl bg-slate-50 p-2.5 flex items-center justify-between text-xs">
-                        <span className="text-[11px] font-medium text-slate-500">Share of Fleet:</span>
-                        <span className="font-bold text-slate-900 tabular-nums">{suspendedPct}%</span>
+                    <div className="mt-3 rounded-xl bg-slate-50 border border-slate-100/90 px-2.5 py-1.5 sm:p-2.5 flex items-center justify-between text-[10.5px] sm:text-xs">
+                        <span className="font-['Plus_Jakarta_Sans',sans-serif] font-semibold text-slate-500 truncate">Held:</span>
+                        <span className="font-['Plus_Jakarta_Sans',sans-serif] font-bold text-slate-800 tabular-nums shrink-0">
+                            <span className="hidden sm:inline">{suspendedCount} Susp · {revokedCount} Rev</span>
+                            <span className="sm:hidden">{suspendedCount + revokedCount} total</span>
+                        </span>
                     </div>
                 </div>
 
-                {/* ─ Restricted Today (Ordinance Enforcement: today's color coding) ─ */}
-                <div className={`flex flex-col justify-between rounded-2xl border border-slate-200/70 bg-white p-4 sm:p-5 ${CARD_SHADOW}`}>
+                {/* ─ Card 4: Restricted Today (Color Coding) ─ */}
+                <div className={`flex flex-col justify-between rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-4 sm:p-5 lg:p-6 ${CARD_SHADOW} transition-all`}>
                     <div>
-                        <div className="flex items-center justify-between">
-                            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                        <div className="flex items-center justify-between border-b border-slate-100 pb-2 sm:pb-2.5">
+                            <span className="font-['Plus_Jakarta_Sans',sans-serif] text-[10px] sm:text-[10.5px] font-bold uppercase tracking-wider text-slate-400">
                                 Restricted Today
                             </span>
-                            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-[#182B62]/[0.10] to-[#182B62]/[0.02] text-[#182B62]">
-                                <Calendar size={14} />
-                            </span>
+                            <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-xl bg-blue-50 border border-blue-100 text-[#182B62]">
+                                <Calendar size={15} strokeWidth={2.2} />
+                            </div>
                         </div>
-                        <div className="mt-2 flex items-baseline gap-2">
-                            <span className="text-2xl sm:text-3xl font-extrabold tracking-tight tabular-nums text-slate-900">
+                        <div className="mt-2 sm:mt-2.5 flex items-baseline gap-1.5 sm:gap-2">
+                            <span className="font-['Plus_Jakarta_Sans',sans-serif] text-xl sm:text-2xl lg:text-3xl font-black tracking-tight tabular-nums text-slate-900 leading-none">
                                 {codedTodayCount}
                             </span>
-                            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                                Units
+                            <span className="font-['Plus_Jakarta_Sans',sans-serif] text-[9.5px] sm:text-[10.5px] font-extrabold uppercase tracking-wider text-slate-400">
+                                Coded
                             </span>
                         </div>
-                        <p className="mt-1 text-[11px] text-slate-500">
+                        <p className="mt-1 text-[10px] sm:text-[11px] font-medium text-slate-500 font-['Plus_Jakarta_Sans',sans-serif] line-clamp-1">
                             {!isWeekend && todayCodingRule ? (
-                                <>Restricted digits: <strong className="text-slate-800">{todayCodingRule.digits}</strong></>
+                                <>Digits: <strong className="font-black text-slate-900">{todayCodingRule.digits}</strong></>
                             ) : (
-                                <>Weekend rule: All schemes operating</>
+                                <>No restrictions today</>
                             )}
                         </p>
                     </div>
 
-                    <div className="mt-3 rounded-xl bg-slate-50 p-2.5 flex items-center justify-between text-xs">
-                        <span className="text-[11px] font-medium text-slate-500">{todayName}:</span>
+                    <div className="mt-3 rounded-xl bg-slate-50 border border-slate-100/90 px-2.5 py-1.5 sm:p-2.5 flex items-center justify-between text-[10.5px] sm:text-xs">
+                        <span className="font-['Plus_Jakarta_Sans',sans-serif] font-semibold text-slate-500 truncate">{todayName.slice(0, 3)}:</span>
                         {!isWeekend && todayCodingRule ? (
                             <span
-                                className="inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[11px] font-bold text-slate-800"
+                                className="inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[10px] sm:text-[11px] font-bold text-slate-800 font-['Plus_Jakarta_Sans',sans-serif]"
                                 style={{ backgroundColor: todayCodingRule.bg, borderColor: todayCodingRule.border, borderWidth: 1 }}
                             >
-                                <span className="h-2 w-2 rounded-full" style={{ backgroundColor: todayCodingRule.hex }} />
+                                <span className="h-2 w-2 rounded-full shrink-0" style={{ backgroundColor: todayCodingRule.hex }} />
                                 {todayCodingRule.color}
                             </span>
                         ) : (
-                            <span className="text-xs font-bold text-slate-800">No coding</span>
+                            <span className="font-['Plus_Jakarta_Sans',sans-serif] text-[10px] sm:text-xs font-bold text-slate-800 shrink-0">All allowed</span>
                         )}
                     </div>
                 </div>
             </div>
 
             {/* ══════════════════════════════════════════════════════════════
-                3. SAAS MULTI-DIMENSIONAL COMMAND & FILTER DECK
+                3. MULTI-DIMENSIONAL COMMAND & FILTER TOOLBAR
                ══════════════════════════════════════════════════════════════ */}
-            <div className={`mb-4 rounded-2xl border border-slate-200/70 bg-white p-3 sm:p-3.5 ${CARD_SHADOW}`}>
+            <div className={`mb-5 rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-3.5 sm:p-4 ${CARD_SHADOW}`}>
                 <div className="flex flex-col lg:flex-row lg:items-center gap-2.5">
+
                     {/* Primary Search Input */}
-                    <div className="relative flex-1 min-w-[220px]">
+                    <div className="relative flex-1 min-w-0">
                         <Search
-                            size={16}
+                            size={14}
                             strokeWidth={2.2}
                             className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"
                         />
@@ -324,8 +321,8 @@ export default function TricycleRegistry({ initialUnits = [], activeCodingScheme
                                 setQuery(e.target.value);
                                 setCurrentPage(1);
                             }}
-                            placeholder="Search by plate number, sticker number, or operator…"
-                            className="h-10 w-full rounded-lg border border-slate-200 bg-slate-50/50 pl-10 pr-9 text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 shadow-2xs transition-all focus:border-tmo-primary focus:bg-white focus:outline-none focus:ring-2 focus:ring-tmo-primary/10"
+                            placeholder="Search by plate number, sticker number, owner, or franchise..."
+                            className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50/70 pl-10 pr-9 text-xs sm:text-sm font-medium text-slate-900 placeholder:text-slate-400 transition-colors focus:border-[#182B62] focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#182B62]"
                         />
                         {query && (
                             <button
@@ -341,117 +338,117 @@ export default function TricycleRegistry({ initialUnits = [], activeCodingScheme
                         )}
                     </div>
 
-                    {/* Filter Controls Row / Grid */}
-                    <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2">
-                        {/* Fleet / Status Filter */}
-                        <div className="col-span-1">
-                            <select
-                                value={statusFilter}
-                                onChange={e => {
-                                    setStatusFilter(e.target.value);
-                                    setCurrentPage(1);
-                                }}
-                                className="h-10 w-full sm:w-40 rounded-lg border border-slate-200 bg-white px-3 pr-8 text-xs font-semibold text-slate-700 shadow-2xs transition-colors focus:border-tmo-primary focus:outline-none focus:ring-2 focus:ring-tmo-primary/10 cursor-pointer"
-                            >
-                                <option value="all">All Fleet — {totalCount}</option>
-                                <option value="active">Active — {activeCount}</option>
-                                <option value="suspended">Suspended — {suspendedCount}</option>
-                                <option value="revoked">Revoked — {revokedCount}</option>
-                            </select>
-                        </div>
+                    {/* Filter Controls Row */}
+                    <div className="grid grid-cols-2 sm:flex sm:items-center gap-2">
+
+                        {/* Status Filter */}
+                        <select
+                            value={statusFilter}
+                            onChange={e => {
+                                setStatusFilter(e.target.value);
+                                setCurrentPage(1);
+                            }}
+                            aria-label="Filter by status"
+                            className="h-10 w-full sm:w-auto sm:min-w-[135px] rounded-xl border border-slate-200 bg-slate-50/70 pl-3 pr-8 text-xs font-bold text-slate-700 transition-colors focus:border-[#182B62] focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#182B62] cursor-pointer"
+                        >
+                            <option value="all">All Status ({totalCount})</option>
+                            <option value="active">Active ({activeCount})</option>
+                            <option value="suspended">Suspended ({suspendedCount})</option>
+                            <option value="revoked">Revoked ({revokedCount})</option>
+                        </select>
 
                         {/* Color Coding Scheme Filter */}
-                        <div className="col-span-1">
-                            <select
-                                value={codingFilter}
-                                onChange={e => {
-                                    setCodingFilter(e.target.value);
-                                    setCurrentPage(1);
-                                }}
-                                className="h-10 w-full sm:w-40 rounded-lg border border-slate-200 bg-white px-3 pr-8 text-xs font-semibold text-slate-700 shadow-2xs transition-colors focus:border-tmo-primary focus:outline-none focus:ring-2 focus:ring-tmo-primary/10 cursor-pointer truncate"
-                            >
-                                <option value="all">All Schemes ({units.length})</option>
-                                {codingOptions.map(opt => (
-                                    <option key={opt.day} value={opt.color}>
-                                        {opt.color} — {opt.day.slice(0, 3)} ({opt.count})
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
+                        <select
+                            value={codingFilter}
+                            onChange={e => {
+                                setCodingFilter(e.target.value);
+                                setCurrentPage(1);
+                            }}
+                            aria-label="Filter by color coding scheme"
+                            className="h-10 w-full sm:w-auto sm:min-w-[140px] rounded-xl border border-slate-200 bg-slate-50/70 pl-3 pr-8 text-xs font-bold text-slate-700 transition-colors focus:border-[#182B62] focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#182B62] cursor-pointer truncate"
+                        >
+                            <option value="all">All Schemes ({units.length})</option>
+                            {codingOptions.map(opt => (
+                                <option key={opt.day} value={opt.color}>
+                                    {opt.color} — {opt.day.slice(0, 3)} ({opt.count})
+                                </option>
+                            ))}
+                        </select>
 
-                        {/* Quick Enforcement Filter: Coded Today */}
-                        <div className="col-span-1">
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    setOnlyCodedToday(prev => !prev);
-                                    setCurrentPage(1);
-                                }}
-                                className={`inline-flex h-10 w-full sm:w-auto items-center justify-center gap-1.5 rounded-lg border px-3 text-xs font-semibold shadow-2xs transition-all cursor-pointer ${
-                                    onlyCodedToday
-                                        ? 'border-rose-300 bg-rose-50 text-rose-800 ring-2 ring-rose-500/20 font-bold'
-                                        : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50'
-                                }`}
-                            >
-                                <ShieldAlert size={14} className={onlyCodedToday ? 'text-rose-600' : 'text-slate-400'} />
-                                <span>Coded Today</span>
-                                <span className={`rounded-full px-1.5 py-0.2 text-[10px] tabular-nums font-bold ${
-                                    onlyCodedToday ? 'bg-rose-600 text-white' : 'bg-slate-100 text-slate-600'
-                                }`}>
-                                    {codedTodayCount}
-                                </span>
-                            </button>
-                        </div>
+                        {/* Quick Toggle: Restricted Today */}
+                        <button
+                            type="button"
+                            onClick={() => {
+                                setOnlyCodedToday(prev => !prev);
+                                setCurrentPage(1);
+                            }}
+                            className={`col-span-2 sm:col-span-1 inline-flex h-10 w-full sm:w-auto shrink-0 items-center justify-center gap-1.5 rounded-xl border px-3 text-xs font-bold shadow-2xs transition-all cursor-pointer font-['Plus_Jakarta_Sans',sans-serif] ${
+                                onlyCodedToday
+                                    ? 'border-rose-300 bg-rose-50 text-rose-800 ring-2 ring-rose-500/20'
+                                    : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50'
+                            }`}
+                        >
+                            <ShieldAlert size={14} className={onlyCodedToday ? 'text-rose-600' : 'text-slate-400'} />
+                            <span>Coded Today</span>
+                            <span className={`rounded-md px-1.5 py-0.5 text-[10px] font-mono font-bold ${
+                                onlyCodedToday ? 'bg-rose-600 text-white' : 'bg-slate-100 text-slate-600'
+                            }`}>
+                                {codedTodayCount}
+                            </span>
+                        </button>
                     </div>
                 </div>
             </div>
 
             {/* ══════════════════════════════════════════════════════════════
-                4. DATA DISPLAY: TABLE WITH INTEGRATED FOOTER PAGINATION
+                4. DATA DISPLAY: TABLE & MOBILE CARDS
                ══════════════════════════════════════════════════════════════ */}
             {filtered.length === 0 ? (
-                <div className={`rounded-2xl border border-slate-200/70 bg-white p-12 text-center ${CARD_SHADOW}`}>
-                    <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 text-slate-400">
-                        <Bike size={24} strokeWidth={1.8} />
+                <div className={`rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-12 text-center ${CARD_SHADOW}`}>
+                    <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-400 border border-slate-200">
+                        <Bike size={22} strokeWidth={1.8} />
                     </div>
-                    <h3 className="mt-3.5 text-base font-bold text-slate-900">
+                    <h3 className="mt-3.5 font-['Plus_Jakarta_Sans',sans-serif] text-base font-black text-slate-900">
                         No matching tricycles found
                     </h3>
                     <p className="mx-auto mt-1 max-w-sm text-xs text-slate-500 leading-relaxed">
-                        No tricycle records match your selected filter criteria. Try adjusting or clearing filters.
+                        No tricycles match your selected criteria. Try adjusting your search or clearing your filters.
                     </p>
                     {isFiltering && (
                         <button
                             type="button"
                             onClick={handleClearAll}
-                            className="mt-4 inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3.5 py-1.5 text-xs font-semibold text-slate-800 shadow-sm hover:bg-slate-50"
+                            className="mt-4 inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-800 shadow-2xs hover:bg-slate-50 transition-colors"
                         >
                             <RotateCcw size={12} strokeWidth={2.2} />
-                            <span>Clear all filters</span>
+                            <span>Reset all filters</span>
                         </button>
                     )}
                 </div>
             ) : (
                 <>
-                    {/* ── DESKTOP & TABLET DATA TABLE WITH INTEGRATED FOOTER (md: 768px and up) ── */}
-                    <div className={`hidden md:block overflow-hidden rounded-2xl border border-slate-200/70 bg-white ${CARD_SHADOW}`}>
-                        <div className="overflow-x-auto">
-                            <table className="w-full text-left border-collapse">
+                    {/* ── DESKTOP & TABLET DATA TABLE WITH INTEGRATED FOOTER (>= md) ── */}
+                    <div className={`hidden md:block overflow-hidden rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white ${CARD_SHADOW}`}>
+                        <div className="overflow-x-auto custom-scrollbar">
+                            <table className="w-full min-w-[720px] text-left border-collapse">
                                 <thead>
-                                    <tr className="border-b border-slate-200 bg-slate-50/75">
-                                        <th scope="col" className="py-3 pl-5 pr-3 text-[11px] font-bold uppercase tracking-wider text-slate-500">
-                                            Tricycle Unit
+                                    <tr className="border-b border-slate-200/80 bg-slate-50/80">
+                                        <th scope="col" className="py-3.5 pl-6 pr-3 font-['Plus_Jakarta_Sans',sans-serif] text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                                            Tricycle
                                         </th>
-                                        <th scope="col" className="py-3 px-4 text-[11px] font-bold uppercase tracking-wider text-slate-500">
-                                            Operator &amp; Contact
+                                        <th scope="col" className="py-3.5 px-4 font-['Plus_Jakarta_Sans',sans-serif] text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                                            Tricycle Owner
                                         </th>
-                                        <th scope="col" className="py-3 px-4 text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                                        <th scope="col" className="py-3.5 px-4 font-['Plus_Jakarta_Sans',sans-serif] text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                                            Franchise
+                                        </th>
+                                        <th scope="col" className="py-3.5 px-4 font-['Plus_Jakarta_Sans',sans-serif] text-[11px] font-bold uppercase tracking-wider text-slate-400">
                                             Color Coding Scheme
                                         </th>
-                                        <th scope="col" className="py-3 px-4 text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                                        <th scope="col" className="py-3.5 px-4 font-['Plus_Jakarta_Sans',sans-serif] text-[11px] font-bold uppercase tracking-wider text-slate-400">
                                             Status
                                         </th>
-                                        <th scope="col" className="py-3 pl-3 pr-5 text-right text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                                        <th scope="col" className="py-3.5 pl-3 pr-6 text-right font-['Plus_Jakarta_Sans',sans-serif] text-[11px] font-bold uppercase tracking-wider text-slate-400">
                                             Action
                                         </th>
                                     </tr>
@@ -469,13 +466,13 @@ export default function TricycleRegistry({ initialUnits = [], activeCodingScheme
                             </table>
                         </div>
 
-                        {/* Integrated Table Footer: Pagination Visually Connected */}
-                        <div className="flex items-center justify-between border-t border-slate-200/80 bg-slate-50/60 px-5 py-3">
-                            <p className="text-xs text-slate-500">
-                                Page <span className="font-bold text-slate-800 tabular-nums">{activePage}</span> of{' '}
-                                <span className="font-bold text-slate-800 tabular-nums">{totalPages}</span>
+                        {/* Integrated Table Footer: Pagination */}
+                        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-slate-200/80 bg-slate-50/60 px-4 sm:px-6 py-3.5">
+                            <p className="text-xs text-slate-500 font-['Plus_Jakarta_Sans',sans-serif]">
+                                Showing page <span className="font-bold text-slate-900 tabular-nums">{activePage}</span> of{' '}
+                                <span className="font-bold text-slate-900 tabular-nums">{totalPages}</span>
                                 <span className="mx-2 text-slate-300">·</span>
-                                <span className="tabular-nums font-semibold text-slate-700">{filtered.length}</span> units
+                                <span className="tabular-nums font-bold text-slate-800">{filtered.length}</span> matching tricycles
                             </p>
 
                             <div className="flex items-center gap-1.5">
@@ -483,7 +480,7 @@ export default function TricycleRegistry({ initialUnits = [], activeCodingScheme
                                     type="button"
                                     disabled={activePage <= 1}
                                     onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                                    className="inline-flex h-8 items-center gap-1 rounded-md border border-slate-200 bg-white px-2.5 text-xs font-semibold text-slate-700 shadow-sm transition-colors hover:bg-slate-50 disabled:pointer-events-none disabled:opacity-40"
+                                    className="inline-flex h-8 items-center gap-1 rounded-xl border border-slate-200 bg-white px-3 text-xs font-bold text-slate-700 shadow-2xs transition-colors hover:bg-slate-50 disabled:pointer-events-none disabled:opacity-40 font-['Plus_Jakarta_Sans',sans-serif]"
                                 >
                                     <ChevronLeft size={13} strokeWidth={2.5} />
                                     <span>Prev</span>
@@ -503,14 +500,14 @@ export default function TricycleRegistry({ initialUnits = [], activeCodingScheme
                                             return (
                                                 <React.Fragment key={p}>
                                                     {hasGap && (
-                                                        <span className="px-0.5 text-xs text-slate-400">…</span>
+                                                        <span className="px-1 text-xs text-slate-400">…</span>
                                                     )}
                                                     <button
                                                         type="button"
                                                         onClick={() => setCurrentPage(p)}
-                                                        className={`flex h-8 w-8 items-center justify-center rounded-md text-xs font-bold transition-all ${
+                                                        className={`flex h-8 w-8 items-center justify-center rounded-xl text-xs font-bold transition-all font-['Plus_Jakarta_Sans',sans-serif] ${
                                                             activePage === p
-                                                                ? 'bg-tmo-primary text-white shadow-sm'
+                                                                ? 'bg-[#182B62] text-white shadow-2xs'
                                                                 : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
                                                         }`}
                                                     >
@@ -525,7 +522,7 @@ export default function TricycleRegistry({ initialUnits = [], activeCodingScheme
                                     type="button"
                                     disabled={activePage >= totalPages}
                                     onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                                    className="inline-flex h-8 items-center gap-1 rounded-md border border-slate-200 bg-white px-2.5 text-xs font-semibold text-slate-700 shadow-sm transition-colors hover:bg-slate-50 disabled:pointer-events-none disabled:opacity-40"
+                                    className="inline-flex h-8 items-center gap-1 rounded-xl border border-slate-200 bg-white px-3 text-xs font-bold text-slate-700 shadow-2xs transition-colors hover:bg-slate-50 disabled:pointer-events-none disabled:opacity-40 font-['Plus_Jakarta_Sans',sans-serif]"
                                 >
                                     <span>Next</span>
                                     <ChevronRight size={13} strokeWidth={2.5} />
@@ -534,8 +531,8 @@ export default function TricycleRegistry({ initialUnits = [], activeCodingScheme
                         </div>
                     </div>
 
-                    {/* ── MOBILE PURPOSE-BUILT CARDS (< md: 768px) ── */}
-                    <div className="flex flex-col gap-2.5 md:hidden">
+                    {/* ── MOBILE PURPOSE-BUILT CARDS (< md) ── */}
+                    <div className="flex flex-col gap-3 md:hidden">
                         {paginated.map(unit => (
                             <MobileUnitCard
                                 key={unit.id}
@@ -545,11 +542,11 @@ export default function TricycleRegistry({ initialUnits = [], activeCodingScheme
                             />
                         ))}
 
-                        {/* Mobile Pagination Connected at Bottom of List */}
-                        <div className={`mt-1 flex items-center justify-between rounded-2xl border border-slate-200/70 bg-white px-4 py-3 ${CARD_SHADOW}`}>
-                            <p className="text-xs text-slate-500">
-                                <span className="font-bold text-slate-800">{activePage}</span> of {totalPages}
-                                <span className="ml-1 text-[11px] text-slate-400">({filtered.length} units)</span>
+                        {/* Mobile Pagination */}
+                        <div className={`mt-1 flex items-center justify-between rounded-2xl border border-slate-200/80 bg-white px-4 py-3.5 ${CARD_SHADOW}`}>
+                            <p className="text-xs text-slate-500 font-['Plus_Jakarta_Sans',sans-serif]">
+                                Page <span className="font-bold text-slate-900">{activePage}</span> of {totalPages}
+                                <span className="ml-1 text-[11px] text-slate-400">({filtered.length} tricycles)</span>
                             </p>
 
                             <div className="flex items-center gap-1.5">
@@ -557,7 +554,7 @@ export default function TricycleRegistry({ initialUnits = [], activeCodingScheme
                                     type="button"
                                     disabled={activePage <= 1}
                                     onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                                    className="inline-flex h-8 items-center gap-1 rounded-md border border-slate-200 bg-white px-2.5 text-xs font-semibold text-slate-700 shadow-sm disabled:pointer-events-none disabled:opacity-40"
+                                    className="inline-flex h-8 items-center gap-1 rounded-xl border border-slate-200 bg-white px-3 text-xs font-bold text-slate-700 shadow-2xs disabled:pointer-events-none disabled:opacity-40"
                                 >
                                     <ChevronLeft size={13} strokeWidth={2.5} />
                                     <span>Prev</span>
@@ -566,7 +563,7 @@ export default function TricycleRegistry({ initialUnits = [], activeCodingScheme
                                     type="button"
                                     disabled={activePage >= totalPages}
                                     onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                                    className="inline-flex h-8 items-center gap-1 rounded-md border border-slate-200 bg-white px-2.5 text-xs font-semibold text-slate-700 shadow-sm disabled:pointer-events-none disabled:opacity-40"
+                                    className="inline-flex h-8 items-center gap-1 rounded-xl border border-slate-200 bg-white px-3 text-xs font-bold text-slate-700 shadow-2xs disabled:pointer-events-none disabled:opacity-40"
                                 >
                                     <span>Next</span>
                                     <ChevronRight size={13} strokeWidth={2.5} />
@@ -591,21 +588,19 @@ function getInitials(name) {
     return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 }
 
-// Semantic status treatment — same restrained success/warning/danger palette used on the
-// TricycleDetails page's driver status badge, so "Revoked" reads consistently across the panel.
 const STATUS_PILL_META = {
-    active:    { label: 'Active',    className: 'border border-emerald-200/90 bg-emerald-50 text-emerald-700' },
-    suspended: { label: 'Suspended', className: 'border border-amber-200/90 bg-amber-50 text-amber-800' },
-    revoked:   { label: 'Revoked',   className: 'border border-red-200/90 bg-red-50 text-red-700' },
+    active:    { label: 'Active',    className: 'border border-emerald-200/90 bg-emerald-50 text-emerald-700', dot: 'bg-emerald-500' },
+    suspended: { label: 'Suspended', className: 'border border-amber-200/90 bg-amber-50 text-amber-800', dot: 'bg-amber-500' },
+    revoked:   { label: 'Revoked',   className: 'border border-rose-200/90 bg-rose-50 text-rose-700', dot: 'bg-rose-500' },
 };
 
 function StatusPill({ status }) {
     const meta = STATUS_PILL_META[status] || STATUS_PILL_META.suspended;
     return (
         <span
-            className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold shadow-2xs transition-colors ${meta.className}`}
+            className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-bold shadow-2xs transition-colors font-['Plus_Jakarta_Sans',sans-serif] ${meta.className}`}
         >
-            {meta.label}
+            <span>{meta.label}</span>
         </span>
     );
 }
@@ -619,86 +614,97 @@ function DesktopTableRow({ unit, todayName, isWeekend }) {
     return (
         <tr className="group transition-colors hover:bg-slate-50/80">
             {/* Column 1: Tricycle Unit Plate & ID */}
-            <td className="py-3.5 pl-5 pr-3 align-middle">
+            <td className="py-4 pl-6 pr-3 align-middle">
                 <div className="flex flex-col">
-                    <span className="font-mono text-xs sm:text-[13px] font-bold tracking-wide text-slate-900">
-                        {unit.plate_no}
+                    <span className="font-mono text-xs sm:text-[13px] font-black tracking-wide text-slate-900 bg-slate-100 border border-slate-200/90 px-2 py-0.5 rounded-md w-fit shadow-2xs">
+                        {unit.plate_no || 'NO PLATE'}
                     </span>
-                    <span className="mt-0.5 font-mono text-[11px] text-slate-400">
+                    <span className="mt-1 font-mono text-[11px] font-semibold text-slate-400">
                         {unitCode}
                     </span>
                 </div>
             </td>
 
-            {/* Column 2: Operator & Contact */}
-            <td className="py-3.5 px-4 align-middle">
+            {/* Column 2: Owner & Contact */}
+            <td className="py-4 px-4 align-middle">
                 <div className="flex items-center gap-2.5">
-                    <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-100 text-[11px] font-bold text-slate-700">
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#182B62] to-[#25449B] text-[11px] font-black text-white shadow-2xs">
                         {initials}
                     </div>
                     <div className="min-w-0">
-                        <p className="truncate text-xs sm:text-[13px] font-semibold text-slate-900 group-hover:text-slate-950">
+                        <p className="truncate text-xs sm:text-[13px] font-bold text-slate-900 group-hover:text-[#182B62] transition-colors font-['Plus_Jakarta_Sans',sans-serif]">
                             {unit.operator}
                         </p>
                         {unit.contact && unit.contact !== 'N/A' ? (
                             <a
                                 href={`tel:${unit.contact}`}
-                                className="mt-0.5 inline-flex items-center gap-1 text-[11px] font-medium text-slate-500 hover:text-slate-800"
+                                className="mt-0.5 inline-flex items-center gap-1 text-[11px] font-medium text-slate-500 hover:text-[#182B62] transition-colors"
                             >
                                 <Phone size={10} strokeWidth={2.2} className="text-slate-400" />
-                                {unit.contact}
+                                <span>{unit.contact}</span>
                             </a>
                         ) : (
-                            <span className="text-[11px] text-slate-400">No contact</span>
+                            <span className="text-[11px] text-slate-400 font-medium">No contact</span>
                         )}
                     </div>
                 </div>
             </td>
 
+            {/* Column 3: Franchise (Franchise Number & Validity Term) */}
+            <td className="py-4 px-4 align-middle">
+                <div className="flex flex-col">
+                    <span className="font-mono text-xs sm:text-[13px] font-bold text-slate-900">
+                        {unit.franchise_number || '—'}
+                    </span>
+                    <span className="mt-1 font-mono text-[11px] text-slate-500 flex items-center gap-1">
+                        <Calendar size={11} className="text-slate-400 shrink-0" />
+                        <span>{unit.validity_term || '—'}</span>
+                    </span>
+                </div>
+            </td>
 
             {/* Column 4: Color Coding Scheme & Number */}
-            <td className="py-3.5 px-4 align-middle">
+            <td className="py-4 px-4 align-middle">
                 <div className="flex flex-col">
                     <div className="flex items-center gap-2">
-                        <span className="font-mono text-xs sm:text-[13px] font-bold text-slate-900">
+                        <span className="font-mono text-xs sm:text-[13px] font-black text-slate-900">
                             #{stickerNumber}
                         </span>
                         <span className="text-slate-300 text-xs">·</span>
                         <div className="inline-flex items-center gap-1.5 text-xs text-slate-800">
                             <span
-                                className="h-2 w-2 shrink-0 rounded-full ring-1 ring-black/10"
+                                className="h-2.5 w-2.5 shrink-0 rounded-full ring-1 ring-black/10"
                                 style={{ backgroundColor: unit.coding_hex || '#64748B' }}
                             />
-                            <span className="font-semibold text-slate-900">{unit.coding_color}</span>
+                            <span className="font-bold text-slate-900 font-['Plus_Jakarta_Sans',sans-serif]">{unit.coding_color}</span>
                         </div>
 
                         {isCodedToday && (
-                            <span className="inline-flex items-center rounded bg-rose-50 border border-rose-200/80 px-1.5 py-0.2 text-[10px] font-bold uppercase tracking-wider text-rose-700">
+                            <span className="inline-flex items-center rounded-md bg-rose-50 border border-rose-200/90 px-1.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wider text-rose-700 font-['Plus_Jakarta_Sans',sans-serif]">
                                 Coded
                             </span>
                         )}
                     </div>
 
-                    {/* Restricted Day label directly under #0142 · Red */}
-                    <span className="mt-0.5 text-[11px] text-slate-400">
-                        Restricted: <span className="font-medium text-slate-600">{unit.coding_day}</span>
+                    <span className="mt-1 text-[11px] text-slate-400">
+                        Restricted: <span className="font-semibold text-slate-600">{unit.coding_day}</span>
                     </span>
                 </div>
             </td>
 
-            {/* Column 5: Compliance Status (Badge like before) */}
-            <td className="py-3.5 px-4 align-middle">
+            {/* Column 4: Compliance Status */}
+            <td className="py-4 px-4 align-middle">
                 <StatusPill status={unit.status} />
             </td>
 
-            {/* Column 6: Actions (Styled button in #182B62 with rounded-full pill radius) */}
-            <td className="py-3.5 pl-3 pr-5 text-right align-middle">
+            {/* Column 5: Actions */}
+            <td className="py-4 pl-3 pr-6 text-right align-middle">
                 <Link
                     href={route('tricycle.details', unit.id)}
-                    className="inline-flex items-center gap-1 rounded-full bg-[#182B62] hover:bg-[#25449B] text-white px-3.5 py-1.5 text-xs font-semibold shadow-2xs transition-all active:scale-[0.98]"
+                    className="inline-flex items-center gap-1 rounded-xl bg-[#182B62] hover:bg-[#25449B] text-white px-3.5 py-1.5 text-xs font-bold shadow-2xs transition-all active:scale-[0.98] font-['Plus_Jakarta_Sans',sans-serif]"
                 >
-                    <span>Profile</span>
-                    <ChevronRight size={13} strokeWidth={2.5} className="text-slate-300" />
+                    <span>Details</span>
+                    <ChevronRight size={13} strokeWidth={2.5} className="text-white/70" />
                 </Link>
             </td>
         </tr>
@@ -712,72 +718,84 @@ function MobileUnitCard({ unit, todayName, isWeekend }) {
     const initials = getInitials(unit.operator);
 
     return (
-        <div className={`rounded-2xl border border-slate-200/70 bg-white p-3.5 ${CARD_SHADOW} transition-all hover:border-slate-300`}>
+        <div className={`rounded-2xl border border-slate-200/80 bg-white p-4 ${CARD_SHADOW} transition-all hover:border-slate-300`}>
             {/* Top Row: Vehicle Plate & Status */}
-            <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-2">
-                <div className="flex items-baseline gap-2">
-                    <span className="font-mono text-sm font-bold tracking-wide text-slate-900">
-                        {unit.plate_no}
+            <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-2.5">
+                <div className="flex items-center gap-2">
+                    <span className="font-mono text-xs font-black tracking-wide text-slate-900 bg-slate-100 border border-slate-200/90 px-2 py-0.5 rounded-md shadow-2xs">
+                        {unit.plate_no || 'NO PLATE'}
                     </span>
-                    <span className="font-mono text-xs text-slate-400">({unitCode})</span>
+                    <span className="font-mono text-xs font-semibold text-slate-400">({unitCode})</span>
                 </div>
 
                 <StatusPill status={unit.status} />
             </div>
 
-            {/* Operator Information */}
-            <div className="mt-2.5 flex items-center justify-between gap-2">
-                <div className="flex items-center gap-2 min-w-0">
-                    <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-slate-100 text-[10px] font-bold text-slate-700">
+            {/* Owner Information */}
+            <div className="mt-3 flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#182B62] to-[#25449B] text-[11px] font-black text-white shadow-2xs">
                         {initials}
                     </div>
-                    <p className="truncate text-xs font-semibold text-slate-900">{unit.operator}</p>
+                    <div className="min-w-0">
+                        <p className="truncate text-xs font-bold text-slate-900 font-['Plus_Jakarta_Sans',sans-serif]">{unit.operator}</p>
+                        {unit.contact && unit.contact !== 'N/A' ? (
+                            <a
+                                href={`tel:${unit.contact}`}
+                                className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-500 hover:text-[#182B62]"
+                            >
+                                <Phone size={10} strokeWidth={2.2} className="text-slate-400" />
+                                <span>{unit.contact}</span>
+                            </a>
+                        ) : (
+                            <span className="text-[11px] text-slate-400 font-medium">No contact</span>
+                        )}
+                    </div>
                 </div>
+            </div>
 
-                {unit.contact && unit.contact !== 'N/A' && (
-                    <a
-                        href={`tel:${unit.contact}`}
-                        className="inline-flex shrink-0 items-center gap-1 text-[11px] font-medium text-slate-500 hover:text-slate-800"
-                    >
-                        <Phone size={10} strokeWidth={2.2} className="text-slate-400" />
-                        <span>{unit.contact}</span>
-                    </a>
-                )}
+            {/* Franchise Metadata */}
+            <div className="mt-3 flex items-center justify-between gap-2 border-t border-slate-100 pt-2.5 text-xs">
+                <span className="text-[11px] font-semibold text-slate-400 font-['Plus_Jakarta_Sans',sans-serif]">Franchise</span>
+                <div className="flex flex-col items-end shrink-0">
+                    <span className="font-mono font-bold text-slate-900 text-xs">{unit.franchise_number || '—'}</span>
+                    <span className="text-[10px] text-slate-500 font-mono mt-0.5">{unit.validity_term || '—'}</span>
+                </div>
             </div>
 
             {/* Color Coding Metadata */}
-            <div className="mt-2.5 flex items-center justify-between gap-2 border-t border-slate-100 pt-2 text-xs">
-                <span className="text-[11px] font-medium text-slate-500">Color Scheme</span>
+            <div className="mt-3 flex items-center justify-between gap-2 border-t border-slate-100 pt-2.5 text-xs">
+                <span className="text-[11px] font-semibold text-slate-400 font-['Plus_Jakarta_Sans',sans-serif]">Color Scheme</span>
 
                 <div className="flex flex-col items-end shrink-0">
                     <div className="flex items-center gap-1.5 text-[11px]">
-                        <span className="font-mono font-bold text-slate-900">#{stickerNumber}</span>
+                        <span className="font-mono font-black text-slate-900">#{stickerNumber}</span>
                         <span className="text-slate-300">·</span>
                         <span
-                            className="h-2 w-2 rounded-full shrink-0 ring-1 ring-black/10"
+                            className="h-2.5 w-2.5 rounded-full shrink-0 ring-1 ring-black/10"
                             style={{ backgroundColor: unit.coding_hex || '#64748B' }}
                         />
-                        <span className="font-semibold text-slate-900">{unit.coding_color}</span>
+                        <span className="font-bold text-slate-900 font-['Plus_Jakarta_Sans',sans-serif]">{unit.coding_color}</span>
                         {isCodedToday && (
-                            <span className="rounded bg-rose-50 border border-rose-200/80 px-1 py-0.2 text-[9px] font-bold uppercase text-rose-700">
+                            <span className="rounded-md bg-rose-50 border border-rose-200/90 px-1.5 py-0.2 text-[9.5px] font-extrabold uppercase text-rose-700">
                                 Coded
                             </span>
                         )}
                     </div>
-                    <span className="text-[10px] text-slate-400">
-                        Restricted: <span className="font-medium text-slate-600">{unit.coding_day}</span>
+                    <span className="text-[10px] text-slate-400 mt-0.5">
+                        Restricted: <span className="font-semibold text-slate-600">{unit.coding_day}</span>
                     </span>
                 </div>
             </div>
 
-            {/* Action Button: #182B62 with rounded-full radius */}
-            <div className="mt-2.5 pt-2 border-t border-slate-100">
+            {/* Action Button */}
+            <div className="mt-3 pt-2.5 border-t border-slate-100">
                 <Link
                     href={route('tricycle.details', unit.id)}
-                    className="flex w-full items-center justify-center gap-1.5 rounded-full bg-[#182B62] hover:bg-[#25449B] text-white py-2 text-xs font-bold shadow-2xs transition-all active:scale-[0.98]"
+                    className="flex w-full items-center justify-center gap-1.5 rounded-xl bg-[#182B62] hover:bg-[#25449B] text-white py-2 text-xs font-bold shadow-2xs transition-all active:scale-[0.98] font-['Plus_Jakarta_Sans',sans-serif]"
                 >
-                    <span>View Profile</span>
-                    <ChevronRight size={13} strokeWidth={2.5} className="text-slate-300" />
+                    <span>View Details</span>
+                    <ChevronRight size={13} strokeWidth={2.5} className="text-white/70" />
                 </Link>
             </div>
         </div>

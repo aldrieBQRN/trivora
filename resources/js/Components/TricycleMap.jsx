@@ -5,31 +5,32 @@ import { Navigation, Maximize2, Minimize2, MapPin, Compass } from 'lucide-react'
 import 'leaflet/dist/leaflet.css';
 
 const createCustomIcon = (status, isOnline = true, connectionStatus = 'online') => {
-    let color, pulse, hasAnimation;
+    let pinColor, pulseBg, hasAnimation;
 
     if (connectionStatus === 'no_signal') {
-        // No signal: visible with static amber indicator
-        color = 'bg-amber-500';
-        pulse = '';
+        // No signal: visible with static amber pin
+        pinColor = '#F59E0B';
+        pulseBg = '';
         hasAnimation = false;
     } else if (!isOnline || status === 'offline' || connectionStatus === 'offline') {
-        color = 'bg-slate-400';
-        pulse = '';
+        // Offline: slate muted pin
+        pinColor = '#64748B';
+        pulseBg = '';
         hasAnimation = false;
     } else if (status === 'violator') {
         // Coding restriction breach / violator
-        color = 'bg-rose-600';
-        pulse = 'bg-rose-400';
+        pinColor = '#E11D48';
+        pulseBg = 'bg-rose-400';
         hasAnimation = true;
     } else if (status === 'coding_no_operation') {
-        // Active GPS unit subject to today's coding scheme
-        color = 'bg-amber-500';
-        pulse = 'bg-amber-400';
+        // Active GPS unit restricted today
+        pinColor = '#F59E0B';
+        pulseBg = 'bg-amber-400';
         hasAnimation = true;
     } else {
         // Compliant & active GPS unit
-        color = 'bg-emerald-500';
-        pulse = 'bg-emerald-400';
+        pinColor = '#10B981';
+        pulseBg = 'bg-emerald-400';
         hasAnimation = true;
     }
 
@@ -38,15 +39,17 @@ const createCustomIcon = (status, isOnline = true, connectionStatus = 'online') 
     return L.divIcon({
         className: 'custom-tricycle-marker',
         html: `
-            <div class="relative flex items-center justify-center cursor-pointer select-none" style="width: 45px; height: 30px;">
-                ${hasAnimation ? `<span class="animate-ping absolute inline-flex h-8 w-8 rounded-full ${pulse} opacity-60 pointer-events-none"></span>` : ''}
-                <img src="/images/tricycle-marker.webp" alt="Tricycle" class="relative z-10 pointer-events-none" style="width: 45px; height: 30px; object-fit: contain; ${isOffline ? 'filter: grayscale(100%) opacity(0.6);' : connectionStatus === 'no_signal' ? 'filter: saturate(80%) drop-shadow(0 2px 4px rgba(245,158,11,0.4));' : 'filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));'}" />
-                <span class="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full ${color} ring-2 ring-white z-20 pointer-events-none"></span>
+            <div class="relative flex items-center justify-center cursor-pointer select-none" style="width: 26px; height: 34px; ${isOffline ? 'opacity: 0.75;' : ''}">
+                ${hasAnimation ? `<span class="animate-ping absolute top-0.5 left-0.5 h-6 w-6 rounded-full ${pulseBg} opacity-50 pointer-events-none"></span>` : ''}
+                <svg width="26" height="34" viewBox="0 0 26 34" fill="none" xmlns="http://www.w3.org/2000/svg" class="relative z-10 drop-shadow-md">
+                    <path d="M13 0C5.82 0 0 5.82 0 13C0 22.75 13 34 13 34C13 34 26 22.75 26 13C26 5.82 20.18 0 13 0Z" fill="${pinColor}" stroke="#FFFFFF" stroke-width="1.5" />
+                    <circle cx="13" cy="12" r="4.5" fill="#FFFFFF" />
+                </svg>
             </div>
         `,
-        iconSize: [45, 30],
-        iconAnchor: [22.5, 15],
-        popupAnchor: [0, -18]
+        iconSize: [26, 34],
+        iconAnchor: [13, 34],
+        popupAnchor: [0, -34]
     });
 };
 
@@ -172,6 +175,7 @@ export default function TricycleMap({
 
     // Smooth fly to vehicle & open popup
     const trackTricycle = (tricycle) => {
+        if (!tricycle || !tricycle.lat || !tricycle.lng) return;
         setSelectedTricycle(tricycle);
         onSelectUnit(tricycle.db_id);
         setIsFollowing(true);
@@ -315,8 +319,8 @@ export default function TricycleMap({
                 />
 
                 {tricycles.map((trike) => {
-                    // Units with no GPS or with offline connection status are excluded from the active live map
-                    if (!trike.lat || !trike.lng || trike.connection_status === 'offline' || trike.connection_status === 'not_configured') {
+                    // Units with no GPS coordinates are excluded from the map canvas
+                    if (!trike.lat || !trike.lng || trike.connection_status === 'not_configured') {
                         return null;
                     }
 

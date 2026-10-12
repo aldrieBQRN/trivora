@@ -64,8 +64,9 @@ class ManualRideService
             throw new QrRideException('invalid_coordinates', 'The destination location is invalid.', 422);
         }
 
-        $farePerPassenger = FareService::perPassengerFare($route['distance_km'], $partySize);
-        $fareAmount = FareService::calculate($route['distance_km'], $partySize);
+        $fareConfig = FareService::getActiveFare();
+        $farePerPassenger = FareService::perPassengerFare($route['distance_km'], $partySize, $fareConfig);
+        $fareAmount = FareService::calculate($route['distance_km'], $partySize, $fareConfig);
         $expiresAt = now()->addSeconds(self::QUOTE_TTL_SECONDS);
 
         $payload = [
@@ -112,12 +113,13 @@ class ManualRideService
      *
      * @return array{0: Booking, 1: bool} [booking, created]
      */
-    public function add(User $user, string $signedQuote, string $paymentMethod = 'cash'): array
+    public function add(User $user, string $signedQuote, string $passengerName, string $paymentMethod = 'cash'): array
     {
         $driver = $this->driverFor($user);
         $quote = $this->decodeQuote($signedQuote, $driver);
+        $passengerName = trim($passengerName);
 
-        return DB::transaction(function () use ($user, $driver, $quote, $paymentMethod) {
+        return DB::transaction(function () use ($user, $driver, $quote, $passengerName, $paymentMethod) {
             // Lock order shared with QR joins: tricycle -> session -> booking/driver.
             $tricycle = Tricycle::whereKey($quote['tricycle_id'])->lockForUpdate()->first();
             $driver = $driver->fresh();
@@ -157,6 +159,7 @@ class ManualRideService
                 'dropoff_name' => $quote['dropoff_name'],
                 'dropoff_lat' => $quote['dropoff_lat'],
                 'dropoff_lng' => $quote['dropoff_lng'],
+                'walk_in_name' => $passengerName,
                 'passenger_count' => $quote['party_size'],
                 'fare_per_passenger' => $quote['fare_per_passenger'],
                 'fare_amount' => $quote['fare_amount'],
@@ -177,6 +180,7 @@ class ManualRideService
                 'quote_id' => $quote['quote_id'] ?? null,
                 'session_code' => $session->session_code,
                 'party_size' => $booking->passenger_count,
+                'passenger_name' => $booking->walk_in_name,
                 'distance_km' => $booking->distance_km,
                 'distance_source' => $booking->distance_source,
                 'fare_amount' => $booking->fare_amount,
@@ -477,6 +481,7 @@ class ManualRideService
         return [
             'booking_code' => $booking->booking_code,
             'status' => $booking->status,
+            'passenger_name' => $booking->walk_in_name,
             'party_size' => $booking->passenger_count,
             'pickup' => ['name' => $booking->pickup_name, 'lat' => $booking->pickup_lat, 'lng' => $booking->pickup_lng],
             'dropoff' => ['name' => $booking->dropoff_name, 'lat' => $booking->dropoff_lat, 'lng' => $booking->dropoff_lng],

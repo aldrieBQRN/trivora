@@ -35,6 +35,7 @@ class ApplicationController extends Controller
                     'reference'        => $app->reference_number,
                     'application_type' => $app->application_type,
                     'operator'         => $app->operator ? $app->operator->full_name : 'N/A',
+                    'contact'          => $app->operator?->contact_number ?: 'N/A',
                     'submitted_at'     => $app->submitted_at ? $app->submitted_at->diffForHumans() : 'N/A',
                     'submitted_date'   => $app->submitted_at ? $app->submitted_at->format('F j, Y · g:i A') : 'N/A',
                     'docs_count'       => $app->documents->count(),

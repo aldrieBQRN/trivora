@@ -2,11 +2,13 @@ import React from 'react';
 import { Head, router } from '@inertiajs/react';
 import useBackgroundRefresh from '@/hooks/useBackgroundRefresh';
 import TrivoraLayout from '@/Layouts/TrivoraLayout';
-import { PageHeader, DateRangeFilter } from '@/Components/TMO';
+import { DateRangeFilter } from '@/Components/TMO';
 import { ShieldAlert, FileText, Bike, FileSpreadsheet } from 'lucide-react';
 import ViolationsTab from './ViolationsTab';
 import ApplicationsTab from './ApplicationsTab';
 import FleetTab from './FleetTab';
+
+const CARD_SHADOW = 'shadow-[0_1px_2px_0_rgba(15,23,42,0.04),0_8px_24px_-8px_rgba(15,23,42,0.10)]';
 
 const TABS = [
     { value: 'violations',   label: 'Violations & Compliance',   icon: ShieldAlert },
@@ -15,15 +17,10 @@ const TABS = [
 ];
 
 /**
- * TMO Reports & Analytics — one report per tab (Violations / Franchise Applications /
- * Fleet & Registry), switched the same way as the BPLO Reports page: the active tab's
- * data is the only thing computed server-side, so the officer reviews one report at a
- * time instead of scrolling a single long page.
+ * TMO Reports & Analytics — historical trends and municipal operations analytics
+ * with responsive layout, Plus Jakarta Sans typography, and clean municipal phrasing.
  */
 export default function ReportsIndex({ tab, from, to, filters, reportData }) {
-    // Background refresh of the summary/counters only. The active tab, date range and filters are
-    // all read from the URL, which a partial reload re-reads unchanged, so the selected view never
-    // shifts under the user; the detailed Excel exports stay on their own routes.
     useBackgroundRefresh(['reportData']);
 
     const visit = (params) => {
@@ -36,8 +33,6 @@ export default function ReportsIndex({ tab, from, to, filters, reportData }) {
 
     const handleTabChange = (nextTab) => {
         if (nextTab === tab) return;
-        // Filters are tab-specific — don't carry a violations-only or fleet-only filter
-        // into another report's tab.
         router.get(route('tmo.reports'), { tab: nextTab, from, to }, {
             preserveState: true,
             preserveScroll: true,
@@ -53,8 +48,6 @@ export default function ReportsIndex({ tab, from, to, filters, reportData }) {
         visit({ [key]: value || undefined });
     };
 
-    // The export button lives in the shared toolbar row above the tab content, so its
-    // URL follows the active tab (each report has its own Excel export route).
     const exportUrl =
         tab === 'applications'
             ? route('tmo.reports.export-applications-excel', { from, to, ...filters })
@@ -66,55 +59,70 @@ export default function ReportsIndex({ tab, from, to, filters, reportData }) {
         <TrivoraLayout title="Reports & Analytics" role="TMO Officer">
             <Head title="Reports & Analytics | TRIVORA" />
 
-            <PageHeader
-                title="Reports & Analytics"
-                subtitle="Historical trends and municipal operations analytics."
-            />
-
-            {/* One connected panel: tab strip, filter toolbar, and the active report all share
-                a single bordered shell instead of a floating pill bar sitting above a separate
-                card. The active tab's white fill + primary underline is what visually ties it
-                into the content beneath — no gap, no second card boundary to cross. */}
-            <div className="overflow-hidden rounded-2xl border border-tmo-border bg-white shadow-sm">
-                <div className="flex items-stretch overflow-x-auto bg-tmo-bg/70 print:hidden">
-                    {TABS.map((t) => {
-                        const Icon = t.icon;
-                        const active = t.value === tab;
-                        return (
-                            <button
-                                key={t.value}
-                                type="button"
-                                onClick={() => handleTabChange(t.value)}
-                                aria-current={active ? 'page' : undefined}
-                                className={`flex h-12 shrink-0 items-center gap-2 border-b-2 px-4 text-sm font-semibold transition-colors sm:px-5 ${
-                                    active
-                                        ? 'border-tmo-primary bg-white text-tmo-primary'
-                                        : 'border-transparent text-tmo-muted hover:bg-white/60 hover:text-tmo-ink'
-                                }`}
-                            >
-                                <Icon size={15} strokeWidth={2.2} />
-                                <span className="whitespace-nowrap">{t.label}</span>
-                            </button>
-                        );
-                    })}
+            {/* ══════════════════════════════════════════════════════════════
+                1. HEADER (Consistent with Registry & Violations)
+               ══════════════════════════════════════════════════════════════ */}
+            <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-slate-200/80 pb-4">
+                <div>
+                    <h1 className="font-['Plus_Jakarta_Sans',sans-serif] text-2xl sm:text-[28px] font-black tracking-tight text-slate-900 leading-tight">
+                        Reports &amp; Analytics
+                    </h1>
+                    <p className="mt-1 text-xs sm:text-sm text-slate-500 max-w-2xl leading-relaxed font-['Plus_Jakarta_Sans',sans-serif]">
+                        Official municipal intelligence, color coding enforcement trends, and tricycle franchise records in Nasugbu.
+                    </p>
                 </div>
+                <div className="flex items-center gap-2">
+                    <a
+                        href={exportUrl}
+                        className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 text-xs font-bold text-slate-700 shadow-2xs hover:bg-slate-50 hover:text-slate-900 transition-colors font-['Plus_Jakarta_Sans',sans-serif]"
+                    >
+                        <FileSpreadsheet size={14} className="text-emerald-600" />
+                        <span>Export to Excel</span>
+                    </a>
+                </div>
+            </div>
 
-                {/* Filter toolbar — Status (or the tab's equivalent filter) | Quick Range | From
-                    | To | Export, all in one compact row that wraps on narrow screens instead of
-                    stacking into tall separate blocks. A hairline separates it from the report
-                    below so the panel reads as controls-then-content, not one undifferentiated
-                    block. */}
-                <div className="flex flex-col gap-3 border-b border-tmo-border px-4 py-3.5 print:hidden sm:flex-row sm:items-center sm:justify-between sm:px-6">
-                    <div className="flex flex-wrap items-center gap-2.5">
+            {/* ══════════════════════════════════════════════════════════════
+                2. SEGMENTED REPORT TABS
+               ══════════════════════════════════════════════════════════════ */}
+            <div className="mb-5 flex items-center gap-1.5 overflow-x-auto p-1.5 bg-slate-100/80 rounded-2xl border border-slate-200/80 custom-scrollbar print:hidden">
+                {TABS.map((t) => {
+                    const Icon = t.icon;
+                    const active = t.value === tab;
+                    return (
+                        <button
+                            key={t.value}
+                            type="button"
+                            onClick={() => handleTabChange(t.value)}
+                            aria-current={active ? 'page' : undefined}
+                            className={`flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs sm:text-sm font-bold transition-all shrink-0 font-['Plus_Jakarta_Sans',sans-serif] ${
+                                active
+                                    ? 'bg-[#182B62] text-white shadow-2xs'
+                                    : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
+                            }`}
+                        >
+                            <Icon size={15} strokeWidth={2.2} />
+                            <span>{t.label}</span>
+                        </button>
+                    );
+                })}
+            </div>
+
+            {/* ══════════════════════════════════════════════════════════════
+                3. FILTER TOOLBAR CARD
+               ══════════════════════════════════════════════════════════════ */}
+            <div className={`mb-6 rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-3.5 sm:p-4 ${CARD_SHADOW} print:hidden`}>
+                <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+                    <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-2.5 font-['Plus_Jakarta_Sans',sans-serif]">
                         {tab === 'violations' && (
                             <select
                                 value={filters.violation_status || ''}
                                 onChange={(e) => handleFilterChange('violation_status', e.target.value)}
-                                className="h-9 w-full shrink-0 rounded-lg border border-tmo-borderStrong bg-white px-2.5 text-xs font-semibold text-tmo-ink focus:border-tmo-primary focus:outline-none focus:ring-2 focus:ring-tmo-primary/15 sm:w-40"
+                                className="h-10 w-full sm:w-auto rounded-xl border border-slate-200 bg-slate-50/70 pl-3 pr-8 text-xs font-bold text-slate-700 transition-colors focus:border-[#182B62] focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#182B62] cursor-pointer"
                             >
-                                <option value="">All Statuses</option>
-                                <option value="pending">Pending</option>
-                                <option value="settled">Settled/Paid</option>
+                                <option value="">All Settlement Statuses</option>
+                                <option value="pending">Pending Payment</option>
+                                <option value="settled">Settled / Paid</option>
                             </select>
                         )}
 
@@ -122,11 +130,11 @@ export default function ReportsIndex({ tab, from, to, filters, reportData }) {
                             <select
                                 value={filters.application_type || ''}
                                 onChange={(e) => handleFilterChange('application_type', e.target.value)}
-                                className="h-9 w-full shrink-0 rounded-lg border border-tmo-borderStrong bg-white px-2.5 text-xs font-semibold text-tmo-ink focus:border-tmo-primary focus:outline-none focus:ring-2 focus:ring-tmo-primary/15 sm:w-44"
+                                className="h-10 w-full sm:w-auto rounded-xl border border-slate-200 bg-slate-50/70 pl-3 pr-8 text-xs font-bold text-slate-700 transition-colors focus:border-[#182B62] focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#182B62] cursor-pointer"
                             >
-                                <option value="">New &amp; Renewal</option>
-                                <option value="new">New Franchise</option>
-                                <option value="renewal">Renewal</option>
+                                <option value="">All Application Types</option>
+                                <option value="new">First-Time Franchise</option>
+                                <option value="renewal">Franchise Renewal</option>
                             </select>
                         )}
 
@@ -134,10 +142,10 @@ export default function ReportsIndex({ tab, from, to, filters, reportData }) {
                             <select
                                 value={filters.tricycle_status || ''}
                                 onChange={(e) => handleFilterChange('tricycle_status', e.target.value)}
-                                className="h-9 w-full shrink-0 rounded-lg border border-tmo-borderStrong bg-white px-2.5 text-xs font-semibold text-tmo-ink focus:border-tmo-primary focus:outline-none focus:ring-2 focus:ring-tmo-primary/15 sm:w-40"
+                                className="h-10 w-full sm:w-auto rounded-xl border border-slate-200 bg-slate-50/70 pl-3 pr-8 text-xs font-bold text-slate-700 transition-colors focus:border-[#182B62] focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#182B62] cursor-pointer"
                             >
-                                <option value="">All Statuses</option>
-                                <option value="active">Active</option>
+                                <option value="">All Fleet Statuses</option>
+                                <option value="active">Active Franchise</option>
                                 <option value="suspended">Suspended</option>
                                 <option value="revoked">Revoked</option>
                                 <option value="unregistered">Unregistered</option>
@@ -147,36 +155,43 @@ export default function ReportsIndex({ tab, from, to, filters, reportData }) {
                         <DateRangeFilter from={from} to={to} onChange={handleDateChange} />
                     </div>
 
-                    <a
-                        href={exportUrl}
-                        className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-lg border border-tmo-borderStrong bg-white px-3 text-xs font-semibold text-tmo-ink hover:bg-tmo-bg"
-                    >
-                        <FileSpreadsheet size={13} /> Export to Excel
-                    </a>
+                    <div className="flex items-center gap-2 self-start lg:self-auto shrink-0">
+                        <a
+                            href={exportUrl}
+                            className="inline-flex h-10 shrink-0 items-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50/70 px-3.5 text-xs font-bold text-slate-700 hover:bg-slate-100 hover:text-slate-900 transition-colors font-['Plus_Jakarta_Sans',sans-serif]"
+                        >
+                            <FileSpreadsheet size={14} className="text-emerald-600" />
+                            <span>Download Report Excel</span>
+                        </a>
+                    </div>
                 </div>
+            </div>
 
-                <div className="p-4 sm:p-6">
-                    {tab === 'violations' && (
-                        <ViolationsTab
-                            from={from}
-                            to={to}
-                            data={reportData.violations}
-                        />
-                    )}
+            {/* ══════════════════════════════════════════════════════════════
+                4. ACTIVE REPORT CONTENT
+               ══════════════════════════════════════════════════════════════ */}
+            <div>
+                {tab === 'violations' && (
+                    <ViolationsTab
+                        from={from}
+                        to={to}
+                        data={reportData.violations}
+                    />
+                )}
 
-                    {tab === 'applications' && (
-                        <ApplicationsTab
-                            from={from}
-                            to={to}
-                            data={reportData.applications}
-                        />
-                    )}
+                {tab === 'applications' && (
+                    <ApplicationsTab
+                        from={from}
+                        to={to}
+                        data={reportData.applications}
+                    />
+                )}
 
-                    {tab === 'fleet' && (
-                        <FleetTab from={from} to={to} data={reportData.fleet} />
-                    )}
-                </div>
+                {tab === 'fleet' && (
+                    <FleetTab from={from} to={to} data={reportData.fleet} />
+                )}
             </div>
         </TrivoraLayout>
     );
 }
+

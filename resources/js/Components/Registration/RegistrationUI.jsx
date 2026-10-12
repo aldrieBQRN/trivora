@@ -819,7 +819,7 @@ export const REGISTRATION_CSS = `
   border: 1px solid #E2E8F0;
   border-radius: 22px;
   padding: 32px 28px;
-  box-shadow: 0 1px 3px 0 rgba(0,0,0,0.04);
+  box-shadow: 0 1px 2px 0 rgba(15,23,42,0.04), 0 8px 24px -8px rgba(15,23,42,0.10);
 }
 @media (max-width: 640px) { .pa-panel { padding: 24px 16px; border-radius: 18px; } }
 .pa-panel-inner { width: 100%; }

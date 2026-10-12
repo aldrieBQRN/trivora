@@ -122,172 +122,166 @@ export default function Violations({ initialViolations = [], summaryStats = null
             {/* ══════════════════════════════════════════════════════════════
                 1. CLEAN HEADER (Consistent with Active Tricycle Registry)
                ══════════════════════════════════════════════════════════════ */}
-            <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-slate-200/80 pb-5">
+            <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-slate-200/80 pb-4">
                 <div>
-                    <h1 className="text-2xl sm:text-[28px] font-extrabold tracking-tight text-slate-900 leading-tight">
+                    <h1 className="font-['Plus_Jakarta_Sans',sans-serif] text-2xl sm:text-[28px] font-black tracking-tight text-slate-900 leading-tight">
                         Violation Records
                     </h1>
-                    <p className="mt-1 text-xs sm:text-sm text-slate-500 max-w-2xl leading-relaxed">
-                        Records of color coding violations, detections, and fines in Nasugbu
+                    <p className="mt-1 text-xs sm:text-sm text-slate-500 max-w-2xl leading-relaxed font-['Plus_Jakarta_Sans',sans-serif]">
+                        Official log of municipal color coding citations, appeals, and penalty settlements in Nasugbu.
                     </p>
                 </div>
-                {/* Real server-side .xlsx export (DashboardController::exportViolationRecordsExcel),
-                    same shared municipal styling as the Reports exports. */}
                 <div className="flex items-center gap-2">
                     <a
                         href={route('tmo.violations.export-excel')}
-                        className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 shadow-2xs hover:bg-slate-50 hover:text-slate-900 transition-colors"
+                        className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 text-xs font-bold text-slate-700 shadow-2xs hover:bg-slate-50 hover:text-slate-900 transition-colors font-['Plus_Jakarta_Sans',sans-serif]"
                     >
-                        <FileSpreadsheet size={13} /> Export to Excel
+                        <FileSpreadsheet size={14} className="text-emerald-600" />
+                        <span>Export to Excel</span>
                     </a>
                 </div>
             </div>
 
             {/* ══════════════════════════════════════════════════════════════
-                2. PREMIUM KPI CARD DECK (Live Fleet Monitoring style)
+                2. COMPACT OPERATIONAL KPI DECK (1 card per row on mobile)
                ══════════════════════════════════════════════════════════════ */}
-            <div className="mb-6 grid grid-cols-1 gap-3.5 sm:gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                {/* Card 1: Total Violations */}
-                <div className={`flex flex-col justify-between rounded-2xl border border-slate-200/70 bg-white p-4 sm:p-5 ${CARD_SHADOW}`}>
+            <div className="mb-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4 items-stretch">
+                {/* Card 1: Total Citations */}
+                <div className={`flex flex-col justify-between rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-4 sm:p-5 lg:p-6 ${CARD_SHADOW} transition-all hover:border-slate-300 hover:shadow-[0_4px_6px_-1px_rgba(15,23,42,0.06),0_12px_28px_-8px_rgba(15,23,42,0.14)]`}>
                     <div>
-                        <div className="flex items-center justify-between">
-                            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                                Total Violations
+                        <div className="flex items-center justify-between border-b border-slate-100 pb-2 sm:pb-2.5">
+                            <span className="font-['Plus_Jakarta_Sans',sans-serif] text-[10px] sm:text-[10.5px] font-bold uppercase tracking-wider text-slate-400">
+                                Total Citations
                             </span>
-                            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-[#182B62]/[0.10] to-[#182B62]/[0.02] text-[#182B62]">
-                                <ShieldAlert size={14} />
-                            </span>
+                            <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-xl bg-indigo-50 border border-indigo-100 text-[#182B62]">
+                                <ShieldAlert size={15} strokeWidth={2.2} />
+                            </div>
                         </div>
-                        <div className="mt-2 flex items-baseline gap-2">
-                            <span className="text-2xl sm:text-3xl font-extrabold tracking-tight tabular-nums text-[#182B62]">
+                        <div className="mt-2 sm:mt-2.5 flex items-baseline gap-1.5 sm:gap-2">
+                            <span className="font-['Plus_Jakarta_Sans',sans-serif] text-xl sm:text-2xl lg:text-3xl font-black tracking-tight tabular-nums text-slate-900 leading-none">
                                 {totalCount}
                             </span>
-                            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                                All-Time
+                            <span className="font-['Plus_Jakarta_Sans',sans-serif] text-[9.5px] sm:text-[10.5px] font-extrabold uppercase tracking-wider text-slate-400">
+                                Records
                             </span>
                         </div>
-                        <p className="mt-1 text-[11px] text-slate-500">
-                            Detected via GPS monitoring
+                        <p className="mt-1 text-[10px] sm:text-[11px] font-medium text-slate-500 font-['Plus_Jakarta_Sans',sans-serif] line-clamp-1">
+                            Recorded municipal citations
                         </p>
                     </div>
 
-                    <div className="mt-3 rounded-xl bg-slate-50 p-2.5 flex items-center justify-between text-xs">
-                        <span className="text-[11px] font-medium text-slate-500">Detection:</span>
-                        <span className="inline-flex items-center gap-1.5 font-bold text-slate-800 text-xs">
-                            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                            {detectionOptions.mobile_gps} Mobile GPS · {detectionOptions.iot_gps} IoT GPS
+                    <div className="mt-3 rounded-xl bg-slate-50 border border-slate-100/90 px-2.5 py-1.5 sm:p-2.5 flex items-center justify-between text-[10.5px] sm:text-xs">
+                        <span className="font-['Plus_Jakarta_Sans',sans-serif] font-semibold text-slate-400 shrink-0">Sources:</span>
+                        <span className="font-['Plus_Jakarta_Sans',sans-serif] font-bold text-slate-800 text-right truncate">
+                            {detectionOptions.mobile_gps} Mobile · {detectionOptions.iot_gps} Tracker
                         </span>
                     </div>
                 </div>
 
-                {/* Card 2: Unpaid Fines */}
-                <div className={`flex flex-col justify-between rounded-2xl border border-slate-200/70 bg-white p-4 sm:p-5 ${CARD_SHADOW}`}>
+                {/* Card 2: Unpaid Penalties */}
+                <div className={`flex flex-col justify-between rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-4 sm:p-5 lg:p-6 ${CARD_SHADOW} transition-all hover:border-slate-300 hover:shadow-[0_4px_6px_-1px_rgba(15,23,42,0.06),0_12px_28px_-8px_rgba(15,23,42,0.14)]`}>
                     <div>
-                        <div className="flex items-center justify-between">
-                            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                                Unpaid Fines
+                        <div className="flex items-center justify-between border-b border-slate-100 pb-2 sm:pb-2.5">
+                            <span className="font-['Plus_Jakarta_Sans',sans-serif] text-[10px] sm:text-[10.5px] font-bold uppercase tracking-wider text-slate-400">
+                                Unpaid Penalties
                             </span>
-                            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-amber-500/[0.14] to-amber-500/[0.02] text-amber-700">
-                                <AlertCircle size={14} />
-                            </span>
+                            <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-xl bg-amber-50 border border-amber-100 text-amber-600">
+                                <AlertCircle size={15} strokeWidth={2.2} />
+                            </div>
                         </div>
-                        <div className="mt-2 flex items-baseline gap-2">
-                            <span className="text-2xl sm:text-3xl font-extrabold tracking-tight tabular-nums text-slate-900">
+                        <div className="mt-2 sm:mt-2.5 flex items-baseline gap-1.5 sm:gap-2">
+                            <span className="font-['Plus_Jakarta_Sans',sans-serif] text-xl sm:text-2xl lg:text-3xl font-black tracking-tight tabular-nums text-amber-600 leading-none">
                                 ₱{stats.unsettled_fines_sum.toLocaleString('en-US', { minimumFractionDigits: 0 })}
                             </span>
-                            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                                {stats.unsettled_count} Cases
+                            <span className="font-['Plus_Jakarta_Sans',sans-serif] text-[9.5px] sm:text-[10.5px] font-extrabold uppercase tracking-wider text-slate-400">
+                                {stats.unsettled_count} Due
                             </span>
                         </div>
-                        <p className="mt-1 text-[11px] text-slate-500">
-                            Pending settlement from drivers
+                        <p className="mt-1 text-[10px] sm:text-[11px] font-medium text-slate-500 font-['Plus_Jakarta_Sans',sans-serif] line-clamp-1">
+                            Pending municipal settlement
                         </p>
                     </div>
 
-                    <div className="mt-3 rounded-xl bg-slate-50 p-2.5 flex items-center justify-between text-xs">
-                        <span className="text-[11px] font-medium text-slate-500">Status:</span>
-                        <span className="text-xs font-bold text-amber-700">Pending Payment</span>
+                    <div className="mt-3 rounded-xl bg-slate-50 border border-slate-100/90 px-2.5 py-1.5 sm:p-2.5 flex items-center justify-between text-[10.5px] sm:text-xs">
+                        <span className="font-['Plus_Jakarta_Sans',sans-serif] font-semibold text-slate-400 shrink-0">Status:</span>
+                        <span className="font-['Plus_Jakarta_Sans',sans-serif] font-bold text-amber-700 shrink-0">Pending Payment</span>
                     </div>
                 </div>
 
-                {/* Card 3: Paid Fines */}
-                <div className={`flex flex-col justify-between rounded-2xl border border-slate-200/70 bg-white p-4 sm:p-5 ${CARD_SHADOW}`}>
+                {/* Card 3: Settled Fines */}
+                <div className={`flex flex-col justify-between rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-4 sm:p-5 lg:p-6 ${CARD_SHADOW} transition-all hover:border-slate-300 hover:shadow-[0_4px_6px_-1px_rgba(15,23,42,0.06),0_12px_28px_-8px_rgba(15,23,42,0.14)]`}>
                     <div>
-                        <div className="flex items-center justify-between">
-                            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                                Paid Fines
+                        <div className="flex items-center justify-between border-b border-slate-100 pb-2 sm:pb-2.5">
+                            <span className="font-['Plus_Jakarta_Sans',sans-serif] text-[10px] sm:text-[10.5px] font-bold uppercase tracking-wider text-slate-400">
+                                Settled Fines
                             </span>
-                            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-500/[0.14] to-emerald-500/[0.02] text-emerald-700">
-                                <CheckCircle2 size={14} />
-                            </span>
+                            <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-xl bg-emerald-50 border border-emerald-100 text-emerald-600">
+                                <CheckCircle2 size={15} strokeWidth={2.2} />
+                            </div>
                         </div>
-                        <div className="mt-2 flex items-baseline gap-2">
-                            <span className="text-2xl sm:text-3xl font-extrabold tracking-tight tabular-nums text-slate-900">
+                        <div className="mt-2 sm:mt-2.5 flex items-baseline gap-1.5 sm:gap-2">
+                            <span className="font-['Plus_Jakarta_Sans',sans-serif] text-xl sm:text-2xl lg:text-3xl font-black tracking-tight tabular-nums text-emerald-600 leading-none">
                                 ₱{stats.settled_fines_sum.toLocaleString('en-US', { minimumFractionDigits: 0 })}
                             </span>
-                            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                                {stats.settled_count} Cases
+                            <span className="font-['Plus_Jakarta_Sans',sans-serif] text-[9.5px] sm:text-[10.5px] font-extrabold uppercase tracking-wider text-slate-400">
+                                {stats.settled_count} Paid
                             </span>
                         </div>
-                        <p className="mt-1 text-[11px] text-slate-500">
-                            Collected and settled to date
+                        <p className="mt-1 text-[10px] sm:text-[11px] font-medium text-slate-500 font-['Plus_Jakarta_Sans',sans-serif] line-clamp-1">
+                            Collected and cleared to date
                         </p>
                     </div>
 
-                    <div className="mt-3 rounded-xl bg-slate-50 p-2.5 flex items-center justify-between text-xs">
-                        <span className="text-[11px] font-medium text-slate-500">Payment Rate:</span>
-                        <span className="text-xs font-bold text-emerald-700">{settledPct}% Paid</span>
+                    <div className="mt-3 rounded-xl bg-slate-50 border border-slate-100/90 px-2.5 py-1.5 sm:p-2.5 flex items-center justify-between text-[10.5px] sm:text-xs">
+                        <span className="font-['Plus_Jakarta_Sans',sans-serif] font-semibold text-slate-400 shrink-0">Settlement:</span>
+                        <span className="font-['Plus_Jakarta_Sans',sans-serif] font-bold text-emerald-700 shrink-0">{settledPct}% Paid</span>
                     </div>
                 </div>
 
                 {/* Card 4: Driver Appeals */}
-                <div className={`flex flex-col justify-between rounded-2xl border border-slate-200/70 bg-white p-4 sm:p-5 ${CARD_SHADOW}`}>
+                <div className={`flex flex-col justify-between rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-4 sm:p-5 lg:p-6 ${CARD_SHADOW} transition-all hover:border-slate-300 hover:shadow-[0_4px_6px_-1px_rgba(15,23,42,0.06),0_12px_28px_-8px_rgba(15,23,42,0.14)]`}>
                     <div>
-                        <div className="flex items-center justify-between">
-                            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                                Driver Appeals
+                        <div className="flex items-center justify-between border-b border-slate-100 pb-2 sm:pb-2.5">
+                            <span className="font-['Plus_Jakarta_Sans',sans-serif] text-[10px] sm:text-[10.5px] font-bold uppercase tracking-wider text-slate-400">
+                                Contested Appeals
                             </span>
-                            <span className={`flex h-7 w-7 items-center justify-center rounded-lg ${
-                                stats.appeals_pending > 0
-                                    ? 'bg-gradient-to-br from-indigo-500/[0.14] to-indigo-500/[0.02] text-indigo-700'
-                                    : 'bg-gradient-to-br from-[#182B62]/[0.10] to-[#182B62]/[0.02] text-[#182B62]'
-                            }`}>
-                                <Scale size={14} />
-                            </span>
+                            <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-xl bg-blue-50 border border-blue-100 text-[#182B62]">
+                                <Scale size={15} strokeWidth={2.2} />
+                            </div>
                         </div>
-                        <div className="mt-2 flex items-baseline gap-2">
-                            <span className={`text-2xl sm:text-3xl font-extrabold tracking-tight tabular-nums ${
-                                stats.appeals_pending > 0 ? 'text-indigo-700' : 'text-[#182B62]'
+                        <div className="mt-2 sm:mt-2.5 flex items-baseline gap-1.5 sm:gap-2">
+                            <span className={`font-['Plus_Jakarta_Sans',sans-serif] text-xl sm:text-2xl lg:text-3xl font-black tracking-tight tabular-nums leading-none ${
+                                stats.appeals_pending > 0 ? 'text-[#182B62]' : 'text-slate-900'
                             }`}>
                                 {stats.appeals_pending}
                             </span>
-                            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                                {stats.appeals_pending === 1 ? 'Pending Case' : 'Pending Cases'}
+                            <span className="font-['Plus_Jakarta_Sans',sans-serif] text-[9.5px] sm:text-[10.5px] font-extrabold uppercase tracking-wider text-slate-400">
+                                {stats.appeals_pending === 1 ? 'Appeal' : 'Appeals'}
                             </span>
                         </div>
-                        <p className="mt-1 text-[11px] text-slate-500">
-                            {stats.appeals_pending > 0 ? 'Awaiting TMO review' : 'No pending appeals'}
+                        <p className="mt-1 text-[10px] sm:text-[11px] font-medium text-slate-500 font-['Plus_Jakarta_Sans',sans-serif] line-clamp-1">
+                            {stats.appeals_pending > 0 ? 'Driver appeals awaiting officer review' : 'No appeals currently pending'}
                         </p>
                     </div>
 
-                    <div className="mt-3 rounded-xl bg-slate-50 p-2.5 flex items-center justify-between text-xs">
-                        <span className="text-[11px] font-medium text-slate-500">Review:</span>
-                        <span className={`text-xs font-bold ${stats.appeals_pending > 0 ? 'text-indigo-700' : 'text-slate-800'}`}>
-                            {stats.appeals_pending > 0 ? 'Needs Review' : '0 Pending'}
+                    <div className="mt-3 rounded-xl bg-slate-50 border border-slate-100/90 px-2.5 py-1.5 sm:p-2.5 flex items-center justify-between text-[10.5px] sm:text-xs">
+                        <span className="font-['Plus_Jakarta_Sans',sans-serif] font-semibold text-slate-500 truncate">Review:</span>
+                        <span className={`font-['Plus_Jakarta_Sans',sans-serif] font-bold shrink-0 ${stats.appeals_pending > 0 ? 'text-[#182B62]' : 'text-slate-800'}`}>
+                            {stats.appeals_pending > 0 ? `${stats.appeals_pending} To Review` : 'All cleared'}
                         </span>
                     </div>
                 </div>
             </div>
 
             {/* ══════════════════════════════════════════════════════════════
-                3. MULTI-DIMENSIONAL COMMAND & FILTER DECK
+                3. MULTI-DIMENSIONAL COMMAND & FILTER TOOLBAR
                ══════════════════════════════════════════════════════════════ */}
-            <div className={`mb-4 rounded-2xl border border-slate-200/70 bg-white p-3 sm:p-3.5 ${CARD_SHADOW}`}>
+            <div className={`mb-5 rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-3.5 sm:p-4 ${CARD_SHADOW}`}>
                 <div className="flex flex-col lg:flex-row lg:items-center gap-2.5">
                     {/* Primary Search Input */}
-                    <div className="relative flex-1 min-w-[220px]">
+                    <div className="relative flex-1 min-w-0">
                         <Search
-                            size={16}
+                            size={14}
                             strokeWidth={2.2}
                             className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"
                         />
@@ -298,8 +292,8 @@ export default function Violations({ initialViolations = [], summaryStats = null
                                 setQuery(e.target.value);
                                 setCurrentPage(1);
                             }}
-                            placeholder="Search by ticket ID (VIO-26-...), plate, driver, or receipt number…"
-                            className="h-10 w-full rounded-lg border border-slate-200 bg-slate-50/50 pl-10 pr-9 text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 shadow-2xs transition-all focus:border-tmo-primary focus:bg-white focus:outline-none focus:ring-2 focus:ring-tmo-primary/10"
+                            placeholder="Search by ticket number, plate, driver, or sticker number..."
+                            className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50/70 pl-10 pr-9 text-xs sm:text-sm font-medium text-slate-900 placeholder:text-slate-400 transition-colors focus:border-[#182B62] focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#182B62]"
                         />
                         {query && (
                             <button
@@ -316,123 +310,132 @@ export default function Violations({ initialViolations = [], summaryStats = null
                     </div>
 
                     {/* Filter Controls Row */}
-                    <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2">
+                    <div className="grid grid-cols-2 sm:flex sm:items-center gap-2">
                         {/* Status Filter */}
-                        <div className="col-span-1">
-                            <select
-                                value={statusFilter}
-                                onChange={e => {
-                                    setStatusFilter(e.target.value);
-                                    setCurrentPage(1);
-                                }}
-                                className="h-10 w-full sm:w-40 rounded-lg border border-slate-200 bg-white px-3 pr-8 text-xs font-semibold text-slate-700 shadow-2xs transition-colors focus:border-tmo-primary focus:outline-none focus:ring-2 focus:ring-tmo-primary/10 cursor-pointer"
-                            >
-                                <option value="all">All Statuses ({totalCount})</option>
-                                <option value="unsettled">Unsettled ({unsettledCount})</option>
-                                <option value="settled">Settled ({settledCount})</option>
-                                {stats.appeals_pending > 0 && (
-                                    <option value="appeals">Appeals ({stats.appeals_pending})</option>
-                                )}
-                            </select>
-                        </div>
+                        <select
+                            value={statusFilter}
+                            onChange={e => {
+                                setStatusFilter(e.target.value);
+                                setCurrentPage(1);
+                            }}
+                            aria-label="Filter by settlement status"
+                            className="h-10 w-full sm:w-auto sm:min-w-[140px] rounded-xl border border-slate-200 bg-slate-50/70 pl-3 pr-8 text-xs font-bold text-slate-700 transition-colors focus:border-[#182B62] focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#182B62] cursor-pointer"
+                        >
+                            <option value="all">All Statuses ({totalCount})</option>
+                            <option value="unsettled">Unsettled ({unsettledCount})</option>
+                            <option value="settled">Settled ({settledCount})</option>
+                            {stats.appeals_pending > 0 && (
+                                <option value="appeals">Appeals ({stats.appeals_pending})</option>
+                            )}
+                        </select>
 
                         {/* Detection Method Filter */}
-                        <div className="col-span-1">
-                            <select
-                                value={detectionFilter}
-                                onChange={e => {
-                                    setDetectionFilter(e.target.value);
-                                    setCurrentPage(1);
-                                }}
-                                className="h-10 w-full sm:w-48 rounded-lg border border-slate-200 bg-white px-3 pr-8 text-xs font-semibold text-slate-700 shadow-2xs transition-colors focus:border-tmo-primary focus:outline-none focus:ring-2 focus:ring-tmo-primary/10 cursor-pointer truncate"
-                            >
-                                <option value="all">All Detection Methods ({violations.length})</option>
-                                <option value="mobile_gps">Mobile GPS ({detectionOptions.mobile_gps})</option>
-                                <option value="iot_gps">IoT GPS ({detectionOptions.iot_gps})</option>
-                            </select>
-                        </div>
+                        <select
+                            value={detectionFilter}
+                            onChange={e => {
+                                setDetectionFilter(e.target.value);
+                                setCurrentPage(1);
+                            }}
+                            aria-label="Filter by detection source"
+                            className="h-10 w-full sm:w-auto sm:min-w-[170px] rounded-xl border border-slate-200 bg-slate-50/70 pl-3 pr-8 text-xs font-bold text-slate-700 transition-colors focus:border-[#182B62] focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#182B62] cursor-pointer truncate"
+                        >
+                            <option value="all">All Sources ({violations.length})</option>
+                            <option value="mobile_gps">Driver Mobile GPS ({detectionOptions.mobile_gps})</option>
+                            <option value="iot_gps">Installed GPS Tracker ({detectionOptions.iot_gps})</option>
+                        </select>
 
                         {/* Quick Toggle: Only Unsettled */}
-                        <div className="col-span-1">
+                        <button
+                            type="button"
+                            onClick={() => {
+                                setOnlyUnsettled(prev => !prev);
+                                setCurrentPage(1);
+                            }}
+                            className={`col-span-2 sm:col-span-1 inline-flex h-10 w-full sm:w-auto shrink-0 items-center justify-center gap-1.5 rounded-xl border px-3 text-xs font-bold transition-all cursor-pointer font-['Plus_Jakarta_Sans',sans-serif] ${
+                                onlyUnsettled
+                                    ? 'border-amber-300 bg-amber-50 text-amber-900 ring-2 ring-amber-500/20'
+                                    : 'border-slate-200 bg-slate-50/70 text-slate-700 hover:border-slate-300 hover:bg-slate-100'
+                            }`}
+                        >
+                            <AlertCircle size={14} className={onlyUnsettled ? 'text-amber-600' : 'text-slate-400'} />
+                            <span>Unsettled Only</span>
+                            <span className={`rounded-md px-1.5 py-0.5 text-[10px] font-mono font-bold ${
+                                onlyUnsettled ? 'bg-amber-600 text-white' : 'bg-slate-200/70 text-slate-700'
+                            }`}>
+                                {unsettledCount}
+                            </span>
+                        </button>
+
+                        {/* Reset All Filters Button */}
+                        {isFiltering && (
                             <button
                                 type="button"
-                                onClick={() => {
-                                    setOnlyUnsettled(prev => !prev);
-                                    setCurrentPage(1);
-                                }}
-                                className={`inline-flex h-10 w-full sm:w-auto items-center justify-center gap-1.5 rounded-lg border px-3 text-xs font-semibold shadow-2xs transition-all cursor-pointer ${
-                                    onlyUnsettled
-                                        ? 'border-amber-300 bg-amber-50 text-amber-900 ring-2 ring-amber-500/20 font-bold'
-                                        : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50'
-                                }`}
+                                onClick={handleClearFilters}
+                                className="col-span-2 sm:col-span-1 inline-flex h-10 items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50/70 px-3.5 text-xs font-bold text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-colors"
+                                title="Reset all filters"
                             >
-                                <AlertCircle size={14} className={onlyUnsettled ? 'text-amber-600' : 'text-slate-400'} />
-                                <span>Unsettled Only</span>
-                                <span className={`rounded-full px-1.5 py-0.2 text-[10px] tabular-nums font-bold ${
-                                    onlyUnsettled ? 'bg-amber-600 text-white' : 'bg-slate-100 text-slate-600'
-                                }`}>
-                                    {unsettledCount}
-                                </span>
+                                <RotateCcw size={13} strokeWidth={2.2} />
+                                <span className="hidden sm:inline">Reset</span>
                             </button>
-                        </div>
+                        )}
                     </div>
                 </div>
             </div>
 
             {/* ══════════════════════════════════════════════════════════════
-                4. DATA DISPLAY: TABLE WITH INTEGRATED FOOTER PAGINATION
+                4. DATA DISPLAY: TABLE & MOBILE CARDS
                ══════════════════════════════════════════════════════════════ */}
             {filtered.length === 0 ? (
-                <div className={`rounded-2xl border border-slate-200/70 bg-white p-12 text-center ${CARD_SHADOW}`}>
-                    <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 text-slate-400">
-                        <ShieldAlert size={24} strokeWidth={1.8} />
+                <div className={`rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-12 text-center ${CARD_SHADOW}`}>
+                    <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-400 border border-slate-200">
+                        <ShieldAlert size={22} strokeWidth={1.8} />
                     </div>
-                    <h3 className="mt-3.5 text-base font-bold text-slate-900">
-                        No violations found
+                    <h3 className="mt-3.5 font-['Plus_Jakarta_Sans',sans-serif] text-base font-black text-slate-900">
+                        No violation records found
                     </h3>
-                    <p className="mx-auto mt-1 max-w-sm text-xs text-slate-500 leading-relaxed">
+                    <p className="mx-auto mt-1 max-w-sm text-xs text-slate-500 leading-relaxed font-['Plus_Jakarta_Sans',sans-serif]">
                         {isFiltering
-                            ? 'No violations match your search or filters.'
-                            : 'All clear. No violations are currently recorded in the registry.'}
+                            ? 'No citations match your selected filters. Try adjusting your search query.'
+                            : 'All clear. No active color coding citations are currently recorded.'}
                     </p>
                     {isFiltering && (
                         <button
                             type="button"
                             onClick={handleClearFilters}
-                            className="mt-4 inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-xs font-bold text-slate-700 shadow-sm hover:bg-slate-50"
+                            className="mt-4 inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-800 shadow-2xs hover:bg-slate-50 transition-colors font-['Plus_Jakarta_Sans',sans-serif]"
                         >
-                            <RotateCcw size={13} strokeWidth={2.2} />
-                            Clear Search &amp; Filters
+                            <RotateCcw size={12} strokeWidth={2.2} />
+                            <span>Reset all filters</span>
                         </button>
                     )}
                 </div>
             ) : (
                 <>
-                    {/* ── DESKTOP PURPOSE-BUILT TABLE (md: 768px+) ── */}
-                    <div className={`hidden overflow-hidden rounded-2xl border border-slate-200/70 bg-white ${CARD_SHADOW} md:block`}>
-                        <div className="overflow-x-auto">
-                            <table className="w-full text-left border-collapse">
+                    {/* ── DESKTOP & TABLET PURPOSE-BUILT TABLE (md: 768px+) ── */}
+                    <div className={`hidden md:block overflow-hidden rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white ${CARD_SHADOW}`}>
+                        <div className="overflow-x-auto custom-scrollbar">
+                            <table className="w-full min-w-[760px] text-left border-collapse">
                                 <thead>
-                                    <tr className="border-b border-slate-200 bg-slate-50/75">
-                                        <th scope="col" className="py-3 pl-5 pr-3 text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                                    <tr className="border-b border-slate-200/80 bg-slate-50/80">
+                                        <th scope="col" className="py-3.5 pl-6 pr-3 font-['Plus_Jakarta_Sans',sans-serif] text-[11px] font-bold uppercase tracking-wider text-slate-400">
                                             Ticket No. &amp; Date
                                         </th>
-                                        <th scope="col" className="py-3 px-4 text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                                        <th scope="col" className="py-3.5 px-4 font-['Plus_Jakarta_Sans',sans-serif] text-[11px] font-bold uppercase tracking-wider text-slate-400">
                                             Tricycle &amp; Driver
                                         </th>
-                                        <th scope="col" className="py-3 px-4 text-[11px] font-bold uppercase tracking-wider text-slate-500">
-                                            Sticker Number
+                                        <th scope="col" className="py-3.5 px-4 font-['Plus_Jakarta_Sans',sans-serif] text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                                            Color Scheme Sticker
                                         </th>
-                                        <th scope="col" className="py-3 px-4 text-[11px] font-bold uppercase tracking-wider text-slate-500">
-                                            Violation
+                                        <th scope="col" className="py-3.5 px-4 font-['Plus_Jakarta_Sans',sans-serif] text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                                            Citation Type
                                         </th>
-                                        <th scope="col" className="py-3 px-4 text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                                        <th scope="col" className="py-3.5 px-4 font-['Plus_Jakarta_Sans',sans-serif] text-[11px] font-bold uppercase tracking-wider text-slate-400">
                                             Fine Amount
                                         </th>
-                                        <th scope="col" className="py-3 px-4 text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                                        <th scope="col" className="py-3.5 px-4 font-['Plus_Jakarta_Sans',sans-serif] text-[11px] font-bold uppercase tracking-wider text-slate-400">
                                             Status
                                         </th>
-                                        <th scope="col" className="py-3 pl-3 pr-5 text-right text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                                        <th scope="col" className="py-3.5 pl-3 pr-6 text-right font-['Plus_Jakarta_Sans',sans-serif] text-[11px] font-bold uppercase tracking-wider text-slate-400">
                                             Action
                                         </th>
                                     </tr>
@@ -445,13 +448,13 @@ export default function Violations({ initialViolations = [], summaryStats = null
                             </table>
                         </div>
 
-                        {/* Integrated Table Footer: Pagination Visually Connected */}
-                        <div className="flex items-center justify-between border-t border-slate-200/80 bg-slate-50/60 px-5 py-3">
-                            <p className="text-xs text-slate-500">
-                                Page <span className="font-bold text-slate-800 tabular-nums">{activePage}</span> of{' '}
-                                <span className="font-bold text-slate-800 tabular-nums">{totalPages}</span>
+                        {/* Integrated Table Footer: Pagination */}
+                        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-slate-200/80 bg-slate-50/60 px-4 sm:px-6 py-3.5">
+                            <p className="text-xs text-slate-500 font-['Plus_Jakarta_Sans',sans-serif]">
+                                Showing page <span className="font-bold text-slate-900 tabular-nums">{activePage}</span> of{' '}
+                                <span className="font-bold text-slate-900 tabular-nums">{totalPages}</span>
                                 <span className="mx-2 text-slate-300">·</span>
-                                <span className="tabular-nums font-semibold text-slate-700">{filtered.length}</span> records
+                                <span className="tabular-nums font-bold text-slate-800">{filtered.length}</span> recorded violations
                             </p>
 
                             <div className="flex items-center gap-1.5">
@@ -459,7 +462,7 @@ export default function Violations({ initialViolations = [], summaryStats = null
                                     type="button"
                                     disabled={activePage <= 1}
                                     onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                                    className="inline-flex h-8 items-center gap-1 rounded-md border border-slate-200 bg-white px-2.5 text-xs font-semibold text-slate-700 shadow-sm transition-colors hover:bg-slate-50 disabled:pointer-events-none disabled:opacity-40"
+                                    className="inline-flex h-8 items-center gap-1 rounded-xl border border-slate-200 bg-white px-3 text-xs font-bold text-slate-700 shadow-2xs transition-colors hover:bg-slate-50 disabled:pointer-events-none disabled:opacity-40 font-['Plus_Jakarta_Sans',sans-serif]"
                                 >
                                     <ChevronLeft size={13} strokeWidth={2.5} />
                                     <span>Prev</span>
@@ -479,14 +482,14 @@ export default function Violations({ initialViolations = [], summaryStats = null
                                             return (
                                                 <React.Fragment key={p}>
                                                     {hasGap && (
-                                                        <span className="px-0.5 text-xs text-slate-400">…</span>
+                                                        <span className="px-1 text-xs text-slate-400">…</span>
                                                     )}
                                                     <button
                                                         type="button"
                                                         onClick={() => setCurrentPage(p)}
-                                                        className={`flex h-8 w-8 items-center justify-center rounded-md text-xs font-bold transition-all ${
+                                                        className={`flex h-8 w-8 items-center justify-center rounded-xl text-xs font-bold transition-all font-['Plus_Jakarta_Sans',sans-serif] ${
                                                             activePage === p
-                                                                ? 'bg-tmo-primary text-white shadow-sm'
+                                                                ? 'bg-[#182B62] text-white shadow-2xs'
                                                                 : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
                                                         }`}
                                                     >
@@ -501,7 +504,7 @@ export default function Violations({ initialViolations = [], summaryStats = null
                                     type="button"
                                     disabled={activePage >= totalPages}
                                     onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                                    className="inline-flex h-8 items-center gap-1 rounded-md border border-slate-200 bg-white px-2.5 text-xs font-semibold text-slate-700 shadow-sm transition-colors hover:bg-slate-50 disabled:pointer-events-none disabled:opacity-40"
+                                    className="inline-flex h-8 items-center gap-1 rounded-xl border border-slate-200 bg-white px-3 text-xs font-bold text-slate-700 shadow-2xs transition-colors hover:bg-slate-50 disabled:pointer-events-none disabled:opacity-40 font-['Plus_Jakarta_Sans',sans-serif]"
                                 >
                                     <span>Next</span>
                                     <ChevronRight size={13} strokeWidth={2.5} />
@@ -511,15 +514,15 @@ export default function Violations({ initialViolations = [], summaryStats = null
                     </div>
 
                     {/* ── MOBILE PURPOSE-BUILT CARDS (< md: 768px) ── */}
-                    <div className="flex flex-col gap-2.5 md:hidden">
+                    <div className="flex flex-col gap-3 md:hidden">
                         {paginated.map(record => (
                             <MobileViolationCard key={record.id} record={record} />
                         ))}
 
-                        {/* Mobile Pagination Connected at Bottom of List */}
-                        <div className={`mt-1 flex items-center justify-between rounded-2xl border border-slate-200/70 bg-white px-4 py-3 ${CARD_SHADOW}`}>
-                            <p className="text-xs text-slate-500">
-                                <span className="font-bold text-slate-800">{activePage}</span> of {totalPages}
+                        {/* Mobile Pagination */}
+                        <div className={`mt-1 flex items-center justify-between rounded-2xl border border-slate-200/80 bg-white px-4 py-3.5 ${CARD_SHADOW}`}>
+                            <p className="text-xs text-slate-500 font-['Plus_Jakarta_Sans',sans-serif]">
+                                Page <span className="font-bold text-slate-900">{activePage}</span> of {totalPages}
                                 <span className="ml-1 text-[11px] text-slate-400">({filtered.length} violations)</span>
                             </p>
 
@@ -528,7 +531,7 @@ export default function Violations({ initialViolations = [], summaryStats = null
                                     type="button"
                                     disabled={activePage <= 1}
                                     onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                                    className="inline-flex h-8 items-center gap-1 rounded-md border border-slate-200 bg-white px-2.5 text-xs font-semibold text-slate-700 shadow-sm disabled:pointer-events-none disabled:opacity-40"
+                                    className="inline-flex h-8 items-center gap-1 rounded-xl border border-slate-200 bg-white px-3 text-xs font-bold text-slate-700 shadow-2xs disabled:pointer-events-none disabled:opacity-40 font-['Plus_Jakarta_Sans',sans-serif]"
                                 >
                                     <ChevronLeft size={13} strokeWidth={2.5} />
                                     <span>Prev</span>
@@ -537,7 +540,7 @@ export default function Violations({ initialViolations = [], summaryStats = null
                                     type="button"
                                     disabled={activePage >= totalPages}
                                     onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                                    className="inline-flex h-8 items-center gap-1 rounded-md border border-slate-200 bg-white px-2.5 text-xs font-semibold text-slate-700 shadow-sm disabled:pointer-events-none disabled:opacity-40"
+                                    className="inline-flex h-8 items-center gap-1 rounded-xl border border-slate-200 bg-white px-3 text-xs font-bold text-slate-700 shadow-2xs disabled:pointer-events-none disabled:opacity-40 font-['Plus_Jakarta_Sans',sans-serif]"
                                 >
                                     <span>Next</span>
                                     <ChevronRight size={13} strokeWidth={2.5} />
@@ -568,7 +571,7 @@ function StatusPill({ record }) {
 
     if (isAppealed) {
         return (
-            <span className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold border border-indigo-200/90 bg-indigo-50 text-indigo-800 shadow-2xs">
+            <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-bold border border-indigo-200/90 bg-indigo-50 text-indigo-800 shadow-2xs font-['Plus_Jakarta_Sans',sans-serif]">
                 Appeal Pending
             </span>
         );
@@ -576,14 +579,14 @@ function StatusPill({ record }) {
 
     if (isSettled) {
         return (
-            <span className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold border border-emerald-200/90 bg-emerald-50 text-emerald-700 shadow-2xs">
+            <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-bold border border-emerald-200/90 bg-emerald-50 text-emerald-700 shadow-2xs font-['Plus_Jakarta_Sans',sans-serif]">
                 Settled
             </span>
         );
     }
 
     return (
-        <span className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold border border-amber-200/90 bg-amber-50 text-amber-800 shadow-2xs">
+        <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-bold border border-amber-200/90 bg-amber-50 text-amber-800 shadow-2xs font-['Plus_Jakarta_Sans',sans-serif]">
             Unsettled
         </span>
     );
@@ -595,22 +598,22 @@ function DesktopViolationRow({ record }) {
     return (
         <tr className="group transition-colors hover:bg-slate-50/80">
             {/* Column 1: Ticket No. & Date */}
-            <td className="py-3.5 pl-5 pr-3 align-middle">
+            <td className="py-4 pl-6 pr-3 align-middle">
                 <div className="flex flex-col">
-                    <span className="font-mono text-xs sm:text-[13px] font-bold tracking-wide text-slate-900">
+                    <span className="font-mono text-xs sm:text-[13px] font-black tracking-wide text-slate-900 bg-slate-100 border border-slate-200/90 px-2 py-0.5 rounded-md w-fit shadow-2xs">
                         {record.id}
                     </span>
-                    <span className="mt-0.5 flex items-center gap-1 text-[11px] text-slate-400">
-                        <Clock size={10} strokeWidth={2.2} />
-                        {record.formatted_date || record.date} · {record.time}
+                    <span className="mt-1 flex items-center gap-1 text-[11px] font-medium text-slate-400 font-['Plus_Jakarta_Sans',sans-serif]">
+                        <Clock size={11} strokeWidth={2.2} className="shrink-0" />
+                        <span>{record.formatted_date || record.date} · {record.time}</span>
                     </span>
                 </div>
             </td>
 
             {/* Column 2: Tricycle & Driver */}
-            <td className="py-3.5 px-4 align-middle">
+            <td className="py-4 px-4 align-middle">
                 <div className="flex items-center gap-2.5">
-                    <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-100 text-[11px] font-bold text-slate-700">
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#182B62] to-[#25449B] text-[11px] font-black text-white shadow-2xs">
                         {initials}
                     </div>
                     <div className="min-w-0">
@@ -618,11 +621,11 @@ function DesktopViolationRow({ record }) {
                             {record.tricycle_id ? (
                                 <Link
                                     href={route('tricycle.details', record.tricycle_id)}
-                                    className="font-mono text-xs sm:text-[13px] font-bold text-slate-900 hover:text-blue-600 transition-colors inline-flex items-center gap-0.5"
+                                    className="font-mono text-xs sm:text-[13px] font-bold text-slate-900 hover:text-[#182B62] transition-colors inline-flex items-center gap-0.5"
                                     title="View Tricycle Profile"
                                 >
                                     <span>{record.plate_no}</span>
-                                    <ArrowUpRight size={10} strokeWidth={2.5} className="text-slate-400" />
+                                    <ArrowUpRight size={11} strokeWidth={2.5} className="text-slate-400" />
                                 </Link>
                             ) : (
                                 <span className="font-mono text-xs sm:text-[13px] font-bold text-slate-900">
@@ -630,7 +633,7 @@ function DesktopViolationRow({ record }) {
                                 </span>
                             )}
                         </div>
-                        <p className="truncate text-xs font-semibold text-slate-700 mt-0.5">
+                        <p className="truncate text-xs font-bold text-slate-700 mt-0.5 font-['Plus_Jakarta_Sans',sans-serif]">
                             {record.operator}
                         </p>
                     </div>
@@ -638,54 +641,54 @@ function DesktopViolationRow({ record }) {
             </td>
 
             {/* Column 3: Sticker Number */}
-            <td className="py-3.5 px-4 align-middle">
+            <td className="py-4 px-4 align-middle">
                 <div className="flex flex-col">
-                    <span className="font-mono text-xs sm:text-[13px] font-bold text-slate-900">
+                    <span className="font-mono text-xs sm:text-[13px] font-black text-slate-900">
                         #{record.coding_scheme_number || 'N/A'}
                     </span>
-                    <span className="text-[11px] text-slate-400 mt-0.5">
-                        Municipal Sticker
+                    <span className="text-[11px] text-slate-400 mt-0.5 font-medium">
+                        Scheme Sticker
                     </span>
                 </div>
             </td>
 
-            {/* Column 4: Violation */}
-            <td className="py-3.5 px-4 align-middle">
+            {/* Column 4: Violation Citation */}
+            <td className="py-4 px-4 align-middle">
                 <div className="flex flex-col">
-                    <span className="text-xs sm:text-[13px] font-semibold text-slate-900">
+                    <span className="text-xs sm:text-[13px] font-bold text-slate-900 font-['Plus_Jakarta_Sans',sans-serif]">
                         {record.type}
                     </span>
-                    <span className="mt-0.5 text-[11px] text-slate-400">
+                    <span className="mt-0.5 text-[11px] text-slate-400 font-medium">
                         {record.detection_label}
                     </span>
                 </div>
             </td>
 
             {/* Column 5: Fine Amount */}
-            <td className="py-3.5 px-4 align-middle">
+            <td className="py-4 px-4 align-middle">
                 <div className="flex flex-col">
-                    <span className="font-bold text-slate-900 tabular-nums text-xs sm:text-[13px]">
+                    <span className="font-black text-slate-900 tabular-nums text-xs sm:text-[13px] font-mono">
                         ₱{record.fine.toFixed(2)}
                     </span>
-                    <span className="text-[10px] text-slate-400 uppercase tracking-wider font-medium">
-                        Fine
+                    <span className="text-[10px] text-slate-400 uppercase tracking-wider font-bold font-['Plus_Jakarta_Sans',sans-serif]">
+                        Fine Penalty
                     </span>
                 </div>
             </td>
 
             {/* Column 6: Status */}
-            <td className="py-3.5 px-4 align-middle">
+            <td className="py-4 px-4 align-middle">
                 <StatusPill record={record} />
             </td>
 
-            {/* Column 7: Action (Styled in #182B62 with rounded-full pill radius) */}
-            <td className="py-3.5 pl-3 pr-5 text-right align-middle">
+            {/* Column 7: Action */}
+            <td className="py-4 pl-3 pr-6 text-right align-middle">
                 <Link
                     href={`/violations/${record.db_id}`}
-                    className="inline-flex items-center gap-1 rounded-full bg-[#182B62] hover:bg-[#25449B] text-white px-3.5 py-1.5 text-xs font-semibold shadow-2xs transition-all active:scale-[0.98]"
+                    className="inline-flex items-center gap-1 rounded-xl bg-[#182B62] hover:bg-[#25449B] text-white px-3.5 py-1.5 text-xs font-bold shadow-2xs transition-all active:scale-[0.98] font-['Plus_Jakarta_Sans',sans-serif]"
                 >
                     <span>Details</span>
-                    <ChevronRight size={13} strokeWidth={2.5} className="text-slate-300" />
+                    <ChevronRight size={13} strokeWidth={2.5} className="text-white/70" />
                 </Link>
             </td>
         </tr>
@@ -696,67 +699,67 @@ function MobileViolationCard({ record }) {
     const initials = getInitials(record.operator);
 
     return (
-        <div className={`rounded-2xl border border-slate-200/70 bg-white p-3.5 ${CARD_SHADOW} transition-all hover:border-slate-300`}>
+        <div className={`rounded-2xl border border-slate-200/80 bg-white p-4 ${CARD_SHADOW} transition-all hover:border-slate-300`}>
             {/* Top Row: Ticket ID & Status */}
-            <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-2">
-                <div className="flex items-baseline gap-2">
-                    <span className="font-mono text-sm font-bold tracking-wide text-slate-900">
+            <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-2.5">
+                <div className="flex items-center gap-2">
+                    <span className="font-mono text-xs font-black tracking-wide text-slate-900 bg-slate-100 border border-slate-200/90 px-2 py-0.5 rounded-md shadow-2xs">
                         {record.id}
                     </span>
-                    <span className="font-mono text-xs text-slate-400">({record.plate_no})</span>
+                    <span className="font-mono text-xs font-semibold text-slate-400">({record.plate_no})</span>
                 </div>
 
                 <StatusPill record={record} />
             </div>
 
             {/* Operator Information */}
-            <div className="mt-2.5 flex items-center justify-between gap-2">
-                <div className="flex items-center gap-2 min-w-0">
-                    <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-slate-100 text-[10px] font-bold text-slate-700">
+            <div className="mt-3 flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#182B62] to-[#25449B] text-[11px] font-black text-white shadow-2xs">
                         {initials}
                     </div>
                     <div className="min-w-0">
-                        <p className="truncate text-xs font-semibold text-slate-900">{record.operator}</p>
+                        <p className="truncate text-xs font-bold text-slate-900 font-['Plus_Jakarta_Sans',sans-serif]">{record.operator}</p>
                         {record.coding_scheme_number && (
-                            <div className="flex items-center gap-1.5 text-[11px] text-slate-400">
-                                <span className="font-mono font-medium text-slate-500">#{record.coding_scheme_number}</span>
+                            <div className="flex items-center gap-1.5 text-[11px] text-slate-400 mt-0.5">
+                                <span className="font-mono font-bold text-slate-600">Sticker #{record.coding_scheme_number}</span>
                             </div>
                         )}
                     </div>
                 </div>
 
                 <div className="text-right shrink-0">
-                    <span className="text-sm font-extrabold tabular-nums text-slate-900">
+                    <span className="text-sm font-black tabular-nums font-mono text-slate-900">
                         ₱{record.fine.toFixed(2)}
                     </span>
-                    <p className="text-[9px] uppercase tracking-wider font-bold text-slate-400">
-                        Fine
+                    <p className="text-[9.5px] uppercase tracking-wider font-bold text-slate-400 font-['Plus_Jakarta_Sans',sans-serif]">
+                        Penalty
                     </p>
                 </div>
             </div>
 
             {/* Infraction Details Row */}
-            <div className="mt-2.5 flex items-center justify-between gap-2 border-t border-slate-100 pt-2 text-xs">
+            <div className="mt-3 flex items-center justify-between gap-2 border-t border-slate-100 pt-2.5 text-xs">
                 <div className="truncate">
-                    <span className="font-semibold text-slate-800 text-[11px]">{record.type}</span>
+                    <span className="font-bold text-slate-800 text-[11px] font-['Plus_Jakarta_Sans',sans-serif]">{record.type}</span>
                     <span className="text-slate-300 mx-1.5">·</span>
-                    <span className="text-[11px] text-slate-500">{record.source}</span>
+                    <span className="text-[11px] text-slate-500 font-medium">{record.detection_label || record.source}</span>
                 </div>
 
-                <span className="text-[10px] text-slate-400 shrink-0 flex items-center gap-1">
+                <span className="text-[10px] text-slate-400 shrink-0 flex items-center gap-1 font-medium">
                     <Clock size={10} />
                     {record.formatted_date || record.date}
                 </span>
             </div>
 
-            {/* Action Button: #182B62 with rounded-full radius */}
-            <div className="mt-2.5 pt-2 border-t border-slate-100">
+            {/* Action Button */}
+            <div className="mt-3 pt-2.5 border-t border-slate-100">
                 <Link
                     href={`/violations/${record.db_id}`}
-                    className="flex w-full items-center justify-center gap-1.5 rounded-full bg-[#182B62] hover:bg-[#25449B] text-white py-2 text-xs font-bold shadow-2xs transition-all active:scale-[0.98]"
+                    className="flex w-full items-center justify-center gap-1.5 rounded-xl bg-[#182B62] hover:bg-[#25449B] text-white py-2 text-xs font-bold shadow-2xs transition-all active:scale-[0.98] font-['Plus_Jakarta_Sans',sans-serif]"
                 >
-                    <span>View Details</span>
-                    <ChevronRight size={13} strokeWidth={2.5} className="text-slate-300" />
+                    <span>View Violation Details</span>
+                    <ChevronRight size={13} strokeWidth={2.5} className="text-white/70" />
                 </Link>
             </div>
         </div>

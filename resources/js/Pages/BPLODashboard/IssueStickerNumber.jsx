@@ -124,7 +124,7 @@ export default function IssueStickerNumber({ application, codingSchemes = [] }) 
             icon: 'question',
             showCancelButton: true,
             confirmButtonColor: '#182B62',
-            cancelButtonColor: '#8A96BC',
+            cancelButtonColor: '#94a3b8',
             confirmButtonText: 'Yes, Release Franchise Number & Plate',
             cancelButtonText: 'Cancel'
         }).then((result) => {
@@ -214,7 +214,7 @@ export default function IssueStickerNumber({ application, codingSchemes = [] }) 
                     <div className="space-y-6 lg:col-span-5">
 
                         {/* Card 1: Applicant & Tricycle Dossier */}
-                        <div className={`overflow-hidden rounded-2xl border border-slate-200/70 bg-white ${CARD_SHADOW}`}>
+                        <div className="overflow-hidden rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white shadow-xs">
                             <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50/75 px-5 py-3.5">
                                 <div className="flex items-center gap-2">
                                     <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-[#182B62]/[0.10] to-[#182B62]/[0.02] text-[#182B62]">
@@ -236,7 +236,7 @@ export default function IssueStickerNumber({ application, codingSchemes = [] }) 
                                         <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Tricycle Owner</span>
                                         <span className="text-sm font-bold text-slate-900 mt-0.5 block">{application.operator || '—'}</span>
                                     </div>
-                                    <div className="h-8 w-8 rounded-full bg-gradient-to-br from-[#182B62] to-[#2A3560] text-white flex items-center justify-center text-xs font-bold shadow-2xs shrink-0">
+                                    <div className="h-8 w-8 rounded-full bg-gradient-to-br from-[#182B62] to-[#25449B] text-white flex items-center justify-center text-xs font-bold shadow-2xs shrink-0">
                                         {application.operator ? application.operator.charAt(0).toUpperCase() : 'O'}
                                     </div>
                                 </div>
@@ -299,7 +299,7 @@ export default function IssueStickerNumber({ application, codingSchemes = [] }) 
                         {/* Card 2: Before-Release Notice — BPLO does not record, verify, or process
                             payment in this system. Payment happens entirely offline at the
                             Municipal Treasurer's Office; this is a manual, in-person check only. */}
-                        <div className={`overflow-hidden rounded-2xl border border-amber-200/80 bg-amber-50/40 ${CARD_SHADOW}`}>
+                        <div className="overflow-hidden rounded-2xl sm:rounded-3xl border border-amber-200/80 bg-amber-50/40 shadow-xs">
                             <div className="flex items-center gap-2 border-b border-amber-100 bg-amber-50/60 px-5 py-3.5">
                                 <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-amber-500/[0.16] to-amber-500/[0.02] text-amber-700">
                                     <AlertCircle size={15} strokeWidth={2.2} />
@@ -315,7 +315,7 @@ export default function IssueStickerNumber({ application, codingSchemes = [] }) 
                         </div>
 
                         {/* Card 3: Handover Notice to TMO */}
-                        <div className="rounded-2xl border border-amber-200 bg-amber-50/60 p-4 shadow-2xs flex items-start gap-3.5">
+                        <div className="rounded-2xl sm:rounded-3xl border border-amber-200/80 bg-amber-50/60 p-4 sm:p-5 shadow-xs flex items-start gap-3.5">
                             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-amber-500/[0.14] to-amber-500/[0.03] text-amber-600 shrink-0 mt-0.5">
                                 <Info size={18} strokeWidth={2.2} />
                             </div>
@@ -334,7 +334,7 @@ export default function IssueStickerNumber({ application, codingSchemes = [] }) 
                     {/* ── RIGHT COLUMN: ISSUANCE TERMINAL (7 cols) ── */}
                     <div className="space-y-6 lg:col-span-7">
 
-                        <div className={`overflow-hidden rounded-2xl border border-slate-200/70 bg-white ${CARD_SHADOW}`}>
+                        <div className="overflow-hidden rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white shadow-xs">
                             <div className="p-6 sm:p-7 space-y-6">
 
                                 {/* Terminal Header */}
@@ -423,7 +423,7 @@ export default function IssueStickerNumber({ application, codingSchemes = [] }) 
 
                                         {/* Stamped Number */}
                                         <div className="my-2.5 sm:my-3">
-                                            <span className="text-5xl sm:text-6xl font-black font-mono tracking-widest text-slate-900 select-all drop-shadow-2xs">
+                                            <span className="text-4xl sm:text-5xl md:text-6xl font-black font-mono tracking-widest text-slate-900 select-all drop-shadow-2xs">
                                                 {data.coding_scheme_number || '----'}
                                             </span>
                                         </div>
@@ -433,7 +433,7 @@ export default function IssueStickerNumber({ application, codingSchemes = [] }) 
                                             <span className="uppercase tracking-wider text-[10px] text-slate-400">Tricycle for Hire</span>
                                             
                                             {/* Dynamic Coding Badge */}
-                                            <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[10.5px] font-bold border shadow-2xs ${codingInfo.badgeClass}`}>
+                                            <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[10.5px] font-bold border shadow-2xs ${codingInfo.badgeClass}`} style={codingInfo.style}>
                                                 <span>{codingInfo.day} Coding ({codingInfo.scheme})</span>
                                             </span>
                                         </div>
@@ -485,7 +485,7 @@ export default function IssueStickerNumber({ application, codingSchemes = [] }) 
                                         type="button"
                                         onClick={handleFinalize}
                                         disabled={processing}
-                                        className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-[#182B62] px-6 py-2.5 text-xs font-bold text-white hover:bg-[#2A3B5C] shadow-sm active:scale-[0.98] transition-all disabled:opacity-50"
+                                        className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-[#182B62] px-6 py-2.5 text-xs font-bold text-white hover:bg-[#25449B] shadow-sm active:scale-[0.98] transition-all disabled:opacity-50"
                                     >
                                         {processing ? (
                                             <>

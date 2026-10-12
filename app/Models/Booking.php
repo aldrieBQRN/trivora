@@ -50,6 +50,7 @@ class Booking extends Model
         'distance_source',
         'estimated_duration_mins',
         'passenger_notes',
+        'walk_in_name',
         'status',
         'payment_method',
         'payment_status',

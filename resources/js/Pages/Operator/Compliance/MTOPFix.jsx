@@ -128,20 +128,25 @@ export default function MTOPFix({ application }) {
             <Head title={isPhysFix ? "Confirm Ready for Reinspection | TRIVORA" : "Fix Application | TRIVORA"} />
 
             <div className="mx-auto max-w-[1100px] pb-10">
-                <div className="mb-6 flex items-center justify-between">
-                    <BackLink href={route('operator.mtop.details', { id: app.id })}>Back to Details</BackLink>
-                    <StatusBadge variant="danger" icon={AlertTriangle}>Action Required</StatusBadge>
-                </div>
-
-                <div className="mb-6">
-                    <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-[26px]">
-                        {isPhysFix ? 'Confirm Ready for Reinspection' : 'Submit Corrections'}
-                    </h1>
-                    <p className="mt-1.5 text-sm text-slate-500">
-                        {isPhysFix
-                            ? 'Review the defects found during inspection and confirm vehicle readiness.'
-                            : 'Review the TMO notes below and upload the correct documents.'}
-                    </p>
+                <div className="mb-6 border-b border-slate-200/80 pb-5">
+                    <div className="mb-3">
+                        <BackLink href={route('operator.mtop.details', { id: app.id })}>Back to Details</BackLink>
+                    </div>
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                        <div>
+                            <h1 className="text-2xl font-black tracking-tight text-slate-900 sm:text-3xl">
+                                {isPhysFix ? 'Confirm Ready for Reinspection' : 'Submit Corrections'}
+                            </h1>
+                            <p className="mt-1 text-sm font-medium text-slate-500">
+                                {isPhysFix
+                                    ? 'Review the defects found during inspection and confirm vehicle readiness.'
+                                    : 'Review the TMO notes below and upload the correct replacement documents.'}
+                            </p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <StatusBadge variant="danger">Action Required</StatusBadge>
+                        </div>
+                    </div>
                 </div>
 
                 <div className={`mb-6 flex items-start gap-4 rounded-2xl border border-red-200 bg-red-50 p-5 ${CARD_SHADOW}`}>
@@ -198,7 +203,7 @@ export default function MTOPFix({ application }) {
                                     if (item.status === 'rejected') {
                                         const hasFiles = newFiles[item.id];
                                         return (
-                                            <div key={item.id} className="overflow-hidden rounded-2xl border-[1.5px] border-red-200 bg-white">
+                                            <div key={item.id} className={`overflow-hidden rounded-2xl border-[1.5px] border-red-200 bg-white ${CARD_SHADOW}`}>
                                                 <div className="flex items-start justify-between gap-3 border-b border-red-100 bg-red-50/60 p-5">
                                                     <div>
                                                         <p className="mb-1.5 text-[15px] font-bold leading-snug text-slate-900">{item.name}</p>
@@ -260,8 +265,8 @@ export default function MTOPFix({ application }) {
                     </div>
                 </div>
 
-                <div className="flex justify-end gap-4 border-t border-slate-200 pt-6">
-                    <Button as={Link} href={route('operator.mtop.details', { id: app.id })} variant="secondary" size="lg">
+                <div className="flex flex-col-reverse sm:flex-row justify-end gap-3 border-t border-slate-200/80 pt-6">
+                    <Button as={Link} href={route('operator.mtop.details', { id: app.id })} variant="secondary" size="lg" className="!rounded-xl">
                         Cancel
                     </Button>
                     <Button
@@ -271,6 +276,7 @@ export default function MTOPFix({ application }) {
                         disabled={isSubmitDisabled}
                         loading={isSubmitting}
                         icon={isPhysFix ? Check : UploadCloud}
+                        className="!rounded-xl"
                     >
                         {isSubmitting ? 'Processing...' : (isPhysFix ? 'Confirm Ready for Reinspection' : 'Submit Corrections')}
                     </Button>

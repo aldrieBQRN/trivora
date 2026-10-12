@@ -102,6 +102,7 @@ class BookingRouteAssignmentTest extends TestCase
             'is_available' => true,
             'current_lat' => 14.0715,
             'current_lng' => 120.6330,
+            'last_location_updated_at' => now(),
         ]);
 
         $user2 = User::create([
@@ -146,6 +147,7 @@ class BookingRouteAssignmentTest extends TestCase
             'is_available' => true,
             'current_lat' => 14.0640,
             'current_lng' => 120.6298,
+            'last_location_updated_at' => now(),
         ]);
 
         $user3 = User::create([
@@ -399,7 +401,13 @@ class BookingRouteAssignmentTest extends TestCase
         ]);
 
         // Ensure second driver is online and eligible to receive dispatch
-        $this->driverBrgy8Offline->update(['is_online' => true]);
+        $this->driverBrgy8Offline->update([
+            'is_online' => true,
+            'last_location_updated_at' => now(),
+            'current_lat' => 14.0715,
+            'current_lng' => 120.6330,
+            'is_available' => true,
+        ]);
 
         // driverBrgy8Online declines it.
         Sanctum::actingAs($this->driverBrgy8Online->user, ['*']);

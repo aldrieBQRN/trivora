@@ -505,9 +505,13 @@ class FranchiseStatusManagementTest extends TestCase
     #[Test]
     public function booking_dispatch_includes_drivers_whose_franchise_is_active(): void
     {
+        // Dispatch eligibility is gated on authoritative telemetry freshness (Driver::scopeEffectivelyOnline,
+        // see tracking.fleet_auto_offline_seconds): an online driver with no recent last_location_updated_at
+        // is treated as offline. Supply a fresh ping so this test isolates franchise eligibility.
         $this->driver->update([
             'is_online' => true, 'is_available' => true,
             'current_lat' => 14.0715, 'current_lng' => 120.6330,
+            'last_location_updated_at' => now(),
         ]);
 
         $passengerUser = User::create([

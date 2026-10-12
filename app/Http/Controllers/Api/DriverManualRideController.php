@@ -40,11 +40,14 @@ class DriverManualRideController extends Controller
     {
         $validated = $request->validate([
             'quote' => 'required|string',
+            // A walk-in has no account, so the driver records their name for the ride session.
+            'passenger_name' => 'required|string|max:100',
             'payment_method' => 'nullable|string|in:cash,gcash',
         ]);
         [$booking, $created] = $this->manualRides->add(
             $request->user(),
             $validated['quote'],
+            $validated['passenger_name'],
             $validated['payment_method'] ?? 'cash'
         );
 

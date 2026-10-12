@@ -84,8 +84,12 @@ class RouteDistanceService
         $cacheKey = $this->cacheKey($pickupLat, $pickupLng, $destinationLat, $destinationLng);
         $cached = Cache::get($cacheKey);
         if (is_array($cached) && isset($cached['distance_km'], $cached['duration_mins'], $cached['distance_source'])) {
+            Log::debug('RouteDistanceService: cache hit.', ['key' => $cacheKey]);
+
             return $cached;
         }
+
+        Log::debug('RouteDistanceService: cache miss.', ['key' => $cacheKey]);
 
         try {
             $response = Http::timeout(self::TIMEOUT_SECONDS)->get(sprintf(

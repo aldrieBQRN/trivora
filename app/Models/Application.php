@@ -154,7 +154,7 @@ class Application extends Model
      * The tricycle OWNER (the applicant) as displayed on franchise/application detail pages.
      * The owner is always the linked `operators` record — never a driver record.
      *
-     * @return array{first_name: ?string, last_name: ?string, full_name: ?string, birthday: ?string, contact_number: ?string, barangay: ?string}
+     * @return array{first_name: ?string, last_name: ?string, full_name: ?string, birthday: ?string, contact_number: ?string, barangay: ?string, email: ?string}
      */
     public function ownerDetails(): array
     {
@@ -165,6 +165,7 @@ class Application extends Model
             'birthday'       => null,
             'contact_number' => null,
             'barangay'       => null,
+            'email'          => null,
         ];
     }
 
@@ -189,7 +190,7 @@ class Application extends Model
             'first_name'     => $driver->first_name,
             'last_name'      => $driver->last_name,
             'full_name'      => $driver->full_name,
-            'birthday'       => $driver->date_of_birth?->format('M d, Y'),
+            'birthday'       => $driver->date_of_birth?->format('m/d/Y'),
             'contact_number' => $driver->contact_number,
             'barangay'       => $driver->barangay,
         ];

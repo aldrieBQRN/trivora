@@ -46,9 +46,9 @@ class ManualRideTest extends TestCase
         ], $extra));
     }
 
-    private function mrAdd(Driver $driver, string $quote): \Illuminate\Testing\TestResponse
+    private function mrAdd(Driver $driver, string $quote, string $name = 'Walk-in Passenger'): \Illuminate\Testing\TestResponse
     {
-        return $this->as($driver->user)->postJson('/api/v1/driver/manual-ride/add', ['quote' => $quote]);
+        return $this->as($driver->user)->postJson('/api/v1/driver/manual-ride/add', ['quote' => $quote, 'passenger_name' => $name]);
     }
 
     /** Quote + add; returns the walk-in's booking code (waiting in the boarding session). */
@@ -187,12 +187,13 @@ class ManualRideTest extends TestCase
             ->assertJsonPath('ride.session.seats_used', 2)
             ->assertJsonPath('ride.session.seats_remaining', 2)
             ->assertJsonPath('ride.passengers.0.source', 'walk_in')
-            ->assertJsonPath('ride.passengers.0.passenger_name', null);
+            ->assertJsonPath('ride.passengers.0.passenger_name', 'Walk-in Passenger');
         $code = $response->json('booking.booking_code');
 
         $booking = Booking::where('booking_code', $code)->firstOrFail();
         $this->assertSame(Booking::TYPE_MANUAL, $booking->booking_type);
         $this->assertNull($booking->passenger_id);
+        $this->assertSame('Walk-in Passenger', $booking->walk_in_name);
         $this->assertNotNull($booking->ride_session_id);
         $this->assertSame($tricycle->id, $booking->rideSession->tricycle_id);
         $this->assertSame('accepted', $booking->status, 'waiting until Start Ride');
@@ -216,12 +217,33 @@ class ManualRideTest extends TestCase
     }
 
     #[Test]
+    public function a_walk_in_name_is_required_and_recorded_for_the_ride_session(): void
+    {
+        [, $driver] = $this->makeUnit();
+        $quote = $this->mrQuote($driver)->assertOk()->json('quote');
+
+        // No name — rejected before the quote is ever processed.
+        $this->as($driver->user)->postJson('/api/v1/driver/manual-ride/add', ['quote' => $quote])
+            ->assertUnprocessable()->assertJsonValidationErrors(['passenger_name']);
+        $this->assertSame(0, Booking::where('booking_type', 'manual')->where('driver_id', $driver->id)->count());
+
+        // The driver's name is stored and shown in the session payload.
+        $this->mrAdd($driver, $quote, '  Maria Santos  ')->assertCreated()
+            ->assertJsonPath('ride.passengers.0.passenger_name', 'Maria Santos');
+
+        $booking = Booking::where('driver_id', $driver->id)->where('booking_type', 'manual')->firstOrFail();
+        $this->assertSame('Maria Santos', $booking->walk_in_name);
+        $this->as($driver->user)->getJson('/api/v1/driver/qr-session/active')->assertOk()
+            ->assertJsonPath('ride.passengers.0.passenger_name', 'Maria Santos');
+    }
+
+    #[Test]
     public function the_old_start_route_is_an_alias_of_add(): void
     {
         [, $driver] = $this->makeUnit();
         $quote = $this->mrQuote($driver)->json('quote');
 
-        $this->as($driver->user)->postJson('/api/v1/driver/manual-ride/start', ['quote' => $quote])->assertCreated()
+        $this->as($driver->user)->postJson('/api/v1/driver/manual-ride/start', ['quote' => $quote, 'passenger_name' => 'Walk-in Passenger'])->assertCreated()
             ->assertJsonPath('ride.session.status', RideSession::STATUS_BOARDING);
     }
 

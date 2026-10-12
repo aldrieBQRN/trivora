@@ -1,13 +1,12 @@
-import React from 'react';
-import { Head } from '@inertiajs/react';
+import React, { useMemo } from 'react';
+import { Head, Link } from '@inertiajs/react';
 import useBackgroundRefresh from '@/hooks/useBackgroundRefresh';
 import BPLOLayout from '@/Layouts/BPLOLayout';
-import { PageHeader, BackLink } from '@/Components/TMO';
 import {
-    Calendar, Bike, MapPin,
+    ChevronLeft, Calendar, Bike, MapPin,
     User, Phone, ShieldCheck,
     Clock, FileBadge, Check, Mail,
-    CreditCard, Home, Navigation
+    Navigation
 } from 'lucide-react';
 
 /**
@@ -49,10 +48,6 @@ function getCodingSchemeInfo(registry) {
     };
 }
 
-// Shared soft, layered shadow token — same elevation language used across the redesigned TMO
-// panel pages, so BPLO cards read as part of the same product.
-const CARD_SHADOW = 'shadow-[0_1px_2px_0_rgba(15,23,42,0.04),0_8px_24px_-8px_rgba(15,23,42,0.10)]';
-
 export default function RegistryDetails({ registry }) {
     const codingInfo = useMemo(() => getCodingSchemeInfo(registry), [registry]);
     const isActive = registry?.status === 'active';
@@ -68,81 +63,77 @@ export default function RegistryDetails({ registry }) {
             <div className="mx-auto max-w-7xl space-y-6 pb-12">
 
                 {/* ══════════════════════════════════════════════════════════════
-                    1. CLEAN PAGE HEADER (standard PageHeader + BackLink pattern, same as
-                       Reports & other detail pages) — replaces the previous oversized
-                       hero profile card while keeping the record's identity badges,
-                       metadata row, and actions.
+                    1. TOP NAVIGATION BAR
                    ══════════════════════════════════════════════════════════════ */}
-                <PageHeader
-                    backLink={<BackLink href="/bplo/registry">Back to Active Registry</BackLink>}
-                    eyebrow={
-                        <span className="inline-flex items-center gap-1.5">
-                            <ShieldCheck size={13} className="text-emerald-600 shrink-0" />
-                            Municipality of Nasugbu &bull; BPLO Tricycle Record
-                        </span>
-                    }
-                    title={
-                        <span className="font-mono text-2xl font-black tracking-tight">
-                            No. {registry?.coding_scheme_number || '—'}
-                        </span>
-                    }
-                    badge={
-                        <span className="flex flex-wrap items-center gap-2 sm:gap-2.5">
-                            {/* LTO Plate Badge */}
-                            <span className="inline-flex items-center px-2.5 py-1 rounded-md bg-slate-900 text-white font-mono text-xs font-black tracking-wider shadow-xs">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                    <Link
+                        href="/bplo/registry"
+                        className="group inline-flex items-center gap-1.5 text-xs sm:text-sm font-semibold text-slate-500 hover:text-slate-900 transition-colors"
+                    >
+                        <ChevronLeft size={16} strokeWidth={2.5} className="text-slate-400 group-hover:text-slate-700 transition-colors" />
+                        <span>Back to Active Registry</span>
+                    </Link>
+
+                    <div className="flex items-center gap-2">
+                        {registry?.plate_no && (
+                            <span className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-mono font-bold text-[#182B62] shadow-2xs">
+                                PLT-{registry.plate_no}
+                            </span>
+                        )}
+                    </div>
+                </div>
+
+                {/* ══════════════════════════════════════════════════════════════
+                    2. CLEAN PAGE HEADER (Consistent with BPLO Standard)
+                   ══════════════════════════════════════════════════════════════ */}
+                <div className="border-b border-slate-200/80 pb-5">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                        <div>
+                            <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                                Municipality of Nasugbu &bull; BPLO Tricycle Record
+                            </div>
+                            <h1 className="mt-0.5 text-2xl sm:text-[28px] font-extrabold tracking-tight text-slate-900 leading-tight flex items-center gap-3">
+                                <span>Franchise Unit:</span>
+                                <span className="font-mono text-[#182B62]">No. {registry?.coding_scheme_number || '—'}</span>
+                            </h1>
+                            <div className="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs sm:text-sm text-slate-500">
+                                <span className="flex items-center gap-1.5 font-semibold text-slate-800">
+                                    <User size={13} className="text-slate-400 shrink-0" />
+                                    <span>{registry?.operator || 'Registered Tricycle Owner'}</span>
+                                </span>
+                                <span className="text-slate-300 hidden sm:inline">&bull;</span>
+                                <span className="flex items-center gap-1.5 text-slate-600">
+                                    <Bike size={13} className="text-slate-400 shrink-0" />
+                                    <span>{registry?.make || 'Standard Tricycle Unit'}</span>
+                                </span>
+                                <span className="text-slate-300 hidden sm:inline">&bull;</span>
+                                <span className="inline-flex items-center gap-1.5 font-semibold text-slate-800">
+                                    <span className="h-2 w-2 rounded-full shrink-0" style={codingInfo.dotStyle} />
+                                    <span>{codingInfo.day} Coding ({codingInfo.scheme})</span>
+                                </span>
+                            </div>
+                        </div>
+
+                        <div className="flex flex-wrap items-center gap-2 self-start sm:self-center shrink-0">
+                            <span className="inline-flex items-center px-2.5 py-1 rounded-lg bg-slate-900 text-white font-mono text-xs font-black tracking-wider shadow-2xs">
                                 {registry?.plate_no || '—'}
                             </span>
-
-                            {/* Franchise Number Badge */}
-                            <span className="inline-flex items-center gap-1 rounded-md bg-slate-100 px-2.5 py-1 font-mono text-xs font-bold text-slate-700 border border-slate-200">
+                            <span className="inline-flex items-center gap-1 rounded-lg bg-slate-100 px-2.5 py-1 font-mono text-xs font-bold text-slate-700 border border-slate-200">
                                 <FileBadge size={12} className="text-slate-400" />
                                 <span>{registry?.sticker_no || 'N/A'}</span>
                             </span>
-
-                            {/* Status Badge */}
                             {isActive ? (
-                                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                                    <span>Active Franchise</span>
+                                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200/80 shadow-2xs">
+                                    Active Franchise
                                 </span>
                             ) : (
-                                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-rose-50 text-rose-700 border border-rose-200">
-                                    <span>Suspended / Revoked</span>
+                                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-rose-50 text-rose-700 border border-rose-200/80 shadow-2xs">
+                                    Suspended / Revoked
                                 </span>
                             )}
-                        </span>
-                    }
-                    subtitle={
-                        <span className="flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-slate-500">
-                            <span className="flex items-center gap-1.5">
-                                <User size={14} className="text-slate-400 shrink-0" />
-                                <span className="font-semibold text-slate-900">{registry?.operator || 'Registered Tricycle Owner'}</span>
-                            </span>
-
-                            <span className="text-slate-300 hidden sm:inline">&bull;</span>
-
-                            <span className="flex items-center gap-1.5">
-                                <Bike size={14} className="text-slate-400 shrink-0" />
-                                <span>{registry?.make || 'Standard Tricycle Unit'}</span>
-                            </span>
-
-                            <span className="text-slate-300 hidden sm:inline">&bull;</span>
-
-                            <span className="flex items-center gap-1.5">
-                                <span className={`inline-block h-2.5 w-2.5 rounded-full ring-2 ring-slate-200 shrink-0 ${codingInfo.dotClass}`} style={codingInfo.dotStyle} />
-                                <span className="font-semibold text-slate-900">
-                                    {codingInfo.day} Coding ({codingInfo.scheme})
-                                </span>
-                            </span>
-                        </span>
-                    }
-                    actions={
-                        <>
-                            <span className="inline-flex items-center px-2.5 py-1 rounded-lg bg-slate-100 border border-slate-200 text-xs font-mono font-bold text-[#182B62]">
-                                {registry?.plate_no || 'NO-PLATE'}
-                            </span>
-                        </>
-                    }
-                />
+                        </div>
+                    </div>
+                </div>
 
                 {/* ══════════════════════════════════════════════════════════════
                     2. BALANCED 2-COLUMN EXECUTIVE WORKSTATION (50/50 Split)
@@ -153,7 +144,7 @@ export default function RegistryDetails({ registry }) {
                     <div className="space-y-6">
 
                         {/* Card 1: Tricycle Owner Information */}
-                        <div className={`overflow-hidden rounded-2xl border border-slate-200/70 bg-white ${CARD_SHADOW}`}>
+                        <div className="overflow-hidden rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white shadow-xs">
                             <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50/75 px-5 py-3.5">
                                 <div className="flex items-center gap-2">
                                     <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-[#182B62]/[0.10] to-[#182B62]/[0.02] text-[#182B62]">
@@ -164,7 +155,7 @@ export default function RegistryDetails({ registry }) {
                                             Tricycle Owner Information
                                         </h3>
                                         <p className="text-[11px] text-slate-400 font-normal">
-                                            Registered owner's personal and license details
+                                             Registered owner's personal and license details
                                         </p>
                                     </div>
                                 </div>
@@ -180,16 +171,41 @@ export default function RegistryDetails({ registry }) {
                                         <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Full Name</span>
                                         <span className="text-base font-bold text-slate-900 mt-0.5 block">{registry?.operator || '—'}</span>
                                     </div>
-                                    <div className="h-10 w-10 rounded-full bg-gradient-to-br from-[#182B62] to-[#2A3560] text-white flex items-center justify-center text-sm font-bold shadow-2xs shrink-0">
+                                    <div className="h-10 w-10 rounded-full bg-gradient-to-br from-[#182B62] to-[#25449B] text-white flex items-center justify-center text-sm font-bold shadow-2xs shrink-0">
                                         {registry?.operator ? registry.operator.charAt(0).toUpperCase() : 'D'}
                                     </div>
+                                </div>
+
+                                {/* First Name & Last Name */}
+                                <div className="py-3 flex items-center justify-between gap-2">
+                                    <span className="text-slate-500 font-medium">First Name</span>
+                                    <span className="font-semibold text-slate-900">
+                                        {registry?.first_name || registry?.owner?.first_name || '—'}
+                                    </span>
+                                </div>
+                                <div className="py-3 flex items-center justify-between gap-2">
+                                    <span className="text-slate-500 font-medium">Last Name</span>
+                                    <span className="font-semibold text-slate-900">
+                                        {registry?.last_name || registry?.owner?.last_name || '—'}
+                                    </span>
+                                </div>
+
+                                {/* Date of Birth */}
+                                <div className="py-3 flex items-center justify-between gap-2">
+                                    <span className="text-slate-500 font-medium flex items-center gap-1.5">
+                                        <Calendar size={13} className="text-slate-400" />
+                                        Birthday
+                                    </span>
+                                    <span className="font-mono font-semibold text-slate-800">
+                                        {registry?.date_of_birth || registry?.owner?.birthday || '—'}
+                                    </span>
                                 </div>
 
                                 {/* Contact Number */}
                                 <div className="py-3 flex items-center justify-between gap-2">
                                     <span className="text-slate-500 font-medium flex items-center gap-1.5">
                                         <Phone size={13} className="text-slate-400" />
-                                        Contact Number
+                                        Mobile Number
                                     </span>
                                     {registry?.contact && registry.contact !== 'N/A' ? (
                                         <a href={`tel:${registry.contact}`} className="font-semibold text-slate-800 hover:text-[#182B62] transition-colors font-mono">
@@ -200,8 +216,19 @@ export default function RegistryDetails({ registry }) {
                                     )}
                                 </div>
 
-                                {/* Email Address */}
+                                {/* Barangay */}
                                 <div className="py-3 flex items-center justify-between gap-2">
+                                    <span className="text-slate-500 font-medium flex items-center gap-1.5">
+                                        <MapPin size={13} className="text-slate-400" />
+                                        Barangay (Nasugbu)
+                                    </span>
+                                    <span className="font-semibold text-slate-800">
+                                        {registry?.barangay || 'Poblacion'}
+                                    </span>
+                                </div>
+
+                                {/* Email Address */}
+                                <div className="pt-3 flex items-center justify-between gap-2">
                                     <span className="text-slate-500 font-medium flex items-center gap-1.5">
                                         <Mail size={13} className="text-slate-400" />
                                         Email Address
@@ -210,64 +237,12 @@ export default function RegistryDetails({ registry }) {
                                         {registry?.email || 'N/A'}
                                     </span>
                                 </div>
-
-                                {/* Residential Address */}
-                                <div className="py-3 flex items-start justify-between gap-2">
-                                    <span className="text-slate-500 font-medium flex items-center gap-1.5 shrink-0 mt-0.5">
-                                        <Home size={13} className="text-slate-400" />
-                                        Home Address
-                                    </span>
-                                    <span className="font-semibold text-slate-800 text-right">
-                                        {registry?.address || `${registry?.barangay || 'Nasugbu'}, Batangas`}
-                                    </span>
-                                </div>
-
-                                {/* Barangay */}
-                                <div className="py-3 flex items-center justify-between gap-2">
-                                    <span className="text-slate-500 font-medium flex items-center gap-1.5">
-                                        <MapPin size={13} className="text-slate-400" />
-                                        Barangay / District
-                                    </span>
-                                    <span className="font-semibold text-slate-800">
-                                        {registry?.barangay || 'Poblacion'}
-                                    </span>
-                                </div>
-
-                                {/* Date of Birth */}
-                                <div className="py-3 flex items-center justify-between gap-2">
-                                    <span className="text-slate-500 font-medium flex items-center gap-1.5">
-                                        <Calendar size={13} className="text-slate-400" />
-                                        Date of Birth
-                                    </span>
-                                    <span className="font-semibold text-slate-800">
-                                        {registry?.date_of_birth || 'Dec 12, 1988'}
-                                    </span>
-                                </div>
-
-                                {/* Professional Driver's License */}
-                                <div className="py-3 flex items-center justify-between gap-2">
-                                    <span className="text-slate-500 font-medium flex items-center gap-1.5">
-                                        <CreditCard size={13} className="text-slate-400" />
-                                        Driver's License No.
-                                    </span>
-                                    <span className="font-mono font-bold text-slate-900 bg-slate-100 px-2 py-0.5 rounded border border-slate-200/60">
-                                        {registry?.license_no || 'N01-88-567890'}
-                                    </span>
-                                </div>
-
-                                {/* License Expiry & Restrictions */}
-                                <div className="pt-3 flex items-center justify-between gap-2">
-                                    <span className="text-slate-500 font-medium">License Expiry / Codes</span>
-                                    <span className="font-semibold text-slate-800">
-                                        {registry?.license_expiry || 'Dec 11, 2027'} (Codes: {registry?.license_codes || '1, 2'})
-                                    </span>
-                                </div>
                             </div>
                         </div>
 
                         {/* Card 1b: Tricycle Driver — visually distinct from the owner card above;
                             only a separate person when the application says the owner isn't the driver */}
-                        <div className={`overflow-hidden rounded-2xl border border-indigo-200/70 bg-indigo-50/30 ${CARD_SHADOW}`}>
+                        <div className="overflow-hidden rounded-2xl sm:rounded-3xl border border-indigo-200/70 bg-indigo-50/30 shadow-xs">
                             <div className="flex items-center justify-between border-b border-indigo-100 bg-indigo-50/60 px-5 py-3.5">
                                 <div className="flex items-center gap-2">
                                     <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-indigo-500/[0.12] text-indigo-600">
@@ -294,29 +269,33 @@ export default function RegistryDetails({ registry }) {
                                         ({registry?.operator || '—'}) is also the tricycle driver of this unit.
                                     </p>
                                 ) : registry?.tricycleDriver ? (
-                                    <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                                    <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
                                         <div className="flex items-center justify-between gap-2">
-                                            <span className="text-slate-500 font-medium">Name</span>
-                                            <span className="font-semibold text-slate-800">{registry.tricycleDriver.full_name || '—'}</span>
+                                            <span className="text-slate-500 font-medium">First Name</span>
+                                            <span className="font-semibold text-slate-800">{registry.tricycleDriver.first_name || '—'}</span>
+                                        </div>
+                                        <div className="flex items-center justify-between gap-2">
+                                            <span className="text-slate-500 font-medium">Last Name</span>
+                                            <span className="font-semibold text-slate-800">{registry.tricycleDriver.last_name || '—'}</span>
                                         </div>
                                         <div className="flex items-center justify-between gap-2">
                                             <span className="text-slate-500 font-medium flex items-center gap-1.5">
                                                 <Calendar size={13} className="text-slate-400" />
                                                 Birthday
                                             </span>
-                                            <span className="font-semibold text-slate-800">{registry.tricycleDriver.birthday || '—'}</span>
+                                            <span className="font-mono font-semibold text-slate-800">{registry.tricycleDriver.birthday || '—'}</span>
                                         </div>
                                         <div className="flex items-center justify-between gap-2">
                                             <span className="text-slate-500 font-medium flex items-center gap-1.5">
                                                 <Phone size={13} className="text-slate-400" />
-                                                Mobile
+                                                Mobile Number
                                             </span>
                                             <span className="font-mono font-semibold text-slate-800">{registry.tricycleDriver.contact_number || '—'}</span>
                                         </div>
                                         <div className="flex items-center justify-between gap-2">
                                             <span className="text-slate-500 font-medium flex items-center gap-1.5">
                                                 <MapPin size={13} className="text-slate-400" />
-                                                Barangay
+                                                Barangay (Nasugbu)
                                             </span>
                                             <span className="font-semibold text-slate-800">{registry.tricycleDriver.barangay || '—'}</span>
                                         </div>
@@ -328,7 +307,7 @@ export default function RegistryDetails({ registry }) {
                         </div>
 
                         {/* Card 2: Franchise & Route Information */}
-                        <div className={`overflow-hidden rounded-2xl border border-slate-200/70 bg-white ${CARD_SHADOW}`}>
+                        <div className="overflow-hidden rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white shadow-xs">
                             <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50/75 px-5 py-3.5">
                                 <div className="flex items-center gap-2">
                                     <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-500/[0.12] to-emerald-500/[0.02] text-emerald-600">
@@ -386,7 +365,7 @@ export default function RegistryDetails({ registry }) {
                     <div className="space-y-6">
 
                         {/* Card 1: Registered Tricycle Specifications */}
-                        <div className={`overflow-hidden rounded-2xl border border-slate-200/70 bg-white ${CARD_SHADOW}`}>
+                        <div className="overflow-hidden rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white shadow-xs">
                             <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50/75 px-5 py-3.5">
                                 <div className="flex items-center gap-2">
                                     <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-[#182B62]/[0.10] to-[#182B62]/[0.02] text-[#182B62]">
@@ -469,7 +448,7 @@ export default function RegistryDetails({ registry }) {
                         </div>
 
                         {/* Card 2: Color Coding & Traffic Schedule */}
-                        <div className={`rounded-2xl border border-slate-200/70 bg-white p-4 sm:p-5 ${CARD_SHADOW} space-y-4`}>
+                        <div className="rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-4 sm:p-5 shadow-xs space-y-4">
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-2">
                                     <Clock size={16} className="text-[#182B62]" />

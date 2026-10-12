@@ -165,4 +165,35 @@ class DriverTelematicsBatchTest extends TestCase
         $location = \App\Models\TricycleLocation::where('tricycle_id', $this->tricycle->id)->first();
         $this->assertSame('mobile_app', $location->source);
     }
+
+    #[Test]
+    public function mobile_telematics_is_refused_while_the_unit_is_in_iot_device_mode(): void
+    {
+        Sanctum::actingAs($this->driverUser, ['*']);
+        // The unit is authored to its physical tracker — a phone ping here would be a second,
+        // competing source, so the endpoint must refuse it outright rather than record it.
+        $this->tricycle->update(['active_tracking_mode' => 'iot_device']);
+
+        $this->postJson('/api/v1/driver/telematics', [
+            'latitude' => 14.01, 'longitude' => 120.01,
+        ])->assertStatus(409)->assertJsonPath('success', false);
+
+        $this->assertSame(0, \App\Models\TricycleLocation::where('tricycle_id', $this->tricycle->id)->count());
+    }
+
+    #[Test]
+    public function a_mid_ride_switch_to_iot_device_refuses_the_flushed_batch(): void
+    {
+        Sanctum::actingAs($this->driverUser, ['*']);
+        $this->tricycle->update(['active_tracking_mode' => 'iot_device']);
+        $tuesday = Carbon::parse('next Tuesday')->setTime(8, 0);
+
+        $this->postJson('/api/v1/driver/telematics/batch', [
+            'pings' => [
+                ['latitude' => 14.01, 'longitude' => 120.01, 'recorded_at' => $tuesday->toISOString()],
+            ],
+        ])->assertStatus(409)->assertJsonPath('success', false);
+
+        $this->assertSame(0, \App\Models\TricycleLocation::where('tricycle_id', $this->tricycle->id)->count());
+    }
 }

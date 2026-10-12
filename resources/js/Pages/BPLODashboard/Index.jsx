@@ -1,396 +1,472 @@
-import React from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Head, Link } from '@inertiajs/react';
 import useBackgroundRefresh from '@/hooks/useBackgroundRefresh';
 import BPLOLayout from '@/Layouts/BPLOLayout';
 import {
     FileText, CheckCircle2, TrendingUp,
     Clock, ChevronRight, Hash, ShieldAlert, Award,
-    Activity, ArrowUpRight, Users, Bike, Calendar
+    Activity, ArrowUpRight, Users, Bike, Calendar,
+    FolderCheck, ShieldCheck, Inbox
 } from 'lucide-react';
 import {
     AreaChart, Area, XAxis, YAxis,
     CartesianGrid, Tooltip, ResponsiveContainer,
 } from 'recharts';
 
-// Shared soft, layered shadow token — matches the elevation language used across the TMO panel
-// pages so every dashboard in the product reads as one consistent system.
 const CARD_SHADOW = 'shadow-[0_1px_2px_0_rgba(15,23,42,0.04),0_8px_24px_-8px_rgba(15,23,42,0.10)]';
 
-export default function BPLODashboard({ stats }) {
-    const activeRegistry = stats?.totalRegistriesCount || 0;
-    const activeFranchises = stats?.activeFranchisesCount || 0;
-    const pendingReleasing = stats?.pendingReleasingCount || 0;
+function LiveClock() {
+    const [time, setTime] = useState(() =>
+        new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: true })
+    );
 
-    // Silent background refresh so these counts stay current without a manual reload.
-    useBackgroundRefresh(['stats']);
+    useEffect(() => {
+        const timer = setInterval(() => {
+            setTime(new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: true }));
+        }, 1000);
+        return () => clearInterval(timer);
+    }, []);
 
-    // MTOP Issuance Trend data
-    const chartData = [
-        { day: 'Mon', issued: 12 },
-        { day: 'Tue', issued: 19 },
-        { day: 'Wed', issued: 15 },
-        { day: 'Thu', issued: 22 },
-        { day: 'Fri', issued: 28 },
-        { day: 'Sat', issued: 8 },
-        { day: 'Sun', issued: 4 },
-    ];
+    return (
+        <span className="flex items-center gap-1.5 text-xs font-bold text-slate-700 tabular-nums">
+            <Clock size={13} className="text-slate-400 shrink-0" />
+            <span>{time}</span>
+        </span>
+    );
+}
 
-    const todayDate = new Date().toLocaleDateString('en-US', {
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric'
-    });
+export default function BPLODashboard({
+    stats = {},
+    weeklyIssuanceTrend = [],
+    recentReleases = [],
+    todaStats = [],
+}) {
+    // Silent background refresh so numbers stay accurate in real-time
+    useBackgroundRefresh(['stats', 'weeklyIssuanceTrend', 'recentReleases']);
+
+    const totalRegistries = Number(stats?.totalRegistriesCount || 0);
+    const activeFranchises = Number(stats?.activeFranchisesCount || 0);
+    const pendingReleasing = Number(stats?.pendingReleasingCount || 0);
+    const releasedToday = Number(stats?.releasedTodayCount || 0);
+    const suspendedCount = Number(stats?.suspendedCount || 0);
+
+    const activePct = totalRegistries > 0
+        ? Math.round((activeFranchises / totalRegistries) * 100)
+        : 100;
+
+    // Format current date
+    const todayDate = useMemo(() => {
+        return new Date().toLocaleDateString('en-US', {
+            weekday: 'short',
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric',
+        });
+    }, []);
+
+    // Format chart data: use server data or fallback to 7 days
+    const chartData = useMemo(() => {
+        if (weeklyIssuanceTrend && weeklyIssuanceTrend.length > 0) {
+            return weeklyIssuanceTrend;
+        }
+        return [
+            { day: 'Mon', issued: 0 },
+            { day: 'Tue', issued: 0 },
+            { day: 'Wed', issued: 0 },
+            { day: 'Thu', issued: 0 },
+            { day: 'Fri', issued: 0 },
+            { day: 'Sat', issued: 0 },
+            { day: 'Sun', issued: 0 },
+        ];
+    }, [weeklyIssuanceTrend]);
+
+    const weeklyTotalIssued = chartData.reduce((acc, curr) => acc + (curr.issued || 0), 0);
 
     return (
         <BPLOLayout title="Dashboard" role="BPLO Officer">
             <Head title="Dashboard | TRIVORA" />
 
-            {/* ══════════════════════════════════════════════════════════════
-                1. CLEAN HEADER (Consistent with TMO Standard)
-               ══════════════════════════════════════════════════════════════ */}
-            <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-slate-200/80 pb-5">
-                <div>
-                    <h1 className="text-2xl sm:text-[28px] font-extrabold tracking-tight text-slate-900 leading-tight">
-                        Dashboard
-                    </h1>
-                    <p className="mt-1 text-xs sm:text-sm text-slate-500 max-w-2xl leading-relaxed">
-                        Municipal Tricycle Operator's Permit (MTOP) licensing, issuance &amp; fleet registry status
-                    </p>
-                </div>
-                <div className="flex items-center gap-2">
-                    <div className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 shadow-2xs">
-                        <Calendar size={13} className="text-slate-400" />
-                        <span>Today: {todayDate}</span>
-                    </div>
-                </div>
-            </div>
-
-            {/* ══════════════════════════════════════════════════════════════
-                2. PREMIUM KPI CARD DECK (TMO Operations style)
-               ══════════════════════════════════════════════════════════════ */}
-            <div className="mb-6 grid grid-cols-1 gap-3.5 sm:gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                {/* Card 1: Active Registry */}
-                <Link
-                    href="/bplo/registry"
-                    className={`group flex flex-col justify-between rounded-2xl border border-slate-200/70 bg-white p-4 sm:p-5 ${CARD_SHADOW} transition-all hover:border-slate-300`}
-                >
+            <div className="font-['Plus_Jakarta_Sans',sans-serif]">
+                {/* ══════════════════════════════════════════════════════════════
+                    1. CLEAN HEADER (Dashboard Title, Subtitle & Live Date/Time)
+                   ══════════════════════════════════════════════════════════════ */}
+                <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-slate-200/80 pb-5">
                     <div>
-                        <div className="flex items-center justify-between">
-                            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                                Active Registry
-                            </span>
-                            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-[#182B62]/[0.10] to-[#182B62]/[0.02] text-[#182B62]">
-                                <Hash size={14} />
-                            </span>
-                        </div>
-                        <div className="mt-2 flex items-baseline gap-2">
-                            <span className="text-2xl sm:text-3xl font-extrabold tracking-tight tabular-nums text-[#182B62]">
-                                {activeRegistry}
-                            </span>
-                            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                                Live Fleet
-                            </span>
-                        </div>
-                        <p className="mt-1 text-[11px] text-slate-500">
-                            All permitted units on record
+                        <h1 className="text-2xl sm:text-[28px] font-black tracking-tight text-slate-900 leading-tight">
+                            Dashboard
+                        </h1>
+                        <p className="mt-1 text-xs sm:text-sm text-slate-500 max-w-2xl leading-relaxed font-medium">
+                            Municipal Tricycle Operator's Permit (MTOP) licensing, issuance &amp; fleet registry status
                         </p>
                     </div>
-
-                    <div className="mt-3 rounded-xl bg-slate-50 p-2.5 flex items-center justify-between text-xs">
-                        <span className="text-[11px] font-medium text-slate-500">Registry:</span>
-                        <span className="text-xs font-bold text-[#182B62] group-hover:text-indigo-600 flex items-center gap-0.5 transition-colors">
-                            View <ArrowUpRight size={12} />
-                        </span>
-                    </div>
-                </Link>
-
-                {/* Card 2: Pending Releasing */}
-                <Link
-                    href="/bplo/releasing"
-                    className={`group flex flex-col justify-between rounded-2xl border border-slate-200/70 bg-white p-4 sm:p-5 ${CARD_SHADOW} transition-all hover:border-amber-300`}
-                >
-                    <div>
-                        <div className="flex items-center justify-between">
-                            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                                Pending Releasing
-                            </span>
-                            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-amber-500/[0.14] to-amber-500/[0.02] text-amber-600">
-                                <Clock size={14} />
-                            </span>
-                        </div>
-                        <div className="mt-2 flex items-baseline gap-2">
-                            <span className="text-2xl sm:text-3xl font-extrabold tracking-tight tabular-nums text-slate-900">
-                                {pendingReleasing}
-                            </span>
-                            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                                {pendingReleasing > 0 ? 'Action Needed' : 'Cleared'}
-                            </span>
-                        </div>
-                        <p className="mt-1 text-[11px] text-slate-500">
-                            Cleared inspection, awaiting sticker
-                        </p>
-                    </div>
-
-                    <div className="mt-3 rounded-xl bg-slate-50 p-2.5 flex items-center justify-between text-xs">
-                        <span className="text-[11px] font-medium text-slate-500">Queue:</span>
-                        <span className="text-xs font-bold text-amber-700 group-hover:text-amber-800 flex items-center gap-0.5 transition-colors">
-                            Open <ArrowUpRight size={12} />
-                        </span>
-                    </div>
-                </Link>
-
-                {/* Card 3: Active Franchises */}
-                <Link
-                    href="/bplo/registry"
-                    className={`group flex flex-col justify-between rounded-2xl border border-slate-200/70 bg-white p-4 sm:p-5 ${CARD_SHADOW} transition-all hover:border-emerald-300`}
-                >
-                    <div>
-                        <div className="flex items-center justify-between">
-                            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                                Active Franchises
-                            </span>
-                            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-500/[0.14] to-emerald-500/[0.02] text-emerald-600">
-                                <Award size={14} />
-                            </span>
-                        </div>
-                        <div className="mt-2 flex items-baseline gap-2">
-                            <span className="text-2xl sm:text-3xl font-extrabold tracking-tight tabular-nums text-slate-900">
-                                {activeFranchises}
-                            </span>
-                            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                                Compliant
-                            </span>
-                        </div>
-                        <p className="mt-1 text-[11px] text-slate-500">
-                            In good civic standing
-                        </p>
-                    </div>
-
-                    <div className="mt-3 rounded-xl bg-slate-50 p-2.5 flex items-center justify-between text-xs">
-                        <span className="text-[11px] font-medium text-slate-500">Masterlist:</span>
-                        <span className="text-xs font-bold text-emerald-700 group-hover:text-emerald-800 flex items-center gap-0.5 transition-colors">
-                            View <ArrowUpRight size={12} />
-                        </span>
-                    </div>
-                </Link>
-
-                {/* Card 4: Revoked Franchises */}
-                <Link
-                    href="/bplo/registry"
-                    className={`group flex flex-col justify-between rounded-2xl border border-slate-200/70 bg-white p-4 sm:p-5 ${CARD_SHADOW} transition-all hover:border-rose-300`}
-                >
-                    <div>
-                        <div className="flex items-center justify-between">
-                            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                                Revoked / Suspended
-                            </span>
-                            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-rose-500/[0.14] to-rose-500/[0.02] text-rose-600">
-                                <ShieldAlert size={14} />
-                            </span>
-                        </div>
-                        <div className="mt-2 flex items-baseline gap-2">
-                            <span className="text-2xl sm:text-3xl font-extrabold tracking-tight tabular-nums text-slate-900">
-                                0
-                            </span>
-                            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                                Revoked
-                            </span>
-                        </div>
-                        <p className="mt-1 text-[11px] text-slate-500">
-                            Franchises pulled from circulation
-                        </p>
-                    </div>
-
-                    <div className="mt-3 rounded-xl bg-slate-50 p-2.5 flex items-center justify-between text-xs">
-                        <span className="text-[11px] font-medium text-slate-500">Review:</span>
-                        <span className="text-xs font-bold text-slate-400 group-hover:text-rose-600 flex items-center gap-0.5 transition-colors">
-                            Open <ArrowUpRight size={12} />
-                        </span>
-                    </div>
-                </Link>
-            </div>
-
-            {/* ══════════════════════════════════════════════════════════════
-                3. CHARTS & ACTIVITY GRID
-               ══════════════════════════════════════════════════════════════ */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 mb-6">
-                {/* Left: Recharts Area Chart */}
-                <div className={`lg:col-span-2 rounded-2xl border border-slate-200/70 bg-white p-5 sm:p-6 ${CARD_SHADOW}`}>
-                    <div className="flex items-center justify-between mb-4">
-                        <div className="flex items-center gap-2">
-                            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-[#182B62]/[0.10] to-[#182B62]/[0.02] text-[#182B62]">
-                                <TrendingUp size={16} strokeWidth={2.2} />
+                    <div className="flex items-center gap-2 self-start sm:self-auto shrink-0">
+                        <div className="inline-flex items-center gap-2.5 rounded-xl border border-slate-200/90 bg-white px-3.5 py-2 shadow-2xs">
+                            <div className="flex items-center gap-1.5 text-xs font-bold text-slate-800">
+                                <Calendar size={13} className="text-[#182B62] shrink-0" />
+                                <span>{todayDate}</span>
                             </div>
-                            <div>
-                                <h3 className="text-sm font-bold text-slate-900">MTOP Issuance Trend</h3>
-                                <p className="text-[11px] text-slate-500">Daily released plates and franchise approvals this week</p>
-                            </div>
+                            <div className="h-3.5 w-px bg-slate-200" aria-hidden="true" />
+                            <LiveClock />
                         </div>
-                        <span className="text-[11px] font-semibold text-slate-400">Weekly Cycle</span>
-                    </div>
-
-                    <div className="h-[260px] w-full pt-2">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                                <defs>
-                                    <linearGradient id="colorIssued" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="5%" stopColor="#182B62" stopOpacity={0.25}/>
-                                        <stop offset="95%" stopColor="#182B62" stopOpacity={0}/>
-                                    </linearGradient>
-                                </defs>
-                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F1F5F9" />
-                                <XAxis
-                                    dataKey="day"
-                                    axisLine={false}
-                                    tickLine={false}
-                                    tick={{ fill: '#64748B', fontSize: 11, fontWeight: 600 }}
-                                    dy={8}
-                                />
-                                <YAxis
-                                    axisLine={false}
-                                    tickLine={false}
-                                    tick={{ fill: '#94A3B8', fontSize: 11, fontWeight: 600 }}
-                                />
-                                <Tooltip
-                                    contentStyle={{
-                                        backgroundColor: '#FFFFFF',
-                                        borderRadius: '10px',
-                                        border: '1px solid #E2E8F0',
-                                        boxShadow: '0 4px 12px rgba(0,0,0,0.06)',
-                                        fontSize: '12px'
-                                    }}
-                                    itemStyle={{ color: '#0F172A', fontWeight: 700 }}
-                                    labelStyle={{ color: '#64748B', fontSize: '11px', fontWeight: 600, marginBottom: '2px' }}
-                                />
-                                <Area
-                                    type="monotone"
-                                    dataKey="issued"
-                                    name="MTOPs Issued"
-                                    stroke="#182B62"
-                                    strokeWidth={2.5}
-                                    fillOpacity={1}
-                                    fill="url(#colorIssued)"
-                                />
-                            </AreaChart>
-                        </ResponsiveContainer>
                     </div>
                 </div>
 
-                {/* Right: Recent Issuances & Quick Actions */}
-                <div className={`rounded-2xl border border-slate-200/70 bg-white p-5 sm:p-6 ${CARD_SHADOW} flex flex-col justify-between`}>
-                    <div>
-                        <div className="flex items-center justify-between mb-4">
-                            <div className="flex items-center gap-2">
-                                <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-500/[0.12] to-emerald-500/[0.02] text-emerald-600">
-                                    <Activity size={16} strokeWidth={2.2} />
+                {/* ══════════════════════════════════════════════════════════════
+                    2. OPERATIONAL KPI DECK (Strict 1-per-row on Mobile < 640px)
+                   ══════════════════════════════════════════════════════════════ */}
+                <div className="mb-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4 items-stretch">
+                    {/* Card 1: Active Registry */}
+                    <Link
+                        href="/bplo/registry"
+                        className={`group flex flex-col justify-between rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-4 sm:p-5 lg:p-6 ${CARD_SHADOW} transition-all hover:border-slate-300 active:scale-[0.99]`}
+                    >
+                        <div>
+                            <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
+                                <span className="text-[10px] sm:text-[10.5px] font-bold uppercase tracking-wider text-slate-400">
+                                    Active Registry
+                                </span>
+                                <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-xl bg-indigo-50 border border-indigo-100 text-[#182B62]">
+                                    <Hash size={15} strokeWidth={2.2} />
                                 </div>
-                                <h3 className="text-sm font-bold text-slate-900">Recent Issuances</h3>
                             </div>
-                            <span className="text-[11px] font-semibold text-emerald-700">Live feed</span>
+                            <div className="mt-2.5 flex items-baseline gap-2">
+                                <span className="text-2xl sm:text-3xl font-black tracking-tight tabular-nums text-slate-900 leading-none">
+                                    {totalRegistries}
+                                </span>
+                                <span className="text-[10px] sm:text-[10.5px] font-extrabold uppercase tracking-wider text-slate-400">
+                                    Tricycles
+                                </span>
+                            </div>
+                            <p className="mt-1 text-[11px] font-medium text-slate-500 line-clamp-1">
+                                Recorded municipal units on file
+                            </p>
                         </div>
 
-                        <div className="space-y-2.5">
-                            <div className="flex items-start gap-3 p-2.5 rounded-xl bg-slate-50">
-                                <div className="flex h-7 w-7 items-center justify-center rounded-full bg-emerald-100 text-emerald-700 shrink-0 mt-0.5">
-                                    <CheckCircle2 size={14} strokeWidth={2.5} />
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                    <div className="text-xs font-bold text-slate-900 truncate">Plate #8812 Issued</div>
-                                    <div className="text-[11px] text-slate-500 truncate">Mario Dela Cruz • Brgy. Bucana</div>
-                                </div>
-                                <span className="text-[10px] font-semibold text-slate-400 shrink-0">10m ago</span>
-                            </div>
-
-                            <div className="flex items-start gap-3 p-2.5 rounded-xl bg-slate-50">
-                                <div className="flex h-7 w-7 items-center justify-center rounded-full bg-emerald-100 text-emerald-700 shrink-0 mt-0.5">
-                                    <CheckCircle2 size={14} strokeWidth={2.5} />
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                    <div className="text-xs font-bold text-slate-900 truncate">Plate #4491 Issued</div>
-                                    <div className="text-[11px] text-slate-500 truncate">Ricardo Dalisay • Brgy. 8</div>
-                                </div>
-                                <span className="text-[10px] font-semibold text-slate-400 shrink-0">1h ago</span>
-                            </div>
-
-                            <div className="flex items-start gap-3 p-2.5 rounded-xl bg-amber-50/60">
-                                <div className="flex h-7 w-7 items-center justify-center rounded-full bg-amber-100 text-amber-700 shrink-0 mt-0.5">
-                                    <Clock size={14} strokeWidth={2.5} />
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                    <div className="text-xs font-bold text-slate-900 truncate">Awaiting Plate Number</div>
-                                    <div className="text-[11px] text-amber-700 truncate">Arnaldo Baquiran (Inspection Passed)</div>
-                                </div>
-                                <span className="text-[10px] font-semibold text-slate-400 shrink-0">2h ago</span>
-                            </div>
+                        <div className="mt-3.5 rounded-xl bg-slate-50 border border-slate-100/90 px-3 py-2 flex items-center justify-between text-xs">
+                            <span className="font-semibold text-slate-400 text-[11px]">Masterlist:</span>
+                            <span className="font-bold text-[#182B62] group-hover:text-indigo-600 flex items-center gap-1 transition-colors text-xs">
+                                View <ArrowUpRight size={13} />
+                            </span>
                         </div>
-                    </div>
+                    </Link>
 
+                    {/* Card 2: Pending Releasing */}
                     <Link
                         href="/bplo/releasing"
-                        className="mt-4 inline-flex w-full items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white py-2 px-3 text-xs font-bold text-slate-700 shadow-2xs hover:bg-slate-50 hover:text-slate-900 transition-colors"
+                        className={`group flex flex-col justify-between rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-4 sm:p-5 lg:p-6 ${CARD_SHADOW} transition-all hover:border-amber-300 active:scale-[0.99]`}
                     >
-                        Open Releasing Queue <ChevronRight size={14} />
+                        <div>
+                            <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
+                                <span className="text-[10px] sm:text-[10.5px] font-bold uppercase tracking-wider text-slate-400">
+                                    Pending Releasing
+                                </span>
+                                <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-xl bg-amber-50 border border-amber-100 text-amber-600">
+                                    <Clock size={15} strokeWidth={2.2} />
+                                </div>
+                            </div>
+                            <div className="mt-2.5 flex items-baseline gap-2">
+                                <span className="text-2xl sm:text-3xl font-black tracking-tight tabular-nums text-amber-600 leading-none">
+                                    {pendingReleasing}
+                                </span>
+                                <span className="text-[10px] sm:text-[10.5px] font-extrabold uppercase tracking-wider text-slate-400">
+                                    {pendingReleasing > 0 ? 'Awaiting Sticker' : 'Cleared'}
+                                </span>
+                            </div>
+                            <p className="mt-1 text-[11px] font-medium text-slate-500 line-clamp-1">
+                                Cleared inspection, pending issuance
+                            </p>
+                        </div>
+
+                        <div className="mt-3.5 rounded-xl bg-slate-50 border border-slate-100/90 px-3 py-2 flex items-center justify-between text-xs">
+                            <span className="font-semibold text-slate-400 text-[11px]">Queue:</span>
+                            <span className="font-bold text-amber-700 group-hover:text-amber-800 flex items-center gap-1 transition-colors text-xs">
+                                Process <ArrowUpRight size={13} />
+                            </span>
+                        </div>
+                    </Link>
+
+                    {/* Card 3: Issued Today */}
+                    <div className={`flex flex-col justify-between rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-4 sm:p-5 lg:p-6 ${CARD_SHADOW}`}>
+                        <div>
+                            <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
+                                <span className="text-[10px] sm:text-[10.5px] font-bold uppercase tracking-wider text-slate-400">
+                                    Issued Today
+                                </span>
+                                <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-xl bg-blue-50 border border-blue-100 text-blue-600">
+                                    <Award size={15} strokeWidth={2.2} />
+                                </div>
+                            </div>
+                            <div className="mt-2.5 flex items-baseline gap-2">
+                                <span className="text-2xl sm:text-3xl font-black tracking-tight tabular-nums text-blue-600 leading-none">
+                                    {releasedToday}
+                                </span>
+                                <span className="text-[10px] sm:text-[10.5px] font-extrabold uppercase tracking-wider text-slate-400">
+                                    Released
+                                </span>
+                            </div>
+                            <p className="mt-1 text-[11px] font-medium text-slate-500 line-clamp-1">
+                                Stickers signed off in current shift
+                            </p>
+                        </div>
+
+                        <div className="mt-3.5 rounded-xl bg-slate-50 border border-slate-100/90 px-3 py-2 flex items-center justify-between text-xs">
+                            <span className="font-semibold text-slate-400 text-[11px]">Cycle:</span>
+                            <span className="font-bold text-slate-800 text-xs">
+                                Daily Output
+                            </span>
+                        </div>
+                    </div>
+
+                    {/* Card 4: Active Franchises */}
+                    <Link
+                        href="/bplo/registry"
+                        className={`group flex flex-col justify-between rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-4 sm:p-5 lg:p-6 ${CARD_SHADOW} transition-all hover:border-emerald-300 active:scale-[0.99]`}
+                    >
+                        <div>
+                            <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
+                                <span className="text-[10px] sm:text-[10.5px] font-bold uppercase tracking-wider text-slate-400">
+                                    Active Franchises
+                                </span>
+                                <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-xl bg-emerald-50 border border-emerald-100 text-emerald-600">
+                                    <ShieldCheck size={15} strokeWidth={2.2} />
+                                </div>
+                            </div>
+                            <div className="mt-2.5 flex items-baseline gap-2">
+                                <span className="text-2xl sm:text-3xl font-black tracking-tight tabular-nums text-emerald-600 leading-none">
+                                    {activeFranchises}
+                                </span>
+                                <span className="text-[10px] sm:text-[10.5px] font-extrabold uppercase tracking-wider text-slate-400">
+                                    {activePct}% Rate
+                                </span>
+                            </div>
+                            <p className="mt-1 text-[11px] font-medium text-slate-500 line-clamp-1">
+                                In good standing ({suspendedCount} suspended)
+                            </p>
+                        </div>
+
+                        <div className="mt-3.5 rounded-xl bg-slate-50 border border-slate-100/90 px-3 py-2 flex items-center justify-between text-xs">
+                            <span className="font-semibold text-slate-400 text-[11px]">Status:</span>
+                            <span className="font-bold text-emerald-700 group-hover:text-emerald-800 flex items-center gap-1 transition-colors text-xs">
+                                Compliant <ArrowUpRight size={13} />
+                            </span>
+                        </div>
                     </Link>
                 </div>
-            </div>
 
-            {/* ══════════════════════════════════════════════════════════════
-                4. QUICK ACTION WORKFLOW DOCK
-               ══════════════════════════════════════════════════════════════ */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <Link
-                    href="/bplo/users"
-                    className={`group rounded-2xl border border-slate-200/70 bg-white p-4 ${CARD_SHADOW} hover:border-slate-300 transition-all flex items-center gap-3.5`}
-                >
-                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-amber-500/[0.12] to-amber-500/[0.02] text-amber-600 group-hover:scale-105 transition-transform">
-                        <Users size={18} strokeWidth={2.2} />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                        <h4 className="text-xs font-bold text-slate-900 group-hover:text-indigo-600 transition-colors">
-                            Staff Management
-                        </h4>
-                        <p className="text-[11px] text-slate-500 truncate">
-                            Manage BPLO staff accounts &amp; access
-                        </p>
-                    </div>
-                    <ChevronRight size={15} className="text-slate-400 group-hover:translate-x-0.5 transition-transform" />
-                </Link>
+                {/* ══════════════════════════════════════════════════════════════
+                    3. ANALYTICS & RECENT ISSUANCES (Full Tablet & Mobile Support)
+                   ══════════════════════════════════════════════════════════════ */}
+                <div className="mb-6 grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
+                    {/* Left: MTOP Issuance Trend AreaChart */}
+                    <div className={`lg:col-span-7 xl:col-span-8 flex flex-col justify-between rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-5 sm:p-6 ${CARD_SHADOW}`}>
+                        {/* Header */}
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-slate-100 pb-3 mb-2">
+                            <div className="flex items-center gap-2.5">
+                                <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-indigo-50 border border-indigo-100 text-[#182B62]">
+                                    <TrendingUp size={16} strokeWidth={2.2} />
+                                </div>
+                                <div>
+                                    <h3 className="text-sm sm:text-base font-bold text-slate-900 leading-tight">
+                                        MTOP Issuance Trend
+                                    </h3>
+                                    <p className="text-[11px] text-slate-500 font-medium">
+                                        Daily released franchise stickers &amp; permits this week
+                                    </p>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-2 self-start sm:self-auto">
+                                <span className="rounded-lg bg-slate-100 px-2.5 py-1 text-[10.5px] font-bold text-slate-700">
+                                    Weekly: {weeklyTotalIssued} Units
+                                </span>
+                            </div>
+                        </div>
 
-                <Link
-                    href="/bplo/releasing"
-                    className={`group rounded-2xl border border-slate-200/70 bg-white p-4 ${CARD_SHADOW} hover:border-slate-300 transition-all flex items-center gap-3.5`}
-                >
-                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-[#182B62]/[0.10] to-[#182B62]/[0.02] text-[#182B62] group-hover:scale-105 transition-transform">
-                        <Bike size={18} strokeWidth={2.2} />
+                        {/* Chart Container matches right card height */}
+                        <div className="flex-1 w-full min-h-[210px] pt-1">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <AreaChart data={chartData} margin={{ top: 8, right: 10, left: -22, bottom: 0 }}>
+                                    <defs>
+                                        <linearGradient id="colorIssued" x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="5%" stopColor="#182B62" stopOpacity={0.22} />
+                                            <stop offset="95%" stopColor="#182B62" stopOpacity={0.0} />
+                                        </linearGradient>
+                                    </defs>
+                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F1F5F9" />
+                                    <XAxis
+                                        dataKey="day"
+                                        axisLine={false}
+                                        tickLine={false}
+                                        tick={{ fill: '#64748B', fontSize: 11, fontWeight: 600 }}
+                                        dy={4}
+                                        height={22}
+                                    />
+                                    <YAxis
+                                        axisLine={false}
+                                        tickLine={false}
+                                        tick={{ fill: '#94A3B8', fontSize: 11, fontWeight: 600 }}
+                                        allowDecimals={false}
+                                    />
+                                    <Tooltip
+                                        contentStyle={{
+                                            backgroundColor: '#FFFFFF',
+                                            borderRadius: '12px',
+                                            border: '1px solid #E2E8F0',
+                                            boxShadow: '0 4px 16px rgba(15,23,42,0.08)',
+                                            fontSize: '12px',
+                                            fontFamily: 'Plus Jakarta Sans, sans-serif',
+                                        }}
+                                        itemStyle={{ color: '#0F172A', fontWeight: 700 }}
+                                        labelStyle={{ color: '#64748B', fontSize: '11px', fontWeight: 600, marginBottom: '2px' }}
+                                    />
+                                    <Area
+                                        type="monotone"
+                                        dataKey="issued"
+                                        name="MTOPs Released"
+                                        stroke="#182B62"
+                                        strokeWidth={2.5}
+                                        fillOpacity={1}
+                                        fill="url(#colorIssued)"
+                                    />
+                                </AreaChart>
+                            </ResponsiveContainer>
+                        </div>
                     </div>
-                    <div className="flex-1 min-w-0">
-                        <h4 className="text-xs font-bold text-slate-900 group-hover:text-indigo-600 transition-colors">
-                            Plate &amp; Sticker Releasing
-                        </h4>
-                        <p className="text-[11px] text-slate-500 truncate">
-                            Assign the Sticker Number &amp; release permits
-                        </p>
-                    </div>
-                    <ChevronRight size={15} className="text-slate-400 group-hover:translate-x-0.5 transition-transform" />
-                </Link>
 
-                <Link
-                    href="/bplo/registry"
-                    className={`group rounded-2xl border border-slate-200/70 bg-white p-4 ${CARD_SHADOW} hover:border-slate-300 transition-all flex items-center gap-3.5`}
-                >
-                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500/[0.12] to-emerald-500/[0.02] text-emerald-600 group-hover:scale-105 transition-transform">
-                        <Hash size={18} strokeWidth={2.2} />
+                    {/* Right: Recent Issuances Feed */}
+                    <div className={`lg:col-span-5 xl:col-span-4 flex flex-col justify-between rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-5 sm:p-6 ${CARD_SHADOW}`}>
+                        <div>
+                            <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-3">
+                                <div className="flex items-center gap-2.5">
+                                    <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-50 border border-emerald-100 text-emerald-600">
+                                        <Activity size={16} strokeWidth={2.2} />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-sm sm:text-base font-bold text-slate-900 leading-tight">
+                                            Recent Releases
+                                        </h3>
+                                        <p className="text-[11px] text-slate-500 font-medium">
+                                            Latest processed franchise stickers
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Feed Items */}
+                            {recentReleases.length === 0 ? (
+                                <div className="py-7 text-center">
+                                    <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 text-slate-400">
+                                        <Inbox size={20} strokeWidth={1.8} />
+                                    </div>
+                                    <p className="mt-2 text-xs font-semibold text-slate-700">No releases logged today</p>
+                                    <p className="text-[11px] text-slate-400 mt-0.5">Cleared applications ready for sticker issuance will appear here.</p>
+                                </div>
+                            ) : (
+                                <div className="space-y-2">
+                                    {recentReleases.slice(0, 3).map((rel) => (
+                                        <div
+                                            key={rel.id}
+                                            className="flex items-center justify-between gap-3 rounded-xl border border-slate-100 bg-slate-50/70 px-3 py-2.5 transition-colors hover:bg-slate-50"
+                                        >
+                                            <div className="flex items-center gap-2.5 min-w-0">
+                                                <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-100 text-emerald-700 shrink-0">
+                                                    <CheckCircle2 size={13} strokeWidth={2.5} />
+                                                </div>
+                                                <div className="min-w-0">
+                                                    <div className="flex items-center gap-1.5">
+                                                        <span className="font-mono text-xs font-bold text-slate-900 truncate">
+                                                            {rel.sticker_number || 'Sticker Issued'}
+                                                        </span>
+                                                        {rel.plate_number && rel.plate_number !== 'N/A' && (
+                                                            <span className="text-[10px] text-slate-400 font-mono">
+                                                                • {rel.plate_number}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                    <div className="text-[11px] text-slate-500 truncate font-medium mt-0.5">
+                                                        {rel.operator_name} {rel.toda_name ? `• ${rel.toda_name}` : ''}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <span className="text-[10px] font-semibold text-slate-400 shrink-0 tabular-nums">
+                                                {rel.released_at}
+                                            </span>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+
+                        <Link
+                            href="/bplo/releasing"
+                            className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 py-2.5 px-3 text-xs font-bold text-slate-700 shadow-2xs transition-all active:scale-[0.98]"
+                        >
+                            <span>Open Releasing Queue</span>
+                            <ChevronRight size={14} strokeWidth={2.2} />
+                        </Link>
                     </div>
-                    <div className="flex-1 min-w-0">
-                        <h4 className="text-xs font-bold text-slate-900 group-hover:text-indigo-600 transition-colors">
-                            Franchise Masterlist
-                        </h4>
-                        <p className="text-[11px] text-slate-500 truncate">
-                            Search active units, export CSV &amp; inspect records
-                        </p>
-                    </div>
-                    <ChevronRight size={15} className="text-slate-400 group-hover:translate-x-0.5 transition-transform" />
-                </Link>
+                </div>
+
+                {/* ══════════════════════════════════════════════════════════════
+                    4. QUICK WORKFLOW ACTIONS DECK
+                   ══════════════════════════════════════════════════════════════ */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 sm:gap-4">
+                    {/* Action 1: Releasing Queue */}
+                    <Link
+                        href="/bplo/releasing"
+                        className={`group rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-4 sm:p-5 ${CARD_SHADOW} hover:border-slate-300 transition-all flex items-center gap-3.5 active:scale-[0.99]`}
+                    >
+                        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-indigo-50 border border-indigo-100 text-[#182B62] group-hover:scale-105 transition-transform">
+                            <Bike size={20} strokeWidth={2.2} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                            <h4 className="text-xs sm:text-sm font-bold text-slate-900 group-hover:text-[#182B62] transition-colors leading-tight">
+                                Releasing Queue
+                            </h4>
+                            <p className="mt-0.5 text-[11px] text-slate-500 truncate">
+                                Assign Sticker Number &amp; release permits
+                            </p>
+                        </div>
+                        <ChevronRight size={16} className="text-slate-400 group-hover:translate-x-0.5 transition-transform shrink-0" />
+                    </Link>
+
+                    {/* Action 2: Franchise Masterlist */}
+                    <Link
+                        href="/bplo/registry"
+                        className={`group rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-4 sm:p-5 ${CARD_SHADOW} hover:border-slate-300 transition-all flex items-center gap-3.5 active:scale-[0.99]`}
+                    >
+                        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-emerald-50 border border-emerald-100 text-emerald-600 group-hover:scale-105 transition-transform">
+                            <FolderCheck size={20} strokeWidth={2.2} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                            <h4 className="text-xs sm:text-sm font-bold text-slate-900 group-hover:text-emerald-700 transition-colors leading-tight">
+                                Active Registry
+                            </h4>
+                            <p className="mt-0.5 text-[11px] text-slate-500 truncate">
+                                Search active units &amp; inspect records
+                            </p>
+                        </div>
+                        <ChevronRight size={16} className="text-slate-400 group-hover:translate-x-0.5 transition-transform shrink-0" />
+                    </Link>
+
+                    {/* Action 3: Staff Management */}
+                    <Link
+                        href="/bplo/users"
+                        className={`group rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-4 sm:p-5 ${CARD_SHADOW} hover:border-slate-300 transition-all flex items-center gap-3.5 active:scale-[0.99]`}
+                    >
+                        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-amber-50 border border-amber-100 text-amber-600 group-hover:scale-105 transition-transform">
+                            <Users size={20} strokeWidth={2.2} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                            <h4 className="text-xs sm:text-sm font-bold text-slate-900 group-hover:text-amber-700 transition-colors leading-tight">
+                                Staff Directory
+                            </h4>
+                            <p className="mt-0.5 text-[11px] text-slate-500 truncate">
+                                Manage BPLO personnel &amp; credentials
+                            </p>
+                        </div>
+                        <ChevronRight size={16} className="text-slate-400 group-hover:translate-x-0.5 transition-transform shrink-0" />
+                    </Link>
+                </div>
             </div>
         </BPLOLayout>
     );

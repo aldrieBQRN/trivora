@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Events\DriverLocationUpdated;
 use App\Models\Booking;
 use App\Models\BookingDriverDecline;
 use App\Models\Driver;
@@ -523,83 +522,6 @@ class BookingController extends Controller
 
         return response()->json([
             'booking' => $booking,
-        ]);
-    }
-
-    /**
-     * Driver updates real-time GPS location.
-     *
-     * This endpoint requires auth:sanctum (see routes/api.php) — the driver whose location is
-     * updated is always the authenticated account's own driver profile, never a client-supplied
-     * driver_id/user_id, and never the "any active-ride driver, else the first driver in the
-     * table" fallback this previously had (which could silently overwrite an unrelated driver's
-     * GPS position).
-     */
-    public function updateDriverLocation(Request $request): JsonResponse
-    {
-        $validated = $request->validate([
-            'latitude' => 'required|numeric',
-            'longitude' => 'required|numeric',
-        ]);
-
-        $driver = Driver::where('user_id', $request->user()->id)->first();
-
-        if ($driver) {
-            $driver->update([
-                'current_lat' => $validated['latitude'],
-                'current_lng' => $validated['longitude'],
-                'last_location_updated_at' => now(),
-            ]);
-
-            $tricycleId = $driver->tricycle_id ?: ($driver->operator ? $driver->operator->tricycles()->value('id') : \App\Models\Tricycle::value('id'));
-
-            if ($tricycleId) {
-                try {
-                    $source = ($driver->tricycle && $driver->tricycle->active_tracking_mode === 'iot_device') ? 'gps_device' : 'mobile_app';
-
-                    \App\Models\TricycleLocation::create([
-                        'tricycle_id'   => $tricycleId,
-                        'latitude'      => $validated['latitude'],
-                        'longitude'     => $validated['longitude'],
-                        'speed_kmh'     => $request->input('speed_kmh', 22.5),
-                        'heading_deg'   => (int) $request->input('heading_deg', 0),
-                        'source'        => $source,
-                        'recorded_at'   => now(),
-                    ]);
-                } catch (\Exception $e) {
-                    \Illuminate\Support\Facades\Log::warning('TricycleLocation log failed: ' . $e->getMessage());
-                }
-            }
-
-            // Real-time broadcast to active passenger booking channels
-            $activeBookings = Booking::where('driver_id', $driver->id)
-                ->whereIn('status', ['accepted', 'arrived', 'in_transit'])
-                ->get();
-
-            foreach ($activeBookings as $activeBooking) {
-                try {
-                    broadcast(new DriverLocationUpdated(
-                        bookingId: $activeBooking->id,
-                        driverId: $driver->id,
-                        tricycleId: (int) ($tricycleId ?? 0),
-                        latitude: (float) $validated['latitude'],
-                        longitude: (float) $validated['longitude'],
-                        headingDeg: $request->has('heading_deg') ? (int) $request->input('heading_deg') : null,
-                        recordedAt: now()->toIso8601String()
-                    ));
-                } catch (\Throwable $e) {
-                    \Illuminate\Support\Facades\Log::warning("Driver location broadcast failed for booking {$activeBooking->id}: {$e->getMessage()}");
-                }
-            }
-        }
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Driver location updated successfully.',
-            'location' => [
-                'latitude' => $validated['latitude'],
-                'longitude' => $validated['longitude'],
-            ],
         ]);
     }
 

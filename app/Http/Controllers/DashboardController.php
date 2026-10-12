@@ -16,6 +16,7 @@ use App\Models\ColorCodingScheme;
 use App\Models\AuditLog;
 use App\Services\AuditService;
 use App\Services\ColorCodingRuleService;
+use App\Services\ViolationNotifier;
 use Illuminate\Support\Facades\DB;
 use Inertia\Response;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
@@ -202,15 +203,35 @@ class DashboardController extends Controller
         // plate number looks like — filtering by a "TEST"/"DEMO" substring in plate_number
         // was hiding genuinely active franchises (including real manual test registrations),
         // not actual garbage data.
-        $tricycles = Tricycle::with(['operator.todaZone', 'todaZone', 'franchiseSchemes.colorCodingScheme'])
+        $tricycles = Tricycle::with(['operator', 'franchiseSchemes.colorCodingScheme', 'franchiseSchemes.application'])
             ->whereIn('status', ['active', 'suspended'])
             ->orderByDesc('created_at')
             ->get();
 
         return $tricycles
             ->map(function ($tri) {
-                $scheme = $tri->franchiseSchemes->first();
+                $scheme = $tri->franchiseSchemes->firstWhere('is_active', true) ?: $tri->franchiseSchemes->first();
                 $ccs = $scheme?->colorCodingScheme;
+                $app = $scheme?->application;
+
+                // Franchise Number (STK-YYYY-NNNN or MTOP) and Validity Term
+                $franchiseNumber = $scheme?->sticker_number ?: $app?->sticker_number ?: ($scheme?->franchise_number ?: null);
+
+                $issueDate = $scheme?->issue_date ?: ($app?->completed_at ? \Carbon\Carbon::parse($app->completed_at) : ($tri->created_at ? \Carbon\Carbon::parse($tri->created_at) : null));
+
+                if ($issueDate) {
+                    if ($scheme?->expiry_date && !$scheme->is_active) {
+                        $expiryDate = $scheme->expiry_date;
+                    } else {
+                        $expiryDate = $issueDate->copy()->addYear();
+                    }
+                } else {
+                    $expiryDate = $scheme?->expiry_date;
+                }
+
+                $validityTerm = ($issueDate && $expiryDate)
+                    ? $issueDate->format('M j, Y') . ' – ' . $expiryDate->format('M j, Y')
+                    : ($expiryDate ? 'Valid until ' . $expiryDate->format('M j, Y') : ($issueDate ? 'Issued ' . $issueDate->format('M j, Y') : '—'));
 
                 // Sticker Number is a 4-digit municipal number (e.g. 0142, 0089)
                 $rawBody = $tri->coding_scheme_number ?: str_pad($tri->id, 4, '0', STR_PAD_LEFT);
@@ -232,8 +253,6 @@ class DashboardController extends Controller
                 };
                 $dayName = !empty($eval['restricted_days']) ? $eval['restricted_days'][0] : 'None';
 
-                $todaName = $tri->todaZone ? $tri->todaZone->name : ($tri->operator?->todaZone ? $tri->operator->todaZone->name : 'Unassigned');
-
                 return [
                     'id'                    => $tri->id,
                     'unit_code'             => 'TRV-' . str_pad($tri->id, 3, '0', STR_PAD_LEFT),
@@ -241,10 +260,11 @@ class DashboardController extends Controller
                     // derived 'TRV-GPS-' value would collide with a genuinely paired device.
                     'iot_id'                => $tri->iot_device_id,
                     'coding_scheme_number'  => $fourDigitSticker,
+                    'franchise_number'      => $franchiseNumber ?: '—',
+                    'validity_term'         => $validityTerm,
                     'plate_no'              => $tri->plate_number,
                     'operator'              => $tri->operator ? $tri->operator->full_name : 'N/A',
                     'contact'               => $tri->operator ? $tri->operator->contact_number : 'N/A',
-                    'toda'                  => $todaName,
                     'coding_color'          => $colorName,
                     'coding_hex'            => $colorHex,
                     'coding_bg'             => $colorBg,
@@ -283,7 +303,7 @@ class DashboardController extends Controller
             $sheet,
             'Active Tricycle Registry',
             'As of: ' . now()->format('F d, Y \a\t h:i A'),
-            8
+            9
         );
 
         $row = $this->writeKpiRow($sheet, $row, [
@@ -297,13 +317,14 @@ class DashboardController extends Controller
         $row = $this->writeTable(
             $sheet,
             $row,
-            ['Unit Code', 'Sticker Number', 'Plate No.', 'Tricycle Owner', 'TODA Zone', 'Color Coding', 'Coding Day', 'Status'],
+            ['Unit Code', 'Sticker Number', 'Plate No.', 'Tricycle Owner', 'Franchise No.', 'Validity Term', 'Color Coding', 'Coding Day', 'Status'],
             $registryList->map(fn ($u) => [
                 $u['unit_code'],
                 $u['coding_scheme_number'],
                 $u['plate_no'],
                 $u['operator'],
-                $u['toda'],
+                $u['franchise_number'],
+                $u['validity_term'],
                 $u['coding_color'],
                 $u['coding_day'],
                 ucfirst($u['status']),
@@ -321,7 +342,7 @@ class DashboardController extends Controller
      */
     public function tricycleDetails($id)
     {
-        $tri = Tricycle::with(['operator.todaZone', 'franchiseSchemes.colorCodingScheme', 'franchiseSchemes.application', 'locations', 'violations.colorCodingScheme', 'violations.locationSnapshot', 'violations.tricycle'])
+        $tri = Tricycle::with(['operator.user', 'franchiseSchemes.colorCodingScheme', 'franchiseSchemes.application', 'locations', 'violations.colorCodingScheme', 'violations.locationSnapshot', 'violations.tricycle'])
             ->where('id', $id)
             ->orWhere('iot_device_id', $id)
             ->orWhere('coding_scheme_number', $id)
@@ -329,7 +350,7 @@ class DashboardController extends Controller
             ->first();
 
         if (!$tri) {
-            $tri = Tricycle::with(['operator.todaZone', 'franchiseSchemes.colorCodingScheme', 'franchiseSchemes.application', 'locations', 'violations.colorCodingScheme', 'violations.locationSnapshot', 'violations.tricycle'])->firstOrFail();
+            $tri = Tricycle::with(['operator.user', 'franchiseSchemes.colorCodingScheme', 'franchiseSchemes.application', 'locations', 'violations.colorCodingScheme', 'violations.locationSnapshot', 'violations.tricycle'])->firstOrFail();
         }
 
         $rawSticker = $tri->coding_scheme_number ?: str_pad($tri->id, 4, '0', STR_PAD_LEFT);
@@ -360,7 +381,6 @@ class DashboardController extends Controller
         ];
 
         $isCodedToday = $eval['is_restricted_today'];
-        $todaName = $tri->todaZone?->name ?: ($tri->operator?->todaZone?->name ?: 'Unassigned');
 
         // Franchise Number (STK-YYYY-NNNN) — the real serial held on this unit's franchise
         // scheme, falling back to the application that issued it. Never synthesised: when no
@@ -368,6 +388,10 @@ class DashboardController extends Controller
         // inventing a PERMIT-*/MTOP-* placeholder.
         $franchiseScheme = $tri->franchiseSchemes->firstWhere('is_active', true) ?: $tri->franchiseSchemes->first();
         $franchiseNumber = $franchiseScheme?->sticker_number ?: $franchiseScheme?->application?->sticker_number ?: null;
+
+        $make = $tri->make;
+        $model = $tri->model;
+        $fullModel = trim(($make ?: '') . ' ' . ($model ?: '')) ?: null;
 
         $tricycleData = [
             'id'                   => $tri->id,
@@ -379,9 +403,6 @@ class DashboardController extends Controller
             'operator'             => $tri->operator ? $tri->operator->full_name : 'Unassigned Operator',
             'contact'              => $tri->operator ? $tri->operator->contact_number : 'N/A',
             'operator_address'     => $tri->operator ? ($tri->operator->address . ($tri->operator->barangay ? ', ' . $tri->operator->barangay : '')) : 'Nasugbu, Batangas',
-            'license_number'       => $tri->operator?->license_number ?: 'N02-18-' . str_pad($tri->id, 6, '0', STR_PAD_LEFT),
-            'license_expiry'       => $tri->operator?->license_expiry_date ? $tri->operator->license_expiry_date->format('M d, Y') : 'Oct 24, 2028',
-            'toda'                 => $todaName,
             'coding_day'           => $codingMeta['day'],
             'coding_color'         => $codingMeta['color'],
             'coding_hex'           => $codingMeta['hex'],
@@ -389,16 +410,16 @@ class DashboardController extends Controller
             'coding_badge'         => $codingMeta['badge'],
             'is_coded_today'       => $isCodedToday,
             'status'               => $tri->status === 'active' ? 'active' : 'suspended',
-            'make'                 => $tri->make ?: 'Kawasaki',
-            'model'                => $tri->model ?: 'Barako 175',
-            'full_model'           => trim(($tri->make ?: 'Kawasaki') . ' ' . ($tri->model ?: 'Barako 175')),
-            'year_model'           => $tri->year_model ?: 2024,
-            'body_color'           => $tri->body_color ?: 'Black/Red',
-            'body_type'            => $tri->body_type ?: 'Pass-Thru Sidecar',
-            'engine_number'        => $tri->engine_number ?: ('ENG-' . str_pad($tri->id, 6, '0', STR_PAD_LEFT)),
-            'chassis_number'       => $tri->chassis_number ?: ('CHS-' . str_pad($tri->id, 6, '0', STR_PAD_LEFT)),
-            'or_number'            => $tri->or_number ?: ('OR-2026-' . str_pad($tri->id, 5, '0', STR_PAD_LEFT)),
-            'cr_number'            => $tri->cr_number ?: ('CR-2026-' . str_pad($tri->id, 5, '0', STR_PAD_LEFT)),
+            'make'                 => $make,
+            'model'                => $model,
+            'full_model'           => $fullModel,
+            'year_model'           => $tri->year_model,
+            'body_color'           => $tri->body_color,
+            'body_type'            => $tri->body_type,
+            'engine_number'        => $tri->engine_number,
+            'chassis_number'       => $tri->chassis_number,
+            'or_number'            => $tri->or_number,
+            'cr_number'            => $tri->cr_number,
             'iot_device_id'        => $tri->iot_device_id,
             'active_tracking_mode' => $tri->active_tracking_mode ?: ($tri->tracking_capability === 'iot_enabled' ? 'iot_device' : 'mobile_app'),
             'tracking_capability'  => $tri->tracking_capability,
@@ -406,44 +427,121 @@ class DashboardController extends Controller
             // by actual TricycleLocation pings (see Tricycle::gpsStatus()).
             'gps_status'           => $tri->gpsStatus()['status'],
             'gps_last_seen'        => $tri->gpsStatus()['last_seen_at']?->diffForHumans(),
+            // The configured GPS reporting cadence (config/tracking.php) — passed through so the
+            // TMO smart-GPS card displays the real interval instead of a hardcoded label.
+            'gps_interval_seconds' => (int) config('tracking.gps_interval_seconds', 5),
             'color'                => $codingMeta['color'],
             'cityOfRegistration'   => 'Nasugbu, Batangas',
-            'registrationDate'     => $tri->created_at ? $tri->created_at->format('F j, Y') : 'March 15, 2024',
+            'registrationDate'     => $tri->created_at ? $tri->created_at->format('F j, Y') : null,
         ];
 
         // Fetch documents linked to the application, resolved against the canonical franchise
         // registration requirement list (ApplicationDocument::CANONICAL_REQUIREMENTS) — never
         // every document row ever uploaded, and never a fixed "always verified" placeholder.
-        // A requirement can have multiple document rows (a rejection followed by a
-        // resubmission); the most recently uploaded one wins. A requirement with no document at
-        // all is reported honestly as "not_submitted" rather than omitted or faked.
-        $app = $tri->applications()->with(['documents', 'tricycleDriver'])->latest()->first();
+        $app = $tri->applications()->with(['documents', 'tricycleDriver'])->latest()->first()
+            ?: ($tri->franchiseSchemes->first()?->application);
 
-        // Owner vs driver — the registry LIST already shows the owner (this tricycle's
-        // operator) as the primary person; this details page additionally surfaces the
-        // separate driver (when one exists) so the two roles are never conflated. Same
-        // relationship resolution as the rest of the app (Application::driverDetails()).
+        // Owner (Applicant) registered details
+        $operator = $tri->operator;
+        $ownerFirstName = $operator?->first_name;
+        $ownerLastName  = $operator?->last_name;
+        if (! $ownerFirstName && $operator?->full_name) {
+            $parts = explode(' ', $operator->full_name, 2);
+            $ownerFirstName = $parts[0] ?? null;
+            $ownerLastName  = $parts[1] ?? null;
+        }
+
+        $ownerIsDriver = $app ? (bool) $app->owner_is_driver : true;
         $driverDetails = $app ? $app->driverDetails() : null;
-        $tricycleData['owner_name']      = $tri->operator?->full_name;
-        $tricycleData['owner_is_driver'] = $app ? (bool) $app->owner_is_driver : true;
-        $tricycleData['driver_name']     = $driverDetails['full_name'] ?? null;
-        $tricycleData['driver_contact']  = $driverDetails['contact_number'] ?? null;
+
+        $tricycleData['owner'] = [
+            'first_name'     => $ownerFirstName,
+            'last_name'      => $ownerLastName,
+            'full_name'      => $operator?->full_name ?: ($ownerFirstName ? trim("{$ownerFirstName} {$ownerLastName}") : 'Unassigned Owner'),
+            'birthday'       => $operator?->date_of_birth ? $operator->date_of_birth->format('m/d/Y') : null,
+            'contact_number' => $operator?->contact_number ?: $tri->contact ?: null,
+            'barangay'       => $operator?->barangay ?: null,
+            'email'          => $operator?->user?->email ?: ($operator ? "operator.{$operator->id}@trivora.ph" : null),
+        ];
+
+        // Separate driver details (only collected when owner is NOT the driver)
+        $driver = $app?->tricycleDriver;
+        $driverFirstName = $driver?->first_name ?? ($driverDetails['first_name'] ?? null);
+        $driverLastName  = $driver?->last_name ?? ($driverDetails['last_name'] ?? null);
+        $driverBirthday  = $driver?->date_of_birth ? $driver->date_of_birth->format('m/d/Y') : ($driverDetails['birthday'] ?? null);
+        $driverContact   = $driver?->contact_number ?? ($driverDetails['contact_number'] ?? null);
+        $driverBarangay  = $driver?->barangay ?? ($driverDetails['barangay'] ?? null);
+
+        $tricycleData['driver'] = (! $ownerIsDriver && ($driverFirstName || $driverDetails)) ? [
+            'first_name'     => $driverFirstName,
+            'last_name'      => $driverLastName,
+            'full_name'      => $driver?->full_name ?: ($driverDetails['full_name'] ?? trim("{$driverFirstName} {$driverLastName}")),
+            'birthday'       => $driverBirthday,
+            'contact_number' => $driverContact,
+            'barangay'       => $driverBarangay,
+        ] : null;
+
+        $tricycleData['owner_name']      = $tricycleData['owner']['full_name'];
+        $tricycleData['owner_is_driver'] = $ownerIsDriver;
+        $tricycleData['driver_name']     = $tricycleData['driver']['full_name'] ?? null;
+        $tricycleData['driver_contact']  = $tricycleData['driver']['contact_number'] ?? null;
 
         // This tricycle's current franchise permit (FranchiseScheme, the is_active-scoped
         // relation — Tricycle::franchiseScheme()) — operational authorization (Suspend/Revoke/
         // Reinstate) belongs to the FRANCHISE, not any individual driver account. Only a
         // tricycle with an issued franchise has an authorization status to manage (a still-
         // pending application has none yet).
-        $franchiseScheme = $tri->franchiseScheme;
+        $franchiseScheme = $tri->franchiseScheme ?: ($tri->franchiseSchemes->firstWhere('is_active', true) ?: $tri->franchiseSchemes->first());
+
+        $issueDate = $franchiseScheme?->issue_date ?: ($app?->completed_at ? \Carbon\Carbon::parse($app->completed_at) : ($tri->created_at ? \Carbon\Carbon::parse($tri->created_at) : null));
+        
+        // Enforce 1-year franchise validity rule: an active franchise permit is valid for 1 year
+        if ($issueDate) {
+            if ($franchiseScheme?->expiry_date && !$franchiseScheme->is_active) {
+                // Keep historical/expired date on inactive records
+                $expiryDate = $franchiseScheme->expiry_date;
+            } else {
+                // Active or newly issued franchise: strictly 1-year validity term
+                $expiryDate = $issueDate->copy()->addYear();
+            }
+        } else {
+            $expiryDate = $franchiseScheme?->expiry_date;
+        }
+
+        $validityTerm = ($issueDate && $expiryDate)
+            ? $issueDate->format('M j, Y') . ' – ' . $expiryDate->format('M j, Y')
+            : ($expiryDate ? 'Valid until ' . $expiryDate->format('M j, Y') : ($issueDate ? 'Issued ' . $issueDate->format('M j, Y') : '—'));
+
+        $issueDateFormatted = $issueDate ? $issueDate->format('M j, Y') : null;
+        $expiryDateFormatted = $expiryDate ? $expiryDate->format('M j, Y') : null;
+
+        $isExpired = $expiryDate ? $expiryDate->isPast() : false;
+        $daysRemaining = ($expiryDate && !$isExpired) ? (int) now()->diffInDays($expiryDate, false) : -1;
+        $isExpiringSoon = ($daysRemaining >= 0 && $daysRemaining <= 60);
+
+        $renewalStatus = $isExpired
+            ? 'Expired (Renewal Required)'
+            : ($isExpiringSoon ? 'Renewal Due Soon' : 'Renewed (Current Year)');
+        $renewalBadge = $isExpired ? 'danger' : ($isExpiringSoon ? 'warning' : 'success');
+
+        $tricycleData['franchise_issue_date']  = $issueDateFormatted;
+        $tricycleData['franchise_expiry_date'] = $expiryDateFormatted;
+        $tricycleData['validity_term']         = $validityTerm;
+        $tricycleData['renewal_status']        = $renewalStatus;
+        $tricycleData['renewal_badge']         = $renewalBadge;
+        $tricycleData['is_expired']            = $isExpired;
+
         $tricycleData['franchise_status'] = $franchiseScheme ? [
             'status'             => $franchiseScheme->status,
             'status_reason'      => $franchiseScheme->status_reason,
             'status_changed_at'  => $franchiseScheme->status_changed_at?->format('M d, Y h:i A'),
+            'issue_date'         => $issueDateFormatted,
+            'expiry_date'        => $expiryDateFormatted,
+            'validity_term'      => $validityTerm,
+            'renewal_status'     => $renewalStatus,
+            'renewal_badge'      => $renewalBadge,
+            'is_expired'         => $isExpired,
         ] : null;
-
-        // QR Ride configuration (passenger capacity, QR code, readiness) — TMO-only page, so the
-        // QR's public URL is included here and nowhere in the mobile/booking payloads.
-        $tricycleData['qr_ride'] = \App\Services\QrRideService::tmoSummary($tri);
 
         $mappedDocs = [];
         if ($app) {
@@ -576,27 +674,8 @@ class DashboardController extends Controller
             }
         }
 
-        // Fetch latest location ping for telematics
-        $latestLoc = $tri->locations()->latest('recorded_at')->first();
-        $telematicsData = [
-            'latitude'          => $latestLoc?->latitude ? (float)$latestLoc->latitude : 14.0722,
-            'longitude'         => $latestLoc?->longitude ? (float)$latestLoc->longitude : 120.6315,
-            'speed_kmh'         => $latestLoc?->speed_kmh ? round((float)$latestLoc->speed_kmh, 1) : 24.5,
-            'heading_deg'       => $latestLoc?->heading_deg ?: 18,
-            'heading_cardinal'  => 'NNE (North-Northeast)',
-            'address'           => 'J.P. Laurel St. cor. F. Alix St., Brgy. Poblacion 1, Nasugbu',
-            'geofence_status'   => 'Inside Assigned TODA Corridor',
-            'geofence_valid'    => true,
-            'signal_strength'   => '-78 dBm (4G LTE)',
-            'satellites'        => 18,
-            'voltage'           => '13.8V (Normal Alternator)',
-            'last_ping'         => $latestLoc ? $latestLoc->recorded_at->diffForHumans() : 'Just now',
-            'firmware_version'  => 'TRV-FW-v2.4.1',
-            'max_speed_today'   => '38 km/h',
-            'speed_limit'       => '40 km/h (Municipal Limit)',
-        ];
-
-        // Fetch violations from database
+        // Violations from database — never a fabricated fallback list. A unit with no recorded
+        // violations simply shows an empty list (honest: nothing has been cited).
         $mappedViolations = $tri->violations->map(function ($v) use ($codingMeta) {
             $isSettled = ($v->status === 'settled' || !empty($v->fine_paid_at));
             return [
@@ -616,41 +695,6 @@ class DashboardController extends Controller
             ];
         });
 
-        if ($mappedViolations->isEmpty()) {
-            $mappedViolations = collect([
-                [
-                    'id'                    => 1,
-                    'ticket_number'         => 'VIO-2026-00042',
-                    'title'                 => 'Color Coding Violation',
-                    'date'                  => 'Jan 19, 2026 at 2:45 PM',
-                    'paymentStatus'         => 'settled',
-                    'codingDay'             => $codingMeta['day'],
-                    'details'               => 'Operated along J.P. Laurel St. on restricted ' . $codingMeta['day'] . ' schedule.',
-                    'fine_amount'           => 500,
-                    'fine_amount_formatted' => '₱500.00',
-                    'detection_method'      => 'Mobile GPS',
-                    'location'              => 'J.P. Laurel St. cor. F. Alix St., Nasugbu',
-                    'or_receipt'            => 'OR-TMO-001042',
-                    'paid_at'               => 'Jan 20, 2026',
-                ],
-                [
-                    'id'                    => 2,
-                    'ticket_number'         => 'VIO-2026-00018',
-                    'title'                 => 'Color Coding Violation',
-                    'date'                  => 'Jan 05, 2026 at 9:15 AM',
-                    'paymentStatus'         => 'settled',
-                    'codingDay'             => $codingMeta['day'],
-                    'details'               => 'Detected by the GPS tracker outside assigned TODA zone during peak hours.',
-                    'fine_amount'           => 500,
-                    'fine_amount_formatted' => '₱500.00',
-                    'detection_method'      => 'Mobile GPS',
-                    'location'              => 'Nasugbu-Palico National Hwy, Bucana',
-                    'or_receipt'            => 'OR-TMO-000982',
-                    'paid_at'               => 'Jan 07, 2026',
-                ],
-            ]);
-        }
-
         $totalFines = $mappedViolations->sum('fine_amount');
         $settledFines = $mappedViolations->where('paymentStatus', 'settled')->sum('fine_amount');
         $unsettledFines = $mappedViolations->where('paymentStatus', 'unsettled')->sum('fine_amount');
@@ -662,7 +706,9 @@ class DashboardController extends Controller
             'total_fines'     => '₱' . number_format($totalFines, 2),
             'settled_fines'   => '₱' . number_format($settledFines, 2),
             'unsettled_fines' => '₱' . number_format($unsettledFines, 2),
-            'compliance_rate' => $mappedViolations->count() > 0 ? '95.5%' : '100%',
+            'compliance_rate' => $mappedViolations->count() > 0
+                ? round(($mappedViolations->where('paymentStatus', 'settled')->count() / $mappedViolations->count()) * 100, 1) . '%'
+                : '100%',
         ];
 
         // Dynamic stats
@@ -682,7 +728,6 @@ class DashboardController extends Controller
             'initialDocs'      => $mappedDocs,
             'initialVios'      => $mappedViolations->values(),
             'violationStats'   => $violationStats,
-            'telematics'       => $telematicsData,
             'initialMetrics'   => $metrics,
             'initialTimeline'  => $milestones,
         ]);
@@ -872,12 +917,15 @@ class DashboardController extends Controller
             'tricycle_id'          => $v->tricycle_id,
             'date'                 => $v->detected_at ? $v->detected_at->format('F j, Y') : 'N/A',
             'time'                 => $v->detected_at ? $v->detected_at->format('h:i A') : 'N/A',
-            'lat'                  => $v->locationSnapshot ? (float)$v->locationSnapshot->latitude : (float)($v->latitude ?: 14.0725),
-            'lng'                  => $v->locationSnapshot ? (float)$v->locationSnapshot->longitude : (float)($v->longitude ?: 120.6355),
-            'speed_kmh'            => $v->locationSnapshot ? (float)$v->locationSnapshot->speed_kmh : 22.0,
-            'location_desc'        => $v->locationSnapshot 
-                ? 'Nasugbu Poblacion Zone' 
-                : ($v->violation_type === 'route_violation' ? 'TODA Route Boundary — Border Gate' : 'Nasugbu Poblacion Area'),
+            'lat'                  => $v->locationSnapshot
+                ? (float) $v->locationSnapshot->latitude
+                : ($v->latitude !== null ? (float) $v->latitude : null),
+            'lng'                  => $v->locationSnapshot
+                ? (float) $v->locationSnapshot->longitude
+                : ($v->longitude !== null ? (float) $v->longitude : null),
+            'speed_kmh'            => $v->locationSnapshot ? (float) $v->locationSnapshot->speed_kmh : null,
+            // Real area name only (the unit's TODA zone) — never a synthesised street/zone label.
+            'location_desc'        => $v->tricycle?->todaZone?->name ?: null,
             'operator'             => $ownerName,
             'owner_name'           => $ownerName,
             'driver_name'          => $driverName,
@@ -1048,15 +1096,21 @@ class DashboardController extends Controller
             'notes'          => 'nullable|string',
         ]);
 
+        $tricycle = Tricycle::findOrFail($request->input('tricycle_id'));
+
+        // A violation must attach to the unit's real active franchise scheme — never a guessed
+        // id. A unit with no active franchise has nothing legitimate to cite against, so refuse
+        // rather than filing the record against an unrelated scheme.
+        $franchise = FranchiseScheme::where('tricycle_id', $tricycle->id)
+            ->where('is_active', true)
+            ->first();
+
+        if (!$franchise) {
+            return back()->with('error', 'This unit has no active franchise scheme — a violation cannot be logged against it.');
+        }
+
         try {
-            DB::transaction(function () use ($request) {
-                $tricycle = Tricycle::findOrFail($request->input('tricycle_id'));
-
-                // Get active franchise scheme
-                $franchise = FranchiseScheme::where('tricycle_id', $tricycle->id)
-                    ->where('is_active', true)
-                    ->first();
-
+            DB::transaction(function () use ($request, $tricycle, $franchise) {
                 // Detection Method in the active violation UI is resolved from the real GPS ping
                 // (tricycle_locations.source), never from detection_method — link the unit's most
                 // recent ping so a TMO-logged record still carries an actual GPS source.
@@ -1064,8 +1118,8 @@ class DashboardController extends Controller
 
                 $violation = Violation::create([
                     'tricycle_id'             => $tricycle->id,
-                    'franchise_scheme_id'     => $franchise ? $franchise->id : 1, // fallback
-                    'color_coding_scheme_id'  => $franchise ? $franchise->color_coding_scheme_id : 1, // fallback
+                    'franchise_scheme_id'     => $franchise->id,
+                    'color_coding_scheme_id'  => $franchise->color_coding_scheme_id,
                     'location_snapshot_id'    => $latestPing?->id,
                     'detected_by'             => auth()->id(),
                     'violation_type'          => $request->input('violation_type'),
@@ -1095,6 +1149,9 @@ class DashboardController extends Controller
                         'location'     => $request->input('location'),
                     ]
                 );
+
+                // Registered after-commit: nothing is emailed if this transaction rolls back.
+                ViolationNotifier::colorCodingViolationRecorded($violation);
             });
         } catch (\Illuminate\Database\QueryException $e) {
             if (str_contains($e->getMessage(), 'violations_color_coding_daily_unique')) {

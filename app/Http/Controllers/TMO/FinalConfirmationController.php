@@ -141,6 +141,7 @@ class FinalConfirmationController extends Controller
     {
         $application->load([
             'operator.user',
+            'tricycle',
             'tricycleDriver',
             'payment',
             'franchiseScheme.colorCodingScheme',
@@ -177,8 +178,13 @@ class FinalConfirmationController extends Controller
             'barangay'            => $operator ? $operator->barangay : 'N/A',
             'plate_number'        => $tricycle ? $tricycle->plate_number : 'N/A',
             'make_model'          => $tricycle ? "{$tricycle->make} {$tricycle->model}" : 'N/A',
-            'engine_number'       => $tricycle ? $tricycle->engine_number : 'N/A',
-            'chassis_number'      => $tricycle ? $tricycle->chassis_number : 'N/A',
+            'year_model'          => $tricycle ? ($tricycle->year_model ?: '—') : '—',
+            'body_color'          => $tricycle ? ($tricycle->body_color ?: '—') : '—',
+            'body_type'           => $tricycle ? ($tricycle->body_type ?: '—') : '—',
+            'engine_number'       => $tricycle ? ($tricycle->engine_number ?: '—') : '—',
+            'chassis_number'      => $tricycle ? ($tricycle->chassis_number ?: '—') : '—',
+            'or_number'           => $tricycle ? ($tricycle->or_number ?: '—') : '—',
+            'cr_number'           => $tricycle ? ($tricycle->cr_number ?: '—') : '—',
             'coding_number'       => $tricycle?->coding_scheme_number ?: ($scheme?->franchise_number ?: 'N/A'),
             'coding_scheme_number' => $tricycle?->coding_scheme_number ?: ($scheme?->franchise_number ?: 'N/A'),
             'sticker_number'      => $application->sticker_number ?: ($scheme ? $scheme->sticker_number : 'N/A'),

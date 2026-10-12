@@ -60,7 +60,7 @@ export default function DateRangeFilter({ from, to, onChange }) {
             <select
                 value={activePreset}
                 onChange={handlePreset}
-                className="h-9 w-full shrink-0 rounded-lg border border-slate-200 bg-white px-2.5 text-xs font-semibold text-slate-700 focus:border-[#182B62] focus:outline-none focus:ring-2 focus:ring-[#182B62]/10 sm:w-40"
+                className="h-10 w-full shrink-0 rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 shadow-2xs focus:border-[#182B62] focus:outline-none focus:ring-2 focus:ring-[#182B62]/10 sm:w-40 cursor-pointer"
             >
                 <option value="">Quick Range…</option>
                 {PRESETS.map((p) => (
@@ -68,22 +68,22 @@ export default function DateRangeFilter({ from, to, onChange }) {
                 ))}
             </select>
 
-            <div className="flex flex-wrap items-center gap-2 sm:flex-nowrap">
+            <div className="flex flex-wrap items-center gap-2 sm:flex-nowrap w-full sm:w-auto">
                 <Calendar size={14} className="hidden shrink-0 text-slate-400 sm:block" />
                 <input
                     type="date"
                     value={from}
                     max={to}
                     onChange={(e) => onChange({ from: e.target.value, to })}
-                    className="h-9 min-w-0 flex-1 shrink-0 rounded-lg border border-slate-200 bg-white px-2.5 text-xs text-slate-700 focus:border-[#182B62] focus:outline-none focus:ring-2 focus:ring-[#182B62]/10 sm:flex-none"
+                    className="h-10 min-w-0 flex-1 shrink-0 rounded-xl border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 shadow-2xs focus:border-[#182B62] focus:outline-none focus:ring-2 focus:ring-[#182B62]/10 sm:flex-none cursor-pointer"
                 />
-                <span className="shrink-0 text-xs text-slate-400">to</span>
+                <span className="shrink-0 text-xs text-slate-400 font-medium">to</span>
                 <input
                     type="date"
                     value={to}
                     min={from}
                     onChange={(e) => onChange({ from, to: e.target.value })}
-                    className="h-9 min-w-0 flex-1 shrink-0 rounded-lg border border-slate-200 bg-white px-2.5 text-xs text-slate-700 focus:border-[#182B62] focus:outline-none focus:ring-2 focus:ring-[#182B62]/10 sm:flex-none"
+                    className="h-10 min-w-0 flex-1 shrink-0 rounded-xl border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 shadow-2xs focus:border-[#182B62] focus:outline-none focus:ring-2 focus:ring-[#182B62]/10 sm:flex-none cursor-pointer"
                 />
             </div>
         </div>

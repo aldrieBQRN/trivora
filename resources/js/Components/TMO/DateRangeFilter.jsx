@@ -55,12 +55,12 @@ export default function DateRangeFilter({ from, to, onChange }) {
     };
 
     return (
-        <div className="flex flex-wrap items-center gap-2 sm:flex-nowrap">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2 w-full sm:w-auto font-['Plus_Jakarta_Sans',sans-serif]">
             <select
                 value={activePreset}
                 onChange={handlePreset}
                 aria-label="Quick range"
-                className="h-9 shrink-0 rounded-lg border border-tmo-borderStrong bg-white px-2.5 text-xs font-semibold text-tmo-ink focus:border-tmo-primary focus:outline-none focus:ring-2 focus:ring-tmo-primary/15 sm:w-36"
+                className="h-10 w-full sm:w-auto rounded-xl border border-slate-200 bg-slate-50/70 pl-3 pr-8 text-xs font-bold text-slate-700 transition-colors focus:border-[#182B62] focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#182B62] cursor-pointer"
             >
                 <option value="">Quick Range…</option>
                 {PRESETS.map((p) => (
@@ -68,24 +68,24 @@ export default function DateRangeFilter({ from, to, onChange }) {
                 ))}
             </select>
 
-            <div className="flex flex-wrap items-center gap-2 sm:flex-nowrap">
-                <Calendar size={14} className="hidden shrink-0 text-tmo-subtle sm:block" />
+            <div className="flex items-center gap-1.5 w-full sm:w-auto">
+                <Calendar size={14} className="hidden shrink-0 text-slate-400 sm:block" />
                 <input
                     type="date"
                     value={from}
                     max={to || undefined}
                     onChange={(e) => onChange({ from: e.target.value, to })}
                     aria-label="From date"
-                    className="h-9 min-w-0 flex-1 shrink-0 rounded-lg border border-tmo-borderStrong bg-white px-2.5 text-xs text-tmo-ink focus:border-tmo-primary focus:outline-none focus:ring-2 focus:ring-tmo-primary/15 sm:flex-none"
+                    className="h-10 flex-1 sm:w-32 sm:flex-none rounded-xl border border-slate-200 bg-slate-50/70 px-2.5 text-xs font-semibold text-slate-700 transition-colors focus:border-[#182B62] focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#182B62]"
                 />
-                <span className="shrink-0 text-xs text-tmo-subtle">to</span>
+                <span className="shrink-0 text-xs font-bold text-slate-400 px-0.5">to</span>
                 <input
                     type="date"
                     value={to}
                     min={from || undefined}
                     onChange={(e) => onChange({ from, to: e.target.value })}
                     aria-label="To date"
-                    className="h-9 min-w-0 flex-1 shrink-0 rounded-lg border border-tmo-borderStrong bg-white px-2.5 text-xs text-tmo-ink focus:border-tmo-primary focus:outline-none focus:ring-2 focus:ring-tmo-primary/15 sm:flex-none"
+                    className="h-10 flex-1 sm:w-32 sm:flex-none rounded-xl border border-slate-200 bg-slate-50/70 px-2.5 text-xs font-semibold text-slate-700 transition-colors focus:border-[#182B62] focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#182B62]"
                 />
             </div>
         </div>

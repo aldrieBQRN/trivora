@@ -122,8 +122,9 @@ class QrRideService
             throw new QrRideException('invalid_coordinates', 'The pick-up or destination location is invalid.', 422);
         }
 
-        $farePerPassenger = FareService::perPassengerFare($route['distance_km'], $partySize);
-        $fareAmount = FareService::calculate($route['distance_km'], $partySize);
+        $fareConfig = FareService::getActiveFare();
+        $farePerPassenger = FareService::perPassengerFare($route['distance_km'], $partySize, $fareConfig);
+        $fareAmount = FareService::calculate($route['distance_km'], $partySize, $fareConfig);
         $expiresAt = now()->addSeconds(self::QUOTE_TTL_SECONDS);
 
         $payload = [
@@ -1122,7 +1123,8 @@ class QrRideService
             'passengers' => $bookings->map(fn (Booking $b) => $this->bookingPayload($b) + [
                 // 'qr' = joined with the Passenger app; 'walk_in' = added by the driver (no account).
                 'source' => $b->booking_type === Booking::TYPE_MANUAL ? 'walk_in' : 'qr',
-                'passenger_name' => $b->passenger?->user?->name,
+                // A walk-in has no account, so fall back to the name the driver recorded.
+                'passenger_name' => $b->passenger?->user?->name ?? $b->walk_in_name,
             ])->values()->all(),
         ];
     }

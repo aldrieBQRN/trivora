@@ -69,6 +69,18 @@ class DriverTelematicsController extends Controller
             ], 404);
         }
 
+        // Single source of truth: this route is reached only by an authenticated driver's phone,
+        // so a ping here is ALWAYS the phone's own GPS — source is 'mobile_app' by construction,
+        // never derived from the unit's active mode. An IoT-mode unit that (mistakenly or after a
+        // mid-ride mode switch) still POSTs here is refused rather than recorded, so the physical
+        // device stays the unit's only authoritative source.
+        if ($tricycle->active_tracking_mode === 'iot_device') {
+            return response()->json([
+                'success' => false,
+                'message' => 'This unit is set to IoT device tracking; the mobile app must not transmit GPS for it.',
+            ], 409);
+        }
+
         // The mobile/web app sends recorded_at as a UTC ISO string (JS Date::toISOString()).
         // Carbon::parse() on a string carrying an explicit offset keeps that offset internally —
         // without converting to the app's own timezone here, MySQL's naive datetime column would
@@ -78,7 +90,7 @@ class DriverTelematicsController extends Controller
         $recordedAt = $request->recorded_at
             ? \Carbon\Carbon::parse($request->recorded_at)->setTimezone(config('app.timezone'))
             : now();
-        $source = $tricycle->active_tracking_mode === 'iot_device' ? 'gps_device' : 'mobile_app';
+        $source = 'mobile_app';
 
         // 1-3. Persist the location, run the shared color-coding engine, and return its result —
         // all delegated to TelemetryService so mobile and a future IoT receiver share exactly one
@@ -159,7 +171,17 @@ class DriverTelematicsController extends Controller
             ], 400);
         }
 
-        $source = $tricycle->active_tracking_mode === 'iot_device' ? 'gps_device' : 'mobile_app';
+        // Same single-source rule as store(): this offline-flush route is authenticated as the
+        // driver's phone, so flushed pings are always mobile_app. A unit switched to IoT mode
+        // mid-ride must not inject phone pings into the device's authoritative history.
+        if ($tricycle->active_tracking_mode === 'iot_device') {
+            return response()->json([
+                'success' => false,
+                'message' => 'This unit is set to IoT device tracking; the mobile app must not transmit GPS for it.',
+            ], 409);
+        }
+
+        $source = 'mobile_app';
         $insertedCount = 0;
         $createdLocations = collect();
 

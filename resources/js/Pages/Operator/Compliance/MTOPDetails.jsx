@@ -234,8 +234,8 @@ const HERO_TONES = {
 function StatusHero({ tone, icon: Icon, eyebrow, title, children, action }) {
     const t = HERO_TONES[tone] || HERO_TONES.info;
     return (
-        <div className={`mb-5 rounded-2xl border ${t.border} ${t.bg} p-6 sm:p-7`}>
-            <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
+        <div className={`mb-6 rounded-2xl border ${t.border} ${t.bg} p-5 sm:p-6 ${CARD_SHADOW}`}>
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                 <div className="flex gap-4">
                     <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${t.iconBg} ${t.iconColor} shadow-2xs`}>
                         <Icon size={22} />
@@ -244,7 +244,7 @@ function StatusHero({ tone, icon: Icon, eyebrow, title, children, action }) {
                         {eyebrow && (
                             <p className={`text-[11px] font-bold uppercase tracking-wider ${t.iconColor}`}>{eyebrow}</p>
                         )}
-                        <h1 className={`mt-0.5 text-lg font-bold leading-tight sm:text-xl ${t.title}`}>{title}</h1>
+                        <h2 className={`mt-0.5 text-base font-bold leading-tight sm:text-lg ${t.title}`}>{title}</h2>
                         <div className="mt-2 max-w-2xl text-[13.5px] leading-relaxed text-slate-700">{children}</div>
                     </div>
                 </div>
@@ -366,19 +366,24 @@ export default function MTOPDetails({ application }) {
             <Head title={`View ${app.id} | TRIVORA`} />
 
             <div className="mx-auto max-w-[1400px] pb-10">
-                <div className="mb-2 flex items-center justify-between">
-                    <BackLink href={route('operator.mtop')}>Back to Applications</BackLink>
-                    <span className="rounded-md border border-[#182B62]/20 bg-[#182B62]/[0.06] px-3 py-1 font-mono text-[11px] font-bold uppercase tracking-wide text-[#182B62]">
-                        {app.id}
-                    </span>
-                </div>
-
-                <div className="mb-6">
-                    <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-[28px]">{app.type} Application</h1>
-                    <p className="mt-1 text-sm text-slate-500">
-                        Submitted on {app.date}
-                        {app.last_updated && <> &bull; Status updated {app.last_updated}</>}
-                    </p>
+                <div className="mb-6 border-b border-slate-200/80 pb-5">
+                    <div className="mb-3">
+                        <BackLink href={route('operator.mtop')}>Back to Applications</BackLink>
+                    </div>
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                        <div>
+                            <h1 className="text-2xl font-black tracking-tight text-slate-900 sm:text-3xl">{app.type} Application</h1>
+                            <p className="mt-1 text-sm font-medium text-slate-500">
+                                Submitted on {app.date}
+                                {app.last_updated && <> &bull; Status updated {app.last_updated}</>}
+                            </p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <span className="rounded-xl border border-[#182B62]/20 bg-[#182B62]/[0.08] px-3.5 py-1.5 font-mono text-xs font-bold uppercase tracking-wider text-[#182B62]">
+                                {app.id}
+                            </span>
+                        </div>
+                    </div>
                 </div>
 
                 {/* ── STATUS HERO — one always-present focal point per phase ── */}
@@ -387,7 +392,7 @@ export default function MTOPDetails({ application }) {
                     <StatusHero
                         tone="error" icon={AlertCircle} eyebrow={eyebrow} title="Documents Rejected"
                         action={
-                            <Button as={Link} href={route('operator.mtop.fix', { id: app.id })} variant="dangerSolid" size="md" icon={FileText} className="whitespace-nowrap">
+                            <Button as={Link} href={route('operator.mtop.fix', { id: app.id })} variant="dangerSolid" size="md" icon={FileText} className="!rounded-xl shadow-sm whitespace-nowrap">
                                 Re-upload Documents
                             </Button>
                         }
@@ -409,7 +414,7 @@ export default function MTOPDetails({ application }) {
                         eyebrow="Physical Inspection"
                         title="Reinspection Required"
                         action={
-                            <Button as={Link} href={route('operator.mtop.fix', { id: app.id })} variant="dangerSolid" size="md" icon={Wrench} className="whitespace-nowrap">
+                            <Button as={Link} href={route('operator.mtop.fix', { id: app.id })} variant="dangerSolid" size="md" icon={Wrench} className="!rounded-xl shadow-sm whitespace-nowrap">
                                 Confirm Ready for Reinspection
                             </Button>
                         }
@@ -467,11 +472,11 @@ export default function MTOPDetails({ application }) {
                         eyebrow={eyebrow}
                         title={isRenewedExpired ? 'Franchise Expired (Renewal In Progress)' : 'Franchise Expired'}
                         action={app.can_renew ? (
-                            <Button as={Link} href={route('operator.mtop.create', { type: 'renewal', unit_id: app.tricycle_id })} variant="dangerSolid" size="md" icon={RefreshCw} className="whitespace-nowrap">
+                            <Button as={Link} href={route('operator.mtop.create', { type: 'renewal', unit_id: app.tricycle_id })} variant="dangerSolid" size="md" icon={RefreshCw} className="!rounded-xl shadow-sm whitespace-nowrap">
                                 Renew Expired Franchise
                             </Button>
                         ) : (
-                            <span className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-lg border border-amber-200 bg-amber-100 px-4 py-2.5 text-[11px] font-bold uppercase tracking-wide text-amber-800">
+                            <span className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-xl border border-amber-200 bg-amber-100 px-4 py-2.5 text-[11px] font-bold uppercase tracking-wide text-amber-800">
                                 <Clock size={14} /> Renewal In Progress
                             </span>
                         )}

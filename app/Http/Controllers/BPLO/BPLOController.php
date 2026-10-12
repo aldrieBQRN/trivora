@@ -34,7 +34,45 @@ class BPLOController extends Controller
     {
         $activeFranchisesCount = Tricycle::where('status', 'active')->count();
         $pendingReleasingCount = Application::where('status', 'pending_bplo_release')->count();
-        $totalRegistriesCount = Tricycle::count();
+        $totalRegistriesCount  = Tricycle::count();
+        $suspendedCount        = Tricycle::whereIn('status', ['suspended', 'revoked'])->count();
+        $releasedTodayCount    = ApplicationStatusHistory::where('to_status', 'awaiting_tmo_confirmation')
+            ->whereDate('created_at', today())
+            ->count();
+
+        // Weekly MTOP Issuance trend (Mon-Sun for current week)
+        $weeklyIssuanceTrend = [];
+        $startOfWeek = now()->startOfWeek();
+        for ($i = 0; $i < 7; $i++) {
+            $dayDate = (clone $startOfWeek)->addDays($i);
+            $dayCount = ApplicationStatusHistory::where('to_status', 'awaiting_tmo_confirmation')
+                ->whereDate('created_at', $dayDate->toDateString())
+                ->count();
+            $weeklyIssuanceTrend[] = [
+                'day'    => $dayDate->format('D'),
+                'date'   => $dayDate->format('M d'),
+                'issued' => $dayCount,
+            ];
+        }
+
+        // Recent releases (real records from Application)
+        $recentReleases = Application::with(['operator.todaZone', 'tricycle'])
+            ->whereIn('status', ['awaiting_tmo_confirmation', 'completed', 'active'])
+            ->whereNotNull('sticker_number')
+            ->orderByDesc('updated_at')
+            ->limit(5)
+            ->get()
+            ->map(function ($app) {
+                return [
+                    'id'             => $app->id,
+                    'reference'      => $app->reference_number,
+                    'sticker_number' => $app->sticker_number,
+                    'operator_name'  => $app->operator ? $app->operator->full_name : 'N/A',
+                    'toda_name'      => ($app->operator && $app->operator->todaZone) ? $app->operator->todaZone->name : 'General',
+                    'plate_number'   => $app->tricycle ? $app->tricycle->plate_number : 'N/A',
+                    'released_at'    => $app->updated_at ? $app->updated_at->diffForHumans() : 'Recently',
+                ];
+            });
 
         // TODA distribution stats
         $todaStats = DB::table('toda_zones')
@@ -48,8 +86,12 @@ class BPLOController extends Controller
                 'activeFranchisesCount'          => $activeFranchisesCount,
                 'pendingReleasingCount'          => $pendingReleasingCount,
                 'totalRegistriesCount'           => $totalRegistriesCount,
+                'releasedTodayCount'             => $releasedTodayCount,
+                'suspendedCount'                 => $suspendedCount,
             ],
-            'todaStats' => $todaStats,
+            'weeklyIssuanceTrend' => $weeklyIssuanceTrend,
+            'recentReleases'      => $recentReleases,
+            'todaStats'           => $todaStats,
         ]);
     }
 
@@ -321,7 +363,7 @@ class BPLOController extends Controller
                         'franchise_number'       => $codingNumber,
                         'sticker_number'         => $franchiseNumber,
                         'issue_date'             => now()->toDateString(),
-                        'expiry_date'            => now()->addYears(3)->toDateString(),
+                        'expiry_date'            => now()->addYear()->toDateString(),
                         'is_active'              => false, // Will become active upon TMO Final Confirmation
                         'notes'                  => "Franchise Number #{$franchiseNumber} released by BPLO. Awaiting TMO Final Confirmation.",
                     ]
@@ -549,24 +591,20 @@ class BPLOController extends Controller
             'email'             => $operator?->user ? $operator->user->email : ($operator ? "driver.{$operator->last_name}@trivora.ph" : 'N/A'),
             'address'           => $operator ? ($operator->address ?: 'Nasugbu, Batangas') : 'Nasugbu, Batangas',
             'barangay'          => $operator ? ($operator->barangay ?: 'Poblacion') : 'Poblacion',
-            'date_of_birth'     => $operator && $operator->date_of_birth ? $operator->date_of_birth->format('M d, Y') : 'Dec 12, 1988',
+            'date_of_birth'     => $operator && $operator->date_of_birth ? $operator->date_of_birth->format('m/d/Y') : '12/12/1988',
             // Tricycle Owner (primary person — `operator` above is the same person) plus the
             // optional separate Tricycle Driver, only present when they are a different person.
             'owner'             => $ownerApplication?->ownerDetails() ?? ($operator ? $operator->personDetails() : null),
             'ownerIsDriver'     => $ownerApplication ? (bool) $ownerApplication->owner_is_driver : true,
             'tricycleDriver'    => $ownerApplication?->driverDetails(),
-            'license_no'        => $operator ? ($operator->license_number ?: 'N01-88-567890') : 'N01-88-567890',
-            'license_expiry'    => $operator && $operator->license_expiry_date ? $operator->license_expiry_date->format('M d, Y') : 'Dec 11, 2027',
-            'license_codes'     => $operator ? ($operator->license_restriction_code ?: '1, 2') : '1, 2',
-            'toda'              => $tricycle->todaZone ? $tricycle->todaZone->name : 'Unassigned',
-            'make'              => "{$tricycle->make} {$tricycle->model}",
-            'year_model'        => $tricycle->year_model ?: '2022',
-            'body_color'        => $tricycle->body_color ?: 'Blue',
-            'body_type'         => $tricycle->body_type ?: 'Standard Side Car',
-            'engine_number'     => $tricycle->engine_number ?: 'ENG-MOBGPS-888',
-            'chassis_number'    => $tricycle->chassis_number ?: 'CHS-MOBGPS-888',
-            'or_number'         => $tricycle->or_number ?: "OR-" . date('Y') . "-000" . $tricycle->id,
-            'cr_number'         => $tricycle->cr_number ?: "CR-" . date('Y') . "-000" . $tricycle->id,
+            'make'              => trim(($tricycle->make ?: '') . ' ' . ($tricycle->model ?: '')) ?: null,
+            'year_model'        => $tricycle->year_model ?: null,
+            'body_color'        => $tricycle->body_color ?: null,
+            'body_type'         => $tricycle->body_type ?: null,
+            'engine_number'     => $tricycle->engine_number ?: null,
+            'chassis_number'    => $tricycle->chassis_number ?: null,
+            'or_number'         => $tricycle->or_number ?: null,
+            'cr_number'         => $tricycle->cr_number ?: null,
             'issue_date'        => $scheme ? $scheme->issue_date->format('F j, Y') : $tricycle->created_at->format('F j, Y'),
             'coding_day'        => $scheme ? ($scheme->colorCodingScheme ? $scheme->colorCodingScheme->coding_day : 'None') : 'None',
             'coding_status'     => ColorCodingRuleService::evaluateTricycle($tricycle),

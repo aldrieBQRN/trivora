@@ -5,21 +5,15 @@ import TrivoraLayout from '@/Layouts/TrivoraLayout';
 import {
     Clock, ChevronRight, ChevronLeft, Inbox, Bike,
     Search, X, RotateCcw, CheckCircle2, ShieldCheck,
-    AlertTriangle, Printer, Phone,
+    Phone,
 } from 'lucide-react';
 
 const CARD_SHADOW = 'shadow-[0_1px_2px_0_rgba(15,23,42,0.04),0_8px_24px_-8px_rgba(15,23,42,0.10)]';
 
-// Filter labels only — the underlying `value`s still match the real backend status strings
-// (TMO\InspectionController's Awaiting Inspection / Ready for Reinspection / Reinspection
-// Required). "Ready for Reinspection" and "Reinspection Required" are two real, distinct
-// backend states (driver-confirmed-ready vs. not yet confirmed) but already share the exact
-// same action/route on this page, so they're grouped under one user-facing "Reinspect" option
-// here — see displayGroupOf() below, which every filter/pill/action label goes through.
 const STATUS_OPTIONS = [
-    { value: 'all', label: 'All' },
-    { value: 'Awaiting Inspection', label: 'Pending' },
-    { value: 'Reinspect', label: 'Reinspect' },
+    { value: 'all', label: 'All Statuses' },
+    { value: 'Awaiting Inspection', label: 'Pending Inspection' },
+    { value: 'Reinspect', label: 'Re-inspection Required' },
 ];
 
 const ITEMS_PER_PAGE = 10;
@@ -30,9 +24,6 @@ function bucketOf(app) {
     return 'Awaiting Inspection';
 }
 
-// One-word user-facing grouping for the Status column, filter, and Action button — collapses
-// the two real reinspection buckets (see bucketOf()) into a single "Reinspect" facing label,
-// since they already behave identically here (same action, same destination route).
 function displayGroupOf(bucket) {
     return bucket === 'Awaiting Inspection' ? 'Awaiting Inspection' : 'Reinspect';
 }
@@ -47,13 +38,13 @@ function getInitials(name) {
 function StatusPill({ status }) {
     if (displayGroupOf(status) === 'Reinspect') {
         return (
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-rose-200/90 bg-rose-50 px-2.5 py-0.5 text-xs font-semibold text-rose-700 shadow-2xs">
+            <span className="inline-flex items-center gap-1 rounded-full border border-rose-200 bg-rose-50 px-2.5 py-0.5 text-xs font-bold text-rose-700 shadow-2xs">
                 Reinspect
             </span>
         );
     }
     return (
-        <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-200/90 bg-amber-50 px-2.5 py-0.5 text-xs font-semibold text-amber-800 shadow-2xs">
+        <span className="inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2.5 py-0.5 text-xs font-bold text-amber-800 shadow-2xs">
             Pending
         </span>
     );
@@ -73,8 +64,7 @@ export default function PhysicalQueue({
     const [statusFilter, setStatusFilter] = useState('all');
     const [currentPage, setCurrentPage] = useState(1);
 
-    // Silent background refresh — a document-review approval elsewhere feeds new units into this
-    // queue without a manual reload.
+    // Silent background refresh for multi-officer synchronization
     useBackgroundRefresh(
         ['applications', 'awaitingCount', 'readyReinspectionCount', 'reinspectionRequiredCount', 'scheduledCount', 'reinspectionCount', 'passedTodayCount', 'completedTodayCount']
     );
@@ -87,6 +77,7 @@ export default function PhysicalQueue({
                 String(a.id).toLowerCase().includes(q) ||
                 (a.reference && a.reference.toLowerCase().includes(q)) ||
                 (a.operator && a.operator.toLowerCase().includes(q)) ||
+                (a.contact && a.contact.toLowerCase().includes(q)) ||
                 (a.plate && a.plate.toLowerCase().includes(q)) ||
                 (a.make && a.make.toLowerCase().includes(q));
 
@@ -118,353 +109,381 @@ export default function PhysicalQueue({
         <TrivoraLayout title="Physical Inspection" role="TMO Officer">
             <Head title="Physical Inspection | TRIVORA" />
 
-            {/* ══════════════════════════════════════════════════════════════
-                1. CLEAN HEADER (Plain typography, zero redundant badges)
-               ══════════════════════════════════════════════════════════════ */}
-            <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-slate-200/80 pb-5">
-                <div>
-                    <h1 className="text-2xl sm:text-[28px] font-extrabold tracking-tight text-slate-900 leading-tight">
-                        Physical Inspection
-                    </h1>
-                    <p className="mt-1 text-xs sm:text-sm text-slate-500 max-w-2xl leading-relaxed">
-                        On-site vehicle roadworthiness testing, physical verification, and payment ticket issuance
-                    </p>
-                </div>
-            </div>
-
-            {/* ══════════════════════════════════════════════════════════════
-                2. PREMIUM KPI CARD DECK
-               ══════════════════════════════════════════════════════════════ */}
-            <div className="mb-5 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
-                {/* Card 1: Awaiting Inspection */}
-                <div className={`group rounded-2xl border border-slate-200/70 bg-white p-4 sm:p-5 ${CARD_SHADOW} transition-all hover:border-slate-300`}>
-                    <div className="flex items-center justify-between">
-                        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-amber-500/[0.14] to-amber-500/[0.02] text-amber-600">
-                            <Clock size={16} strokeWidth={2.2} />
-                        </div>
-                        <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-700 border border-amber-200/70">
-                            <span className="h-1 w-1 rounded-full bg-amber-500 animate-pulse" />
-                            Pending
-                        </span>
-                    </div>
-
-                    <div className="mt-3">
-                        <div className="flex items-baseline gap-1.5">
-                            <span className="text-2xl sm:text-3xl font-extrabold tracking-tight tabular-nums text-slate-900">
-                                {totalAwaiting}
-                            </span>
-                            <span className="text-xs font-semibold text-slate-400">{pct(totalAwaiting)}% of queue</span>
-                        </div>
-                        <p className="mt-0.5 text-xs font-semibold text-slate-700">
-                            Awaiting Inspection
+            <div className="font-['Plus_Jakarta_Sans',sans-serif]">
+                {/* ══════════════════════════════════════════════════════════════
+                    1. CLEAN HEADER
+                   ══════════════════════════════════════════════════════════════ */}
+                <div className="mb-6 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between border-b border-slate-200/80 pb-4">
+                    <div>
+                        <h1 className="text-2xl sm:text-[28px] font-black tracking-tight text-slate-900 leading-tight">
+                            Physical Inspection
+                        </h1>
+                        <p className="mt-1 text-xs sm:text-sm text-slate-500 max-w-2xl leading-relaxed">
+                            On-site vehicle roadworthiness testing, safety verification, and BPLO clearance endorsements.
                         </p>
                     </div>
-
-                    <div className="mt-3.5 flex items-center justify-between border-t border-slate-100 pt-2.5 text-[11px]">
-                        <span className="text-slate-400">Queue Stage</span>
-                        <span className="font-semibold text-amber-700">First-Time Inspection</span>
-                    </div>
                 </div>
 
-                {/* Card 2: Ready for Re-inspection */}
-                <div className={`group rounded-2xl border border-slate-200/70 bg-white p-4 sm:p-5 ${CARD_SHADOW} transition-all hover:border-slate-300`}>
-                    <div className="flex items-center justify-between">
-                        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-sky-500/[0.14] to-sky-500/[0.02] text-sky-600">
-                            <RotateCcw size={16} strokeWidth={2.2} />
+                {/* ══════════════════════════════════════════════════════════════
+                    2. COMPACT OPERATIONAL KPI DECK (1 card per row on mobile)
+                   ══════════════════════════════════════════════════════════════ */}
+                <div className="mb-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4 items-stretch">
+                    {/* Card 1: Pending Inspection */}
+                    <div className={`flex flex-col justify-between rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-4 sm:p-5 lg:p-6 ${CARD_SHADOW} transition-all hover:border-slate-300 hover:shadow-[0_4px_6px_-1px_rgba(15,23,42,0.06),0_12px_28px_-8px_rgba(15,23,42,0.14)]`}>
+                        <div>
+                            <div className="flex items-center justify-between border-b border-slate-100 pb-2 sm:pb-2.5">
+                                <span className="font-['Plus_Jakarta_Sans',sans-serif] text-[10px] sm:text-[10.5px] font-bold uppercase tracking-wider text-slate-400">
+                                    Pending Inspection
+                                </span>
+                                <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-xl bg-amber-50 border border-amber-100 text-amber-600">
+                                    <Clock size={15} strokeWidth={2.2} />
+                                </div>
+                            </div>
+                            <div className="mt-2 sm:mt-2.5 flex items-baseline gap-1.5 sm:gap-2">
+                                <span className="font-['Plus_Jakarta_Sans',sans-serif] text-xl sm:text-2xl lg:text-3xl font-black tracking-tight tabular-nums text-slate-900 leading-none">
+                                    {totalAwaiting}
+                                </span>
+                                <span className="font-['Plus_Jakarta_Sans',sans-serif] text-[9.5px] sm:text-[10.5px] font-extrabold uppercase tracking-wider text-slate-400">
+                                    {totalAwaiting === 1 ? 'Unit' : 'Units'}
+                                </span>
+                            </div>
+                            <p className="mt-1 text-[10px] sm:text-[11px] font-medium text-slate-500 font-['Plus_Jakarta_Sans',sans-serif] line-clamp-1">
+                                Awaiting on-site roadworthiness test
+                            </p>
                         </div>
-                        <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold border ${
-                            totalReadyReinspection > 0
-                                ? 'bg-sky-50 text-sky-700 border-sky-200/70'
-                                : 'bg-slate-100 text-slate-600 border-slate-200/70'
-                        }`}>
-                            {totalReadyReinspection > 0 ? 'Ready' : 'All Clear'}
-                        </span>
-                    </div>
 
-                    <div className="mt-3">
-                        <div className="flex items-baseline gap-1.5">
-                            <span className="text-2xl sm:text-3xl font-extrabold tracking-tight tabular-nums text-slate-900">
-                                {totalReadyReinspection}
+                        <div className="mt-3 rounded-xl bg-slate-50 border border-slate-100/90 px-2.5 py-1.5 sm:p-2.5 flex items-center justify-between text-[10.5px] sm:text-xs">
+                            <span className="font-['Plus_Jakarta_Sans',sans-serif] font-semibold text-slate-400 shrink-0">Queue Status:</span>
+                            <span className="font-['Plus_Jakarta_Sans',sans-serif] font-bold text-amber-700 shrink-0">
+                                {pct(totalAwaiting)}% of queue
                             </span>
-                            <span className="text-xs font-semibold text-slate-400">{pct(totalReadyReinspection)}% of queue</span>
                         </div>
-                        <p className="mt-0.5 text-xs font-semibold text-slate-700">
-                            Ready for Re-inspection
-                        </p>
                     </div>
 
-                    <div className="mt-3.5 flex items-center justify-between border-t border-slate-100 pt-2.5 text-[11px]">
-                        <span className="text-slate-400">Driver Confirmed</span>
-                        <span className={`font-semibold ${totalReadyReinspection > 0 ? 'text-sky-700' : 'text-slate-600'}`}>
-                            {totalReadyReinspection > 0 ? 'Awaiting Re-test' : '0 Pending'}
-                        </span>
-                    </div>
-                </div>
-
-                {/* Card 3: Passed Today */}
-                <div className={`group rounded-2xl border border-slate-200/70 bg-white p-4 sm:p-5 ${CARD_SHADOW} transition-all hover:border-slate-300`}>
-                    <div className="flex items-center justify-between">
-                        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-500/[0.14] to-emerald-500/[0.02] text-emerald-600">
-                            <CheckCircle2 size={16} strokeWidth={2.2} />
+                    {/* Card 2: Re-inspections */}
+                    <div className={`flex flex-col justify-between rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-4 sm:p-5 lg:p-6 ${CARD_SHADOW} transition-all hover:border-slate-300 hover:shadow-[0_4px_6px_-1px_rgba(15,23,42,0.06),0_12px_28px_-8px_rgba(15,23,42,0.14)]`}>
+                        <div>
+                            <div className="flex items-center justify-between border-b border-slate-100 pb-2 sm:pb-2.5">
+                                <span className="font-['Plus_Jakarta_Sans',sans-serif] text-[10px] sm:text-[10.5px] font-bold uppercase tracking-wider text-slate-400">
+                                    Re-inspections
+                                </span>
+                                <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-xl bg-rose-50 border border-rose-100 text-rose-600">
+                                    <RotateCcw size={15} strokeWidth={2.2} />
+                                </div>
+                            </div>
+                            <div className="mt-2 sm:mt-2.5 flex items-baseline gap-1.5 sm:gap-2">
+                                <span className={`font-['Plus_Jakarta_Sans',sans-serif] text-xl sm:text-2xl lg:text-3xl font-black tracking-tight tabular-nums leading-none ${
+                                    totalReadyReinspection > 0 ? 'text-rose-600' : 'text-slate-900'
+                                }`}>
+                                    {totalReadyReinspection}
+                                </span>
+                                <span className="font-['Plus_Jakarta_Sans',sans-serif] text-[9.5px] sm:text-[10.5px] font-extrabold uppercase tracking-wider text-slate-400">
+                                    {totalReadyReinspection === 1 ? 'Re-test' : 'Re-tests'}
+                                </span>
+                            </div>
+                            <p className="mt-1 text-[10px] sm:text-[11px] font-medium text-slate-500 font-['Plus_Jakarta_Sans',sans-serif] line-clamp-1">
+                                Units flagged for defect repairs
+                            </p>
                         </div>
-                        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700 border border-emerald-200/70">
-                            Endorsed
-                        </span>
-                    </div>
 
-                    <div className="mt-3">
-                        <div className="flex items-baseline gap-1.5">
-                            <span className="text-2xl sm:text-3xl font-extrabold tracking-tight tabular-nums text-slate-900">
-                                {passedTodayCount}
+                        <div className="mt-3 rounded-xl bg-slate-50 border border-slate-100/90 px-2.5 py-1.5 sm:p-2.5 flex items-center justify-between text-[10.5px] sm:text-xs">
+                            <span className="font-['Plus_Jakarta_Sans',sans-serif] font-semibold text-slate-400 shrink-0">Driver Status:</span>
+                            <span className={`font-['Plus_Jakarta_Sans',sans-serif] font-bold shrink-0 ${
+                                totalReadyReinspection > 0 ? 'text-rose-700' : 'text-slate-600'
+                            }`}>
+                                {totalReadyReinspection > 0 ? 'Awaiting Re-test' : 'All Clear'}
                             </span>
-                            <span className="text-xs font-semibold text-slate-400">Endorsed to BPLO</span>
                         </div>
-                        <p className="mt-0.5 text-xs font-semibold text-slate-700">
-                            Passed Today
-                        </p>
                     </div>
 
-                    <div className="mt-3.5 flex items-center justify-between border-t border-slate-100 pt-2.5 text-[11px]">
-                        <span className="text-slate-400">Payment tickets issued</span>
-                        <span className="font-semibold text-emerald-700">To Cashier</span>
-                    </div>
-                </div>
-
-                {/* Card 4: Inspected Today */}
-                <div className={`group rounded-2xl border border-slate-200/70 bg-white p-4 sm:p-5 ${CARD_SHADOW} transition-all hover:border-slate-300`}>
-                    <div className="flex items-center justify-between">
-                        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-[#182B62]/[0.10] to-[#182B62]/[0.02] text-[#182B62]">
-                            <ShieldCheck size={16} strokeWidth={2.2} />
+                    {/* Card 3: Passed Today */}
+                    <div className={`flex flex-col justify-between rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-4 sm:p-5 lg:p-6 ${CARD_SHADOW} transition-all hover:border-slate-300 hover:shadow-[0_4px_6px_-1px_rgba(15,23,42,0.06),0_12px_28px_-8px_rgba(15,23,42,0.14)]`}>
+                        <div>
+                            <div className="flex items-center justify-between border-b border-slate-100 pb-2 sm:pb-2.5">
+                                <span className="font-['Plus_Jakarta_Sans',sans-serif] text-[10px] sm:text-[10.5px] font-bold uppercase tracking-wider text-slate-400">
+                                    Passed Today
+                                </span>
+                                <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-xl bg-emerald-50 border border-emerald-100 text-emerald-600">
+                                    <CheckCircle2 size={15} strokeWidth={2.2} />
+                                </div>
+                            </div>
+                            <div className="mt-2 sm:mt-2.5 flex items-baseline gap-1.5 sm:gap-2">
+                                <span className="font-['Plus_Jakarta_Sans',sans-serif] text-xl sm:text-2xl lg:text-3xl font-black tracking-tight tabular-nums text-emerald-600 leading-none">
+                                    {passedTodayCount}
+                                </span>
+                                <span className="font-['Plus_Jakarta_Sans',sans-serif] text-[9.5px] sm:text-[10.5px] font-extrabold uppercase tracking-wider text-slate-400">
+                                    {passedTodayCount === 1 ? 'Passed' : 'Passed'}
+                                </span>
+                            </div>
+                            <p className="mt-1 text-[10px] sm:text-[11px] font-medium text-slate-500 font-['Plus_Jakarta_Sans',sans-serif] line-clamp-1">
+                                Roadworthy units approved by officer
+                            </p>
                         </div>
-                        <span className="text-[11px] font-semibold text-slate-400">
-                            Today
-                        </span>
-                    </div>
 
-                    <div className="mt-3">
-                        <div className="flex items-baseline gap-1.5">
-                            <span className="text-2xl sm:text-3xl font-extrabold tracking-tight tabular-nums text-slate-900">
-                                {completedTodayCount}
+                        <div className="mt-3 rounded-xl bg-slate-50 border border-slate-100/90 px-2.5 py-1.5 sm:p-2.5 flex items-center justify-between text-[10.5px] sm:text-xs">
+                            <span className="font-['Plus_Jakarta_Sans',sans-serif] font-semibold text-slate-400 shrink-0">Endorsement:</span>
+                            <span className="font-['Plus_Jakarta_Sans',sans-serif] font-bold text-emerald-700 shrink-0">
+                                Forwarded to BPLO
                             </span>
-                            <span className="text-xs font-semibold text-slate-400">On-site tests completed</span>
                         </div>
-                        <p className="mt-0.5 text-xs font-semibold text-slate-700">
-                            Inspected Today
-                        </p>
                     </div>
 
-                    <div className="mt-3.5 flex items-center justify-between border-t border-slate-100 pt-2.5 text-[11px]">
-                        <span className="text-slate-400">Field inspector output</span>
-                        <span className="font-semibold text-slate-700">Active</span>
+                    {/* Card 4: Inspected Today */}
+                    <div className={`flex flex-col justify-between rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-4 sm:p-5 lg:p-6 ${CARD_SHADOW} transition-all hover:border-slate-300 hover:shadow-[0_4px_6px_-1px_rgba(15,23,42,0.06),0_12px_28px_-8px_rgba(15,23,42,0.14)]`}>
+                        <div>
+                            <div className="flex items-center justify-between border-b border-slate-100 pb-2 sm:pb-2.5">
+                                <span className="font-['Plus_Jakarta_Sans',sans-serif] text-[10px] sm:text-[10.5px] font-bold uppercase tracking-wider text-slate-400">
+                                    Inspected Today
+                                </span>
+                                <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-xl bg-indigo-50 border border-indigo-100 text-[#182B62]">
+                                    <ShieldCheck size={15} strokeWidth={2.2} />
+                                </div>
+                            </div>
+                            <div className="mt-2 sm:mt-2.5 flex items-baseline gap-1.5 sm:gap-2">
+                                <span className="font-['Plus_Jakarta_Sans',sans-serif] text-xl sm:text-2xl lg:text-3xl font-black tracking-tight tabular-nums text-slate-900 leading-none">
+                                    {completedTodayCount}
+                                </span>
+                                <span className="font-['Plus_Jakarta_Sans',sans-serif] text-[9.5px] sm:text-[10.5px] font-extrabold uppercase tracking-wider text-slate-400">
+                                    {completedTodayCount === 1 ? 'Total' : 'Total'}
+                                </span>
+                            </div>
+                            <p className="mt-1 text-[10px] sm:text-[11px] font-medium text-slate-500 font-['Plus_Jakarta_Sans',sans-serif] line-clamp-1">
+                                On-site tests completed by officer
+                            </p>
+                        </div>
+
+                        <div className="mt-3 rounded-xl bg-slate-50 border border-slate-100/90 px-2.5 py-1.5 sm:p-2.5 flex items-center justify-between text-[10.5px] sm:text-xs">
+                            <span className="font-['Plus_Jakarta_Sans',sans-serif] font-semibold text-slate-400 shrink-0">Field Activity:</span>
+                            <span className="font-['Plus_Jakarta_Sans',sans-serif] font-bold text-slate-800 shrink-0">
+                                Active Today
+                            </span>
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            {/* ══════════════════════════════════════════════════════════════
-                3. SEARCH & FILTER DECK
-               ══════════════════════════════════════════════════════════════ */}
-            <div className={`mb-4 rounded-2xl border border-slate-200/70 bg-white p-3 sm:p-3.5 ${CARD_SHADOW}`}>
-                <div className="flex flex-col lg:flex-row lg:items-center gap-2.5">
-                    <div className="relative flex-1 min-w-[220px]">
-                        <Search
-                            size={16}
-                            strokeWidth={2.2}
-                            className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"
-                        />
-                        <input
-                            type="text"
-                            value={query}
-                            onChange={e => setQuery(e.target.value)}
-                            placeholder="Search by driver, reference number, or plate…"
-                            className="h-10 w-full rounded-lg border border-slate-200 bg-slate-50/50 pl-10 pr-9 text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 shadow-2xs transition-all focus:border-tmo-primary focus:bg-white focus:outline-none focus:ring-2 focus:ring-tmo-primary/10"
-                        />
-                        {query && (
+                {/* ══════════════════════════════════════════════════════════════
+                    3. SEARCH & FILTER TOOLBAR
+                   ══════════════════════════════════════════════════════════════ */}
+                <div className={`mb-5 rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-3.5 sm:p-4 ${CARD_SHADOW}`}>
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
+                        <div className="relative flex-1 min-w-0">
+                            <Search
+                                size={14}
+                                strokeWidth={2.2}
+                                className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"
+                            />
+                            <input
+                                type="text"
+                                value={query}
+                                onChange={e => {
+                                    setQuery(e.target.value);
+                                    setCurrentPage(1);
+                                }}
+                                placeholder="Search by operator, reference number, contact, or plate…"
+                                className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50/70 pl-10 pr-9 text-xs sm:text-sm font-medium text-slate-900 placeholder:text-slate-400 transition-colors focus:border-[#182B62] focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#182B62]"
+                            />
+                            {query && (
+                                <button
+                                    type="button"
+                                    onClick={() => setQuery('')}
+                                    className="absolute right-3 top-1/2 flex h-5 w-5 -translate-y-1/2 items-center justify-center rounded-full text-slate-400 hover:bg-slate-200 hover:text-slate-700 cursor-pointer"
+                                >
+                                    <X size={12} strokeWidth={2.5} />
+                                </button>
+                            )}
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                            <select
+                                value={statusFilter}
+                                onChange={e => {
+                                    setStatusFilter(e.target.value);
+                                    setCurrentPage(1);
+                                }}
+                                aria-label="Filter by inspection status"
+                                className="h-10 w-full sm:w-auto sm:min-w-[150px] rounded-xl border border-slate-200 bg-slate-50/70 pl-3 pr-8 text-xs font-bold text-slate-700 transition-colors focus:border-[#182B62] focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#182B62] cursor-pointer"
+                            >
+                                {STATUS_OPTIONS.map(opt => (
+                                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                                ))}
+                            </select>
+
+                            {isFiltering && (
+                                <button
+                                    type="button"
+                                    onClick={handleClearAll}
+                                    title="Reset filters"
+                                    className="inline-flex h-10 items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50/70 px-3.5 text-xs font-bold text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-colors shrink-0"
+                                >
+                                    <RotateCcw size={13} strokeWidth={2.2} />
+                                    <span>Reset</span>
+                                </button>
+                            )}
+                        </div>
+                    </div>
+                </div>
+
+                {/* ══════════════════════════════════════════════════════════════
+                    4. APPLICATION DATA TABLE / CARDS
+                   ══════════════════════════════════════════════════════════════ */}
+                {filtered.length === 0 ? (
+                    <div className={`rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-10 sm:p-14 text-center ${CARD_SHADOW}`}>
+                        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-400 border border-slate-200/70">
+                            <Inbox size={22} strokeWidth={1.8} />
+                        </div>
+                        <h3 className="mt-3.5 text-base font-bold text-slate-900">
+                            {isFiltering ? 'No matching inspections found' : 'No units awaiting inspection'}
+                        </h3>
+                        <p className="mx-auto mt-1 max-w-sm text-xs text-slate-500 leading-relaxed">
+                            {isFiltering
+                                ? 'No units match your search query or filter selection.'
+                                : 'All endorsed tricycles have completed roadworthiness testing.'}
+                        </p>
+                        {isFiltering && (
                             <button
                                 type="button"
-                                onClick={() => setQuery('')}
-                                className="absolute right-3 top-1/2 flex h-5 w-5 -translate-y-1/2 items-center justify-center rounded-full text-slate-400 hover:bg-slate-200 hover:text-slate-700"
+                                onClick={handleClearAll}
+                                className="mt-4 inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-1.5 text-xs font-bold text-slate-800 shadow-2xs hover:bg-slate-50 transition-colors"
                             >
-                                <X size={12} strokeWidth={2.5} />
+                                <RotateCcw size={12} strokeWidth={2.2} />
+                                <span>Clear all filters</span>
                             </button>
                         )}
                     </div>
+                ) : (
+                    <>
+                        {/* ── DESKTOP & TABLET TABLE (>= 768px) ── */}
+                        <div className={`hidden md:block overflow-hidden rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white ${CARD_SHADOW}`}>
+                            <div className="overflow-x-auto custom-scrollbar">
+                                <table className="w-full min-w-[760px] text-left border-collapse">
+                                    <thead>
+                                        <tr className="border-b border-slate-100 bg-slate-50/75">
+                                            <th scope="col" className="py-3 pl-5 pr-3 text-[10.5px] font-bold uppercase tracking-wider text-slate-400">
+                                                Reference No.
+                                            </th>
+                                            <th scope="col" className="py-3 px-4 text-[10.5px] font-bold uppercase tracking-wider text-slate-400">
+                                                Tricycle Owner
+                                            </th>
+                                            <th scope="col" className="py-3 px-4 text-[10.5px] font-bold uppercase tracking-wider text-slate-400">
+                                                Tricycle Unit
+                                            </th>
+                                            <th scope="col" className="py-3 px-4 text-[10.5px] font-bold uppercase tracking-wider text-slate-400">
+                                                Status
+                                            </th>
+                                            <th scope="col" className="py-3 pl-3 pr-5 text-right text-[10.5px] font-bold uppercase tracking-wider text-slate-400">
+                                                Action
+                                            </th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-100 text-sm">
+                                        {paginated.map(app => (
+                                            <DesktopPhysicalRow key={app.id} app={app} />
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
 
-                    <div className="flex flex-wrap items-center gap-2">
-                        {/* Status Filter */}
-                        <select
-                            value={statusFilter}
-                            onChange={e => setStatusFilter(e.target.value)}
-                            className="h-10 w-full sm:w-44 rounded-lg border border-slate-200 bg-white px-3 pr-8 text-xs font-semibold text-slate-700 shadow-2xs transition-colors focus:border-tmo-primary focus:outline-none focus:ring-2 focus:ring-tmo-primary/10 cursor-pointer"
-                        >
-                            {STATUS_OPTIONS.map(opt => (
-                                <option key={opt.value} value={opt.value}>{opt.label}</option>
-                            ))}
-                        </select>
-                    </div>
-                </div>
-            </div>
+                            {/* Integrated Table Footer */}
+                            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-slate-100 bg-slate-50/50 px-5 py-3.5">
+                                <p className="text-xs text-slate-500 font-medium">
+                                    Showing <span className="font-bold text-slate-900 tabular-nums">{filtered.length > 0 ? startIndex + 1 : 0}</span> to{' '}
+                                    <span className="font-bold text-slate-900 tabular-nums">{endIndex}</span> of{' '}
+                                    <span className="font-bold text-slate-900 tabular-nums">{filtered.length}</span> units
+                                </p>
 
-            {/* ══════════════════════════════════════════════════════════════
-                4. DATA DISPLAY: TABLE WITH INTEGRATED FOOTER PAGINATION
-               ══════════════════════════════════════════════════════════════ */}
-            {filtered.length === 0 ? (
-                <div className={`rounded-2xl border border-slate-200/70 bg-white p-12 text-center ${CARD_SHADOW}`}>
-                    <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 text-slate-400">
-                        <Inbox size={24} strokeWidth={1.8} />
-                    </div>
-                    <h3 className="mt-3.5 text-base font-bold text-slate-900">
-                        {isFiltering ? 'No results found' : 'No inspections waiting'}
-                    </h3>
-                    <p className="mx-auto mt-1 max-w-sm text-xs text-slate-500 leading-relaxed">
-                        {isFiltering
-                            ? 'No units match your search or filters.'
-                            : 'No tricycles are awaiting physical inspection right now.'}
-                    </p>
-                    {isFiltering && (
-                        <button
-                            type="button"
-                            onClick={handleClearAll}
-                            className="mt-4 inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3.5 py-1.5 text-xs font-semibold text-slate-800 shadow-sm hover:bg-slate-50"
-                        >
-                            <RotateCcw size={12} strokeWidth={2.2} />
-                            <span>Clear all filters</span>
-                        </button>
-                    )}
-                </div>
-            ) : (
-                <>
-                    {/* ── DESKTOP & TABLET DATA TABLE ── */}
-                    <div className={`hidden md:block overflow-hidden rounded-2xl border border-slate-200/70 bg-white ${CARD_SHADOW}`}>
-                        <div className="overflow-x-auto">
-                            <table className="w-full text-left border-collapse">
-                                <thead>
-                                    <tr className="border-b border-slate-200 bg-slate-50/75">
-                                        <th scope="col" className="py-3 pl-5 pr-3 text-[11px] font-bold uppercase tracking-wider text-slate-500">
-                                            Reference No.
-                                        </th>
-                                        <th scope="col" className="py-3 px-4 text-[11px] font-bold uppercase tracking-wider text-slate-500">
-                                            Tricycle Owner
-                                        </th>
-                                        <th scope="col" className="py-3 px-4 text-[11px] font-bold uppercase tracking-wider text-slate-500">
-                                            Tricycle Unit
-                                        </th>
-                                        <th scope="col" className="py-3 px-4 text-[11px] font-bold uppercase tracking-wider text-slate-500">
-                                            Status
-                                        </th>
-                                        <th scope="col" className="py-3 pl-3 pr-5 text-right text-[11px] font-bold uppercase tracking-wider text-slate-500">
-                                            Action
-                                        </th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-slate-100 text-sm">
-                                    {paginated.map(app => (
-                                        <DesktopPhysicalRow key={app.id} app={app} />
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
+                                <div className="flex items-center gap-1.5">
+                                    <button
+                                        type="button"
+                                        disabled={activePage <= 1}
+                                        onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                                        className="inline-flex h-8 items-center gap-1 rounded-xl border border-slate-200 bg-white px-2.5 text-xs font-bold text-slate-700 shadow-2xs transition-colors hover:bg-slate-50 disabled:pointer-events-none disabled:opacity-40"
+                                    >
+                                        <ChevronLeft size={13} strokeWidth={2.5} />
+                                        <span>Prev</span>
+                                    </button>
 
-                        {/* Integrated Table Footer: Pagination Visually Connected */}
-                        <div className="flex items-center justify-between border-t border-slate-200/80 bg-slate-50/60 px-5 py-3">
-                            <p className="text-xs text-slate-500">
-                                Page <span className="font-bold text-slate-800 tabular-nums">{activePage}</span> of{' '}
-                                <span className="font-bold text-slate-800 tabular-nums">{totalPages}</span>
-                                <span className="mx-2 text-slate-300">·</span>
-                                <span className="tabular-nums font-semibold text-slate-700">{filtered.length}</span> units
-                            </p>
+                                    <div className="flex items-center gap-1">
+                                        {Array.from({ length: totalPages }, (_, i) => i + 1)
+                                            .filter(p => {
+                                                if (totalPages <= 5) return true;
+                                                if (p === 1 || p === totalPages) return true;
+                                                return Math.abs(p - activePage) <= 1;
+                                            })
+                                            .map((p, idx, arr) => {
+                                                const prev = arr[idx - 1];
+                                                const hasGap = prev && p - prev > 1;
 
-                            <div className="flex items-center gap-1.5">
-                                <button
-                                    type="button"
-                                    disabled={activePage <= 1}
-                                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                                    className="inline-flex h-8 items-center gap-1 rounded-md border border-slate-200 bg-white px-2.5 text-xs font-semibold text-slate-700 shadow-sm transition-colors hover:bg-slate-50 disabled:pointer-events-none disabled:opacity-40"
-                                >
-                                    <ChevronLeft size={13} strokeWidth={2.5} />
-                                    <span>Prev</span>
-                                </button>
+                                                return (
+                                                    <React.Fragment key={p}>
+                                                        {hasGap && (
+                                                            <span className="px-1 text-xs text-slate-400 font-medium">…</span>
+                                                        )}
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setCurrentPage(p)}
+                                                            className={`flex h-8 w-8 items-center justify-center rounded-xl text-xs font-bold transition-all ${
+                                                                activePage === p
+                                                                    ? 'bg-[#182B62] text-white shadow-2xs'
+                                                                    : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
+                                                            }`}
+                                                        >
+                                                            {p}
+                                                        </button>
+                                                    </React.Fragment>
+                                                );
+                                            })}
+                                    </div>
 
-                                <div className="flex items-center gap-1">
-                                    {Array.from({ length: totalPages }, (_, i) => i + 1)
-                                        .filter(p => {
-                                            if (totalPages <= 5) return true;
-                                            if (p === 1 || p === totalPages) return true;
-                                            return Math.abs(p - activePage) <= 1;
-                                        })
-                                        .map((p, idx, arr) => {
-                                            const prev = arr[idx - 1];
-                                            const hasGap = prev && p - prev > 1;
-
-                                            return (
-                                                <React.Fragment key={p}>
-                                                    {hasGap && (
-                                                        <span className="px-0.5 text-xs text-slate-400">…</span>
-                                                    )}
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => setCurrentPage(p)}
-                                                        className={`flex h-8 w-8 items-center justify-center rounded-md text-xs font-bold transition-all ${
-                                                            activePage === p
-                                                                ? 'bg-tmo-primary text-white shadow-sm'
-                                                                : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
-                                                        }`}
-                                                    >
-                                                        {p}
-                                                    </button>
-                                                </React.Fragment>
-                                            );
-                                        })}
+                                    <button
+                                        type="button"
+                                        disabled={activePage >= totalPages}
+                                        onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                                        className="inline-flex h-8 items-center gap-1 rounded-xl border border-slate-200 bg-white px-2.5 text-xs font-bold text-slate-700 shadow-2xs transition-colors hover:bg-slate-50 disabled:pointer-events-none disabled:opacity-40"
+                                    >
+                                        <span>Next</span>
+                                        <ChevronRight size={13} strokeWidth={2.5} />
+                                    </button>
                                 </div>
-
-                                <button
-                                    type="button"
-                                    disabled={activePage >= totalPages}
-                                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                                    className="inline-flex h-8 items-center gap-1 rounded-md border border-slate-200 bg-white px-2.5 text-xs font-semibold text-slate-700 shadow-sm transition-colors hover:bg-slate-50 disabled:pointer-events-none disabled:opacity-40"
-                                >
-                                    <span>Next</span>
-                                    <ChevronRight size={13} strokeWidth={2.5} />
-                                </button>
                             </div>
                         </div>
-                    </div>
 
-                    {/* ── MOBILE PURPOSE-BUILT CARDS ── */}
-                    <div className="flex flex-col gap-2.5 md:hidden">
-                        {paginated.map(app => (
-                            <MobilePhysicalCard key={app.id} app={app} />
-                        ))}
+                        {/* ── MOBILE PURPOSE-BUILT CARDS (< 768px) ── */}
+                        <div className="flex flex-col gap-3 md:hidden">
+                            {paginated.map(app => (
+                                <MobilePhysicalCard key={app.id} app={app} />
+                            ))}
 
-                        <div className={`mt-1 flex items-center justify-between rounded-2xl border border-slate-200/70 bg-white px-4 py-3 ${CARD_SHADOW}`}>
-                            <p className="text-xs text-slate-500">
-                                <span className="font-bold text-slate-800">{activePage}</span> of {totalPages}
-                                <span className="ml-1 text-[11px] text-slate-400">({filtered.length} units)</span>
-                            </p>
+                            <div className={`flex items-center justify-between rounded-2xl border border-slate-200/80 bg-white px-4 py-3 ${CARD_SHADOW}`}>
+                                <p className="text-xs text-slate-500 font-medium">
+                                    Page <span className="font-bold text-slate-900 tabular-nums">{activePage}</span> of{' '}
+                                    <span className="font-bold text-slate-900 tabular-nums">{totalPages}</span>
+                                </p>
 
-                            <div className="flex items-center gap-1.5">
-                                <button
-                                    type="button"
-                                    disabled={activePage <= 1}
-                                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                                    className="inline-flex h-8 items-center gap-1 rounded-md border border-slate-200 bg-white px-2.5 text-xs font-semibold text-slate-700 shadow-sm disabled:pointer-events-none disabled:opacity-40"
-                                >
-                                    <ChevronLeft size={13} strokeWidth={2.5} />
-                                    <span>Prev</span>
-                                </button>
-                                <button
-                                    type="button"
-                                    disabled={activePage >= totalPages}
-                                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                                    className="inline-flex h-8 items-center gap-1 rounded-md border border-slate-200 bg-white px-2.5 text-xs font-semibold text-slate-700 shadow-sm disabled:pointer-events-none disabled:opacity-40"
-                                >
-                                    <span>Next</span>
-                                    <ChevronRight size={13} strokeWidth={2.5} />
-                                </button>
+                                <div className="flex items-center gap-1.5">
+                                    <button
+                                        type="button"
+                                        disabled={activePage <= 1}
+                                        onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                                        className="inline-flex h-8 items-center gap-1 rounded-xl border border-slate-200 bg-white px-2.5 text-xs font-bold text-slate-700 shadow-2xs disabled:pointer-events-none disabled:opacity-40"
+                                    >
+                                        <ChevronLeft size={13} strokeWidth={2.5} />
+                                        <span>Prev</span>
+                                    </button>
+                                    <button
+                                        type="button"
+                                        disabled={activePage >= totalPages}
+                                        onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                                        className="inline-flex h-8 items-center gap-1 rounded-xl border border-slate-200 bg-white px-2.5 text-xs font-bold text-slate-700 shadow-2xs disabled:pointer-events-none disabled:opacity-40"
+                                    >
+                                        <span>Next</span>
+                                        <ChevronRight size={13} strokeWidth={2.5} />
+                                    </button>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                </>
-            )}
+                    </>
+                )}
+            </div>
         </TrivoraLayout>
     );
 }
@@ -475,69 +494,68 @@ export default function PhysicalQueue({
 
 function DesktopPhysicalRow({ app }) {
     const bucket = bucketOf(app);
-    const isPassed = bucket === 'Passed';
     const initials = getInitials(app.operator);
 
     return (
         <tr className="group transition-colors hover:bg-slate-50/80">
             {/* Column 1: Reference Number */}
-            <td className="py-3.5 pl-5 pr-3 align-middle">
+            <td className="py-4 pl-5 pr-3 align-middle">
                 <div className="flex flex-col">
-                    <span className="font-mono text-xs sm:text-[13px] font-bold tracking-wide text-slate-900">
+                    <span className="font-mono text-xs font-black text-slate-900 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded-md w-fit">
                         {app.reference}
                     </span>
-                    <span className="mt-0.5 text-[11px] text-slate-400">
+                    <span className="mt-1 text-[11px] font-semibold text-slate-500">
                         Franchise Unit
                     </span>
                 </div>
             </td>
 
-            {/* Column 2: Tricycle Owner */}
-            <td className="py-3.5 px-4 align-middle">
+            {/* Column 2: Tricycle Owner & Contact */}
+            <td className="py-4 px-4 align-middle">
                 <div className="flex items-center gap-2.5">
-                    <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-100 text-[11px] font-bold text-slate-700">
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#182B62] to-[#25449B] text-xs font-black text-white shadow-2xs">
                         {initials}
                     </div>
                     <div className="min-w-0">
-                        <p className="truncate text-xs sm:text-[13px] font-semibold text-slate-900 group-hover:text-slate-950">
+                        <p className="truncate text-xs sm:text-sm font-bold text-slate-900">
                             {app.operator}
                         </p>
-                        <p className="mt-0.5 flex items-center gap-1 truncate text-[11px] text-slate-500">
-                            <Phone size={10} className="text-slate-400" />
-                            {app.contact || 'No contact'}
+                        <p className="mt-0.5 flex items-center gap-1 truncate text-[11px] text-slate-500 font-medium">
+                            <Phone size={10} className="text-slate-400 shrink-0" />
+                            {app.contact || 'No contact number'}
                         </p>
                     </div>
                 </div>
             </td>
 
-            {/* Column 3: Tricycle Unit */}
-            <td className="py-3.5 px-4 align-middle">
+            {/* Column 3: Tricycle Unit & Plate */}
+            <td className="py-4 px-4 align-middle">
                 <div className="flex flex-col">
                     <div className="flex items-center gap-1.5">
-                        <Bike size={13} strokeWidth={2} className="text-slate-400 shrink-0" />
-                        <span className="truncate text-xs sm:text-[13px] font-semibold text-slate-800">
+                        <Bike size={14} className="text-[#182B62] shrink-0" />
+                        <span className="truncate text-xs sm:text-sm font-bold text-slate-800">
                             {app.make}
                         </span>
                     </div>
-                    <div className="mt-0.5 flex items-center gap-2 text-[11px] text-slate-500">
-                        <span>Plate: <strong className="text-slate-700 font-semibold">{app.plate}</strong></span>
+                    <div className="mt-0.5 flex items-center gap-1 text-[11px] text-slate-500 font-medium">
+                        <span>Plate:</span>
+                        <span className="font-mono font-bold text-slate-800">{app.plate}</span>
                     </div>
                 </div>
             </td>
 
             {/* Column 4: Status */}
-            <td className="py-3.5 px-4 align-middle">
+            <td className="py-4 px-4 align-middle">
                 <StatusPill status={bucket} />
             </td>
 
-            {/* Column 5: Action */}
-            <td className="py-3.5 pl-3 pr-5 text-right align-middle">
+            {/* Column 5: Action (Single word, No Icon, Consistent compact sizing) */}
+            <td className="py-4 pl-3 pr-6 text-right align-middle">
                 <Link
                     href={`/tmo/review/physical/${app.id}`}
-                    className="inline-flex items-center gap-1 rounded-full bg-[#182B62] hover:bg-[#25449B] text-white px-3.5 py-1.5 text-xs font-semibold shadow-2xs transition-all active:scale-[0.98]"
+                    className="inline-flex items-center justify-center rounded-xl bg-[#182B62] hover:bg-[#25449B] text-white px-3.5 py-1.5 text-xs font-bold shadow-2xs transition-all active:scale-[0.98]"
                 >
                     <span>{displayGroupOf(bucket) === 'Reinspect' ? 'Reinspect' : 'Inspect'}</span>
-                    <ChevronRight size={13} strokeWidth={2.5} className="text-slate-300" />
                 </Link>
             </td>
         </tr>
@@ -546,49 +564,56 @@ function DesktopPhysicalRow({ app }) {
 
 function MobilePhysicalCard({ app }) {
     const bucket = bucketOf(app);
-    const isPassed = bucket === 'Passed';
     const initials = getInitials(app.operator);
 
     return (
-        <div className={`rounded-2xl border border-slate-200/70 bg-white p-3.5 transition-all hover:border-slate-300 ${CARD_SHADOW}`}>
+        <div className={`rounded-2xl border border-slate-200/80 bg-white p-4 transition-all ${CARD_SHADOW}`}>
             {/* Top Row: Reference & Status */}
-            <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-2">
-                <span className="font-mono text-sm font-bold tracking-wide text-slate-900">
-                    {app.reference}
-                </span>
+            <div className="flex items-start justify-between gap-2 border-b border-slate-100 pb-2.5">
+                <div className="flex flex-col">
+                    <span className="font-mono text-xs font-black text-slate-900 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded-md w-fit">
+                        {app.reference}
+                    </span>
+                    <span className="mt-1 text-[11px] font-semibold text-slate-500">
+                        Franchise Unit
+                    </span>
+                </div>
                 <StatusPill status={bucket} />
             </div>
 
-            {/* Driver */}
-            <div className="mt-2.5 flex items-center justify-between gap-2">
-                <div className="flex items-center gap-2 min-w-0">
-                    <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-100 text-[10px] font-bold text-slate-700">
+            {/* Driver / Owner info */}
+            <div className="mt-3 flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#182B62] to-[#25449B] text-[11px] font-black text-white shadow-2xs">
                         {initials}
                     </div>
                     <div className="min-w-0">
-                        <p className="truncate text-xs font-semibold text-slate-900">{app.operator}</p>
+                        <p className="truncate text-xs font-bold text-slate-900">{app.operator}</p>
+                        <p className="mt-0.5 flex items-center gap-1 text-[11px] text-slate-500 font-medium truncate">
+                            <Phone size={10} className="text-slate-400 shrink-0" />
+                            {app.contact || 'No contact'}
+                        </p>
                     </div>
                 </div>
 
-                <span className="text-[11px] font-mono font-bold text-slate-700 bg-slate-100 px-2 py-0.5 rounded">
+                <span className="text-[11px] font-mono font-bold text-slate-800 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded-md shrink-0">
                     {app.plate}
                 </span>
             </div>
 
             {/* Vehicle Info */}
-            <div className="mt-2 flex items-center gap-1.5 text-xs text-slate-600">
-                <Bike size={12} className="text-slate-400" />
-                <span className="truncate font-medium">{app.make}</span>
+            <div className="mt-2.5 flex items-center gap-1.5 text-xs text-slate-700 bg-slate-50 border border-slate-100 rounded-xl px-2.5 py-1.5">
+                <Bike size={13} className="text-[#182B62] shrink-0" />
+                <span className="truncate font-semibold">{app.make}</span>
             </div>
 
-            {/* Action Button */}
-            <div className="mt-2.5 pt-2 border-t border-slate-100">
+            {/* Action Button (Solid, Text only, No Icon) */}
+            <div className="mt-3 pt-2.5 border-t border-slate-100">
                 <Link
                     href={`/tmo/review/physical/${app.id}`}
-                    className="flex w-full items-center justify-center gap-1.5 rounded-full bg-[#182B62] hover:bg-[#25449B] text-white py-2 text-xs font-bold shadow-2xs transition-all active:scale-[0.98]"
+                    className="flex w-full items-center justify-center rounded-xl bg-[#182B62] hover:bg-[#25449B] text-white py-2.5 text-xs font-bold shadow-2xs transition-all active:scale-[0.98]"
                 >
                     <span>{displayGroupOf(bucket) === 'Reinspect' ? 'Reinspect' : 'Inspect'}</span>
-                    <ChevronRight size={13} strokeWidth={2.5} className="text-slate-300" />
                 </Link>
             </div>
         </div>

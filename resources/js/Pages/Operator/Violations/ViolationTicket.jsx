@@ -218,7 +218,7 @@ function AppealForm({ appealUrl }) {
                         <ErrorText>{errors.proof}</ErrorText>
                     </div>
 
-                    <Button variant="primary" size="md" className="mt-5 w-full" disabled={!canContinue} onClick={() => setStep(2)}>
+                    <Button variant="primary" size="md" className="!rounded-xl shadow-sm mt-5 w-full" disabled={!canContinue} onClick={() => setStep(2)}>
                         Continue to Review
                     </Button>
                 </>
@@ -242,10 +242,10 @@ function AppealForm({ appealUrl }) {
                     </div>
 
                     <div className="mt-5 flex gap-2.5">
-                        <Button variant="secondary" size="md" className="flex-1" onClick={() => setStep(1)} disabled={processing}>
+                        <Button variant="secondary" size="md" className="!rounded-xl flex-1" onClick={() => setStep(1)} disabled={processing}>
                             Edit
                         </Button>
-                        <Button variant="primary" size="md" className="flex-1" loading={processing} onClick={handleSubmit}>
+                        <Button variant="primary" size="md" className="!rounded-xl shadow-sm flex-1" loading={processing} onClick={handleSubmit}>
                             {processing ? 'Submitting...' : 'Submit Appeal'}
                         </Button>
                     </div>
@@ -272,17 +272,21 @@ export default function ViolationTicket({ violation }) {
             <Head title={`Violation ${violation.id} | TRIVORA`} />
 
             <div className="mx-auto max-w-[1400px] pb-10">
-                <div className="mb-2 flex items-center justify-between">
-                    <BackLink href={route('operator.violations')}>Back to Active Violations</BackLink>
-                    <span className="rounded-md border border-[#182B62]/20 bg-[#182B62]/[0.06] px-3 py-1 font-mono text-[11px] font-bold uppercase tracking-wide text-[#182B62]">
-                        {violation.id}
-                    </span>
-                </div>
-
                 <div className="mb-6 border-b border-slate-200/80 pb-5">
-                    <span className="text-[10.5px] font-bold uppercase tracking-widest text-slate-400">Violation Record</span>
-                    <h1 className="mt-1 text-2xl font-extrabold tracking-tight text-slate-900 sm:text-[28px]">Violation Details</h1>
-                    <p className="mt-1 text-sm text-slate-500">{violation.type} &bull; {violation.date}</p>
+                    <div className="mb-3">
+                        <BackLink href={route('operator.violations')}>Back to Active Violations</BackLink>
+                    </div>
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                        <div>
+                            <h1 className="text-2xl font-black tracking-tight text-slate-900 sm:text-3xl">Violation Details</h1>
+                            <p className="mt-1 text-sm font-medium text-slate-500">{violation.type} &bull; {violation.date}</p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <span className="rounded-xl border border-[#182B62]/20 bg-[#182B62]/[0.08] px-3.5 py-1.5 font-mono text-xs font-bold uppercase tracking-wider text-[#182B62]">
+                                {violation.id}
+                            </span>
+                        </div>
+                    </div>
                 </div>
 
                 {violation.isPaid ? (

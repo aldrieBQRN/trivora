@@ -30,30 +30,30 @@ export default function DriverQrPrint({ unit, qrRide, autoPrint = false }) {
             `}</style>
 
             {/* Screen-only toolbar */}
-            <div className="print:hidden border-b border-slate-200 bg-white shadow-sm">
+            <div className="print:hidden border-b border-slate-200/80 bg-white/95 backdrop-blur-md sticky top-0 z-50 shadow-xs">
                 <div className="mx-auto flex max-w-2xl flex-wrap items-center justify-between gap-3 px-4 py-3">
                     <div className="flex items-center gap-2">
                         <button
                             type="button"
                             onClick={() => window.history.length > 1 ? window.history.back() : window.close()}
-                            className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-50"
+                            className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 shadow-xs transition hover:bg-slate-50"
                         >
                             <X size={14} /> Close
                         </button>
-                        <span className="font-mono text-sm font-bold text-slate-800">{unit.unit_code}</span>
+                        <span className="font-mono text-xs font-bold rounded-xl border border-[#182B62]/20 bg-[#182B62]/[0.08] px-3 py-1 text-[#182B62]">{unit.unit_code}</span>
                     </div>
                     <div className="flex items-center gap-2">
                         <button
                             type="button"
                             onClick={() => downloadQrPng(qrRide.qr_url, `trivora-scan-to-ride-${unit.unit_code}.png`)}
-                            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50 shadow-sm"
+                            className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-1.5 text-xs font-bold text-slate-700 shadow-xs transition hover:bg-slate-50"
                         >
                             <Download size={14} /> Download PNG
                         </button>
                         <button
                             type="button"
                             onClick={() => window.print()}
-                            className="inline-flex items-center gap-1.5 rounded-lg bg-[#182B62] px-3.5 py-1.5 text-xs font-bold text-white hover:opacity-90 shadow-sm"
+                            className="inline-flex items-center gap-1.5 rounded-xl bg-[#182B62] px-4 py-1.5 text-xs font-bold text-white shadow-xs transition hover:bg-[#25449B] active:scale-[0.98]"
                         >
                             <Printer size={14} /> Print / Save as PDF
                         </button>
@@ -62,7 +62,7 @@ export default function DriverQrPrint({ unit, qrRide, autoPrint = false }) {
 
                 {!ready && (
                     <div className="mx-auto max-w-2xl px-4 pb-3">
-                        <p className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+                        <p className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3.5 py-2 text-xs font-medium text-amber-900">
                             <AlertTriangle size={14} className="mt-0.5 shrink-0 text-amber-700" />
                             <span>This QR code is not accepting passengers yet. {qrRide.note}</span>
                         </p>

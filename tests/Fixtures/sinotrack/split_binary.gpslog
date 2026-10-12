@@ -1,0 +1,13 @@
+# TCP-fragmentation replay: a single 32-byte '$' record is split across three 'hex:' lines, exactly
+# as consecutive stream reads might deliver it. extractFrames() must hold the partial buffer and
+# emit the frame only once the final bytes arrive. Frames are always built through extractFrames(),
+# so this fixture fails if the reassembly logic ever regresses.
+
+# An ASCII packet first, so the trailing X-mode record has a device ID to inherit.
+*TH,2020916012,V1,050316,A,2212.8745,N,11346.6574,E,14.28,028,220902,FFFFFBFF#
+# The same '$' record, delivered in three fragments -> recorded.
+hex:242020916012050316
+hex:2209022212874500
+hex:113466574E014028FFFFFBFFFF0001
+# X-mode record with no ID of its own -> inherits 2020916012, recorded.
+hex:5820209160120503162209022212874500113466574E014028FFFFFBFFFF0001

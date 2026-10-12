@@ -714,13 +714,18 @@ Route::middleware(['auth', 'role:tricycle_driver,admin'])->group(function () {
 
                     // Real signal freshness — which method (device/app) last actually reported a
                     // location, and how recently. Only fields the DB actually stores; no
-                    // fabricated battery/signal-strength/accuracy telemetry.
+                    // fabricated battery/signal-strength/accuracy telemetry. "Recent" is the
+                    // configured Live Monitoring no-signal threshold (fleet_signal_lost_seconds),
+                    // so My Tricycles / Live Tracking agree with TMO Live Monitoring on how old a
+                    // ping can be before the unit reads as lost.
+                    $recentSeconds = (int) config('tracking.fleet_signal_lost_seconds', 60);
+
                     $lastSignal = $latestLocation ? [
                         'source'    => $latestLocation->source,
                         'latitude'  => (float) $latestLocation->latitude,
                         'longitude' => (float) $latestLocation->longitude,
                         'at'        => $latestLocation->recorded_at->diffForHumans(),
-                        'isRecent'  => $latestLocation->recorded_at->gt(now()->subMinutes(15)),
+                        'isRecent'  => $latestLocation->recorded_at->diffInSeconds(now()) <= $recentSeconds,
                     ] : null;
 
                     $colorScheme = $tri->franchiseScheme?->colorCodingScheme;
@@ -817,7 +822,11 @@ Route::middleware(['auth', 'role:tricycle_driver,admin'])->group(function () {
                     // renders an explicit "no GPS ping recorded yet" state instead of a demo point.
 
                     $latestLocation = $tri->locations()->latest('recorded_at')->first();
-                    $isRecentPing = $latestLocation && $latestLocation->recorded_at->gt(now()->subMinutes(15));
+                    // Same "recent" definition as operator.fleet above: the configured Live
+                    // Monitoring no-signal threshold (fleet_signal_lost_seconds), so the two
+                    // operator pages never disagree with each other or TMO Live Monitoring.
+                    $recentSeconds = (int) config('tracking.fleet_signal_lost_seconds', 60);
+                    $isRecentPing = $latestLocation && $latestLocation->recorded_at->diffInSeconds(now()) <= $recentSeconds;
 
                     $tricycleData = [
                         'db_id'                => $tri->id,
@@ -827,6 +836,9 @@ Route::middleware(['auth', 'role:tricycle_driver,admin'])->group(function () {
                         'isFinalized'          => true,
                         'active_tracking_mode' => $tri->active_tracking_mode,
                         'iot_device_id'        => $tri->iot_device_id,
+                        // The unit's assigned TODA zone, from its own relationship (same source
+                        // the registry uses) — feeds the Live Tracking "Current Zone" stat.
+                        'zone'                 => $tri->todaZone?->name ?: ($tri->operator?->todaZone?->name ?: 'Unassigned'),
                         'heading'              => $latestLocation ? (int)$latestLocation->heading_deg : 0,
                         'accuracy'             => $latestLocation ? (float)$latestLocation->accuracy_m : null,
                         'last_ping'            => $latestLocation ? $latestLocation->recorded_at->diffForHumans() : 'Never',

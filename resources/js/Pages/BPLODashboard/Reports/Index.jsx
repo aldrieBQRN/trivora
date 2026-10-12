@@ -32,17 +32,19 @@ function ChartTooltip({ active, payload, label }) {
 
 function KpiTile({ label, value, hint, icon: Icon }) {
     return (
-        <div className={`rounded-2xl border border-slate-200/70 bg-white p-4 sm:p-5 ${CARD_SHADOW}`}>
-            <div className="flex items-center justify-between">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">{label}</span>
-                {Icon && (
-                    <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-slate-50 text-[#182B62]">
-                        <Icon size={14} />
-                    </span>
-                )}
+        <div className="flex flex-col justify-between rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-4 sm:p-5 shadow-xs hover:border-slate-300 transition-all">
+            <div>
+                <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">{label}</span>
+                    {Icon && (
+                        <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-[#182B62]/[0.10] to-[#182B62]/[0.02] text-[#182B62]">
+                            <Icon size={14} />
+                        </span>
+                    )}
+                </div>
+                <p className="mt-2 text-2xl sm:text-3xl font-extrabold tracking-tight tabular-nums text-slate-900">{value}</p>
             </div>
-            <p className="mt-2 text-2xl sm:text-3xl font-extrabold tracking-tight tabular-nums text-slate-900">{value}</p>
-            {hint && <p className="mt-1 text-[11px] text-slate-500">{hint}</p>}
+            {hint && <p className="mt-3 border-t border-slate-100 pt-2 text-[11px] text-slate-400">{hint}</p>}
         </div>
     );
 }
@@ -130,24 +132,36 @@ export default function BPLOReportsIndex({ from, to, filters, reportData }) {
         <BPLOLayout title="Reports & Analytics" role="BPLO Officer">
             <Head title="Reports & Analytics | TRIVORA" />
 
-            <div className="mb-5 border-b border-slate-200/80 pb-5">
-                <h1 className="text-2xl sm:text-[28px] font-extrabold tracking-tight text-slate-900 leading-tight">
-                    Reports &amp; Analytics
-                </h1>
-                <p className="mt-1 text-xs sm:text-sm text-slate-500 max-w-2xl leading-relaxed">
-                    Overview of sticker and plate releases, activity, and processing time.
-                </p>
+            {/* Clean non-card page header */}
+            <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-slate-200/80 pb-5">
+                <div>
+                    <h1 className="text-2xl sm:text-[28px] font-extrabold tracking-tight text-slate-900 leading-tight">
+                        Reports &amp; Analytics
+                    </h1>
+                    <p className="mt-1 text-xs sm:text-sm text-slate-500 max-w-2xl leading-relaxed">
+                        Municipal tricycle licensing, sticker release volumes, and operational throughput analytics
+                    </p>
+                </div>
+                <div className="flex items-center gap-2">
+                    <a
+                        href={exportUrl}
+                        className="inline-flex items-center gap-2 rounded-xl border border-slate-200/80 bg-white px-3.5 py-2 text-xs font-bold text-slate-700 shadow-xs hover:bg-slate-50 hover:border-slate-300 hover:text-slate-900 transition-all"
+                    >
+                        <FileSpreadsheet size={14} strokeWidth={2.2} className="text-slate-500" />
+                        <span>Export to Excel</span>
+                    </a>
+                </div>
             </div>
 
-            <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-                {/* Filter toolbar — Quick Range | From | To | Status | Export, one compact row. */}
-                <div className="flex flex-col gap-3 border-b border-slate-200 px-4 py-3.5 print:hidden sm:flex-row sm:items-center sm:justify-between sm:px-6">
+            {/* Filter toolbar — Quick Range | From | To | Status */}
+            <div className="mb-6 rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-3 sm:p-4 shadow-xs print:hidden">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div className="flex flex-1 flex-wrap items-center gap-2.5">
                         <DateRangeFilter from={from} to={to} onChange={handleDateChange} />
                         <select
                             value={filters.status || ''}
                             onChange={(e) => handleStatusChange(e.target.value)}
-                            className="h-9 w-full shrink-0 rounded-lg border border-slate-200 bg-white px-2.5 text-xs font-semibold text-slate-700 focus:border-[#182B62] focus:outline-none focus:ring-2 focus:ring-[#182B62]/10 sm:w-44"
+                            className="h-10 w-full shrink-0 rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 shadow-2xs focus:border-[#182B62] focus:outline-none focus:ring-2 focus:ring-[#182B62]/10 sm:w-44 cursor-pointer"
                         >
                             <option value="">All Statuses</option>
                             <option value="pending">Pending Release</option>
@@ -155,20 +169,19 @@ export default function BPLOReportsIndex({ from, to, filters, reportData }) {
                         </select>
                     </div>
 
-                    <a
-                        href={exportUrl}
-                        className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 hover:bg-slate-50"
-                    >
-                        <FileSpreadsheet size={13} /> Export to Excel
-                    </a>
-                </div>
-
-                <div className="p-4 sm:p-6">
-                    {/* 1. Releasing Overview */}
-                    <div className="mb-3 flex items-center justify-between">
-                        <p className="text-[11px] font-bold uppercase tracking-wide text-slate-400">Releasing Overview</p>
-                        <p className="text-[11px] font-semibold text-slate-500">{from} – {to}</p>
+                    <div className="flex items-center gap-2">
+                        <span className="text-xs font-medium text-slate-500">
+                            Range: <strong className="text-slate-800">{from}</strong> – <strong className="text-slate-800">{to}</strong>
+                        </span>
                     </div>
+                </div>
+            </div>
+
+            {/* 1. Releasing Overview */}
+            <div className="mb-3 flex items-center justify-between">
+                <p className="text-[11px] font-bold uppercase tracking-wide text-slate-400">Releasing Overview</p>
+                <p className="text-[11px] font-semibold text-slate-500">{from} – {to}</p>
+            </div>
                     <div className="mb-6 grid grid-cols-1 gap-3.5 sm:grid-cols-2 lg:grid-cols-4">
                         <KpiTile
                             label="Total for BPLO Release"
@@ -204,14 +217,14 @@ export default function BPLOReportsIndex({ from, to, filters, reportData }) {
                             subtitle={`Sticker/plate releases · ${from} – ${to}`}
                             className="lg:col-span-2"
                             action={(
-                                <div className="flex items-center gap-0.5 rounded-lg border border-slate-200 p-0.5">
+                                <div className="flex items-center gap-1 rounded-xl border border-slate-200 bg-slate-50/50 p-1">
                                     {GRANULARITIES.map((g) => (
                                         <button
                                             key={g}
                                             type="button"
                                             onClick={() => setGranularity(g)}
-                                            className={`rounded-md px-2 py-1 text-[11px] font-semibold capitalize transition-colors ${
-                                                granularity === g ? 'bg-[#182B62] text-white' : 'text-slate-500 hover:text-slate-900'
+                                            className={`rounded-lg px-2.5 py-1 text-[11px] font-semibold capitalize transition-all ${
+                                                granularity === g ? 'bg-[#182B62] text-white shadow-xs' : 'text-slate-500 hover:text-slate-900'
                                             }`}
                                         >
                                             {g}
@@ -344,8 +357,6 @@ export default function BPLOReportsIndex({ from, to, filters, reportData }) {
                             </div>
                         </div>
                     </ReportCard>
-                </div>
-            </div>
         </BPLOLayout>
     );
 }

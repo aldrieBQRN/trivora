@@ -1,0 +1,18 @@
+# SinoTrack ST-901L replay fixture — vendor protocol-document examples made self-consistent on a
+# single tracker (device_id 2020916012) so one recorded stream exercises every ingest outcome.
+#
+# Format: '#' comments and blank lines are ignored; 'hex:' lines carry raw binary bytes; any other
+# line is a literal ASCII frame. Replayed by `php artisan gps:replay <file> --device 2020916012`.
+
+# 1) ASCII V1 position report -> recorded.
+*TH,2020916012,V1,050316,A,2212.8745,N,11346.6574,E,14.28,028,220902,FFFFFBFF#
+# 2) ASCII V4 command confirmation (position block sits behind extra params) -> recorded.
+*TH,2020916012,V4,S14,100,10,1,3,130305,050316,A,2212.8745,N,11346.6574,E,14.28,028,220902,FFFFFBFF#
+# 3) Binary '$' standard record (BCD-encoded fix) -> recorded.
+hex:2420209160120503162209022212874500113466574E014028FFFFFBFFFF0001
+# 4) Binary 'X'-mode record: mileage occupies the ID slot, so it inherits the last device seen -> recorded.
+hex:5820209160120503162209022212874500113466574E014028FFFFFBFFFF0001
+# 5) 'V' (invalid) fix -> decoded but never recorded.
+*TH,2020916012,V1,050316,V,2212.8745,N,11346.6574,E,14.28,028,220902,FFFFFBFF#
+# 6) Packet from a tracker that was never paired -> reported, never recorded.
+*TH,9999999999,V1,050316,A,2212.8745,N,11346.6574,E,14.28,028,220902,FFFFFBFF#

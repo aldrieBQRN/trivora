@@ -48,7 +48,7 @@ class MixedRideSessionTest extends TestCase
 
     private function addWalkIn(Driver $driver, string $quote): TestResponse
     {
-        return $this->as($driver->user)->postJson('/api/v1/driver/manual-ride/add', ['quote' => $quote]);
+        return $this->as($driver->user)->postJson('/api/v1/driver/manual-ride/add', ['quote' => $quote, 'passenger_name' => 'Walk-in Passenger']);
     }
 
     /** Quote + add; returns the walk-in's booking code. */
@@ -122,7 +122,7 @@ class MixedRideSessionTest extends TestCase
         $this->assertSame('qr', $bySource[$qrCode]['source']);
         $this->assertNotNull($bySource[$qrCode]['passenger_name']);
         $this->assertSame('walk_in', $bySource[$walkIn]['source']);
-        $this->assertNull($bySource[$walkIn]['passenger_name']);
+        $this->assertSame('Walk-in Passenger', $bySource[$walkIn]['passenger_name']);
         $this->assertEquals(FareService::calculate(5.4, 1), $bySource[$qrCode]['fare_amount']);
         $this->assertEquals(FareService::calculate(5.4, 2), $bySource[$walkIn]['fare_amount']);
         $this->assertSame(self::WALK_IN_DEST['name'], $bySource[$walkIn]['dropoff']['name']);

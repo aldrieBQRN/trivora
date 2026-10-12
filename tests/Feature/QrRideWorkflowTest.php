@@ -10,6 +10,7 @@ use App\Services\GeoService;
 use App\Services\QrRideService;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\Crypt;
+use Illuminate\Support\Facades\Http;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\Feature\Concerns\BuildsQrRides;
 use Tests\TestCase;
@@ -166,6 +167,20 @@ class QrRideWorkflowTest extends TestCase
             'dropoff_name' => 'X', 'dropoff_lat' => self::DEST_A['lat'], 'dropoff_lng' => self::DEST_A['lng'],
             'distance_km' => 0.1, 'fare_amount' => 1,
         ])->assertOk()->assertJsonPath('distance_km', 5.4)->assertJsonPath('fare_amount', 57);
+    }
+
+    #[Test]
+    public function repeated_quotes_for_the_same_coordinates_share_one_osrm_round_trip(): void
+    {
+        [$tricycle] = $this->makeUnit();
+        $passenger = $this->makePassengerUser();
+
+        $this->quote($passenger, $tricycle, self::DEST_A, 1)->assertOk();
+        $this->quote($passenger, $tricycle, self::DEST_A, 1)->assertOk();
+
+        // Pickup and destination are identical, so the second quote is served from the
+        // RouteDistanceService cache instead of hitting OSRM again.
+        Http::assertSentCount(1);
     }
 
     #[Test]
