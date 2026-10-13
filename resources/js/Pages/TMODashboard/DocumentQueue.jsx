@@ -77,7 +77,7 @@ export default function DocumentQueue({
                             Document Review
                         </h1>
                         <p className="mt-1 text-xs sm:text-sm text-slate-500 max-w-2xl leading-relaxed">
-                            Verify uploaded franchise requirements and clearances before endorsing units for physical roadworthiness inspection.
+                            Verify uploaded franchise requirements before forwarding units for physical inspection.
                         </p>
                     </div>
                 </div>
@@ -415,35 +415,33 @@ export default function DocumentQueue({
                             ))}
 
                             {/* Mobile Pagination */}
-                            {totalPages > 1 && (
-                                <div className={`flex items-center justify-between rounded-2xl border border-slate-200/80 bg-white px-4 py-3.5 ${CARD_SHADOW}`}>
-                                    <p className="text-xs text-slate-500">
-                                        <span className="font-bold text-slate-900">{activePage}</span> / {totalPages}
-                                        <span className="ml-1 text-[11px] text-slate-400">({filtered.length} total)</span>
-                                    </p>
+                            <div className={`flex items-center justify-between rounded-2xl border border-slate-200/80 bg-white px-4 py-3.5 ${CARD_SHADOW}`}>
+                                <p className="text-xs text-slate-500">
+                                    <span className="font-bold text-slate-900">{activePage}</span> / {totalPages}
+                                    <span className="ml-1 text-[11px] text-slate-400">({filtered.length} total)</span>
+                                </p>
 
-                                    <div className="flex items-center gap-1.5">
-                                        <button
-                                            type="button"
-                                            disabled={activePage <= 1}
-                                            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                                            className="inline-flex h-8 items-center gap-1 rounded-xl border border-slate-200 bg-white px-2.5 text-xs font-bold text-slate-700 shadow-2xs disabled:opacity-40"
-                                        >
-                                            <ChevronLeft size={13} strokeWidth={2.5} />
-                                            <span>Prev</span>
-                                        </button>
-                                        <button
-                                            type="button"
-                                            disabled={activePage >= totalPages}
-                                            onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                                            className="inline-flex h-8 items-center gap-1 rounded-xl border border-slate-200 bg-white px-2.5 text-xs font-bold text-slate-700 shadow-2xs disabled:opacity-40"
-                                        >
-                                            <span>Next</span>
-                                            <ChevronRight size={13} strokeWidth={2.5} />
-                                        </button>
-                                    </div>
+                                <div className="flex items-center gap-1.5">
+                                    <button
+                                        type="button"
+                                        disabled={activePage <= 1}
+                                        onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                                        className="inline-flex h-8 items-center gap-1 rounded-xl border border-slate-200 bg-white px-2.5 text-xs font-bold text-slate-700 shadow-2xs disabled:opacity-40"
+                                    >
+                                        <ChevronLeft size={13} strokeWidth={2.5} />
+                                        <span>Prev</span>
+                                    </button>
+                                    <button
+                                        type="button"
+                                        disabled={activePage >= totalPages}
+                                        onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                                        className="inline-flex h-8 items-center gap-1 rounded-xl border border-slate-200 bg-white px-2.5 text-xs font-bold text-slate-700 shadow-2xs disabled:opacity-40"
+                                    >
+                                        <span>Next</span>
+                                        <ChevronRight size={13} strokeWidth={2.5} />
+                                    </button>
                                 </div>
-                            )}
+                            </div>
                         </div>
                     </>
                 )}
@@ -460,14 +458,13 @@ function StatusPill({ status }) {
     const isPending = status === 'Pending';
     return (
         <span
-            className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[11px] font-bold border ${
+            className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-bold border ${
                 isPending
                     ? 'border-amber-200 bg-amber-50 text-amber-800'
                     : 'border-rose-200 bg-rose-50 text-rose-700'
             }`}
         >
-            <span className={`h-1.5 w-1.5 rounded-full ${isPending ? 'bg-amber-500' : 'bg-rose-500'}`} />
-            <span>{isPending ? 'Pending Verification' : 'Needs Correction'}</span>
+            {isPending ? 'Pending' : 'Correction'}
         </span>
     );
 }

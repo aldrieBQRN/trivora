@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Head, router } from '@inertiajs/react';
 import useBackgroundRefresh from '@/hooks/useBackgroundRefresh';
 import TrivoraLayout from '@/Layouts/TrivoraLayout';
@@ -30,6 +30,18 @@ const EXPORT_LABELS = {
 export default function ReportsIndex({ tab, from, to, filters, reportData }) {
     useBackgroundRefresh(['reportData']);
     const [exportOpen, setExportOpen] = useState(false);
+    const tabsRef = useRef(null);
+
+    // Slide the active tab to the center of the tab bar (only matters when it overflows).
+    useEffect(() => {
+        const container = tabsRef.current;
+        const active = container?.querySelector('[aria-current="page"]');
+        if (!container || !active) return;
+        container.scrollTo({
+            left: active.offsetLeft - (container.clientWidth - active.offsetWidth) / 2,
+            behavior: 'smooth',
+        });
+    }, [tab]);
 
     const visit = (params) => {
         router.get(route('tmo.reports'), { tab, from, to, ...filters, ...params }, {
@@ -94,7 +106,7 @@ export default function ReportsIndex({ tab, from, to, filters, reportData }) {
             {/* ══════════════════════════════════════════════════════════════
                 2. SEGMENTED REPORT TABS
                ══════════════════════════════════════════════════════════════ */}
-            <div className="mb-5 flex items-center gap-1.5 overflow-x-auto p-1.5 bg-slate-100/80 rounded-2xl border border-slate-200/80 custom-scrollbar print:hidden">
+            <div ref={tabsRef} className="relative mb-5 flex w-fit max-w-full items-center gap-1.5 overflow-x-auto p-1.5 bg-slate-100/80 rounded-2xl border border-slate-200/80 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden print:hidden">
                 {TABS.map((t) => {
                     const Icon = t.icon;
                     const active = t.value === tab;

@@ -119,18 +119,7 @@ class BookingDispatchService
 
         $eligibleDrivers = self::getEligibleDrivers($locked, $radiusKm, $alreadyOfferedDriverIds);
 
-        foreach ($eligibleDrivers as $driver) {
-            BookingDispatchOffer::firstOrCreate(
-                [
-                    'booking_id' => $locked->id,
-                    'driver_id'  => $driver->id,
-                ],
-                [
-                    'dispatch_round' => $round,
-                    'status'         => BookingDispatchOffer::STATUS_OFFERED,
-                ]
-            );
-        }
+        self::createOffers($locked, $eligibleDrivers, $round);
 
         $locked->update([
             'dispatch_round'       => $round,
@@ -171,10 +160,11 @@ class BookingDispatchService
 
             if ($secondsElapsed >= self::ROUND_TIMEOUT_SECONDS) {
                 // Mark current round's unaccepted offers as expired
-                BookingDispatchOffer::where('booking_id', $locked->id)
+                $expiringOffers = BookingDispatchOffer::where('booking_id', $locked->id)
                     ->where('dispatch_round', $currentRound)
-                    ->where('status', BookingDispatchOffer::STATUS_OFFERED)
-                    ->update(['status' => BookingDispatchOffer::STATUS_EXPIRED]);
+                    ->where('status', BookingDispatchOffer::STATUS_OFFERED);
+                MobileNotifier::bookingOfferWithdrawn($locked, (clone $expiringOffers)->pluck('driver_id')->all());
+                $expiringOffers->update(['status' => BookingDispatchOffer::STATUS_EXPIRED]);
 
                 if ($currentRound < self::MAX_ROUNDS) {
                     // Advance to next round
@@ -191,6 +181,7 @@ class BookingDispatchService
                     'cancellation_reason' => 'no_driver_available',
                     'cancelled_at'        => now(),
                 ]);
+                MobileNotifier::bookingCancelled($locked);
 
                 $booking->setRawAttributes($locked->getAttributes(), true);
                 return collect();
@@ -203,18 +194,7 @@ class BookingDispatchService
                 ->all();
             $newlyEligible = self::getEligibleDrivers($locked, $radiusKm, $alreadyOfferedDriverIds);
 
-            foreach ($newlyEligible as $driver) {
-                BookingDispatchOffer::firstOrCreate(
-                    [
-                        'booking_id' => $locked->id,
-                        'driver_id'  => $driver->id,
-                    ],
-                    [
-                        'dispatch_round' => $currentRound,
-                        'status'         => BookingDispatchOffer::STATUS_OFFERED,
-                    ]
-                );
-            }
+            self::createOffers($locked, $newlyEligible, $currentRound);
 
             // Return all drivers who currently have active 'offered' status in this round
             $activeDriverIds = BookingDispatchOffer::where('booking_id', $locked->id)
@@ -255,6 +235,7 @@ class BookingDispatchService
             BookingDispatchOffer::where('booking_id', $locked->id)
                 ->where('driver_id', $driverId)
                 ->update(['status' => BookingDispatchOffer::STATUS_DECLINED]);
+            MobileNotifier::bookingOfferWithdrawn($locked, [$driverId]);
 
             if ($locked->status !== 'pending') {
                 $booking->setRawAttributes($locked->getAttributes(), true);
@@ -285,6 +266,7 @@ class BookingDispatchService
                     'cancellation_reason' => 'no_driver_available',
                     'cancelled_at'        => now(),
                 ]);
+                MobileNotifier::bookingCancelled($locked);
 
                 $booking->setRawAttributes($locked->getAttributes(), true);
                 return collect();
@@ -299,6 +281,37 @@ class BookingDispatchService
 
             return Driver::whereIn('id', $activeDriverIds)->get();
         });
+    }
+
+    /**
+     * Offer the booking to each driver who doesn't hold an offer for it yet, and notify only the
+     * drivers whose offer this call actually created — a re-evaluation never re-notifies.
+     *
+     * @param Collection<int, Driver> $drivers
+     */
+    private static function createOffers(Booking $locked, Collection $drivers, int $round): void
+    {
+        $newlyOfferedDriverIds = [];
+
+        foreach ($drivers as $driver) {
+            $offer = BookingDispatchOffer::firstOrCreate(
+                [
+                    'booking_id' => $locked->id,
+                    'driver_id'  => $driver->id,
+                ],
+                [
+                    'dispatch_round' => $round,
+                    'status'         => BookingDispatchOffer::STATUS_OFFERED,
+                ]
+            );
+
+            if ($offer->wasRecentlyCreated) {
+                $newlyOfferedDriverIds[] = $driver->id;
+            }
+        }
+
+        // Registered after-commit by AppNotifier: nothing is sent if the dispatch rolls back.
+        MobileNotifier::bookingOffered($locked, $newlyOfferedDriverIds);
     }
 
     /**

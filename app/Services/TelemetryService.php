@@ -147,6 +147,7 @@ class TelemetryService
         // TMO and the driver after commit when VIOLATION_EMAILS_ENABLED; never throws, so the
         // result below is unaffected.
         ViolationNotifier::colorCodingViolationRecorded($violation);
+        MobileNotifier::violationRecorded($violation);
 
         return [
             'flagged'  => true,

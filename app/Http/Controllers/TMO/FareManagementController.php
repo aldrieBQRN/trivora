@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\FareConfiguration;
 use App\Services\AuditService;
 use App\Services\FareService;
+use App\Services\MobileNotifier;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -169,6 +170,10 @@ class FareManagementController extends Controller
                 ],
                 targetReference: 'Fare #' . $newFare->id
             );
+
+            // Every registered passenger and driver is notified once this transaction commits — a
+            // failed save notifies nobody, and a repeated delivery for this config is a no-op.
+            MobileNotifier::fareConfigurationSaved($newFare);
 
             // The active-fare cache is invalidated by the FareConfiguration model's saved event once
             // this transaction commits (FareConfiguration::booted → FareService), so a rolled-back

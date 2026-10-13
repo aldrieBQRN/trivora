@@ -12,6 +12,7 @@ use App\Models\RideRating;
 use App\Services\BookingDispatchService;
 use App\Services\FareService;
 use App\Services\ManualRideService;
+use App\Services\MobileNotifier;
 use App\Services\QrRideService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -72,6 +73,7 @@ class BookingController extends Controller
             BookingDispatchOffer::where('booking_id', $ep->id)
                 ->where('status', BookingDispatchOffer::STATUS_OFFERED)
                 ->update(['status' => BookingDispatchOffer::STATUS_EXPIRED]);
+            MobileNotifier::withdrawAllOffers($ep);
         }
 
         $bookingCode = 'BK-' . date('Ymd') . '-' . strtoupper(Str::random(4));
@@ -258,6 +260,10 @@ class BookingController extends Controller
                 'current_lng' => $driver->current_lng ?? 120.6285,
             ]);
 
+            // Passenger + winning driver are notified, every other offered driver's request is
+            // withdrawn — all after commit, so a rolled-back acceptance notifies nobody.
+            MobileNotifier::bookingAccepted($locked);
+
             $booking = $locked;
         });
 
@@ -436,6 +442,13 @@ class BookingController extends Controller
             }
 
             $locked->update($updateData);
+
+            if ($newStatus === 'cancelled') {
+                MobileNotifier::bookingCancelled($locked);
+            } elseif ($newStatus === 'completed') {
+                MobileNotifier::bookingCompleted($locked);
+            }
+
             $booking = $locked;
         });
 

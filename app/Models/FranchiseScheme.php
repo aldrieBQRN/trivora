@@ -222,13 +222,16 @@ class FranchiseScheme extends Model
                 ]);
             }
 
-            FranchiseStatusHistory::create([
+            $history = FranchiseStatusHistory::create([
                 'franchise_scheme_id' => $this->id,
                 'changed_by'          => $changedByUserId,
                 'from_status'         => $fromStatus,
                 'to_status'           => $toStatus,
                 'reason'              => $reason,
             ]);
+
+            // The assigned drivers' app notification — sent only once this transaction commits.
+            \App\Services\MobileNotifier::franchiseStatusChanged($this, $toStatus, $reason, $history->id);
         });
     }
 

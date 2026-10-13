@@ -189,38 +189,39 @@ export default function PhysicalInspection({ application }) {
                         {/* Re-inspection Notification Banner (if applicable) */}
                         {appData.is_reinspection && (
                             <div className="rounded-2xl border border-amber-200 bg-amber-50/80 p-4 sm:p-5 shadow-2xs">
-                                <div className="flex items-start gap-3.5">
+                                <div className="flex items-center gap-3 sm:gap-3.5">
                                     <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-500/15 text-amber-700 border border-amber-200">
                                         <RotateCcw size={18} strokeWidth={2.2} />
                                     </div>
-                                    <div className="flex-1 min-w-0">
-                                        <div className="flex items-center justify-between gap-2">
-                                            <h3 className="text-sm font-bold text-amber-900">
-                                                Re-inspection Attempt #{appData.attempt_count + 1}
-                                            </h3>
-                                            <span className="text-[11px] font-bold text-amber-700 bg-white border border-amber-200 px-2 py-0.5 rounded-lg">
-                                                Repairs Submitted
-                                            </span>
-                                        </div>
-                                        <p className="mt-1 text-xs leading-relaxed text-amber-800 font-medium">
-                                            The operator has reported defect repairs complete and requested on-site re-testing.
-                                        </p>
-                                        {appData.previous_rejection_reason && (
-                                            <div className="mt-2.5 rounded-xl border border-amber-200/80 bg-white/80 p-3 text-xs text-amber-950 font-medium">
-                                                <span className="font-bold text-amber-900 block mb-0.5">Previous Defect Notes:</span>
-                                                "{appData.previous_rejection_reason}"
-                                            </div>
-                                        )}
+                                    <div className="flex flex-1 min-w-0 flex-wrap items-center justify-between gap-x-2 gap-y-1">
+                                        <h3 className="text-sm font-bold text-amber-900">
+                                            Re-inspection Attempt #{appData.attempt_count + 1}
+                                        </h3>
+                                        <span className="shrink-0 text-[11px] font-bold text-amber-700 bg-white border border-amber-200 px-2 py-0.5 rounded-lg">
+                                            Repairs Submitted
+                                        </span>
                                     </div>
+                                </div>
+                                {/* Body spans full width on mobile; aligns under the title from sm up */}
+                                <div className="sm:pl-[50px]">
+                                    <p className="mt-2.5 sm:mt-1 text-xs leading-relaxed text-amber-800 font-medium">
+                                        The operator has reported defect repairs complete and requested on-site re-testing.
+                                    </p>
+                                    {appData.previous_rejection_reason && (
+                                        <div className="mt-2.5 rounded-xl border border-amber-200/80 bg-white/80 p-3 text-xs text-amber-950 font-medium break-words">
+                                            <span className="font-bold text-amber-900 block mb-0.5">Previous Defect Notes:</span>
+                                            "{appData.previous_rejection_reason}"
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         )}
 
                         {/* Main Inspection Checklist Card */}
                         <div className={`overflow-hidden rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white ${CARD_SHADOW}`}>
-                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 bg-slate-50/60 px-5 py-3.5">
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 bg-slate-50/60 px-4 sm:px-5 py-3.5">
                                 <div className="flex items-center gap-2.5">
-                                    <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-indigo-50 border border-indigo-100 text-[#182B62]">
+                                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-indigo-50 border border-indigo-100 text-[#182B62]">
                                         <ShieldCheck size={16} strokeWidth={2.2} />
                                     </div>
                                     <div>
@@ -241,7 +242,7 @@ export default function PhysicalInspection({ application }) {
                                 {/* Inspection Items Table */}
                                 <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white">
                                     <table className="w-full text-left text-xs border-collapse">
-                                        <thead className="border-b border-slate-100 bg-slate-50/75 text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                                        <thead className="hidden sm:table-header-group border-b border-slate-100 bg-slate-50/75 text-[11px] font-bold uppercase tracking-wider text-slate-400">
                                             <tr>
                                                 <th scope="col" className="py-3 px-4 w-5/12">Component</th>
                                                 <th scope="col" className="py-3 px-4 w-7/12">Official Requirement</th>
@@ -255,12 +256,17 @@ export default function PhysicalInspection({ application }) {
                                                             <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-slate-100 text-[10.5px] font-bold text-slate-700 mt-0.5">
                                                                 {idx + 1}
                                                             </span>
-                                                            <span className="font-bold text-slate-900 leading-snug">
-                                                                {item.label}
-                                                            </span>
+                                                            <div className="min-w-0">
+                                                                <span className="font-bold text-slate-900 leading-snug">
+                                                                    {item.label}
+                                                                </span>
+                                                                <p className="sm:hidden mt-0.5 text-slate-600 leading-relaxed font-medium">
+                                                                    {item.requirement}
+                                                                </p>
+                                                            </div>
                                                         </div>
                                                     </td>
-                                                    <td className="py-3 px-4 text-slate-600 leading-relaxed align-top font-medium">
+                                                    <td className="hidden sm:table-cell py-3 px-4 text-slate-600 leading-relaxed align-top font-medium">
                                                         {item.requirement}
                                                     </td>
                                                 </tr>
@@ -402,7 +408,7 @@ export default function PhysicalInspection({ application }) {
                         <div className={`rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-5 ${CARD_SHADOW}`}>
                             <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-3.5">
                                 <div className="flex items-center gap-2">
-                                    <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-indigo-50 border border-indigo-100 text-[#182B62]">
+                                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-indigo-50 border border-indigo-100 text-[#182B62]">
                                         <Bike size={16} strokeWidth={2.2} />
                                     </div>
                                     <h3 className="text-sm font-bold text-slate-900">
@@ -421,29 +427,29 @@ export default function PhysicalInspection({ application }) {
                             </div>
 
                             <div className="mt-3 grid grid-cols-1 gap-2 text-xs">
-                                <div className="flex items-center justify-between text-slate-600">
-                                    <span className="flex items-center gap-1.5 text-slate-400 font-medium">
+                                <div className="flex items-center justify-between gap-3 text-slate-600">
+                                    <span className="flex shrink-0 items-center gap-1.5 text-slate-400 font-medium">
                                         <CalendarDays size={13} className="shrink-0" />
                                         Birthday
                                     </span>
-                                    <span className="font-bold text-slate-800">{appData.owner?.birthday || '—'}</span>
+                                    <span className="font-bold text-slate-800 text-right break-words min-w-0">{appData.owner?.birthday || '—'}</span>
                                 </div>
-                                <div className="flex items-center justify-between text-slate-600">
-                                    <span className="flex items-center gap-1.5 text-slate-400 font-medium">
+                                <div className="flex items-center justify-between gap-3 text-slate-600">
+                                    <span className="flex shrink-0 items-center gap-1.5 text-slate-400 font-medium">
                                         <Smartphone size={13} className="shrink-0" />
                                         Contact
                                     </span>
-                                    <span className="font-bold text-slate-800">{appData.contact || 'No phone provided'}</span>
+                                    <span className="font-bold text-slate-800 text-right break-words min-w-0">{appData.contact || 'No phone provided'}</span>
                                 </div>
                                 <div className="flex items-center justify-between gap-3 text-slate-600">
-                                    <span className="flex items-center gap-1.5 text-slate-400 font-medium">
+                                    <span className="flex shrink-0 items-center gap-1.5 text-slate-400 font-medium">
                                         <Mail size={13} className="shrink-0" />
                                         Email
                                     </span>
                                     <span className="font-bold text-slate-800 break-all text-right">{appData.owner?.email || '—'}</span>
                                 </div>
-                                <div className="flex items-center justify-between text-slate-600">
-                                    <span className="flex items-center gap-1.5 text-slate-400 font-medium">
+                                <div className="flex items-center justify-between gap-3 text-slate-600">
+                                    <span className="flex shrink-0 items-center gap-1.5 text-slate-400 font-medium">
                                         <MapPin size={13} className="shrink-0" />
                                         Barangay
                                     </span>
@@ -465,25 +471,25 @@ export default function PhysicalInspection({ application }) {
                                     </p>
                                 ) : appData.tricycleDriver ? (
                                     <div className="mt-2 grid grid-cols-1 gap-1.5 text-xs">
-                                        <div className="flex items-center justify-between text-slate-600">
-                                            <span className="font-medium text-slate-400">Driver Name</span>
-                                            <span className="font-bold text-slate-800">{appData.tricycleDriver.full_name || '—'}</span>
-                                        </div>
-                                        <div className="flex items-center justify-between text-slate-600">
-                                            <span className="font-medium text-slate-400">Birthday</span>
-                                            <span className="font-bold text-slate-800">{appData.tricycleDriver.birthday || '—'}</span>
-                                        </div>
-                                        <div className="flex items-center justify-between text-slate-600">
-                                            <span className="font-medium text-slate-400">Mobile Number</span>
-                                            <span className="font-bold text-slate-800">{appData.tricycleDriver.contact_number || '—'}</span>
+                                        <div className="flex items-center justify-between gap-3 text-slate-600">
+                                            <span className="shrink-0 font-medium text-slate-400">Driver Name</span>
+                                            <span className="font-bold text-slate-800 text-right break-words min-w-0">{appData.tricycleDriver.full_name || '—'}</span>
                                         </div>
                                         <div className="flex items-center justify-between gap-3 text-slate-600">
-                                            <span className="font-medium text-slate-400">Email</span>
+                                            <span className="shrink-0 font-medium text-slate-400">Birthday</span>
+                                            <span className="font-bold text-slate-800 text-right break-words min-w-0">{appData.tricycleDriver.birthday || '—'}</span>
+                                        </div>
+                                        <div className="flex items-center justify-between gap-3 text-slate-600">
+                                            <span className="shrink-0 font-medium text-slate-400">Mobile Number</span>
+                                            <span className="font-bold text-slate-800 text-right break-words min-w-0">{appData.tricycleDriver.contact_number || '—'}</span>
+                                        </div>
+                                        <div className="flex items-center justify-between gap-3 text-slate-600">
+                                            <span className="shrink-0 font-medium text-slate-400">Email</span>
                                             <span className="font-bold text-slate-800 break-all text-right">{appData.tricycleDriver.email || '—'}</span>
                                         </div>
-                                        <div className="flex items-center justify-between text-slate-600">
-                                            <span className="font-medium text-slate-400">Barangay</span>
-                                            <span className="font-bold text-slate-800">{appData.tricycleDriver.barangay || '—'}</span>
+                                        <div className="flex items-center justify-between gap-3 text-slate-600">
+                                            <span className="shrink-0 font-medium text-slate-400">Barangay</span>
+                                            <span className="font-bold text-slate-800 text-right break-words min-w-0">{appData.tricycleDriver.barangay || '—'}</span>
                                         </div>
                                     </div>
                                 ) : (
@@ -496,7 +502,7 @@ export default function PhysicalInspection({ application }) {
                         <div className={`rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-5 ${CARD_SHADOW}`}>
                             <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
                                 <div className="flex items-center gap-2">
-                                    <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-indigo-50 border border-indigo-100 text-[#182B62]">
+                                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-indigo-50 border border-indigo-100 text-[#182B62]">
                                         <FileText size={16} strokeWidth={2.2} />
                                     </div>
                                     <div>
@@ -512,37 +518,37 @@ export default function PhysicalInspection({ application }) {
                                     Vehicle Attributes
                                 </div>
 
-                                <div className="flex items-center justify-between">
-                                    <span className="text-slate-500 font-medium">LTO Plate Number</span>
+                                <div className="flex items-center justify-between gap-3">
+                                    <span className="shrink-0 text-slate-500 font-medium">LTO Plate Number</span>
                                     <span className="font-mono font-bold text-slate-900 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded-md">
                                         {vehicleData.plate}
                                     </span>
                                 </div>
 
-                                <div className="flex items-center justify-between">
-                                    <span className="text-slate-500 font-medium">Make &amp; Model</span>
+                                <div className="flex items-center justify-between gap-3">
+                                    <span className="shrink-0 text-slate-500 font-medium">Make &amp; Model</span>
                                     <span className="font-bold text-slate-800 text-right truncate max-w-[170px]">
                                         {vehicleData.make}
                                     </span>
                                 </div>
 
-                                <div className="flex items-center justify-between">
-                                    <span className="text-slate-500 font-medium">Year Model</span>
-                                    <span className="font-bold text-slate-800">
+                                <div className="flex items-center justify-between gap-3">
+                                    <span className="shrink-0 text-slate-500 font-medium">Year Model</span>
+                                    <span className="font-bold text-slate-800 text-right min-w-0 break-words">
                                         {vehicleData.year_model}
                                     </span>
                                 </div>
 
-                                <div className="flex items-center justify-between">
-                                    <span className="text-slate-500 font-medium">Body Color</span>
-                                    <span className="font-bold text-slate-800">
+                                <div className="flex items-center justify-between gap-3">
+                                    <span className="shrink-0 text-slate-500 font-medium">Body Color</span>
+                                    <span className="font-bold text-slate-800 text-right min-w-0 break-words">
                                         {vehicleData.body_color}
                                     </span>
                                 </div>
 
-                                <div className="flex items-center justify-between">
-                                    <span className="text-slate-500 font-medium">Body Type</span>
-                                    <span className="font-bold text-slate-800">
+                                <div className="flex items-center justify-between gap-3">
+                                    <span className="shrink-0 text-slate-500 font-medium">Body Type</span>
+                                    <span className="font-bold text-slate-800 text-right min-w-0 break-words">
                                         {vehicleData.body_type}
                                     </span>
                                 </div>
@@ -554,10 +560,10 @@ export default function PhysicalInspection({ application }) {
                                     LTO Official Identifiers
                                 </div>
 
-                                <div className="flex items-center justify-between">
-                                    <span className="text-slate-500 font-medium">Engine Number</span>
-                                    <div className="flex items-center gap-1">
-                                        <span className="font-mono text-slate-800 font-bold text-xs">
+                                <div className="flex items-center justify-between gap-3">
+                                    <span className="shrink-0 text-slate-500 font-medium">Engine Number</span>
+                                    <div className="flex min-w-0 items-center gap-1">
+                                        <span className="font-mono text-slate-800 font-bold text-xs break-all text-right">
                                             {vehicleData.engine_number}
                                         </span>
                                         <button
@@ -571,10 +577,10 @@ export default function PhysicalInspection({ application }) {
                                     </div>
                                 </div>
 
-                                <div className="flex items-center justify-between">
-                                    <span className="text-slate-500 font-medium">Chassis Number</span>
-                                    <div className="flex items-center gap-1">
-                                        <span className="font-mono text-slate-800 font-bold text-xs">
+                                <div className="flex items-center justify-between gap-3">
+                                    <span className="shrink-0 text-slate-500 font-medium">Chassis Number</span>
+                                    <div className="flex min-w-0 items-center gap-1">
+                                        <span className="font-mono text-slate-800 font-bold text-xs break-all text-right">
                                             {vehicleData.chassis_number}
                                         </span>
                                         <button
@@ -588,10 +594,10 @@ export default function PhysicalInspection({ application }) {
                                     </div>
                                 </div>
 
-                                <div className="flex items-center justify-between">
-                                    <span className="text-slate-500 font-medium">LTO OR Number</span>
-                                    <div className="flex items-center gap-1">
-                                        <span className="font-mono text-slate-800 font-bold text-xs">
+                                <div className="flex items-center justify-between gap-3">
+                                    <span className="shrink-0 text-slate-500 font-medium">LTO OR Number</span>
+                                    <div className="flex min-w-0 items-center gap-1">
+                                        <span className="font-mono text-slate-800 font-bold text-xs break-all text-right">
                                             {vehicleData.or_number}
                                         </span>
                                         <button
@@ -605,10 +611,10 @@ export default function PhysicalInspection({ application }) {
                                     </div>
                                 </div>
 
-                                <div className="flex items-center justify-between">
-                                    <span className="text-slate-500 font-medium">LTO CR Number</span>
-                                    <div className="flex items-center gap-1">
-                                        <span className="font-mono text-slate-800 font-bold text-xs">
+                                <div className="flex items-center justify-between gap-3">
+                                    <span className="shrink-0 text-slate-500 font-medium">LTO CR Number</span>
+                                    <div className="flex min-w-0 items-center gap-1">
+                                        <span className="font-mono text-slate-800 font-bold text-xs break-all text-right">
                                             {vehicleData.cr_number}
                                         </span>
                                         <button

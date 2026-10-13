@@ -1043,6 +1043,7 @@ class DashboardController extends Controller
                 'review_notes' => $request->input('review_notes'),
             ]);
             $appeal->violation->update(['status' => 'resolved']);
+            \App\Services\MobileNotifier::violationAppealDecided($appeal);
 
             AuditService::log(
                 module: 'violation',
@@ -1094,6 +1095,7 @@ class DashboardController extends Controller
                 'review_notes' => $validated['review_notes'],
             ]);
             $appeal->violation->update(['status' => 'open']);
+            \App\Services\MobileNotifier::violationAppealDecided($appeal);
 
             AuditService::log(
                 module: 'violation',
@@ -1205,8 +1207,9 @@ class DashboardController extends Controller
                     ]
                 );
 
-                // Registered after-commit: nothing is emailed if this transaction rolls back.
+                // Registered after-commit: nothing is emailed or notified if this transaction rolls back.
                 ViolationNotifier::colorCodingViolationRecorded($violation);
+                \App\Services\MobileNotifier::violationRecorded($violation);
             });
         } catch (\Illuminate\Database\QueryException $e) {
             if (str_contains($e->getMessage(), 'violations_color_coding_daily_unique')) {

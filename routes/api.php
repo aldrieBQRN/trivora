@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\AppNotificationController;
 use App\Http\Controllers\Api\BookingController;
 use App\Http\Controllers\Api\BookingPaymentController;
 use App\Http\Controllers\Api\DriverAuthController;
@@ -49,6 +50,16 @@ Route::prefix('v1/driver')->group(function () {
     Route::middleware('auth:sanctum')->group(function () {
         Route::get('/me', [DriverAuthController::class, 'me']);
         Route::post('/logout', [DriverAuthController::class, 'logout']);
+
+        // In-app notifications + this device's Expo push token — always the signed-in account's
+        // own, scoped to this app (see AppNotificationController). Not franchise-gated: a
+        // suspended driver must still be able to read the suspension notice.
+        Route::get('/notifications', [AppNotificationController::class, 'index']);
+        Route::get('/notifications/unread-count', [AppNotificationController::class, 'unreadCount']);
+        Route::post('/notifications/read-all', [AppNotificationController::class, 'markAllRead']);
+        Route::post('/notifications/{id}/read', [AppNotificationController::class, 'markRead']);
+        Route::post('/push-token', [AppNotificationController::class, 'registerPushToken'])->middleware('throttle:30,1');
+        Route::delete('/push-token', [AppNotificationController::class, 'unregisterPushToken']);
 
         // Going Online/Offline is itself an "operate" action — a driver whose assigned franchise
         // is suspended/revoked must never be able to flip is_online=true, so this is gated by
@@ -168,6 +179,16 @@ Route::prefix('v1/passenger')->group(function () {
         Route::get('/me', [PassengerAuthController::class, 'me']);
         Route::put('/profile', [PassengerAuthController::class, 'updateProfile']);
         Route::post('/logout', [PassengerAuthController::class, 'logout']);
+
+        // In-app notifications + this device's Expo push token — always the signed-in account's
+        // own, scoped to this app (see AppNotificationController). Not franchise-gated: a
+        // suspended driver must still be able to read the suspension notice.
+        Route::get('/notifications', [AppNotificationController::class, 'index']);
+        Route::get('/notifications/unread-count', [AppNotificationController::class, 'unreadCount']);
+        Route::post('/notifications/read-all', [AppNotificationController::class, 'markAllRead']);
+        Route::post('/notifications/{id}/read', [AppNotificationController::class, 'markRead']);
+        Route::post('/push-token', [AppNotificationController::class, 'registerPushToken'])->middleware('throttle:30,1');
+        Route::delete('/push-token', [AppNotificationController::class, 'unregisterPushToken']);
 
         // Creating a real booking, and rating one, must be tied to the authenticated
         // passenger's own account, not a client-supplied id — see

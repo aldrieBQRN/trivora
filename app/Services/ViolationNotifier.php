@@ -194,9 +194,10 @@ class ViolationNotifier
      * The driver tied to the violation's tricycle: first the Driver row on that tricycle (the same
      * lookup the movement rule uses to find the online session that produced the detection), then
      * the operator's Driver row, which is how the driver's own violation list resolves it
-     * (Api\DriverViolationController). Never guessed beyond these recorded links.
+     * (Api\DriverViolationController). Never guessed beyond these recorded links. Also used by
+     * App\Services\MobileNotifier, so the email and the in-app notice reach the same driver.
      */
-    private static function resolveDriver(Violation $violation): ?Driver
+    public static function resolveDriver(Violation $violation): ?Driver
     {
         $driver = Driver::with('user')->where('tricycle_id', $violation->tricycle_id)->first();
 

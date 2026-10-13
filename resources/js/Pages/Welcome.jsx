@@ -1407,7 +1407,7 @@ export default function Welcome() {
   // Contact form local state
   const [contactForm, setContactForm] = useState({
     name: '',
-    contact: '',
+    email: '',
     subject: 'General Inquiry',
     message: ''
   });
@@ -1594,12 +1594,12 @@ export default function Welcome() {
   };
 
   // Handle Contact Inquiry submit
-  const handleContactSubmit = (e) => {
+  const handleContactSubmit = async (e) => {
     e.preventDefault();
-    if (!contactForm.name.trim() || !contactForm.contact.trim() || !contactForm.message.trim()) {
+    if (!contactForm.name.trim() || !contactForm.email.trim() || !contactForm.message.trim()) {
       Swal.fire({
         title: 'Incomplete Fields',
-        text: 'Please fill in your name, contact details, and message.',
+        text: 'Please fill in your name, email address, and message.',
         icon: 'warning',
         confirmButtonColor: '#25449B',
         customClass: { title: 'font-jakarta', popup: 'font-inter' }
@@ -1608,17 +1608,33 @@ export default function Welcome() {
     }
 
     setSendingMsg(true);
-    setTimeout(() => {
-      setSendingMsg(false);
+    try {
+      await window.axios.post(route('public.inquiry'), {
+        ...contactForm,
+        email: contactForm.email.trim(),
+      });
       Swal.fire({
         title: 'Message Sent!',
-        text: 'Thank you for reaching out. Your inquiry has been submitted and will be reviewed shortly.',
+        text: 'Thank you for reaching out. Your inquiry has been sent to the TMO and we will reply to your email.',
         icon: 'success',
         confirmButtonColor: '#25449B',
         customClass: { title: 'font-jakarta', popup: 'font-inter' }
       });
-      setContactForm({ name: '', contact: '', subject: 'General Inquiry', message: '' });
-    }, 600);
+      setContactForm({ name: '', email: '', subject: 'General Inquiry', message: '' });
+    } catch (err) {
+      const status = err.response?.status;
+      Swal.fire({
+        title: 'Message Not Sent',
+        text: status === 429
+          ? 'Too many messages sent. Please wait a minute and try again.'
+          : (err.response?.data?.message || 'We could not send your inquiry right now. Please try again later.'),
+        icon: 'error',
+        confirmButtonColor: '#25449B',
+        customClass: { title: 'font-jakarta', popup: 'font-inter' }
+      });
+    } finally {
+      setSendingMsg(false);
+    }
   };
 
   return (
@@ -2176,20 +2192,22 @@ export default function Welcome() {
                         type="text"
                         className="wl-form-input"
                         placeholder="Juan dela Cruz"
+                        maxLength={120}
                         value={contactForm.name}
                         onChange={e => setContactForm({ ...contactForm, name: e.target.value })}
                         required
                       />
                     </div>
                     <div className="wl-form-group">
-                      <label className="wl-form-label" htmlFor="ct-contact">Mobile / Email</label>
+                      <label className="wl-form-label" htmlFor="ct-email">Email Address</label>
                       <input
-                        id="ct-contact"
-                        type="text"
+                        id="ct-email"
+                        type="email"
                         className="wl-form-input"
-                        placeholder="0917XXXXXXX or name@email.com"
-                        value={contactForm.contact}
-                        onChange={e => setContactForm({ ...contactForm, contact: e.target.value })}
+                        placeholder="name@email.com"
+                        maxLength={255}
+                        value={contactForm.email}
+                        onChange={e => setContactForm({ ...contactForm, email: e.target.value })}
                         required
                       />
                     </div>
@@ -2218,6 +2236,7 @@ export default function Welcome() {
                       rows={4}
                       className="wl-form-textarea"
                       placeholder="Please provide details about your inquiry or plate number if applicable..."
+                      maxLength={3000}
                       value={contactForm.message}
                       onChange={e => setContactForm({ ...contactForm, message: e.target.value })}
                       required

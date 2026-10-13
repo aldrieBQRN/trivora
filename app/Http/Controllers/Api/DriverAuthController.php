@@ -874,7 +874,12 @@ class DriverAuthController extends Controller
             $driver->transitionToOffline('logout');
         }
 
-        $request->user()->currentAccessToken()->delete();
+        // This session's phone stops receiving push notifications for the account it signed out of.
+        $accessToken = $request->user()->currentAccessToken();
+        if ($accessToken instanceof \Laravel\Sanctum\PersonalAccessToken) {
+            \App\Models\DevicePushToken::where('personal_access_token_id', $accessToken->id)->delete();
+        }
+        $accessToken->delete();
 
         return response()->json([
             'success' => true,

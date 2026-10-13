@@ -5,6 +5,7 @@ namespace App\Http\Controllers\TMO;
 use App\Http\Controllers\Controller;
 use App\Models\Violation;
 use App\Services\AuditService;
+use App\Services\MobileNotifier;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -43,6 +44,7 @@ class ViolationPaymentController extends Controller
                 'fine_paid_at' => now(),
                 'status'       => in_array($violation->status, ['open', 'acknowledged'], true) ? 'resolved' : $violation->status,
             ]);
+            MobileNotifier::violationFinePaid($violation);
 
             $vioRef = 'VIO-26-' . str_pad($violation->id, 4, '0', STR_PAD_LEFT);
             AuditService::log(

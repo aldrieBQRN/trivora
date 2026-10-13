@@ -23,6 +23,11 @@ Route::get('/', function () {
     return Inertia::render('Welcome');
 })->name('home');
 
+// Landing page "Send a Direct Inquiry" form → emails VIOLATION_TMO_EMAIL.
+Route::post('/inquiry', [\App\Http\Controllers\PublicInquiryController::class, 'store'])
+    ->middleware('throttle:5,1')
+    ->name('public.inquiry');
+
 
 // QR Ride — the public page a printed tricycle QR opens (/ride/q/{token}). Shows safe unit
 // details and whether it is taking walk-in passengers; joining happens in the Passenger app.

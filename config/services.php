@@ -52,4 +52,15 @@ return [
         'download_url' => env('PASSENGER_APP_DOWNLOAD_URL', 'https://expo.dev/artifacts/eas/Mby5sTRxzQs2VnglssSVFCHKkC1MWBhcXB7CtQpfBCQ.apk'),
     ],
 
+    // Expo Push Service — phone notifications for the passenger and driver apps (see
+    // App\Services\ExpoPushService). The access token is optional: only needed when "Enhanced
+    // Push Security" is turned on for the Expo project. Push is skipped entirely while disabled;
+    // the in-app notification records are written either way.
+    'expo_push' => [
+        'enabled' => (bool) env('EXPO_PUSH_ENABLED', true),
+        'url' => env('EXPO_PUSH_URL', 'https://exp.host/--/api/v2/push/send'),
+        'access_token' => env('EXPO_ACCESS_TOKEN'),
+        'timeout' => (int) env('EXPO_PUSH_TIMEOUT', 10),
+    ],
+
 ];
