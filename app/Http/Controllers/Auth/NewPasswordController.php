@@ -3,67 +3,101 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Auth\Events\PasswordReset;
+use App\Services\PasswordResetOtp;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Password;
-use Illuminate\Support\Str;
 use Illuminate\Validation\Rules;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 
+/**
+ * Steps 2 and 3 of the web forgot-password flow, both rendered inside the Login page:
+ * verify the emailed code, then create the new password. A verified email + code pair is
+ * kept in the session between the two steps; the code is checked again on the final submit
+ * so it still can't be used once expired.
+ */
 class NewPasswordController extends Controller
 {
+    private const SESSION_KEY = 'password_reset_verified';
+
     /**
-     * Display the password reset view.
+     * Display the enter-code step.
      */
-    public function create(Request $request): Response
+    public function create(Request $request, PasswordResetOtp $otp): Response|RedirectResponse
     {
-        return Inertia::render('Auth/ResetPassword', [
+        if (! $request->filled('email')) {
+            return redirect()->route('password.request');
+        }
+
+        return Inertia::render('Login', [
+            'mode' => 'verify',
             'email' => $request->email,
-            'token' => $request->route('token'),
+            'status' => session('status'),
+            'resendAfterSeconds' => $otp->secondsUntilResend($request->email),
         ]);
     }
 
     /**
-     * Handle an incoming new password request.
+     * Check the emailed code, then move on to the new password step.
      *
      * @throws ValidationException
      */
-    public function store(Request $request): RedirectResponse
+    public function verify(Request $request, PasswordResetOtp $otp): RedirectResponse
     {
         $request->validate([
-            'token' => 'required',
             'email' => 'required|email',
+            'otp' => 'required|digits:6',
+        ]);
+
+        $otp->verify($request->email, $request->otp);
+
+        $request->session()->put(self::SESSION_KEY, [
+            'email' => $request->email,
+            'otp' => $request->otp,
+        ]);
+
+        return redirect()->route('password.new');
+    }
+
+    /**
+     * Display the create-new-password step (only after a code has been verified).
+     */
+    public function edit(Request $request): Response|RedirectResponse
+    {
+        $verified = $request->session()->get(self::SESSION_KEY);
+
+        if (! $verified) {
+            return redirect()->route('password.request');
+        }
+
+        return Inertia::render('Login', [
+            'mode' => 'reset',
+            'email' => $verified['email'],
+        ]);
+    }
+
+    /**
+     * Set the new password using the verified code.
+     *
+     * @throws ValidationException
+     */
+    public function store(Request $request, PasswordResetOtp $otp): RedirectResponse
+    {
+        $verified = $request->session()->get(self::SESSION_KEY);
+
+        if (! $verified) {
+            return redirect()->route('password.request');
+        }
+
+        $request->validate([
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
         ]);
 
-        // Here we will attempt to reset the user's password. If it is successful we
-        // will update the password on an actual user model and persist it to the
-        // database. Otherwise we will parse the error and return the response.
-        $status = Password::reset(
-            $request->only('email', 'password', 'password_confirmation', 'token'),
-            function ($user) use ($request) {
-                $user->forceFill([
-                    'password' => Hash::make($request->password),
-                    'remember_token' => Str::random(60),
-                ])->save();
+        $otp->reset($verified['email'], $verified['otp'], $request->password);
 
-                event(new PasswordReset($user));
-            }
-        );
+        $request->session()->forget(self::SESSION_KEY);
 
-        // If the password was successfully reset, we will redirect the user back to
-        // the application's home authenticated view. If there is an error we can
-        // redirect them back to where they came from with their error message.
-        if ($status == Password::PASSWORD_RESET) {
-            return redirect()->route('login')->with('status', __($status));
-        }
-
-        throw ValidationException::withMessages([
-            'email' => [trans($status)],
-        ]);
+        return redirect()->route('login')->with('status', 'Your password has been reset. You can now sign in with your new password.');
     }
 }

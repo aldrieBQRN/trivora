@@ -36,7 +36,7 @@ class DemoDriverAccountsVerificationTest extends TestCase
     public function primary_driver_app_login_has_exactly_one_active_franchise_and_one_active_tricycle(): void
     {
         $loginResponse = $this->postJson('/api/v1/driver/login', [
-            'login'    => '09170001111',
+            'login'    => 'driver.test@trivora.test',
             'password' => 'TestDriver123!',
         ]);
 
@@ -45,7 +45,7 @@ class DemoDriverAccountsVerificationTest extends TestCase
             ->assertJsonPath('user.name', 'Test Driver')
             ->assertJsonPath('tricycle.plate_number', 'TEST-0001')
             ->assertJsonPath('tricycle.status', 'active')
-            ->assertJsonPath('tricycle.franchise_number', '9999')
+            ->assertJsonPath('tricycle.franchise_number', 'MTOP-2026-9999')
             ->assertJsonPath('franchise.status', 'active');
 
         $driver = Driver::where('mobile_number', '09170001111')->firstOrFail();

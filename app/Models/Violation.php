@@ -163,4 +163,13 @@ class Violation extends Model
     {
         return $this->hasOne(ViolationAppeal::class);
     }
+
+    /**
+     * Administrative enforcement action confirmed by TMO for this violation (impoundment, suspension, revocation).
+     */
+    public function enforcement(): HasOne
+    {
+        return $this->hasOne(ViolationEnforcement::class);
+    }
 }
+

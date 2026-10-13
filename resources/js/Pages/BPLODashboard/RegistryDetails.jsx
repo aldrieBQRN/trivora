@@ -265,6 +265,13 @@ export default function RegistryDetails({ registry }) {
                                         </div>
                                         <div className="flex items-center justify-between gap-2">
                                             <span className="text-slate-500 font-medium flex items-center gap-1.5">
+                                                <Mail size={13} className="text-slate-400" />
+                                                Email
+                                            </span>
+                                            <span className="font-semibold text-slate-800 break-all text-right">{registry.tricycleDriver.email || '—'}</span>
+                                        </div>
+                                        <div className="flex items-center justify-between gap-2">
+                                            <span className="text-slate-500 font-medium flex items-center gap-1.5">
                                                 <MapPin size={13} className="text-slate-400" />
                                                 Barangay (Nasugbu)
                                             </span>

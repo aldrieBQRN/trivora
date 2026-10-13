@@ -286,13 +286,13 @@ class DemoDriverMTOPApplicationsSeeder extends Seeder
 
         $codingNumber = $tricycle->coding_scheme_number ?: '0715';
 
-        // Franchise Number (STK-YYYY-NNNN): this application is already at TMO Final
+        // Franchise Number (MTOP-YYYY-NNNN): this application is already at TMO Final
         // Confirmation, so BPLO release has happened — which generates the serial once
         // (BPLOController::showReleaseForm), persists it to the application, then copies the
         // same serial onto the scheme (release()). Written here so the two rows can never
         // disagree, and never regenerated once issued.
         $franchiseNumber = $app->sticker_number
-            ?: 'STK-' . now()->format('Y') . '-' . str_pad($codingNumber, 4, '0', STR_PAD_LEFT);
+            ?: 'MTOP-' . now()->format('Y') . '-' . str_pad($codingNumber, 4, '0', STR_PAD_LEFT);
         if ($app->sticker_number !== $franchiseNumber) {
             $app->update(['sticker_number' => $franchiseNumber]);
         }
@@ -303,8 +303,8 @@ class DemoDriverMTOPApplicationsSeeder extends Seeder
                 [
                     'application_id'         => $app->id,
                     'color_coding_scheme_id' => $colorScheme->id,
-                    'franchise_number'       => $codingNumber,
-                    'sticker_number'         => $franchiseNumber,
+                    'franchise_number'       => $franchiseNumber,
+                    'sticker_number'         => $codingNumber,
                     'issued_by'              => $bplo->id,
                     'issue_date'             => now()->subDays(1)->toDateString(),
                     'expiry_date'            => now()->addYears(3)->toDateString(),

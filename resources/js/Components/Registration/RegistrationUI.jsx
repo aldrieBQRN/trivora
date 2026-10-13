@@ -404,6 +404,15 @@ export const REGISTRATION_CSS = `
   transition: color .2s, transform .2s;
 }
 .pa-input-wrap:focus-within .pa-input-wrap-icon { color: #25449B; transform: translateY(-50%) scale(1.08); }
+/* Custom show/hide password toggle (the browser's own reveal icon is hidden in app.css) */
+.pa-input-wrap .pa-input.pa-input--password { padding-right: 44px; }
+.pa-input-toggle {
+  position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
+  width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;
+  border: none; background: transparent; border-radius: 8px; color: #64748B; cursor: pointer;
+  transition: color .15s, background .15s;
+}
+.pa-input-toggle:hover { color: #25449B; background: #F1F5F9; }
 
 .pa-select {
   width: 100%; height: 50px;
@@ -612,40 +621,162 @@ export const REGISTRATION_CSS = `
 }
 
 /* ── Success card ────────────────────────────────────────────────────── */
+.pa-success { text-align: center; }
 .pa-success-icon {
-  width: 88px; height: 88px; border-radius: 50%;
-  background: #ECFDF5;
-  border: 2px solid #A7F3D0;
+  width: 76px; height: 76px; border-radius: 50%;
+  background: #ECFDF5; color: #059669;
   display: flex; align-items: center; justify-content: center;
-  color: #059669; margin: 0 auto 28px;
-  box-shadow: 0 4px 14px rgba(5,150,105,.18);
+  margin: 0 auto 22px;
+  box-shadow: 0 0 0 10px rgba(16,185,129,.08), 0 6px 16px rgba(5,150,105,.18);
+  animation: paPop .45s cubic-bezier(.2,.9,.3,1.3) both;
 }
+@keyframes paPop { from { transform: scale(.6); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+.pa-success-title {
+  font-family: 'Plus Jakarta Sans', sans-serif; font-size: 26px; font-weight: 800;
+  letter-spacing: -.025em; color: #0F172A; line-height: 1.2; margin: 0 0 8px;
+}
+.pa-success-lead {
+  font-family: 'Inter', sans-serif; font-size: 14px; color: #64748B;
+  line-height: 1.6; max-width: 400px; margin: 0 auto 28px;
+}
+
 .pa-tracking-box {
-  background: #0F172A; border-radius: 16px; padding: 24px 28px;
-  max-width: 360px; margin: 0 auto 28px;
-  position: relative; overflow: hidden;
-  box-shadow: 0 10px 25px -5px rgba(15,23,42,0.25);
-}
-.pa-tracking-box::before {
-  content: ''; position: absolute; left: 0; top: 0; bottom: 0;
-  width: 4px; background: linear-gradient(180deg, #25449B 0%, #122866 100%);
+  display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 16px;
+  padding: 18px 20px; margin: 0 0 8px; text-align: left;
 }
 .pa-tracking-eyebrow {
   font-family: 'Plus Jakarta Sans', sans-serif; font-size: 11px; font-weight: 700;
-  letter-spacing: .08em; text-transform: uppercase;
-  color: #94A3B8; margin-bottom: 8px;
+  letter-spacing: .08em; text-transform: uppercase; color: #64748B; margin: 0 0 6px;
 }
 .pa-tracking-number {
-  font-family: 'Plus Jakarta Sans', sans-serif;
-  font-size: 32px; font-weight: 800;
-  letter-spacing: .04em; color: #FFFFFF; line-height: 1;
+  font-family: 'Plus Jakarta Sans', sans-serif; font-size: 24px; font-weight: 800;
+  letter-spacing: .04em; color: #25449B; line-height: 1; margin: 0; word-break: break-all;
 }
-.pa-success-desc {
-  font-family: 'Inter', sans-serif; font-size: 13.5px; font-weight: 400;
-  color: #475569; line-height: 1.7; max-width: 440px; margin: 0 auto 36px;
-  text-align: center;
+.pa-copy-btn {
+  flex-shrink: 0; display: inline-flex; align-items: center; gap: 6px;
+  height: 36px; padding: 0 14px; border-radius: 10px;
+  border: 1px solid #CBD5E1; background: #FFFFFF; color: #334155; cursor: pointer;
+  font-family: 'Plus Jakarta Sans', sans-serif; font-size: 12.5px; font-weight: 700;
+  transition: border-color .15s, color .15s, background .15s;
 }
-.pa-success-desc span { color: #0F172A; font-weight: 700; }
+.pa-copy-btn:hover { border-color: #25449B; color: #25449B; }
+.pa-copy-btn.is-copied { border-color: #A7F3D0; background: #ECFDF5; color: #047857; }
+.pa-tracking-hint {
+  font-family: 'Inter', sans-serif; font-size: 12px; color: #94A3B8;
+  text-align: left; margin: 0 0 28px;
+}
+
+.pa-next {
+  text-align: left; border-top: 1px solid #EEF0F3; padding-top: 24px; margin-bottom: 24px;
+}
+.pa-next-title {
+  font-family: 'Plus Jakarta Sans', sans-serif; font-size: 14px; font-weight: 800;
+  color: #0F172A; margin: 0 0 16px;
+}
+.pa-next-list { list-style: none; margin: 0; padding: 0; }
+.pa-next-item { position: relative; display: flex; gap: 14px; padding-bottom: 18px; }
+.pa-next-item:last-child { padding-bottom: 0; }
+.pa-next-item:not(:last-child)::before {
+  content: ''; position: absolute; left: 13px; top: 30px; bottom: 2px;
+  width: 2px; background: #E2E8F0;
+}
+.pa-next-dot {
+  width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: #FFFFFF; border: 2px solid #E2E8F0; color: #94A3B8;
+  font-family: 'Plus Jakarta Sans', sans-serif; font-size: 12px; font-weight: 800;
+}
+.pa-next-item.is-current .pa-next-dot {
+  background: #25449B; border-color: #25449B; color: #FFFFFF;
+  box-shadow: 0 0 0 4px rgba(37,68,155,.12);
+}
+.pa-next-body { padding-top: 3px; min-width: 0; }
+.pa-next-head { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+.pa-next-name {
+  font-family: 'Plus Jakarta Sans', sans-serif; font-size: 13.5px; font-weight: 700; color: #0F172A;
+}
+.pa-next-item:not(.is-current) .pa-next-name { color: #334155; }
+.pa-next-badge {
+  font-family: 'Plus Jakarta Sans', sans-serif; font-size: 10.5px; font-weight: 700;
+  padding: 2px 8px; border-radius: 999px; background: #EFF6FF; color: #25449B;
+  border: 1px solid #D6E4FF;
+}
+.pa-next-desc {
+  font-family: 'Inter', sans-serif; font-size: 12.5px; color: #64748B;
+  line-height: 1.55; margin: 3px 0 0;
+}
+
+.pa-success-note {
+  display: flex; align-items: flex-start; gap: 10px; text-align: left;
+  background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 12px;
+  padding: 12px 14px; margin-bottom: 24px;
+  font-family: 'Inter', sans-serif; font-size: 12.5px; color: #475569; line-height: 1.55;
+}
+.pa-success-note svg { flex-shrink: 0; margin-top: 2px; color: #25449B; }
+.pa-success-note strong { color: #0F172A; font-weight: 700; word-break: break-all; }
+
+.pa-success-actions { display: flex; gap: 12px; }
+.pa-success-actions .pa-btn-primary { text-decoration: none; }
+@media (max-width: 520px) {
+  .pa-tracking-box { flex-direction: column; align-items: flex-start; }
+  .pa-success-actions { flex-direction: column-reverse; }
+  .pa-success-actions > * { flex: none; width: 100%; }
+}
+
+/* ── Email verification modal ───────────────────────────────────────── */
+.pa-modal-backdrop {
+  position: fixed; inset: 0; z-index: 60;
+  background: rgba(15, 23, 42, .55); backdrop-filter: blur(3px);
+  display: flex; align-items: center; justify-content: center; padding: 16px;
+  animation: paFadeUp .2s ease both;
+}
+.pa-modal {
+  position: relative; width: 100%; max-width: 400px;
+  background: #FFFFFF; border-radius: 20px; padding: 32px 28px 24px;
+  text-align: center; box-shadow: 0 24px 48px -12px rgba(15, 23, 42, .35);
+}
+.pa-modal-close {
+  position: absolute; top: 14px; right: 14px; width: 32px; height: 32px;
+  display: flex; align-items: center; justify-content: center;
+  border: none; background: transparent; border-radius: 8px; color: #94A3B8; cursor: pointer;
+}
+.pa-modal-close:hover { background: #F1F5F9; color: #334155; }
+.pa-modal-icon {
+  width: 52px; height: 52px; border-radius: 16px; margin: 0 auto 16px;
+  display: flex; align-items: center; justify-content: center;
+  background: #EFF6FF; border: 1.5px solid #D6E4FF; color: #25449B;
+}
+.pa-modal-title {
+  font-family: 'Plus Jakarta Sans', sans-serif; font-size: 20px; font-weight: 800;
+  color: #0F172A; margin: 0 0 6px;
+}
+.pa-modal-sub {
+  font-family: 'Inter', sans-serif; font-size: 13.5px; color: #64748B; line-height: 1.55; margin: 0 0 18px;
+}
+.pa-modal-sub strong { color: #0F172A; font-weight: 700; word-break: break-all; }
+.pa-modal-info {
+  font-family: 'Inter', sans-serif; font-size: 12.5px; font-weight: 600; color: #047857;
+  background: #ECFDF5; border: 1px solid #A7F3D0; border-radius: 10px; padding: 8px 12px; margin: 0 0 12px;
+}
+.pa-otp-input {
+  text-align: center; font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 22px; font-weight: 800; letter-spacing: .45em; padding-left: 16px !important;
+}
+.pa-otp-input::placeholder { color: #CBD5E1; letter-spacing: .45em; }
+.pa-modal .pa-field-error { text-align: left; }
+.pa-modal-btn { width: 100%; margin-top: 16px; flex: none; }
+.pa-modal-btn:disabled { opacity: .55; cursor: not-allowed; transform: none; box-shadow: none; }
+.pa-modal-foot {
+  font-family: 'Inter', sans-serif; font-size: 12.5px; color: #64748B; margin: 16px 0 4px;
+}
+.pa-link-btn {
+  background: none; border: none; padding: 0; font: inherit; cursor: pointer;
+  color: #25449B; font-weight: 700;
+}
+.pa-link-btn:hover { text-decoration: underline; }
+.pa-link-btn:disabled { opacity: .55; cursor: not-allowed; text-decoration: none; }
+.pa-modal-change { font-size: 12.5px; color: #64748B; font-weight: 600; }
 
 /* ── Footer ──────────────────────────────────────────────────────────── */
 .pa-footer {
@@ -899,6 +1030,16 @@ export function validateDriverInfo(data) {
             errors.driver_contact = 'Driver mobile number is required.';
         } else if (!/^09\d{9}$/.test(cleanContact)) {
             errors.driver_contact = 'Driver mobile number must be a valid 11-digit Philippine mobile number starting with 09 (e.g. 09171234567).';
+        }
+
+        // The driver's own Driver App login (sign-in is email-only).
+        const driverEmail = String(data.driver_email || '').trim();
+        if (!driverEmail) {
+            errors.driver_email = 'Driver email address is required.';
+        } else if (!/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(driverEmail)) {
+            errors.driver_email = 'Please enter a valid email address for the driver (e.g. name@example.com).';
+        } else if (data.email && driverEmail.toLowerCase() === String(data.email).trim().toLowerCase()) {
+            errors.driver_email = "The driver's email must be different from the owner's email.";
         }
 
         if (!data.driver_barangay) errors.driver_barangay = 'Please select the driver barangay.';

@@ -17,9 +17,9 @@ class AuthenticationTest extends TestCase
         $response->assertStatus(200);
     }
 
-    public function test_users_can_authenticate_using_their_mobile_number(): void
+    public function test_mobile_number_login_is_rejected_because_login_is_email_only(): void
     {
-        $user = User::factory()->create([
+        User::factory()->create([
             'role' => 'admin',
             'is_active' => true,
             'contact_number' => '09171234000',
@@ -30,8 +30,8 @@ class AuthenticationTest extends TestCase
             'password' => 'password',
         ]);
 
-        $this->assertAuthenticated();
-        $response->assertRedirect(route('dashboard'));
+        $this->assertGuest();
+        $response->assertSessionHasErrors(['login_id' => 'Please enter a valid email address.']);
     }
 
     public function test_users_can_authenticate_using_their_email_address(): void

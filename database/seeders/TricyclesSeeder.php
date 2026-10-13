@@ -19,13 +19,35 @@ class TricyclesSeeder extends Seeder
         // Clean up any corrupt or faker test data
         Tricycle::where('plate_number', 'Et in mollit labore')->delete();
         Operator::where('contact_number', 'Omnis blanditiis dol')->delete();
+        Operator::where('first_name', 'like', '%Voluptas%')->delete();
+        Operator::where('first_name', 'like', '%Assumenda%')->delete();
+        \App\Models\User::where('name', 'like', '%Voluptas%')->delete();
+        \App\Models\User::where('name', 'like', '%Assumenda%')->delete();
 
         // Valid operators only
         $operators = Operator::whereNotNull('contact_number')
             ->where('contact_number', '!=', 'Omnis blanditiis dol')
             ->where('first_name', 'not like', '%Nostrum%')
+            ->where('first_name', 'not like', '%Voluptas%')
+            ->where('first_name', 'not like', '%Assumenda%')
             ->get();
         $fallbackOperator = $operators->first();
+
+        // Designated operators for core registered units
+        $opPedro = Operator::whereHas('user', fn ($q) => $q->where('email', 'driver.pramos@trivora.ph'))->first();
+        $opJose = Operator::whereHas('user', fn ($q) => $q->where('email', 'driver.jbautista@trivora.ph'))->first();
+        $opErnesto = Operator::whereHas('user', fn ($q) => $q->where('email', 'driver.evillanueva@trivora.ph'))->first();
+        $opClara = Operator::whereHas('user', fn ($q) => $q->where('email', 'driver.mclara@trivora.ph'))->first();
+        $opRicardo = Operator::whereHas('user', fn ($q) => $q->where('email', 'driver.rsantos@trivora.ph'))->first();
+
+        $designatedOperators = array_filter([
+            'AAA-1234'   => $opPedro,
+            'BBB-5678'   => $opJose,
+            'CCC-9012'   => $opErnesto,
+            'DDD-3456'   => $opClara,
+            'EEE-7890'   => $opRicardo,
+            'TRV-MOBGPS' => $opRicardo,
+        ]);
 
         // TODA Zones
 
@@ -91,16 +113,13 @@ class TricyclesSeeder extends Seeder
         ];
 
         foreach ($unitsData as $idx => $data) {
-            $operator = ($operators && $operators->count() > 0)
-                ? $operators[$idx % $operators->count()]
-                : $fallbackOperator;
+            $operator = $designatedOperators[$data['plate']]
+                ?? (($operators && $operators->count() > 0)
+                    ? $operators[$idx % $operators->count()]
+                    : $fallbackOperator);
 
             $existing = Tricycle::where('plate_number', $data['plate'])->first();
-            // Never re-home a unit that already has MTOP applications: Driver → Application →
-            // franchise is the single source of truth for ownership, so a re-run of this
-            // seeder must not silently move a unit away from the operator whose Application
-            // Tracker and My Tricycles show it (ApplicationsSeeder repairs any historical
-            // mismatch explicitly).
+            // Never re-home a unit that already has MTOP applications unless it is one of the designated core units:
             $hasApplications = $existing && $existing->applications()->exists();
 
             $payload = [
@@ -119,7 +138,7 @@ class TricyclesSeeder extends Seeder
                 'tracking_capability'  => 'iot_enabled',
                 'active_tracking_mode' => 'iot_device',
             ];
-            if (! $hasApplications) {
+            if (! $hasApplications || isset($designatedOperators[$data['plate']])) {
                 $payload['operator_id'] = $operator?->id;
             }
 
@@ -142,28 +161,19 @@ class TricyclesSeeder extends Seeder
                     ->exists();
 
                 if (! $applicationIssued) {
-                    $franchiseScheme = FranchiseScheme::updateOrCreate(
+                    $serial = 'MTOP-' . now()->format('Y') . '-' . str_pad($data['coding_number'], 4, '0', STR_PAD_LEFT);
+                    FranchiseScheme::updateOrCreate(
                         ['tricycle_id' => $trike->id],
                         [
                             'color_coding_scheme_id' => $schemeModel->id,
-                            'franchise_number'       => $data['coding_number'],
+                            'franchise_number'       => $serial,
+                            'sticker_number'         => $data['coding_number'],
                             'issued_by'              => $adminUser?->id ?: 1,
                             'issue_date'             => now()->subMonths(6),
                             'expiry_date'            => now()->addMonths(6),
                             'is_active'              => true,
                         ]
                     );
-
-                    // Franchise Number (STK-YYYY-NNNN). These units have no application —
-                    // their franchise predates the MTOP application workflow — so the serial
-                    // is built from the unit's Sticker Number exactly the way
-                    // BPLOController::showReleaseForm() builds one. Once issued it is never
-                    // regenerated: a re-run must not hand the same unit a different number.
-                    if (! $franchiseScheme->sticker_number) {
-                        $franchiseScheme->update([
-                            'sticker_number' => 'STK-' . now()->format('Y') . '-' . str_pad($data['coding_number'], 4, '0', STR_PAD_LEFT),
-                        ]);
-                    }
                 }
             }
         }
@@ -175,24 +185,19 @@ class TricyclesSeeder extends Seeder
                 'coding_scheme_number' => '0141',
             ]);
             if (!empty($colorSchemes['Red'])) {
-                $mobScheme = FranchiseScheme::updateOrCreate(
+                $mobSerial = 'MTOP-' . now()->format('Y') . '-0141';
+                FranchiseScheme::updateOrCreate(
                     ['tricycle_id' => $mobTrike->id],
                     [
                         'color_coding_scheme_id' => $colorSchemes['Red']->id,
-                        'franchise_number'       => '0141',
+                        'franchise_number'       => $mobSerial,
+                        'sticker_number'         => '0141',
                         'issued_by'              => $adminUser?->id ?: 1,
                         'issue_date'             => now()->subMonths(6),
                         'expiry_date'            => now()->addMonths(6),
                         'is_active'              => true,
                     ]
                 );
-
-                // Same Franchise Number rule as above — see the note in the loop.
-                if (! $mobScheme->sticker_number) {
-                    $mobScheme->update([
-                        'sticker_number' => 'STK-' . now()->format('Y') . '-0141',
-                    ]);
-                }
             }
         }
 

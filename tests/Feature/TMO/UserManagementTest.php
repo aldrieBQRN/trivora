@@ -29,12 +29,13 @@ class UserManagementTest extends TestCase
 
     public function test_admin_can_create_a_staff_account(): void
     {
+        \Illuminate\Support\Facades\Notification::fake();
         $admin = User::factory()->create(['role' => 'admin']);
 
+        // No password is supplied — the server generates and emails a temporary one.
         $response = $this->actingAs($admin)->post('/tmo/users', [
             'name' => 'New TMO Officer',
             'email' => 'new.officer@trivora.gov.ph',
-            'password' => 'SecurePass123',
         ]);
 
         $response->assertSessionHasNoErrors();

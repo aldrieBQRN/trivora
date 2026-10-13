@@ -391,22 +391,26 @@ class ReportController extends Controller
             'count' => (int) ($byDayRows[$d]->c ?? 0),
         ])->values();
 
-        // Full, real breakdown across every violations.status value — deliberately not collapsed
-        // into the filter's pending/settled grouping, so contested/dismissed cases (a compliance-
-        // relevant signal) stay visible in the chart even though they have no dedicated filter option.
-        $statusLabels = [
-            'open'         => 'Open',
-            'acknowledged' => 'Acknowledged',
-            'contested'    => 'Contested',
-            'resolved'     => 'Resolved',
-            'dismissed'    => 'Dismissed',
+        // Citation Settlement Status, in the settlement terms Violation Records and this report's
+        // filter use: Open + Acknowledged are both still unpaid ("Unsettled", the filter's
+        // "pending" group). Contested (appeal pending) and Dismissed stay as their own slices so
+        // those compliance-relevant cases remain visible in the chart.
+        $settlementBuckets = [
+            'unsettled'    => ['label' => 'Unsettled',    'statuses' => ['open', 'acknowledged']],
+            'under_appeal' => ['label' => 'Under Appeal', 'statuses' => ['contested']],
+            'settled'      => ['label' => 'Settled',      'statuses' => ['resolved']],
+            'dismissed'    => ['label' => 'Dismissed',    'statuses' => ['dismissed']],
         ];
         $statusCounts = (clone $base)
             ->selectRaw('status, COUNT(*) as c')
             ->groupBy('status')
             ->pluck('c', 'status');
-        $byStatus = collect($statusLabels)
-            ->map(fn ($label, $key) => ['status' => $key, 'label' => $label, 'count' => (int) ($statusCounts[$key] ?? 0)])
+        $byStatus = collect($settlementBuckets)
+            ->map(fn ($bucket, $key) => [
+                'status' => $key,
+                'label'  => $bucket['label'],
+                'count'  => (int) collect($bucket['statuses'])->sum(fn ($s) => (int) ($statusCounts[$s] ?? 0)),
+            ])
             ->values();
 
         $automatedCount = (clone $base)->where('detection_method', 'automated')->count();

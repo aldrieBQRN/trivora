@@ -14,6 +14,12 @@ class UsersSeeder extends Seeder
      */
     public function run(): void
     {
+        // Clean up any rogue/faker test data
+        User::where('name', 'like', '%Voluptas%')->delete();
+        User::where('name', 'like', '%Assumenda%')->delete();
+        Operator::where('first_name', 'like', '%Voluptas%')->delete();
+        Operator::where('first_name', 'like', '%Assumenda%')->delete();
+
         // ---------------------------------------------------------------------
         // 1. Admin
         // (contact_number is the login identifier — the web portal authenticates by
@@ -22,11 +28,15 @@ class UsersSeeder extends Seeder
         User::updateOrCreate(
             ['email' => 'admin@trivora.gov.ph'],
             [
-                'name'           => 'System Administrator',
+                'name'           => 'Engr. Roberto M. Gomez',
                 'password'       => Hash::make('Admin@123'),
                 'role'           => 'admin',
-                'is_active'      => true,
+                'employee_id'    => 'ADM-0001',
+                'position'       => 'IT Systems Administrator',
                 'contact_number' => '09170000001',
+                'address'        => 'Poblacion, Nasugbu, Batangas',
+                'birthday'       => '1985-04-12',
+                'is_active'      => true,
             ]
         );
 
@@ -35,14 +45,22 @@ class UsersSeeder extends Seeder
         // ---------------------------------------------------------------------
         $tmoUsers = [
             [
-                'name'    => 'Juan dela Cruz',
-                'email'   => 'tmo.jdelacruz@trivora.gov.ph',
-                'contact' => '09170000002',
+                'name'        => 'Juan dela Cruz',
+                'email'       => 'tmo.jdelacruz@trivora.gov.ph',
+                'contact'     => '09170000002',
+                'employee_id' => 'TMO-0002',
+                'position'    => 'Traffic Operations Officer I',
+                'address'     => 'Brgy. 3, Nasugbu, Batangas',
+                'birthday'    => '1990-06-15',
             ],
             [
-                'name'    => 'Maria Santos',
-                'email'   => 'tmo.msantos@trivora.gov.ph',
-                'contact' => '09170000003',
+                'name'        => 'Maria Santos',
+                'email'       => 'tmo.msantos@trivora.gov.ph',
+                'contact'     => '09170000003',
+                'employee_id' => 'TMO-0003',
+                'position'    => 'Senior Traffic Inspector',
+                'address'     => 'Brgy. 8, Nasugbu, Batangas',
+                'birthday'    => '1992-09-21',
             ],
         ];
 
@@ -53,6 +71,10 @@ class UsersSeeder extends Seeder
                     'name'           => $data['name'],
                     'password'       => Hash::make('TmoUser@123'),
                     'role'           => 'tmo_personnel',
+                    'employee_id'    => $data['employee_id'],
+                    'position'       => $data['position'],
+                    'address'        => $data['address'],
+                    'birthday'       => $data['birthday'],
                     'is_active'      => true,
                     'contact_number' => $data['contact'],
                 ]
@@ -64,14 +86,22 @@ class UsersSeeder extends Seeder
         // ---------------------------------------------------------------------
         $bploUsers = [
             [
-                'name'    => 'Ana Reyes',
-                'email'   => 'bplo.areyes@trivora.gov.ph',
-                'contact' => '09170000004',
+                'name'        => 'Ana Reyes',
+                'email'       => 'bplo.areyes@trivora.gov.ph',
+                'contact'     => '09170000004',
+                'employee_id' => 'BPLO-0004',
+                'position'    => 'Licensing Officer II',
+                'address'     => 'Brgy. 10, Nasugbu, Batangas',
+                'birthday'    => '1988-11-03',
             ],
             [
-                'name'    => 'Carlos Mendoza',
-                'email'   => 'bplo.cmendoza@trivora.gov.ph',
-                'contact' => '09170000005',
+                'name'        => 'Carlos Mendoza',
+                'email'       => 'bplo.cmendoza@trivora.gov.ph',
+                'contact'     => '09170000005',
+                'employee_id' => 'BPLO-0005',
+                'position'    => 'Business Permit Inspector',
+                'address'     => 'Brgy. 11, Nasugbu, Batangas',
+                'birthday'    => '1991-03-28',
             ],
         ];
 
@@ -82,6 +112,10 @@ class UsersSeeder extends Seeder
                     'name'           => $data['name'],
                     'password'       => Hash::make('BploUser@123'),
                     'role'           => 'bplo_staff',
+                    'employee_id'    => $data['employee_id'],
+                    'position'       => $data['position'],
+                    'address'        => $data['address'],
+                    'birthday'       => $data['birthday'],
                     'is_active'      => true,
                     'contact_number' => $data['contact'],
                 ]

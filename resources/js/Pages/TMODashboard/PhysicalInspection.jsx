@@ -7,7 +7,7 @@ import {
     Check, X, CheckCircle2, Bike, AlertTriangle,
     RotateCcw, ChevronLeft, ShieldCheck, Clock,
     Smartphone, MapPin, Copy, CalendarDays,
-    AlertCircle, XCircle, FileText, Loader2, Send
+    AlertCircle, XCircle, FileText, Loader2, Send, Mail
 } from 'lucide-react';
 import { Textarea } from '@/Components/TMO';
 import { PHYSICAL_INSPECTION_ITEMS } from '@/data/physicalInspectionItems';
@@ -269,9 +269,11 @@ export default function PhysicalInspection({ application }) {
                                     </table>
                                 </div>
 
-                                {/* Decision Section */}
-                                <div className="border-t border-slate-100 pt-5 space-y-3">
-                                    <div className="flex items-center justify-between">
+                                {/* Decision Section — on mobile/tablet the Approve/Reject (and Cancel/Reject)
+                                    buttons live in the sticky bottom bar (lg:hidden), so here only the
+                                    repair-notes form is shown below lg, and only while rejecting. */}
+                                <div className={`border-t border-slate-100 pt-5 space-y-3 ${decisionMode !== 'reject' ? 'hidden lg:block' : ''}`}>
+                                    <div className="hidden lg:flex items-center justify-between">
                                         <div>
                                             <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">
                                                 Inspection Finding
@@ -366,7 +368,7 @@ export default function PhysicalInspection({ application }) {
                                             </div>
 
                                             {/* Form action buttons */}
-                                            <div className="flex items-center justify-end gap-2 pt-2 border-t border-rose-100">
+                                            <div className="hidden lg:flex items-center justify-end gap-2 pt-2 border-t border-rose-100">
                                                 <button
                                                     type="button"
                                                     disabled={isProcessing}
@@ -433,6 +435,13 @@ export default function PhysicalInspection({ application }) {
                                     </span>
                                     <span className="font-bold text-slate-800">{appData.contact || 'No phone provided'}</span>
                                 </div>
+                                <div className="flex items-center justify-between gap-3 text-slate-600">
+                                    <span className="flex items-center gap-1.5 text-slate-400 font-medium">
+                                        <Mail size={13} className="shrink-0" />
+                                        Email
+                                    </span>
+                                    <span className="font-bold text-slate-800 break-all text-right">{appData.owner?.email || '—'}</span>
+                                </div>
                                 <div className="flex items-center justify-between text-slate-600">
                                     <span className="flex items-center gap-1.5 text-slate-400 font-medium">
                                         <MapPin size={13} className="shrink-0" />
@@ -467,6 +476,10 @@ export default function PhysicalInspection({ application }) {
                                         <div className="flex items-center justify-between text-slate-600">
                                             <span className="font-medium text-slate-400">Mobile Number</span>
                                             <span className="font-bold text-slate-800">{appData.tricycleDriver.contact_number || '—'}</span>
+                                        </div>
+                                        <div className="flex items-center justify-between gap-3 text-slate-600">
+                                            <span className="font-medium text-slate-400">Email</span>
+                                            <span className="font-bold text-slate-800 break-all text-right">{appData.tricycleDriver.email || '—'}</span>
                                         </div>
                                         <div className="flex items-center justify-between text-slate-600">
                                             <span className="font-medium text-slate-400">Barangay</span>

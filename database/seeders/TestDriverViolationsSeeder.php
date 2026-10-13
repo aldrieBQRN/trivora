@@ -51,26 +51,25 @@ class TestDriverViolationsSeeder extends Seeder
         $redScheme = ColorCodingScheme::where('name', 'Red')->first();
         $bplo = User::where('role', 'bplo_staff')->first();
 
-        $franchise = FranchiseScheme::firstOrCreate(
-            ['franchise_number' => 'FS-TEST-DRV-0001'],
-            [
-                'tricycle_id' => $tricycleId,
-                'color_coding_scheme_id' => $redScheme?->id,
-                'issued_by' => $bplo?->id,
-                'issue_date' => '2025-01-15',
-                'expiry_date' => '2030-01-15',
-                'is_active' => true,
-            ]
-        );
+        $testCoding = (string) (Tricycle::whereKey($tricycleId)->value('coding_scheme_number') ?: '9999');
+        $serial = 'MTOP-' . now()->format('Y') . '-' . str_pad($testCoding, 4, '0', STR_PAD_LEFT);
 
-        // Franchise Number (STK-YYYY-NNNN): no application backs this fixture scheme (it
-        // exists only because violations.franchise_scheme_id is required), so the serial is
-        // built from the unit's Sticker Number the way BPLOController::showReleaseForm()
-        // builds one — and never regenerated once issued.
-        if (! $franchise->sticker_number) {
-            $testCoding = (string) (Tricycle::whereKey($tricycleId)->value('coding_scheme_number') ?: '9999');
+        $franchise = FranchiseScheme::where('tricycle_id', $tricycleId)->first();
+        if (! $franchise) {
+            $franchise = FranchiseScheme::create([
+                'tricycle_id'            => $tricycleId,
+                'color_coding_scheme_id' => $redScheme?->id,
+                'franchise_number'       => $serial,
+                'sticker_number'         => $testCoding,
+                'issued_by'              => $bplo?->id,
+                'issue_date'             => '2025-01-15',
+                'expiry_date'            => '2030-01-15',
+                'is_active'              => true,
+            ]);
+        } elseif (! $franchise->sticker_number || ! str_starts_with($franchise->franchise_number, 'MTOP-')) {
             $franchise->update([
-                'sticker_number' => 'STK-' . now()->format('Y') . '-' . str_pad($testCoding, 4, '0', STR_PAD_LEFT),
+                'franchise_number' => $serial,
+                'sticker_number'   => $testCoding,
             ]);
         }
 
@@ -156,7 +155,7 @@ class TestDriverViolationsSeeder extends Seeder
                 'day_of_week' => $detectedAt->format('l'),
                 'detection_method' => 'manual',
                 'status' => 'contested',
-                'fine_amount' => 350.00,
+                'fine_amount' => 1000.00,
                 'fine_paid_at' => null,
                 'notes' => 'Red-coded tricycle (TEST-0001) observed operating near Wawa Port & Baywalk, Barangay 4 on a restricted day. Filed by TMO Officer.',
             ]
@@ -214,7 +213,7 @@ class TestDriverViolationsSeeder extends Seeder
             'day_of_week' => $detectedAt->format('l'),
             'detection_method' => 'automated',
             'status' => 'open',
-            'fine_amount' => 450.00,
+            'fine_amount' => 2500.00,
             'fine_paid_at' => null,
             'notes' => 'System detected Red-coded tricycle (TEST-0001) operating near Nasugbu Municipal Hall, J.P. Rizal St., Poblacion on a restricted Monday.',
         ]);
@@ -239,7 +238,7 @@ class TestDriverViolationsSeeder extends Seeder
                 // violation) — the driver-facing "Fine Payment Required" label comes from the
                 // appeal's own rejected status, not a separate violation status value.
                 'status' => 'open',
-                'fine_amount' => 750.00,
+                'fine_amount' => 1000.00,
                 'fine_paid_at' => null,
                 'notes' => 'Red-coded tricycle cited operating near SM Savemore Nasugbu, National Highway, Barangay 10 on a restricted day — repeat offense.',
             ]

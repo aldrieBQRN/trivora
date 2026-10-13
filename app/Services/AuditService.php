@@ -112,7 +112,7 @@ class AuditService
 
         if ($record instanceof FranchiseScheme) {
             if (! empty($record->sticker_number)) {
-                return $record->sticker_number; // STK-YYYY-NNNN
+                return $record->sticker_number; // MTOP-YYYY-NNNN (legacy STK-YYYY-NNNN)
             }
             if (! empty($record->franchise_number)) {
                 return 'Franchise #' . $record->franchise_number;

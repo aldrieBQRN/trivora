@@ -9,6 +9,15 @@ use Illuminate\Support\Facades\DB;
 
 class FranchiseScheme extends Model
 {
+    /**
+     * Franchise Number serial format released by BPLO: MTOP-YYYY-NNNN (Motorized Tricycle
+     * Operator's Permit). Numbers issued before the rename used STK-YYYY-NNNN and stay valid.
+     */
+    public static function isFranchiseNumberSerial(?string $value): bool
+    {
+        return $value !== null && preg_match('/^(MTOP|STK)-\d{4}-/', $value) === 1;
+    }
+
     public const STATUS_ACTIVE = 'active';
     public const STATUS_SUSPENDED = 'suspended';
     public const STATUS_REVOKED = 'revoked';

@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { Head, Link } from '@inertiajs/react';
 import useBackgroundRefresh from '@/hooks/useBackgroundRefresh';
 import TrivoraLayout from '@/Layouts/TrivoraLayout';
-import TricycleMap from '@/Components/TricycleMap';
+import TricycleMap, { resolveTricycleStatus } from '@/Components/TricycleMap';
 import {
     Bike, ShieldAlert, BarChart3, ChevronRight, CheckCircle2,
     Activity, Search, X, ShieldCheck, Calendar, ArrowUpRight
@@ -69,8 +69,8 @@ export default function LiveMonitoring({ initialTricycles = [], stats = {}, acti
     const STATUS_META = {
         compliant:           { label: 'Operating',          color: '#10B981' },
         coding_no_operation: { label: 'Restricted Today',   color: '#F59E0B' },
-        violator:            { label: 'Violation',          color: '#E11D48' },
-        offline:             { label: 'Offline',            color: '#94A3B8' },
+        violator:            { label: 'Violation',          color: '#DC2626' },
+        offline:             { label: 'Offline',            color: '#64748B' },
     };
 
     const statusBreakdown = useMemo(() => {
@@ -483,29 +483,20 @@ export default function LiveMonitoring({ initialTricycles = [], stats = {}, acti
                                                     </div>
 
                                                     <div className="mt-2 flex items-center justify-between text-[10.5px] border-t border-slate-100/80 pt-1.5">
-                                                        <span className="flex items-center gap-1.5 font-semibold text-slate-700 font-['Plus_Jakarta_Sans',sans-serif]">
-                                                            <span className={`h-1.5 w-1.5 rounded-full ${
-                                                                isNotConfigured
-                                                                    ? 'bg-slate-300'
-                                                                    : isOffline
-                                                                        ? 'bg-slate-400'
-                                                                        : unit.status === 'violator'
-                                                                            ? 'bg-rose-500'
-                                                                            : unit.status === 'coding_no_operation'
-                                                                                ? 'bg-amber-500'
-                                                                                : 'bg-emerald-500'
-                                                                }`}
-                                                            />
-                                                            {isNotConfigured
-                                                                ? 'No GPS'
-                                                                : isOffline
-                                                                    ? connection.label
-                                                                    : unit.status === 'violator'
-                                                                        ? 'Coding Violation'
-                                                                        : unit.status === 'coding_no_operation'
-                                                                            ? 'Restricted Today'
-                                                                            : 'Operating'}
-                                                        </span>
+                                                        {(() => {
+                                                            const stMeta = resolveTricycleStatus(unit.status, unit.is_online, unit.connection_status);
+                                                            const dotColor = isNotConfigured ? '#CBD5E1' : stMeta.color;
+                                                            const label = isNotConfigured ? 'No GPS Setup' : stMeta.label;
+                                                            return (
+                                                                <span className="flex items-center gap-1.5 font-semibold text-slate-700 font-['Plus_Jakarta_Sans',sans-serif]">
+                                                                    <span
+                                                                        className="h-1.5 w-1.5 rounded-full shrink-0"
+                                                                        style={{ backgroundColor: dotColor }}
+                                                                    />
+                                                                    <span>{label}</span>
+                                                                </span>
+                                                            );
+                                                        })()}
                                                         <span className="text-slate-400 font-medium font-mono text-[10px]">
                                                             {lastUpdateLabel}
                                                         </span>

@@ -51,6 +51,7 @@ class OwnerTricycleDriverDistinctionTest extends TestCase
             'driver_last_name'   => 'Santos',
             'driver_birthday'    => '1988-01-15',
             'driver_contact'     => '09179876543',
+            'driver_email'       => 'roberto.santos@example.com',
             'driver_barangay'    => 'Papaya',
         ];
     }
@@ -81,7 +82,7 @@ class OwnerTricycleDriverDistinctionTest extends TestCase
         $payload = $this->registrationPayload();
         unset($payload['owner_is_driver']);
 
-        $response = $this->post(route('register.public.submit'), $payload);
+        $response = $this->postRegistration($payload);
         $response->assertSessionHasNoErrors();
 
         $user = User::where('email', $payload['email'])->firstOrFail();
@@ -106,6 +107,7 @@ class OwnerTricycleDriverDistinctionTest extends TestCase
         $this->assertSame('1988-01-15', $driver->date_of_birth->format('Y-m-d'));
         $this->assertSame('date', Schema::getColumnType('application_drivers', 'date_of_birth'));
         $this->assertSame('09179876543', $driver->contact_number);
+        $this->assertSame('roberto.santos@example.com', $driver->email);
         $this->assertSame('Papaya', $driver->barangay);
 
         // The owner keeps their OWN person data — the driver never replaces them.
@@ -122,7 +124,7 @@ class OwnerTricycleDriverDistinctionTest extends TestCase
     #[Test]
     public function driver_fields_are_required_when_the_owner_is_not_the_driver(): void
     {
-        $response = $this->post(route('register.public.submit'), array_merge(
+        $response = $this->postRegistration(array_merge(
             $this->registrationPayload(),
             ['owner_is_driver' => false],
         ));
@@ -132,6 +134,7 @@ class OwnerTricycleDriverDistinctionTest extends TestCase
             'driver_last_name',
             'driver_birthday',
             'driver_contact',
+            'driver_email',
             'driver_barangay',
         ]);
     }
@@ -154,14 +157,14 @@ class OwnerTricycleDriverDistinctionTest extends TestCase
     public function barangay_must_be_one_of_the_official_nasugbu_barangays_for_owner_and_driver(): void
     {
         // Owner: 'Poblacion' is not one of the 42 official Nasugbu barangays.
-        $ownerResponse = $this->post(route('register.public.submit'), array_merge(
+        $ownerResponse = $this->postRegistration(array_merge(
             $this->registrationPayload(),
             ['barangay' => 'Poblacion'],
         ));
         $ownerResponse->assertSessionHasErrors('barangay');
 
         // Driver: same canonical list applies to the separate driver person.
-        $driverResponse = $this->post(route('register.public.submit'), array_merge(
+        $driverResponse = $this->postRegistration(array_merge(
             $this->registrationPayload(),
             $this->driverFields(),
             ['driver_barangay' => 'Not A Barangay'],
@@ -170,22 +173,47 @@ class OwnerTricycleDriverDistinctionTest extends TestCase
     }
 
     #[Test]
+    public function the_separate_driver_email_is_valid_unique_and_different_from_the_owners(): void
+    {
+        $owner = $this->registrationPayload();
+
+        foreach ([
+            'not-an-email',                  // format
+            $owner['email'],                 // same as the owner's own email
+        ] as $badEmail) {
+            $this->postRegistration(array_merge(
+                $owner,
+                $this->driverFields(),
+                ['driver_email' => $badEmail],
+            ))->assertSessionHasErrors('driver_email');
+        }
+
+        // Already used by an existing Trivora account (it becomes the driver's login).
+        User::factory()->create(['email' => 'taken.driver@example.com']);
+        $this->postRegistration(array_merge(
+            $owner,
+            $this->driverFields(),
+            ['driver_email' => 'taken.driver@example.com'],
+        ))->assertSessionHasErrors('driver_email');
+    }
+
+    #[Test]
     public function birthdays_must_be_real_dates_and_never_in_the_future(): void
     {
-        $ownerResponse = $this->post(route('register.public.submit'), array_merge(
+        $ownerResponse = $this->postRegistration(array_merge(
             $this->registrationPayload(),
             ['birthday' => now()->addYear()->toDateString()],
         ));
         $ownerResponse->assertSessionHasErrors('birthday');
 
         // Display/free text is not a valid birthday.
-        $formatResponse = $this->post(route('register.public.submit'), array_merge(
+        $formatResponse = $this->postRegistration(array_merge(
             $this->registrationPayload(),
             ['birthday' => 'not a date at all'],
         ));
         $formatResponse->assertSessionHasErrors('birthday');
 
-        $driverResponse = $this->post(route('register.public.submit'), array_merge(
+        $driverResponse = $this->postRegistration(array_merge(
             $this->registrationPayload(),
             $this->driverFields(),
             ['driver_birthday' => now()->addYear()->toDateString()],
@@ -227,6 +255,7 @@ class OwnerTricycleDriverDistinctionTest extends TestCase
             ->where('application.tricycleDriver.last_name', 'Santos')
             ->where('application.tricycleDriver.birthday', 'Jan 15, 1988')
             ->where('application.tricycleDriver.contact_number', '09179876543')
+            ->where('application.tricycleDriver.email', 'roberto.santos@example.com')
             ->where('application.tricycleDriver.barangay', 'Papaya')
             // The list/detail primary person remains the owner, never the driver.
             ->where('application.operator', 'Juan Dela Cruz')

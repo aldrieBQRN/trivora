@@ -130,8 +130,8 @@ export default function ReportsIndex({ tab, from, to, filters, reportData }) {
                                 className="h-10 w-full sm:w-auto rounded-xl border border-slate-200 bg-slate-50/70 pl-3 pr-8 text-xs font-bold text-slate-700 transition-colors focus:border-[#182B62] focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#182B62] cursor-pointer"
                             >
                                 <option value="">All Settlement Statuses</option>
-                                <option value="pending">Pending Payment</option>
-                                <option value="settled">Settled / Paid</option>
+                                <option value="pending">Unsettled</option>
+                                <option value="settled">Settled</option>
                             </select>
                         )}
 

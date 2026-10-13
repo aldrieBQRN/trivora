@@ -4,7 +4,7 @@ import useBackgroundRefresh from '@/hooks/useBackgroundRefresh';
 import TrivoraLayout from '@/Layouts/TrivoraLayout';
 import Swal from 'sweetalert2';
 import {
-    User, MapPin, Bike, Send, Smartphone, CheckCircle2, ClipboardList,
+    User, MapPin, Bike, Send, Smartphone, Mail, CheckCircle2, ClipboardList,
     RefreshCw, Check, X, Clock, AlertTriangle, Eye, ChevronLeft,
     FileText, Loader2, ShieldCheck, Copy, Pencil, CalendarDays, ArrowUpRight
 } from 'lucide-react';
@@ -151,13 +151,13 @@ export default function DocumentReview({ application }) {
         Swal.fire({
             title: isApprove ? 'Approve Requirements?' : 'Send Correction Notice?',
             html: isApprove
-                ? `Endorse <b>${appData.reference || appData.id}</b> for Physical Tricycle Roadworthiness Inspection? All verified requirements will be locked.`
+                ? `Proceed <b>${appData.reference || appData.id}</b> to Physical Tricycle Roadworthiness Inspection? All verified requirements will be locked.`
                 : `Return <b>${appData.reference || appData.id}</b> to applicant? They will receive a notification to re-upload the flagged documents.`,
             icon: isApprove ? 'question' : 'warning',
             showCancelButton: true,
             confirmButtonColor: isApprove ? '#182B62' : '#DC2626',
             cancelButtonColor: '#64748B',
-            confirmButtonText: isApprove ? 'Endorse' : 'Return',
+            confirmButtonText: isApprove ? 'Proceed to Inspection' : 'Return',
             cancelButtonText: 'Cancel',
         }).then((result) => {
             if (result.isConfirmed) {
@@ -173,7 +173,7 @@ export default function DocumentReview({ application }) {
                         Swal.fire({
                             title: isApprove ? 'Requirements Approved!' : 'Notice Dispatched',
                             text: isApprove
-                                ? 'Application endorsed for Physical Inspection. Applicant has been notified.'
+                                ? 'Application moved to Physical Inspection. Applicant has been notified.'
                                 : 'Correction notice sent to applicant with your feedback.',
                             icon: 'success',
                             confirmButtonColor: '#182B62',
@@ -417,8 +417,9 @@ export default function DocumentReview({ application }) {
                     {/* ── RIGHT COLUMN: CONTROL SIDEBAR (4 cols) ── */}
                     <div className="space-y-5 lg:col-span-4 lg:sticky lg:top-6 self-start">
 
-                        {/* Box 1: Official Review Decision Card */}
-                        <div className={`overflow-hidden rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-5 ${CARD_SHADOW}`}>
+                        {/* Box 1: Official Review Decision Card — desktop only; on mobile/tablet the
+                            same actions live in the sticky bottom bar (lg:hidden) below. */}
+                        <div className={`hidden lg:block overflow-hidden rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-5 ${CARD_SHADOW}`}>
                             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                                 <div className="flex items-center gap-2">
                                     <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-indigo-50 border border-indigo-100 text-[#182B62]">
@@ -435,7 +436,7 @@ export default function DocumentReview({ application }) {
                                         ? 'bg-rose-50 text-rose-700 border-rose-200'
                                         : 'bg-amber-50 text-amber-800 border-amber-200'
                                 }`}>
-                                    {canSchedule ? 'Ready to Endorse' : anyRejected ? 'Needs Correction' : 'In Progress'}
+                                    {canSchedule ? 'Ready for Inspection' : anyRejected ? 'Needs Correction' : 'In Progress'}
                                 </span>
                             </div>
 
@@ -465,7 +466,7 @@ export default function DocumentReview({ application }) {
                                                 <span>All Requirements Cleared</span>
                                             </div>
                                             <p className="text-[11.5px] leading-relaxed text-emerald-700 font-medium">
-                                                All documents are verified. Click below to endorse the applicant for physical tricycle inspection.
+                                                All documents are verified. Click below to proceed to the physical tricycle inspection.
                                             </p>
                                         </div>
                                         <button
@@ -475,7 +476,7 @@ export default function DocumentReview({ application }) {
                                             className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#182B62] hover:bg-[#25449B] text-white py-2.5 text-xs sm:text-sm font-bold shadow-2xs transition-all active:scale-[0.98] disabled:opacity-50 cursor-pointer"
                                         >
                                             {isProcessing ? <Loader2 size={15} className="animate-spin" /> : <Send size={14} strokeWidth={2.2} />}
-                                            <span>Endorse</span>
+                                            <span>Proceed to Inspection</span>
                                         </button>
                                     </div>
                                 ) : anyRejected ? (
@@ -507,7 +508,7 @@ export default function DocumentReview({ application }) {
                                                 <span>Review in Progress</span>
                                             </div>
                                             <p className="text-[11.5px] leading-relaxed text-slate-500 font-medium">
-                                                Verify each uploaded requirement on the left. The endorsement button will activate once all items are confirmed.
+                                                Verify each uploaded requirement on the left. The Proceed to Inspection button will activate once all items are confirmed.
                                             </p>
                                         </div>
                                         <button
@@ -560,6 +561,13 @@ export default function DocumentReview({ application }) {
                                     </span>
                                     <span className="font-bold text-slate-800 font-mono">{appData.contact || 'No phone provided'}</span>
                                 </div>
+                                <div className="flex items-center justify-between gap-3 text-slate-600">
+                                    <span className="flex items-center gap-1.5 text-slate-400 font-medium">
+                                        <Mail size={13} className="shrink-0" />
+                                        Email
+                                    </span>
+                                    <span className="font-bold text-slate-800 break-all text-right">{appData.owner?.email || '—'}</span>
+                                </div>
                                 <div className="flex items-center justify-between text-slate-600">
                                     <span className="flex items-center gap-1.5 text-slate-400 font-medium">
                                         <MapPin size={13} className="shrink-0" />
@@ -594,6 +602,10 @@ export default function DocumentReview({ application }) {
                                         <div className="flex items-center justify-between text-slate-600">
                                             <span className="font-medium text-slate-400">Mobile</span>
                                             <span className="font-bold text-slate-800 font-mono">{appData.tricycleDriver.contact_number || '—'}</span>
+                                        </div>
+                                        <div className="flex items-center justify-between gap-3 text-slate-600">
+                                            <span className="font-medium text-slate-400">Email</span>
+                                            <span className="font-bold text-slate-800 break-all text-right">{appData.tricycleDriver.email || '—'}</span>
                                         </div>
                                         <div className="flex items-center justify-between text-slate-600">
                                             <span className="font-medium text-slate-400">Barangay</span>
@@ -760,7 +772,7 @@ export default function DocumentReview({ application }) {
                                 className="flex-1 max-w-[240px] inline-flex items-center justify-center gap-1.5 rounded-xl bg-[#182B62] text-white py-2.5 px-3 text-xs font-bold shadow-2xs transition-all active:scale-[0.98] cursor-pointer"
                             >
                                 {isProcessing ? <Loader2 size={14} className="animate-spin" /> : <Send size={13} strokeWidth={2.2} />}
-                                <span>Endorse</span>
+                                <span>Proceed to Inspection</span>
                             </button>
                         ) : anyRejected ? (
                             <button
@@ -774,7 +786,7 @@ export default function DocumentReview({ application }) {
                             </button>
                         ) : (
                             <span className="text-xs font-semibold text-slate-400 text-right">
-                                Verify all files to endorse
+                                Verify all files to proceed
                             </span>
                         )}
                     </div>

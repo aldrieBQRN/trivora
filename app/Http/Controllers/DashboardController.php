@@ -16,6 +16,7 @@ use App\Models\AuditLog;
 use App\Services\AuditService;
 use App\Services\ColorCodingRuleService;
 use App\Services\ViolationNotifier;
+use App\Services\ViolationEnforcementService;
 use Illuminate\Support\Facades\DB;
 use Inertia\Response;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -211,8 +212,10 @@ class DashboardController extends Controller
                 $ccs = $scheme?->colorCodingScheme;
                 $app = $scheme?->application;
 
-                // Franchise Number (STK-YYYY-NNNN or MTOP) and Validity Term
-                $franchiseNumber = $scheme?->sticker_number ?: $app?->sticker_number ?: ($scheme?->franchise_number ?: null);
+                // Franchise Number (MTOP-YYYY-NNNN, or legacy STK-YYYY-NNNN) and Validity Term
+                $franchiseNumber = \App\Models\FranchiseScheme::isFranchiseNumberSerial($scheme?->franchise_number)
+                    ? $scheme->franchise_number
+                    : ($scheme?->sticker_number ?: ($app?->sticker_number ?: ($scheme?->franchise_number ?: null)));
 
                 $issueDate = $scheme?->issue_date ?: ($app?->completed_at ? \Carbon\Carbon::parse($app->completed_at) : ($tri->created_at ? \Carbon\Carbon::parse($tri->created_at) : null));
 
@@ -382,12 +385,14 @@ class DashboardController extends Controller
 
         $isCodedToday = $eval['is_restricted_today'];
 
-        // Franchise Number (STK-YYYY-NNNN) — the real serial held on this unit's franchise
+        // Franchise Number (MTOP-YYYY-NNNN, or legacy STK-YYYY-NNNN) — the real serial held on this unit's franchise
         // scheme, falling back to the application that issued it. Never synthesised: when no
         // serial has been issued this stays null and the page renders an em dash rather than
         // inventing a PERMIT-*/MTOP-* placeholder.
         $franchiseScheme = $tri->franchiseSchemes->firstWhere('is_active', true) ?: $tri->franchiseSchemes->first();
-        $franchiseNumber = $franchiseScheme?->sticker_number ?: $franchiseScheme?->application?->sticker_number ?: null;
+        $franchiseNumber = \App\Models\FranchiseScheme::isFranchiseNumberSerial($franchiseScheme?->franchise_number)
+            ? $franchiseScheme->franchise_number
+            : ($franchiseScheme?->sticker_number ?: ($franchiseScheme?->application?->sticker_number ?: null));
 
         $make = $tri->make;
         $model = $tri->model;
@@ -471,6 +476,7 @@ class DashboardController extends Controller
         $driverLastName  = $driver?->last_name ?? ($driverDetails['last_name'] ?? null);
         $driverBirthday  = $driver?->date_of_birth ? $driver->date_of_birth->format('m/d/Y') : ($driverDetails['birthday'] ?? null);
         $driverContact   = $driver?->contact_number ?? ($driverDetails['contact_number'] ?? null);
+        $driverEmail     = $driver?->email ?? ($driverDetails['email'] ?? null);
         $driverBarangay  = $driver?->barangay ?? ($driverDetails['barangay'] ?? null);
 
         $tricycleData['driver'] = (! $ownerIsDriver && ($driverFirstName || $driverDetails)) ? [
@@ -479,6 +485,7 @@ class DashboardController extends Controller
             'full_name'      => $driver?->full_name ?: ($driverDetails['full_name'] ?? trim("{$driverFirstName} {$driverLastName}")),
             'birthday'       => $driverBirthday,
             'contact_number' => $driverContact,
+            'email'          => $driverEmail,
             'barangay'       => $driverBarangay,
         ] : null;
 
@@ -756,37 +763,58 @@ class DashboardController extends Controller
      */
     private function violationsListData(): array
     {
-        $rawViolations = Violation::with(['tricycle.operator.user', 'locationSnapshot', 'appeal'])
+        $rawViolations = Violation::with([
+            'tricycle.operator.user',
+            'tricycle.franchiseScheme',
+            'franchiseScheme',
+            'locationSnapshot',
+            'appeal',
+            'enforcement.confirmedBy',
+        ])
             ->orderByDesc('detected_at')
+            ->orderByDesc('id')
             ->get();
 
-        $violations = $rawViolations->map(function ($v) {
+        $offenseNumbers = ViolationEnforcementService::batchCalculateOffenseNumbers($rawViolations);
+
+        $violations = $rawViolations->map(function ($v) use ($offenseNumbers) {
             $isUnsettled = in_array($v->status, ['open', 'acknowledged', 'contested']);
             $appealStatus = $v->appeal ? $v->appeal->status : null;
+            $offenseNum = $offenseNumbers[$v->id] ?? 1;
+            $penalty = ViolationEnforcementService::getPenaltyDetails($offenseNum);
+            $enforcementState = ViolationEnforcementService::resolveEnforcementState($v, $offenseNum);
 
             return [
-                'id'             => 'VIO-26-' . str_pad($v->id, 4, '0', STR_PAD_LEFT),
-                'db_id'          => $v->id,
+                'id'                   => 'VIO-26-' . str_pad($v->id, 4, '0', STR_PAD_LEFT),
+                'db_id'                => $v->id,
                 'tricycle_id'          => $v->tricycle_id,
                 'coding_scheme_number' => $v->tricycle?->coding_scheme_number ?: null,
-                'date'           => $v->detected_at ? $v->detected_at->toDateString() : 'N/A',
-                'formatted_date' => $v->detected_at ? $v->detected_at->format('M d, Y') : 'N/A',
-                'time'           => $v->detected_at ? $v->detected_at->format('h:i A') : 'N/A',
-                'operator'       => $v->tricycle?->operator ? $v->tricycle->operator->full_name : 'N/A',
-                'operator_photo' => $v->tricycle?->operator?->profile_photo_url,
-                'plate_no'       => $v->tricycle?->plate_number ?: 'N/A',
-                'type'           => ucwords(str_replace('_', ' ', $v->violation_type)),
-                'raw_type'       => $v->violation_type,
-                'source'         => $v->detectionLabel(),
-                'raw_source'     => $v->detection_method,
-                'detection_method'   => $v->detection_method,
-                'detection_key'      => $v->detectionKey(),
-                'detection_label'    => $v->detectionLabel(),
-                'fine'           => (float)$v->fine_amount,
-                'status'         => $isUnsettled ? 'unsettled' : 'settled',
-                'raw_status'     => $v->status,
-                'appeal_status'  => $appealStatus,
-                'notes'          => $v->notes,
+                'date'                 => $v->detected_at ? $v->detected_at->toDateString() : 'N/A',
+                'formatted_date'       => $v->detected_at ? $v->detected_at->format('M d, Y') : 'N/A',
+                'time'                 => $v->detected_at ? $v->detected_at->format('h:i A') : 'N/A',
+                'operator'             => $v->tricycle?->operator ? $v->tricycle->operator->full_name : 'N/A',
+                'operator_photo'       => $v->tricycle?->operator?->profile_photo_url,
+                'plate_no'             => $v->tricycle?->plate_number ?: 'N/A',
+                'type'                 => ucwords(str_replace('_', ' ', $v->violation_type)),
+                'raw_type'             => $v->violation_type,
+                'source'               => $v->detectionLabel(),
+                'raw_source'           => $v->detection_method,
+                'detection_method'     => $v->detection_method,
+                'detection_key'        => $v->detectionKey(),
+                'detection_label'      => $v->detectionLabel(),
+                'fine'                 => $penalty['fine_amount'] !== null ? $penalty['fine_amount'] : (float) $v->fine_amount,
+                'offense_number'       => $offenseNum,
+                'offense_label'        => $penalty['offense_label'],
+                'penalty_text'         => $penalty['penalty_text'],
+                'penalty_display'      => $penalty['penalty_display'],
+                'sanctions_summary'    => $penalty['sanctions_summary'],
+                'enforcement_status'   => $enforcementState['status'],
+                'enforcement_label'    => $enforcementState['label'],
+                'enforcement_badge'    => $enforcementState['badge'],
+                'status'               => $isUnsettled ? 'unsettled' : 'settled',
+                'raw_status'           => $v->status,
+                'appeal_status'        => $appealStatus,
+                'notes'                => $v->notes,
             ];
         });
 
@@ -824,7 +852,7 @@ class DashboardController extends Controller
 
         $sections = [[
             'title'   => 'Official Violation Log',
-            'headers' => ['Ticket No.', 'Date', 'Time', 'Type', 'Detection Method', 'Tricycle Owner', 'Plate No.', 'Fine Amount (PHP)', 'Status'],
+            'headers' => ['Ticket No.', 'Date', 'Time', 'Type', 'Detection Method', 'Tricycle Owner', 'Plate No.', 'Fine & Penalty', 'Enforcement', 'Status'],
             'rows'    => $violations->map(fn ($v) => [
                 $v['id'],
                 $v['date'],
@@ -833,7 +861,8 @@ class DashboardController extends Controller
                 $v['detection_method'],
                 $v['operator'],
                 $v['plate_no'],
-                $format === 'pdf' ? 'PHP ' . number_format((float) $v['fine'], 2) : (float) $v['fine'],
+                $v['penalty_display'],
+                $v['enforcement_label'],
                 $v['status'] === 'settled' ? 'Settled' : 'Unsettled',
             ])->all(),
         ]];
@@ -851,6 +880,7 @@ class DashboardController extends Controller
                     ucfirst(str_replace('_', ' ', $v['appeal_status'])),
                 ])->values()->all(),
             ];
+
         }
 
         $this->logExport($format, $filename, 'Violation Records', 'tmo_violation_records', $violations->count());
@@ -881,13 +911,16 @@ class DashboardController extends Controller
         $v = Violation::with([
             'tricycle.operator.user',
             'tricycle.franchiseScheme.colorCodingScheme',
+            'franchiseScheme.colorCodingScheme',
             'locationSnapshot',
             'appeal.driver.user',
             'appeal.reviewer',
+            'enforcement.confirmedBy',
         ])->findOrFail($id);
 
         $appeal = $v->appeal;
-        $colorScheme = $v->tricycle?->franchiseScheme?->colorCodingScheme;
+        $franchiseScheme = $v->franchiseScheme ?: $v->tricycle?->franchiseScheme;
+        $colorScheme = $franchiseScheme?->colorCodingScheme;
 
         // Owner (the linked operators record) + the person who actually drives the unit, from
         // the tricycle's latest application — same resolution used by the Tricycle Registry
@@ -901,6 +934,11 @@ class DashboardController extends Controller
         $driverName    = $ownerIsDriver
             ? ($ownerName !== 'N/A' ? $ownerName : null)
             : ($latestApp?->tricycleDriver?->full_name ?: null);
+
+        $offenseNum = ViolationEnforcementService::calculateOffenseNumber($v);
+        $penalty = ViolationEnforcementService::getPenaltyDetails($offenseNum);
+        $enforcementState = ViolationEnforcementService::resolveEnforcementState($v, $offenseNum);
+        $enforcement = $v->enforcement;
 
         $record = [
             'id'                   => 'VIO-26-' . str_pad($v->id, 4, '0', STR_PAD_LEFT),
@@ -931,7 +969,34 @@ class DashboardController extends Controller
             'source'               => $v->detectionLabel(),
             'detection_label'      => $v->detectionLabel(),
             'detection_key'        => $v->detectionKey(),
-            'fine'                 => (float)$v->fine_amount,
+            'fine'                 => $penalty['fine_amount'] !== null ? $penalty['fine_amount'] : (float)$v->fine_amount,
+            'offense_number'       => $offenseNum,
+            'offense_label'        => $penalty['offense_label'],
+            'penalty_text'         => $penalty['penalty_text'],
+            'penalty_display'      => $penalty['penalty_display'],
+            'sanctions_summary'    => $penalty['sanctions_summary'],
+            'requires_impoundment' => $penalty['requires_impoundment'],
+            'requires_suspension'  => $penalty['requires_suspension'],
+            'requires_revocation'  => $penalty['requires_revocation'],
+            'enforcement_status'   => $enforcementState['status'],
+            'enforcement_label'    => $enforcementState['label'],
+            'enforcement_badge'    => $enforcementState['badge'],
+            'franchise_status'     => $franchiseScheme?->status ?: 'active',
+            'franchise_number'     => $franchiseScheme?->franchise_number ?: null,
+            'enforcement'          => $enforcement ? [
+                'id'             => $enforcement->id,
+                'offense_number' => $enforcement->offense_number,
+                'action_type'    => $enforcement->action_type,
+                'status'         => $enforcement->status,
+                'confirmed_at'   => $enforcement->confirmed_at?->format('F j, Y g:i A'),
+                'confirmed_by'   => $enforcement->confirmedBy?->name,
+                'notes'          => $enforcement->notes,
+            ] : null,
+            'can_confirm_enforcement' => (
+                $enforcementState['status'] === 'action_required' &&
+                $v->status !== 'dismissed' &&
+                !($v->appeal && in_array($v->appeal->status, ['under_review', 'approved'], true))
+            ),
             'status'               => in_array($v->status, ['resolved', 'settled']) ? 'settled' : 'unsettled',
             'raw_status'           => $v->status,
             'notes'                => $v->notes ?: 'GPS tracker detected movement during restricted operational window.',
@@ -953,6 +1018,7 @@ class DashboardController extends Controller
             'violationId'   => 'VIO-26-' . str_pad($v->id, 4, '0', STR_PAD_LEFT),
             'initialRecord' => $record,
         ]);
+
     }
 
     /**

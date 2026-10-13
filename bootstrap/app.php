@@ -18,6 +18,13 @@ $app = Application::configure(basePath: dirname(__DIR__))
         $middleware->web(append: [
             \App\Http\Middleware\HandleInertiaRequests::class,
             \Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets::class,
+            // Accounts on a server-generated temporary password can't reach anything but the
+            // change-password page until they set their own (see StaffCredentials).
+            \App\Http\Middleware\EnsurePasswordIsChanged::class,
+        ]);
+
+        $middleware->api(append: [
+            \App\Http\Middleware\EnsurePasswordIsChanged::class,
         ]);
 
         // Register role-based access middleware alias

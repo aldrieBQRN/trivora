@@ -335,6 +335,28 @@ class SystemAuditLogSeeder extends Seeder
             'created_at'       => $now->copy()->subDays(2)->setHour(10)->setMinute(15),
         ];
 
+        $records[] = [
+            'user_id'          => $tmo1?->id ?? 2,
+            'actor_name'       => $tmo1?->name ?? 'Juan dela Cruz',
+            'actor_role'       => 'tmo_personnel',
+            'module'           => 'violations',
+            'action'           => 'violation_enforcement.confirmed',
+            'event'            => 'violation_enforcement.confirmed',
+            'auditable_type'   => Violation::class,
+            'auditable_id'     => $sampleViolations->get(1)?->id ?? 2,
+            'target_type'      => FranchiseScheme::class,
+            'target_id'        => 1,
+            'target_reference' => $vio2Ref,
+            'description'      => 'TMO Officer confirmed municipal enforcement sanctions (3rd Offense: ₱2,500 fine, tricycle impoundment, and franchise suspension).',
+            'channel'          => 'web',
+            'old_values'       => json_encode(['franchise_status' => 'active', 'enforcement_status' => 'pending']),
+            'new_values'       => json_encode(['franchise_status' => 'suspended', 'enforcement_status' => 'completed', 'offense_number' => 3]),
+            'metadata'         => json_encode(['action_type' => 'impoundment_and_suspension', 'notes' => 'Tricycle impounded at Nasugbu Municipal Compound.']),
+            'ip_address'       => '192.168.1.15',
+            'user_agent'       => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/128.0.0.0',
+            'created_at'       => $now->copy()->subDays(1)->setHour(15)->setMinute(45),
+        ];
+
         // ---------------------------------------------------------------------
         // Module: USER MANAGEMENT
         // ---------------------------------------------------------------------

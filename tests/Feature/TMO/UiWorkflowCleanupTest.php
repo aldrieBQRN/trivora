@@ -231,7 +231,7 @@ class UiWorkflowCleanupTest extends TestCase
     }
 
     #[Test]
-    public function bplo_release_form_auto_generates_and_persists_unique_sticker_number(): void
+    public function bplo_release_form_only_previews_numbers_and_never_reserves_them(): void
     {
         [, , $application] = $this->registerNewApplication(['plate_number' => 'TST-BPLOSTK']);
 
@@ -241,27 +241,116 @@ class UiWorkflowCleanupTest extends TestCase
             'sticker_number' => null,
         ]);
 
-        $this->assertNull($application->sticker_number);
-
-        // 1. First visit generates and persists sticker_number
+        // Opening the page shows previews of both numbers...
         $response = $this->actingAs($this->bploUser)->get(route('bplo.issue', $application));
         $response->assertOk();
 
+        $preview = null;
+        $response->assertInertia(function ($page) use (&$preview) {
+            $page->component('BPLODashboard/IssueStickerNumber')
+                ->where('application.sticker_number', function ($value) use (&$preview) {
+                    $preview = $value;
+
+                    return str_starts_with((string) $value, 'MTOP-' . date('Y') . '-');
+                })
+                ->where('application.suggested_coding_number', fn ($value) => preg_match('/^\d{4}$/', (string) $value) === 1);
+        });
+
+        // ...but reserves nothing, so a visit by another staff member sees the same preview.
         $application->refresh();
-        $persistedSticker = $application->sticker_number;
-        $this->assertNotEmpty($persistedSticker);
-        $this->assertStringStartsWith('STK-', $persistedSticker);
+        $this->assertNull($application->sticker_number);
+        $this->assertNull($application->tricycle->coding_scheme_number);
+
+        $this->actingAs($this->bploUser)->get(route('bplo.issue', $application))
+            ->assertInertia(fn ($page) => $page->where('application.sticker_number', $preview));
+    }
+
+    #[Test]
+    public function franchise_number_has_its_own_yearly_counter_independent_of_the_sticker_number(): void
+    {
+        [, , $application] = $this->registerNewApplication(['plate_number' => 'TST-OWNSEQ']);
+        $application->update(['status' => 'pending_bplo_release', 'current_step' => 3, 'sticker_number' => null]);
+
+        // A high existing Sticker Number used to drag the Franchise Number up to sticker + 1.
+        \App\Models\Tricycle::where('id', '!=', $application->tricycle_id)->first()
+            ?->update(['coding_scheme_number' => '0842']);
+        $application->tricycle->update(['coding_scheme_number' => null]);
+
+        $prefix = 'MTOP-' . date('Y') . '-';
+        $highestThisYear = \App\Models\Application::where('sticker_number', 'like', "{$prefix}%")
+            ->pluck('sticker_number')
+            ->merge(\App\Models\FranchiseScheme::where('franchise_number', 'like', "{$prefix}%")->pluck('franchise_number'))
+            ->map(fn ($n) => (int) substr($n, strlen($prefix)))
+            ->max() ?? 0;
+
+        $response = $this->actingAs($this->bploUser)->get(route('bplo.issue', $application));
+        $response->assertOk();
 
         $response->assertInertia(fn ($page) => $page
-            ->component('BPLODashboard/IssueStickerNumber')
-            ->where('application.sticker_number', $persistedSticker)
+            ->where('application.sticker_number', sprintf('%s%04d', $prefix, $highestThisYear + 1))
+            ->whereNot('application.suggested_coding_number', null)
         );
+    }
 
-        // 2. Second visit does NOT regenerate sticker_number
-        $response2 = $this->actingAs($this->bploUser)->get(route('bplo.issue', $application));
-        $response2->assertOk();
+    #[Test]
+    public function an_application_cannot_be_released_twice_by_two_staff_members(): void
+    {
+        [, , $application] = $this->registerNewApplication(['plate_number' => 'TST-TWICE']);
+        $application->update(['status' => 'pending_bplo_release', 'current_step' => 3, 'sticker_number' => null]);
+        $otherStaff = $this->makeBploUser();
+
+        // Staff A releases.
+        $this->actingAs($this->bploUser)->post(route('bplo.release.submit', $application))
+            ->assertRedirect(route('bplo.releasing'))
+            ->assertSessionHas('success');
 
         $application->refresh();
-        $this->assertSame($persistedSticker, $application->sticker_number);
+        $issuedSticker = $application->tricycle->coding_scheme_number;
+        $issuedFranchise = $application->sticker_number;
+        $historyCount = $application->statusHistories()->count();
+
+        // Staff B submits the same (stale) page: refused, nothing changes.
+        $this->actingAs($otherStaff)->post(route('bplo.release.submit', $application), [
+            'sticker_number' => 'STK-HACKED-9999',
+        ])->assertRedirect(route('bplo.releasing'))->assertSessionHas('error');
+
+        $application->refresh();
+        $this->assertSame($issuedSticker, $application->tricycle->coding_scheme_number);
+        $this->assertSame($issuedFranchise, $application->sticker_number);
+        $this->assertSame($historyCount, $application->statusHistories()->count());
+        $this->assertSame(1, \App\Models\FranchiseScheme::where('application_id', $application->id)->count());
+
+        // And Staff B can't even open the release form for it anymore.
+        $this->actingAs($otherStaff)->get(route('bplo.issue', $application))
+            ->assertRedirect(route('bplo.releasing'))->assertSessionHas('error');
     }
+
+    #[Test]
+    public function releases_of_different_applications_never_share_a_number(): void
+    {
+        [, , $first] = $this->registerNewApplication(['plate_number' => 'TST-PAIR-A']);
+        [, , $second] = $this->registerNewApplication(['plate_number' => 'TST-PAIR-B']);
+        foreach ([$first, $second] as $application) {
+            $application->update(['status' => 'pending_bplo_release', 'current_step' => 3, 'sticker_number' => null]);
+        }
+        $otherStaff = $this->makeBploUser();
+
+        // Both staff open their pages first — they see the SAME preview numbers...
+        $previewA = $this->actingAs($this->bploUser)->get(route('bplo.issue', $first))->viewData('page')['props']['application'];
+        $previewB = $this->actingAs($otherStaff)->get(route('bplo.issue', $second))->viewData('page')['props']['application'];
+        $this->assertSame($previewA['sticker_number'], $previewB['sticker_number']);
+        $this->assertSame($previewA['suggested_coding_number'], $previewB['suggested_coding_number']);
+
+        // ...but each release gets its own numbers, and form input is ignored.
+        $this->actingAs($this->bploUser)->post(route('bplo.release.submit', $first), ['sticker_number' => $previewA['sticker_number']]);
+        $this->actingAs($otherStaff)->post(route('bplo.release.submit', $second), ['sticker_number' => $previewB['sticker_number']]);
+
+        $first->refresh();
+        $second->refresh();
+        $this->assertSame('awaiting_tmo_confirmation', $first->status);
+        $this->assertSame('awaiting_tmo_confirmation', $second->status);
+        $this->assertNotSame($first->sticker_number, $second->sticker_number);
+        $this->assertNotSame($first->tricycle->coding_scheme_number, $second->tricycle->coding_scheme_number);
+    }
+
 }

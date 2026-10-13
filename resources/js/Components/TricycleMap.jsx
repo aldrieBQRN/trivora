@@ -4,45 +4,64 @@ import L from 'leaflet';
 import { Navigation, Maximize2, Minimize2, MapPin, Compass } from 'lucide-react';
 import 'leaflet/dist/leaflet.css';
 
-const createCustomIcon = (status, isOnline = true, connectionStatus = 'online') => {
-    let pinColor, pulseBg, hasAnimation;
-
-    if (connectionStatus === 'no_signal') {
-        // No signal: visible with static amber pin
-        pinColor = '#F59E0B';
-        pulseBg = '';
-        hasAnimation = false;
-    } else if (!isOnline || status === 'offline' || connectionStatus === 'offline') {
-        // Offline: slate muted pin
-        pinColor = '#64748B';
-        pulseBg = '';
-        hasAnimation = false;
-    } else if (status === 'violator') {
-        // Coding restriction breach / violator
-        pinColor = '#E11D48';
-        pulseBg = 'bg-rose-400';
-        hasAnimation = true;
-    } else if (status === 'coding_no_operation') {
-        // Active GPS unit restricted today
-        pinColor = '#F59E0B';
-        pulseBg = 'bg-amber-400';
-        hasAnimation = true;
-    } else {
-        // Compliant & active GPS unit
-        pinColor = '#10B981';
-        pulseBg = 'bg-emerald-400';
-        hasAnimation = true;
+export const resolveTricycleStatus = (status, isOnline = true, connectionStatus = 'online') => {
+    // 1. Violator has highest precedence: open violation detected today
+    if (status === 'violator') {
+        return {
+            key: 'violator',
+            label: 'Coding Restriction Breach',
+            color: '#DC2626',      // bg-red-600
+            pulseBg: 'bg-red-400',
+            hasAnimation: true,
+            isOffline: false,
+        };
     }
 
-    const isOffline = (!isOnline || status === 'offline' || connectionStatus === 'offline') && connectionStatus !== 'no_signal';
+    // 2. Restricted Today (Coding Day)
+    if (status === 'coding_no_operation') {
+        return {
+            key: 'coding_no_operation',
+            label: 'Restricted Today (Coding Day)',
+            color: '#F59E0B',      // bg-amber-500
+            pulseBg: 'bg-amber-400',
+            hasAnimation: Boolean(isOnline),
+            isOffline: false,
+        };
+    }
+
+    // 3. Offline / No recent signal
+    if (!isOnline || status === 'offline' || connectionStatus === 'offline' || connectionStatus === 'no_signal') {
+        return {
+            key: 'offline',
+            label: 'Offline (No recent signal)',
+            color: '#64748B',      // bg-slate-500
+            pulseBg: '',
+            hasAnimation: false,
+            isOffline: true,
+        };
+    }
+
+    // 4. Active (Operating) compliant GPS unit
+    return {
+        key: 'compliant',
+        label: 'Active (Operating)',
+        color: '#10B981',          // bg-emerald-500
+        pulseBg: 'bg-emerald-400',
+        hasAnimation: true,
+        isOffline: false,
+    };
+};
+
+const createCustomIcon = (status, isOnline = true, connectionStatus = 'online') => {
+    const meta = resolveTricycleStatus(status, isOnline, connectionStatus);
 
     return L.divIcon({
         className: 'custom-tricycle-marker',
         html: `
-            <div class="relative flex items-center justify-center cursor-pointer select-none" style="width: 26px; height: 34px; ${isOffline ? 'opacity: 0.75;' : ''}">
-                ${hasAnimation ? `<span class="animate-ping absolute top-0.5 left-0.5 h-6 w-6 rounded-full ${pulseBg} opacity-50 pointer-events-none"></span>` : ''}
+            <div class="relative flex items-center justify-center cursor-pointer select-none" style="width: 26px; height: 34px; ${meta.isOffline ? 'opacity: 0.75;' : ''}">
+                ${meta.hasAnimation ? `<span class="animate-ping absolute top-0.5 left-0.5 h-6 w-6 rounded-full ${meta.pulseBg} opacity-50 pointer-events-none"></span>` : ''}
                 <svg width="26" height="34" viewBox="0 0 26 34" fill="none" xmlns="http://www.w3.org/2000/svg" class="relative z-10 drop-shadow-md">
-                    <path d="M13 0C5.82 0 0 5.82 0 13C0 22.75 13 34 13 34C13 34 26 22.75 26 13C26 5.82 20.18 0 13 0Z" fill="${pinColor}" stroke="#FFFFFF" stroke-width="1.5" />
+                    <path d="M13 0C5.82 0 0 5.82 0 13C0 22.75 13 34 13 34C13 34 26 22.75 26 13C26 5.82 20.18 0 13 0Z" fill="${meta.color}" stroke="#FFFFFF" stroke-width="1.5" />
                     <circle cx="13" cy="12" r="4.5" fill="#FFFFFF" />
                 </svg>
             </div>
@@ -76,6 +95,33 @@ const MAP_THEMES = {
         bg: '#F8FAFC',
     },
 };
+
+export const STATUS_LEGEND_ITEMS = [
+    { key: 'compliant',           label: 'Active (Operating)',           color: '#10B981', isOffline: false },
+    { key: 'coding_no_operation', label: 'Restricted Today (Coding Day)', color: '#F59E0B', isOffline: false },
+    { key: 'violator',            label: 'Coding Restriction Breach',    color: '#DC2626', isOffline: false },
+    { key: 'offline',             label: 'Offline (No recent signal)',   color: '#64748B', isOffline: true  },
+];
+
+const LegendMarkerPin = ({ color, isOffline = false }) => (
+    <svg
+        width="13"
+        height="17"
+        viewBox="0 0 26 34"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+        className="shrink-0 drop-shadow-xs"
+        style={isOffline ? { opacity: 0.75 } : {}}
+    >
+        <path
+            d="M13 0C5.82 0 0 5.82 0 13C0 22.75 13 34 13 34C13 34 26 22.75 26 13C26 5.82 20.18 0 13 0Z"
+            fill={color}
+            stroke="#FFFFFF"
+            strokeWidth="1.5"
+        />
+        <circle cx="13" cy="12" r="4.5" fill="#FFFFFF" />
+    </svg>
+);
 
 export default function TricycleMap({
     tricycles = [],
@@ -362,42 +408,23 @@ export default function TricycleMap({
                                     </div>
 
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                            <div style={{
-                                                width: '8px', height: '8px', borderRadius: '50%',
-                                                backgroundColor: trike.connection_status === 'no_signal'
-                                                    ? '#F59E0B'
-                                                    : !trike.is_online || trike.status === 'offline'
-                                                        ? '#94A3B8'
-                                                        : trike.status === 'violator'
-                                                            ? '#DC2626'
-                                                            : trike.status === 'coding_no_operation'
-                                                                ? '#F59E0B'
-                                                                : '#10B981'
-                                            }}></div>
-                                            <span style={{
-                                                fontSize: '10px', fontWeight: 'bold', textTransform: 'uppercase',
-                                                color: trike.connection_status === 'no_signal'
-                                                    ? '#D97706'
-                                                    : !trike.is_online || trike.status === 'offline'
-                                                        ? '#64748B'
-                                                        : trike.status === 'violator'
-                                                            ? '#DC2626'
-                                                            : trike.status === 'coding_no_operation'
-                                                                ? '#D97706'
-                                                                : '#059669'
-                                            }}>
-                                                {trike.connection_status === 'no_signal'
-                                                    ? 'No Signal'
-                                                    : !trike.is_online || trike.status === 'offline'
-                                                    ? 'Offline'
-                                                    : trike.status === 'violator'
-                                                        ? 'Coding Violator'
-                                                        : trike.status === 'coding_no_operation'
-                                                            ? 'Restricted Today (Coding Day)'
-                                                            : 'Active · Allowed Operation'}
-                                            </span>
-                                        </div>
+                                        {(() => {
+                                            const statusInfo = resolveTricycleStatus(trike.status, trike.is_online, trike.connection_status);
+                                            return (
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                    <div style={{
+                                                        width: '8px', height: '8px', borderRadius: '50%',
+                                                        backgroundColor: statusInfo.color,
+                                                    }}></div>
+                                                    <span style={{
+                                                        fontSize: '10px', fontWeight: 'bold', textTransform: 'uppercase',
+                                                        color: statusInfo.color,
+                                                    }}>
+                                                        {statusInfo.label}
+                                                    </span>
+                                                </div>
+                                            );
+                                        })()}
 
                                         <div style={{ fontSize: '9.5px', fontWeight: 600, color: '#94A3B8', paddingTop: '4px', borderTop: '1px dashed #F1F5F9' }}>
                                             {/* last_update_label: the same backend-formatted recorded_at the
@@ -425,23 +452,15 @@ export default function TricycleMap({
                     Status Legend
                 </p>
 
-                <div className="flex flex-col gap-1 sm:gap-1.5">
-                    <div className="flex items-center gap-1.5 sm:gap-2">
-                        <div className="h-2 w-2 sm:h-[9px] sm:w-[9px] shrink-0 rounded-full bg-emerald-500" />
-                        <span className="text-[9px] sm:text-[10.5px] font-semibold text-slate-700">Active (Operating)</span>
-                    </div>
-                    <div className="flex items-center gap-1.5 sm:gap-2">
-                        <div className="h-2 w-2 sm:h-[9px] sm:w-[9px] shrink-0 rounded-full bg-amber-500" />
-                        <span className="text-[9px] sm:text-[10.5px] font-semibold text-slate-700">Restricted Today (Coding Day)</span>
-                    </div>
-                    <div className="flex items-center gap-1.5 sm:gap-2">
-                        <div className="h-2 w-2 sm:h-[9px] sm:w-[9px] shrink-0 rounded-full bg-red-600" />
-                        <span className="text-[9px] sm:text-[10.5px] font-semibold text-slate-700">Coding Restriction Breach</span>
-                    </div>
-                    <div className="flex items-center gap-1.5 sm:gap-2">
-                        <div className="h-2 w-2 sm:h-[9px] sm:w-[9px] shrink-0 rounded-full bg-slate-400" />
-                        <span className="text-[9px] sm:text-[10.5px] font-semibold text-slate-700">Offline (No recent signal)</span>
-                    </div>
+                <div className="flex flex-col gap-1.5 sm:gap-2">
+                    {STATUS_LEGEND_ITEMS.map((item) => (
+                        <div key={item.key} className="flex items-center gap-1.5 sm:gap-2">
+                            <LegendMarkerPin color={item.color} isOffline={item.isOffline} />
+                            <span className="text-[9px] sm:text-[10.5px] font-semibold text-slate-700 leading-tight">
+                                {item.label}
+                            </span>
+                        </div>
+                    ))}
                 </div>
             </div>
         </div>

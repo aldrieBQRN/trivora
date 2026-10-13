@@ -421,7 +421,7 @@ export default function Violations({ initialViolations = [], summaryStats = null
                                             Citation Type
                                         </th>
                                         <th scope="col" className="py-3.5 px-4 font-['Plus_Jakarta_Sans',sans-serif] text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                                            Fine Amount
+                                            Fine &amp; Penalty
                                         </th>
                                         <th scope="col" className="py-3.5 px-4 font-['Plus_Jakarta_Sans',sans-serif] text-[11px] font-bold uppercase tracking-wider text-slate-400">
                                             Status
@@ -586,6 +586,41 @@ function StatusPill({ record }) {
     );
 }
 
+function EnforcementText({ record }) {
+    const status = record.enforcement_status || 'no_action_required';
+    const label = record.enforcement_label || 'No Action Required';
+
+    if (status === 'action_required') {
+        return (
+            <span className="text-[11px] font-bold text-rose-600 font-['Plus_Jakarta_Sans',sans-serif]">
+                {label}
+            </span>
+        );
+    }
+
+    if (status === 'completed') {
+        return (
+            <span className="text-[11px] font-medium text-emerald-600 font-['Plus_Jakarta_Sans',sans-serif]">
+                {label}
+            </span>
+        );
+    }
+
+    if (status === 'pending_confirmation') {
+        return (
+            <span className="text-[11px] font-medium text-amber-600 font-['Plus_Jakarta_Sans',sans-serif]">
+                {label}
+            </span>
+        );
+    }
+
+    return (
+        <span className="text-[11px] font-medium text-slate-400 font-['Plus_Jakarta_Sans',sans-serif]">
+            {label}
+        </span>
+    );
+}
+
 function DesktopViolationRow({ record }) {
 
     return (
@@ -655,15 +690,13 @@ function DesktopViolationRow({ record }) {
                 </div>
             </td>
 
-            {/* Column 5: Fine Amount */}
+            {/* Column 5: Fine & Penalty (with Enforcement) */}
             <td className="py-4 px-4 align-middle">
                 <div className="flex flex-col">
-                    <span className="font-black text-slate-900 tabular-nums text-xs sm:text-[13px] font-mono">
-                        ₱{record.fine.toFixed(2)}
+                    <span className="font-bold text-slate-900 text-xs sm:text-[13px] font-['Plus_Jakarta_Sans',sans-serif]">
+                        {record.penalty_display || (record.fine ? `₱${Number(record.fine).toFixed(2)}` : 'N/A')}
                     </span>
-                    <span className="text-[10px] text-slate-400 uppercase tracking-wider font-bold font-['Plus_Jakarta_Sans',sans-serif]">
-                        Fine Penalty
-                    </span>
+                    <EnforcementText record={record} />
                 </div>
             </td>
 
@@ -672,7 +705,7 @@ function DesktopViolationRow({ record }) {
                 <StatusPill record={record} />
             </td>
 
-            {/* Column 7: Action */}
+            {/* Column 8: Action */}
             <td className="py-4 pl-3 pr-6 text-right align-middle">
                 <Link
                     href={`/violations/${record.db_id}`}
@@ -690,7 +723,7 @@ function MobileViolationCard({ record }) {
 
     return (
         <div className={`rounded-2xl border border-slate-200/80 bg-white p-4 ${CARD_SHADOW} transition-all hover:border-slate-300`}>
-            {/* Top Row: Ticket ID & Status */}
+            {/* Top Row: Ticket ID, Plate & Status */}
             <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-2.5">
                 <div className="flex items-center gap-2">
                     <span className="font-mono text-xs font-black tracking-wide text-slate-900 bg-slate-100 border border-slate-200/90 px-2 py-0.5 rounded-md shadow-2xs">
@@ -702,7 +735,7 @@ function MobileViolationCard({ record }) {
                 <StatusPill record={record} />
             </div>
 
-            {/* Operator Information */}
+            {/* Operator Information & Penalty */}
             <div className="mt-3 flex items-center justify-between gap-2">
                 <div className="flex items-center gap-2.5 min-w-0">
                     <Avatar name={record.operator} src={record.operator_photo} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#182B62] to-[#25449B] text-[11px] font-black text-white shadow-2xs" />
@@ -717,12 +750,12 @@ function MobileViolationCard({ record }) {
                 </div>
 
                 <div className="text-right shrink-0">
-                    <span className="text-sm font-black tabular-nums font-mono text-slate-900">
-                        ₱{record.fine.toFixed(2)}
+                    <span className="text-xs sm:text-sm font-bold text-slate-900 font-['Plus_Jakarta_Sans',sans-serif]">
+                        {record.penalty_display || (record.fine ? `₱${Number(record.fine).toFixed(2)}` : 'N/A')}
                     </span>
-                    <p className="text-[9.5px] uppercase tracking-wider font-bold text-slate-400 font-['Plus_Jakarta_Sans',sans-serif]">
-                        Penalty
-                    </p>
+                    <div>
+                        <EnforcementText record={record} />
+                    </div>
                 </div>
             </div>
 
@@ -740,6 +773,22 @@ function MobileViolationCard({ record }) {
                 </span>
             </div>
 
+            {/* Action Required Banner if applicable */}
+            {record.enforcement_status === 'action_required' && (
+                <div className="mt-2.5 rounded-xl border border-rose-200 bg-rose-50/80 p-2.5 text-xs flex items-center justify-between">
+                    <div className="flex items-center gap-1.5 text-rose-800 font-bold text-[11px]">
+                        <span className="h-2 w-2 rounded-full bg-rose-500 animate-pulse shrink-0" />
+                        <span>Action Required: {record.offense_number === 3 ? 'Impoundment & Suspension' : 'Franchise Cancellation'}</span>
+                    </div>
+                    <Link
+                        href={`/violations/${record.db_id}`}
+                        className="text-[11px] font-black text-rose-700 hover:text-rose-900 underline flex items-center gap-0.5 shrink-0"
+                    >
+                        Review <ArrowUpRight size={11} />
+                    </Link>
+                </div>
+            )}
+
             {/* Action Button */}
             <div className="mt-3 pt-2.5 border-t border-slate-100">
                 <Link
@@ -753,3 +802,4 @@ function MobileViolationCard({ record }) {
         </div>
     );
 }
+

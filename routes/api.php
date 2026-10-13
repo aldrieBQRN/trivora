@@ -11,6 +11,7 @@ use App\Http\Controllers\Api\DriverViolationController;
 use App\Http\Controllers\Api\NearbyPlaceController;
 use App\Http\Controllers\Api\PassengerAuthController;
 use App\Http\Controllers\Api\PassengerQrRideController;
+use App\Http\Controllers\Api\PasswordResetOtpController;
 use App\Http\Controllers\Api\ProfilePhotoController;
 use App\Http\Controllers\Api\SavedPlaceController;
 use Illuminate\Support\Facades\Route;
@@ -36,6 +37,13 @@ Route::prefix('v1/driver')->group(function () {
     Route::post('/verify-eligibility', [DriverAuthController::class, 'verifyEligibility']);
     Route::post('/register', [DriverAuthController::class, 'register']);
     Route::post('/login', [DriverAuthController::class, 'login']);
+
+    // Forgot password — emailed 6-digit code (shared with the passenger app)
+    Route::middleware('throttle:10,1')->group(function () {
+        Route::post('/forgot-password', [PasswordResetOtpController::class, 'send']);
+        Route::post('/forgot-password/verify', [PasswordResetOtpController::class, 'verify']);
+        Route::post('/forgot-password/reset', [PasswordResetOtpController::class, 'reset']);
+    });
 
     // Authenticated Driver Routes (Sanctum)
     Route::middleware('auth:sanctum')->group(function () {
@@ -141,6 +149,19 @@ Route::prefix('v1/passenger')->group(function () {
     // Public Auth Routes
     Route::post('/register', [PassengerAuthController::class, 'register']);
     Route::post('/login', [PassengerAuthController::class, 'login']);
+
+    // Sign-up email verification — the code's token is required by /register.
+    Route::middleware('throttle:10,1')->group(function () {
+        Route::post('/register/send-code', [\App\Http\Controllers\Api\PassengerEmailVerificationController::class, 'send']);
+        Route::post('/register/verify-code', [\App\Http\Controllers\Api\PassengerEmailVerificationController::class, 'verify']);
+    });
+
+    // Forgot password — emailed 6-digit code (shared with the driver app)
+    Route::middleware('throttle:10,1')->group(function () {
+        Route::post('/forgot-password', [PasswordResetOtpController::class, 'send']);
+        Route::post('/forgot-password/verify', [PasswordResetOtpController::class, 'verify']);
+        Route::post('/forgot-password/reset', [PasswordResetOtpController::class, 'reset']);
+    });
 
     // Authenticated Passenger Routes (Sanctum)
     Route::middleware('auth:sanctum')->group(function () {

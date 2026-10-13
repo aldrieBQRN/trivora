@@ -237,6 +237,12 @@ class DriverApiTest extends TestCase
      * franchise permit + person_type + password is the whole flow; all personal information
      * comes from the record the selection is validated against.
      */
+    /** The sign-in email registerFranchise() submits for this franchise + person. */
+    private static function registrantEmail(FranchiseScheme $franchise, string $personType = 'owner'): string
+    {
+        return "registrant.{$franchise->id}.{$personType}@example.com";
+    }
+
     private function registerFranchise(
         FranchiseScheme $franchise,
         string $personType = 'owner',
@@ -250,6 +256,7 @@ class DriverApiTest extends TestCase
         $payload = array_merge([
             'franchise_number'   => $franchise->franchise_number,
             'person_type'        => $personType,
+            'email'              => self::registrantEmail($franchise, $personType),
             'verification_token' => $token,
             'password'           => 'DriverPass123!',
             'tracking_mode'      => $trackingMode,
@@ -615,7 +622,7 @@ class DriverApiTest extends TestCase
             ->assertJsonFragment(['plate_number' => 'TST-1234']);
 
         $loginRes = $this->postJson('/api/v1/driver/login', [
-            'login'    => 'N01-TEST-123456',
+            'login'    => self::registrantEmail($this->franchiseA),
             'password' => 'DriverPass123!',
         ]);
 
@@ -634,56 +641,41 @@ class DriverApiTest extends TestCase
     }
 
     #[Test]
-    public function driver_can_login_with_their_franchise_number()
+    public function driver_login_is_email_only()
     {
-        // An unregistered franchise has no Driver row yet, so it can never log in.
+        // An unregistered franchise has no account yet, so nothing can log in.
         $this->postJson('/api/v1/driver/login', [
-            'login'    => 'FS-TEST-AAAA',
+            'login'    => self::registrantEmail($this->franchiseA),
             'password' => 'DriverPass123!',
         ])->assertStatus(401);
 
         $this->registerFranchise($this->franchiseA)
             ->assertStatus(201);
 
-        $loginRes = $this->postJson('/api/v1/driver/login', [
-            'login'    => 'FS-TEST-AAAA',
+        // The account email — case-insensitively — is the only accepted identifier.
+        $this->postJson('/api/v1/driver/login', [
+            'login'    => self::registrantEmail($this->franchiseA),
             'password' => 'DriverPass123!',
-        ]);
-
-        $loginRes->assertStatus(200)
+        ])->assertStatus(200)
             ->assertJsonStructure(['token', 'user', 'tricycle'])
             ->assertJsonFragment(['plate_number' => 'TST-1234']);
-    }
 
-    #[Test]
-    public function driver_can_login_with_their_mobile_number_and_email_login_is_rejected()
-    {
-        $this->registerFranchise($this->franchiseA)
-            ->assertStatus(201);
-
-        // The driver app's user-facing credential: the person's EXISTING mobile number.
-        $loginRes = $this->postJson('/api/v1/driver/login', [
-            'login'    => '09171234567',
-            'password' => 'DriverPass123!',
-        ]);
-        $loginRes->assertStatus(200)
-            ->assertJsonStructure(['token', 'user', 'tricycle']);
-
-        // Any stored equivalent form resolves to that same account.
         $this->postJson('/api/v1/driver/login', [
-            'login'    => '+63 917 123 4567',
+            'login'    => strtoupper(self::registrantEmail($this->franchiseA)),
             'password' => 'DriverPass123!',
         ])->assertStatus(200);
 
-        $this->postJson('/api/v1/driver/login', [
-            'login'    => '9171234567',
-            'password' => 'DriverPass123!',
-        ])->assertStatus(200);
+        // Mobile number, franchise number and license number are no longer accepted.
+        foreach (['09171234567', '+63 917 123 4567', 'FS-TEST-AAAA', 'N01-TEST-123456'] as $notAnEmail) {
+            $this->postJson('/api/v1/driver/login', [
+                'login'    => $notAnEmail,
+                'password' => 'DriverPass123!',
+            ])->assertStatus(422)->assertJsonValidationErrors('login');
+        }
 
-        // Email-based login was removed from the flow — an email identifier never resolves.
         $this->postJson('/api/v1/driver/login', [
-            'login'    => 'driver.' . $this->franchiseA->id . '@trivora.test',
-            'password' => 'DriverPass123!',
+            'login'    => self::registrantEmail($this->franchiseA),
+            'password' => 'WrongPass123!',
         ])->assertStatus(401);
     }
 
@@ -705,9 +697,8 @@ class DriverApiTest extends TestCase
 
         $user = User::find($driver->user_id);
         $this->assertNotNull($user);
-        // The driver never supplies an email — a deterministic per-franchise address is
-        // derived server-side (users.email is NOT NULL UNIQUE).
-        $this->assertSame('driver.' . $this->franchiseA->id . '@trivora.test', $user->email);
+        // Login is email-only: the email entered at registration is the account's sign-in email.
+        $this->assertSame(self::registrantEmail($this->franchiseA), $user->email);
         // Name and mobile are derived from the VERIFIED PERSON, never client input.
         $this->assertSame('Juan Dela Cruz', $user->name);
         $this->assertSame('tricycle_driver', $user->role);
@@ -718,22 +709,21 @@ class DriverApiTest extends TestCase
     }
 
     #[Test]
-    public function registration_ignores_client_supplied_personal_information()
+    public function registration_uses_the_entered_email_but_ignores_other_client_supplied_personal_information()
     {
         $res = $this->registerFranchise($this->franchiseA, extra: [
             'name'           => 'Totally Different Name',
-            'email'          => 'attacker@evil.test',
+            'email'          => '  Juan.Driver@Example.com ',
             'mobile_number'  => '09999999999',
             'contact_number' => '09999999999',
         ]);
 
         $res->assertStatus(201);
 
-        $this->assertDatabaseMissing('users', ['email' => 'attacker@evil.test']);
-
         $user = User::find($res->json('user.id'));
         $this->assertSame('Juan Dela Cruz', $user->name);
-        $this->assertSame('driver.' . $this->franchiseA->id . '@trivora.test', $user->email);
+        // The email is the one thing the user enters — normalized, it's the sign-in email.
+        $this->assertSame('juan.driver@example.com', $user->email);
 
         $driver = Driver::find($res->json('driver.id'));
         $this->assertSame('09171234567', $driver->mobile_number);
@@ -778,6 +768,7 @@ class DriverApiTest extends TestCase
         // Missing selection entirely.
         $this->postJson('/api/v1/driver/register', [
             'franchise_number'   => $this->franchiseA->franchise_number,
+            'email'              => 'direct.registrant@example.com',
             'verification_token' => $token,
             'password'           => 'DriverPass123!',
             'confirm_password'   => 'DriverPass123!',
@@ -787,6 +778,7 @@ class DriverApiTest extends TestCase
         // A role that can never exist for any franchise.
         $this->postJson('/api/v1/driver/register', [
             'franchise_number'   => $this->franchiseA->franchise_number,
+            'email'              => 'direct.registrant@example.com',
             'person_type'        => 'random_stranger',
             'verification_token' => $token,
             'password'           => 'DriverPass123!',
@@ -809,14 +801,15 @@ class DriverApiTest extends TestCase
     #[Test]
     public function registration_does_not_require_a_full_name()
     {
-        // Mirrors the app's real payload: franchise permit + person_type + password, with
-        // NO name/email/mobile/date-of-birth anywhere — all personal information comes from
-        // the record the selection is validated against.
+        // Mirrors the app's real payload: franchise permit + person_type + sign-in email +
+        // password, with NO name/mobile/date-of-birth anywhere — all personal information
+        // comes from the record the selection is validated against.
         $token = $this->getVerificationToken($this->franchiseA);
         $userCountBefore = User::count();
 
         $res = $this->postJson('/api/v1/driver/register', [
             'franchise_number'   => $this->franchiseA->franchise_number,
+            'email'              => 'direct.registrant@example.com',
             'person_type'        => 'owner',
             'verification_token' => $token,
             'password'           => 'DriverPass123!',
@@ -838,6 +831,7 @@ class DriverApiTest extends TestCase
         $userCountBefore = User::count();
         $res = $this->postJson('/api/v1/driver/register', [
             'franchise_number'   => 'FS-DOES-NOT-EXIST',
+            'email'              => 'direct.registrant@example.com',
             'person_type'        => 'owner',
             'verification_token' => 'anything',
             'password'           => 'DriverPass123!',
@@ -949,7 +943,9 @@ class DriverApiTest extends TestCase
 
         $driverUser = User::find($driverUserId);
         $this->assertSame('Nemesio Ramos', $driverUser->name);
-        $this->assertSame('driver.' . $this->franchiseB->id . '@trivora.test', $driverUser->email);
+        $this->assertSame(self::registrantEmail($this->franchiseB, 'driver'), $driverUser->email);
+        // The franchise record's driver email follows the sign-in email.
+        $this->assertSame($driverUser->email, ApplicationDriver::first()->email);
         $this->assertSame('tricycle_driver', $driverUser->role);
 
         // The owner's link on operators stays exactly as it was.
@@ -968,10 +964,9 @@ class DriverApiTest extends TestCase
         // No second personal-information record was created — one application_drivers row.
         $this->assertDatabaseCount('application_drivers', 1);
 
-        // The separate driver logs in with their OWN mobile number (the driver app's
-        // user-facing credential) and gets THEIR account, never the owner's.
+        // The separate driver logs in with their OWN email and gets THEIR account, never the owner's.
         $loginRes = $this->postJson('/api/v1/driver/login', [
-            'login'    => '09175551234',
+            'login'    => self::registrantEmail($this->franchiseB, 'driver'),
             'password' => 'DriverPass123!',
         ]);
 
@@ -1097,7 +1092,7 @@ class DriverApiTest extends TestCase
         $registeredPlate = $regRes->json('tricycle.plate_number');
 
         $loginRes = $this->postJson('/api/v1/driver/login', [
-            'login'    => '09179876543',
+            'login'    => self::registrantEmail($this->franchiseB),
             'password' => 'DriverPass123!',
         ]);
         $loginRes->assertStatus(200);
@@ -1125,6 +1120,7 @@ class DriverApiTest extends TestCase
         $this->registerFranchise($this->franchiseA, personType: 'driver');
         $this->postJson('/api/v1/driver/register', [
             'franchise_number'   => $this->franchiseA->franchise_number,
+            'email'              => 'direct.registrant@example.com',
             'person_type'        => 'owner',
             'verification_token' => 'forged-token',
             'password'           => 'DriverPass123!',

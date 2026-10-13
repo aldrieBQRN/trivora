@@ -37,6 +37,11 @@ Route::get('/driver/qr/print/{token}', [\App\Http\Controllers\Api\DriverQrCodeCo
 // Public MTOP Registration Wizard (Account Creation + First Application)
 Route::get('/register-mtop', [RegistrationController::class, 'publicWizard'])->name('register.public');
 Route::post('/register-mtop', [RegistrationController::class, 'store'])->name('register.public.submit');
+// Email verification code for the applicant's email (Applicant Information → Continue).
+Route::post('/register-mtop/email/send-code', [\App\Http\Controllers\RegistrationEmailVerificationController::class, 'send'])
+    ->middleware('throttle:10,1')->name('register.public.email.send');
+Route::post('/register-mtop/email/verify', [\App\Http\Controllers\RegistrationEmailVerificationController::class, 'verify'])
+    ->middleware('throttle:10,1')->name('register.public.email.verify');
 
 // Cloud Database Seeder Route (for initial cloud setup, fresh wipe, and verification)
 Route::get('/seed-database', function (\Illuminate\Http\Request $request) {
@@ -542,6 +547,9 @@ Route::middleware(['auth', 'role:tmo_personnel,admin'])->group(function () {
     // confirms it directly from the violation's own details page.
     Route::post('/tmo/violations/{violation}/confirm-payment', [App\Http\Controllers\TMO\ViolationPaymentController::class, 'confirm'])->name('tmo.violations.confirm-payment');
 
+    // Municipal ordinance enforcement confirmation (3rd offense impoundment/suspension, 4th offense revocation)
+    Route::post('/tmo/violations/{violation}/confirm-enforcement', [\App\Http\Controllers\TMO\ViolationEnforcementController::class, 'confirm'])->name('tmo.violations.confirm-enforcement');
+
     // Appeal review — approving/rejecting a driver's appeal is a TMO/admin-only decision,
     // enforced by this same role middleware; the driver mobile API never exposes these.
     Route::post('/tmo/appeals/{id}/approve', [DashboardController::class, 'approveAppeal'])->name('tmo.appeals.approve');
@@ -577,6 +585,7 @@ Route::middleware(['auth', 'role:tmo_personnel,admin'])->group(function () {
     Route::post('/tmo/users', [App\Http\Controllers\TMO\TMOUserController::class, 'store'])->name('tmo.users.store');
     Route::put('/tmo/users/{user}', [App\Http\Controllers\TMO\TMOUserController::class, 'update'])->name('tmo.users.update');
     Route::patch('/tmo/users/{user}/toggle-status', [App\Http\Controllers\TMO\TMOUserController::class, 'toggleStatus'])->name('tmo.users.toggle-status');
+    Route::post('/tmo/users/{user}/resend-credentials', [App\Http\Controllers\TMO\TMOUserController::class, 'resendCredentials'])->middleware('throttle:6,1')->name('tmo.users.resend-credentials');
     Route::delete('/tmo/users/{user}', [App\Http\Controllers\TMO\TMOUserController::class, 'destroy'])->name('tmo.users.destroy');
 
     // --- FARE MANAGEMENT ---
@@ -628,6 +637,7 @@ Route::middleware(['auth', 'role:bplo_staff,admin'])->group(function () {
     Route::post('/bplo/users', [App\Http\Controllers\BPLO\BPLOUserController::class, 'store'])->name('bplo.users.store');
     Route::put('/bplo/users/{user}', [App\Http\Controllers\BPLO\BPLOUserController::class, 'update'])->name('bplo.users.update');
     Route::patch('/bplo/users/{user}/toggle-status', [App\Http\Controllers\BPLO\BPLOUserController::class, 'toggleStatus'])->name('bplo.users.toggle-status');
+    Route::post('/bplo/users/{user}/resend-credentials', [App\Http\Controllers\BPLO\BPLOUserController::class, 'resendCredentials'])->middleware('throttle:6,1')->name('bplo.users.resend-credentials');
     Route::delete('/bplo/users/{user}', [App\Http\Controllers\BPLO\BPLOUserController::class, 'destroy'])->name('bplo.users.destroy');
 });
 

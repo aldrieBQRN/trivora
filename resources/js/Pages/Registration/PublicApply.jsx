@@ -2,9 +2,9 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Head, useForm, Link, usePage } from '@inertiajs/react';
 import Swal from 'sweetalert2';
 import {
-    Upload, Info, CheckCircle2, MapPin, Check, Camera, Eye, X,
+    Upload, Info, CheckCircle2, MapPin, Check, Camera, Eye, EyeOff, X,
     FileText, User, Mail, Lock, Phone, Loader2, CalendarDays,
-    ShieldCheck, ArrowLeft, LogIn
+    ShieldCheck, ArrowLeft, LogIn, Copy, ArrowRight
 } from 'lucide-react';
 import { VEHICLE_DETAIL_FIELDS, getApplicableDocuments } from '@/data/registrationRequirements';
 import { NASUGBU_BARANGAYS } from '@/data/nasugbuBarangays';
@@ -91,6 +91,14 @@ const loadSavedDraft = () => {
     }
 };
 
+// The real franchise pipeline after submission (see trivora/CLAUDE.md → Franchise workflow).
+const NEXT_STEPS = [
+    { name: 'Document Review', desc: 'The TMO reviews the documents you uploaded.' },
+    { name: 'Physical Inspection', desc: 'Bring your tricycle to the TMO for inspection when notified.' },
+    { name: 'Sticker & Franchise Release', desc: 'The BPLO releases your Sticker Number and Franchise Number.' },
+    { name: 'Final Confirmation', desc: 'The TMO activates your franchise and GPS tracking.' },
+];
+
 const clearSavedDraft = () => {
     if (typeof window === 'undefined') return;
     try {
@@ -99,7 +107,8 @@ const clearSavedDraft = () => {
 };
 
 export default function PublicApply() {
-    const { url } = usePage();
+    const { url, props: pageProps } = usePage();
+    const [copied, setCopied] = useState(false);
     const savedDraftRef = useRef(loadSavedDraft());
     const initialDraft = savedDraftRef.current;
 
@@ -116,6 +125,8 @@ export default function PublicApply() {
         return initialDraft ? Boolean(initialDraft.scrolledTerms) : false;
     });
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [showPassword, setShowPassword] = useState(false);
+    const [showPasswordConfirmation, setShowPasswordConfirmation] = useState(false);
     // Field-level errors only render once a field has been touched (blurred), so an empty step
     // doesn't greet the user with a wall of red text before they've typed anything.
     const [touched, setTouched] = useState({});
@@ -148,6 +159,7 @@ export default function PublicApply() {
         driver_last_name: initialFormData.driver_last_name || '',
         driver_birthday: initialFormData.driver_birthday || '',
         driver_contact: initialFormData.driver_contact || '',
+        driver_email: initialFormData.driver_email || '',
         driver_barangay: initialFormData.driver_barangay || '',
         email: initialFormData.email || '',
         password: initialFormData.password || '',
@@ -235,6 +247,87 @@ export default function PublicApply() {
     };
 
     const back = () => { window.scrollTo({ top: 0, behavior: 'smooth' }); setStep(s => s - 1); };
+
+    // ── Email verification: Applicant Information → Continue sends a 6-digit code to the
+    // applicant's email; a correct code in the modal moves on to Vehicle Specs. The server
+    // also refuses the final submission for an unverified email.
+    const normalizedEmail = String(data.email || '').trim().toLowerCase();
+    const [verifiedEmail, setVerifiedEmail] = useState(pageProps?.verifiedEmail || null);
+    const [otpOpen, setOtpOpen] = useState(false);
+    const [otpCode, setOtpCode] = useState('');
+    const [otpError, setOtpError] = useState(null);
+    const [otpInfo, setOtpInfo] = useState(null);
+    const [otpSending, setOtpSending] = useState(false);
+    const [otpVerifying, setOtpVerifying] = useState(false);
+    const [otpSentFor, setOtpSentFor] = useState(null);
+    const [otpResendIn, setOtpResendIn] = useState(0);
+
+    useEffect(() => {
+        if (otpResendIn <= 0) return;
+        const timer = setTimeout(() => setOtpResendIn(s => s - 1), 1000);
+        return () => clearTimeout(timer);
+    }, [otpResendIn]);
+
+    const apiErrorMessage = (err, fallback) => {
+        const errors = err?.response?.data?.errors;
+        return (errors && Object.values(errors).flat()[0]) || err?.response?.data?.message || fallback;
+    };
+
+    const sendEmailCode = async (isResend = false) => {
+        setOtpSending(true);
+        setOtpError(null);
+        setOtpInfo(null);
+        try {
+            const res = await window.axios.post(route('register.public.email.send'), { email: normalizedEmail });
+            setOtpSentFor(normalizedEmail);
+            setOtpResendIn(res.data?.resend_after_seconds ?? 60);
+            setOtpCode('');
+            setOtpInfo(isResend ? 'A new code has been sent to your email.' : null);
+            setOtpOpen(true);
+        } catch (err) {
+            const message = apiErrorMessage(err, 'We could not send the code. Please try again.');
+            if (isResend) {
+                setOtpError(message);
+            } else {
+                Swal.fire({ title: 'Email Verification', text: message, icon: 'warning', confirmButtonColor: '#25449B' });
+            }
+        } finally {
+            setOtpSending(false);
+        }
+    };
+
+    const verifyEmailCode = async () => {
+        if (!/^\d{6}$/.test(otpCode)) {
+            setOtpError('Enter the 6-digit code from your email.');
+            return;
+        }
+        setOtpVerifying(true);
+        setOtpError(null);
+        try {
+            await window.axios.post(route('register.public.email.verify'), { email: normalizedEmail, code: otpCode });
+            setVerifiedEmail(normalizedEmail);
+            setOtpOpen(false);
+            handleNext();
+        } catch (err) {
+            setOtpError(apiErrorMessage(err, 'We could not verify the code. Please try again.'));
+        } finally {
+            setOtpVerifying(false);
+        }
+    };
+
+    const continueFromApplicant = () => {
+        if (verifiedEmail && verifiedEmail === normalizedEmail) {
+            handleNext();
+            return;
+        }
+        // A code for this same email is still fresh: just reopen the modal.
+        if (otpSentFor === normalizedEmail && otpResendIn > 0) {
+            setOtpError(null);
+            setOtpOpen(true);
+            return;
+        }
+        sendEmailCode();
+    };
 
     const handleFileUpload = (docId, fileOrFiles) => {
         const currentFiles = data.documents[docId] || [];
@@ -569,10 +662,15 @@ export default function PublicApply() {
                                     <Field label="Account Password" error={fieldError('password', applicantInfoErrors)}>
                                         <div className="pa-input-wrap">
                                             <span className="pa-input-wrap-icon"><Lock size={15} strokeWidth={2} /></span>
-                                            <input className={`pa-input${fieldError('password', applicantInfoErrors) ? ' pa-input-error' : ''}`}
-                                                type="password" placeholder="Min. 8 characters" autoComplete="new-password"
+                                            <input className={`pa-input pa-input--password${fieldError('password', applicantInfoErrors) ? ' pa-input-error' : ''}`}
+                                                type={showPassword ? 'text' : 'password'} placeholder="Min. 8 characters" autoComplete="new-password"
                                                 value={data.password || ''} onChange={e => setData('password', e.target.value)}
                                                 onBlur={() => markTouched('password')} />
+                                            <button type="button" className="pa-input-toggle" tabIndex={-1}
+                                                onClick={() => setShowPassword(v => !v)}
+                                                aria-label={showPassword ? 'Hide password' : 'Show password'}>
+                                                {showPassword ? <EyeOff size={16} strokeWidth={2} /> : <Eye size={16} strokeWidth={2} />}
+                                            </button>
                                         </div>
                                     </Field>
                                     <PasswordStrengthMeter password={data.password} />
@@ -580,10 +678,15 @@ export default function PublicApply() {
                                 <Field label="Confirm Password" error={fieldError('password_confirmation', applicantInfoErrors)}>
                                     <div className="pa-input-wrap">
                                         <span className="pa-input-wrap-icon"><Lock size={15} strokeWidth={2} /></span>
-                                        <input className={`pa-input${fieldError('password_confirmation', applicantInfoErrors) ? ' pa-input-error' : ''}`}
-                                            type="password" placeholder="Re-enter your password" autoComplete="new-password"
+                                        <input className={`pa-input pa-input--password${fieldError('password_confirmation', applicantInfoErrors) ? ' pa-input-error' : ''}`}
+                                            type={showPasswordConfirmation ? 'text' : 'password'} placeholder="Re-enter your password" autoComplete="new-password"
                                             value={data.password_confirmation || ''} onChange={e => setData('password_confirmation', e.target.value)}
                                             onBlur={() => markTouched('password_confirmation')} />
+                                        <button type="button" className="pa-input-toggle" tabIndex={-1}
+                                            onClick={() => setShowPasswordConfirmation(v => !v)}
+                                            aria-label={showPasswordConfirmation ? 'Hide password' : 'Show password'}>
+                                            {showPasswordConfirmation ? <EyeOff size={16} strokeWidth={2} /> : <Eye size={16} strokeWidth={2} />}
+                                        </button>
                                     </div>
                                 </Field>
                             </div>
@@ -678,6 +781,15 @@ export default function PublicApply() {
                                                 <MapPin size={15} strokeWidth={2} />
                                             </div>
                                         </Field>
+                                        <Field label="Email Address" error={fieldError('driver_email', applicantInfoErrors)}>
+                                            <div className="pa-input-wrap">
+                                                <span className="pa-input-wrap-icon"><Mail size={15} strokeWidth={2} /></span>
+                                                <input className={`pa-input${fieldError('driver_email', applicantInfoErrors) ? ' pa-input-error' : ''}`}
+                                                    type="email" placeholder="e.g. pedro@example.com" autoComplete="off"
+                                                    value={data.driver_email || ''} onChange={e => setData('driver_email', e.target.value)}
+                                                    onBlur={() => markTouched('driver_email')} />
+                                            </div>
+                                        </Field>
                                     </div>
                                 </div>
                             )}
@@ -698,11 +810,14 @@ export default function PublicApply() {
                                             }));
                                             return;
                                         }
-                                        handleNext();
+                                        continueFromApplicant();
                                     }}
-                                    style={{ opacity: isStep2Valid ? 1 : 0.55, cursor: 'pointer' }}
+                                    disabled={otpSending}
+                                    style={{ opacity: isStep2Valid && !otpSending ? 1 : 0.55, cursor: 'pointer' }}
                                 >
-                                    Continue
+                                    {otpSending && !otpOpen ? (
+                                        <><Loader2 size={16} strokeWidth={2.4} style={{ animation: 'paSpin .8s linear infinite' }} /> Sending code...</>
+                                    ) : 'Continue'}
                                 </button>
                             </div>
                         </div>
@@ -900,53 +1015,82 @@ export default function PublicApply() {
 
                     {/* ── STEP 5: SUCCESS ── */}
                     {step === 5 && (
-                        <div className="pa-card pa-card--elevated" style={{ textAlign: 'center' }}>
+                        <div className="pa-card pa-card--elevated pa-success">
                             <div className="pa-success-icon">
-                                <CheckCircle2 size={38} strokeWidth={2} />
+                                <CheckCircle2 size={36} strokeWidth={2.2} />
                             </div>
 
-                            <h2 className="pa-card-title" style={{ marginBottom: 6 }}>Application Submitted</h2>
-                            <p className="pa-card-sub" style={{ marginBottom: 32 }}>Your documents have been received</p>
-
-                            <div className="pa-tracking-box">
-                                <p className="pa-tracking-eyebrow">Your Tracking Number</p>
-                                <p className="pa-tracking-number">{getReferenceNo()}</p>
-                            </div>
-
-                            <p className="pa-success-desc">
-                                Your application has been submitted and is now <span>pending TMO Requirements Review.</span> You
-                                can monitor the progress of your application through the <span>Driver Portal.</span>
+                            <h2 className="pa-success-title">Application Submitted</h2>
+                            <p className="pa-success-lead">
+                                Your documents have been received. Your application is now waiting for the TMO's requirements review.
                             </p>
 
-                            <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap', alignItems: 'center' }}>
-                                <Link href="/operator/dashboard"
-                                    style={{
-                                        display: 'inline-flex', alignItems: 'center', gap: 9,
-                                        height: 52, padding: '0 36px', borderRadius: 12,
-                                        background: '#25449B', color: '#FFFFFF', textDecoration: 'none',
-                                        fontFamily: "'DM Sans', sans-serif", fontSize: 10, fontWeight: 700,
-                                        letterSpacing: '.15em', textTransform: 'uppercase',
-                                        boxShadow: '0 4px 14px rgba(37,68,155,.25)',
-                                    }}
-                                >
-                                    Go to Driver Portal
-                                </Link>
+                            <div className="pa-tracking-box">
+                                <div>
+                                    <p className="pa-tracking-eyebrow">Application Number</p>
+                                    <p className="pa-tracking-number">{getReferenceNo()}</p>
+                                </div>
                                 <button
                                     type="button"
+                                    className={`pa-copy-btn${copied ? ' is-copied' : ''}`}
+                                    onClick={() => {
+                                        try {
+                                            navigator.clipboard.writeText(getReferenceNo()).then(() => {
+                                                setCopied(true);
+                                                setTimeout(() => setCopied(false), 2000);
+                                            }).catch(() => {});
+                                        } catch {}
+                                    }}
+                                >
+                                    {copied ? <Check size={14} strokeWidth={2.6} /> : <Copy size={14} strokeWidth={2.2} />}
+                                    {copied ? 'Copied' : 'Copy'}
+                                </button>
+                            </div>
+                            <p className="pa-tracking-hint">Keep your application number for any follow-up with the TMO.</p>
+
+                            <div className="pa-next">
+                                <p className="pa-next-title">What happens next</p>
+                                <ol className="pa-next-list">
+                                    {NEXT_STEPS.map((nextStep, index) => (
+                                        <li key={nextStep.name} className={`pa-next-item${index === 0 ? ' is-current' : ''}`}>
+                                            <span className="pa-next-dot">{index + 1}</span>
+                                            <div className="pa-next-body">
+                                                <div className="pa-next-head">
+                                                    <span className="pa-next-name">{nextStep.name}</span>
+                                                    {index === 0 && <span className="pa-next-badge">In progress</span>}
+                                                </div>
+                                                <p className="pa-next-desc">{nextStep.desc}</p>
+                                            </div>
+                                        </li>
+                                    ))}
+                                </ol>
+                            </div>
+
+                            <div className="pa-success-note">
+                                <Info size={15} strokeWidth={2.2} />
+                                <span>
+                                    {pageProps?.auth?.user?.email
+                                        ? <>You're signed in as <strong>{pageProps.auth.user.email}</strong>. </>
+                                        : null}
+                                    Track this application anytime in the Driver Portal.
+                                </span>
+                            </div>
+
+                            <div className="pa-success-actions">
+                                <button
+                                    type="button"
+                                    className="pa-btn-ghost"
                                     onClick={() => {
                                         clearSavedDraft();
                                         window.location.href = '/register-mtop';
                                     }}
-                                    style={{
-                                        display: 'inline-flex', alignItems: 'center', gap: 9,
-                                        height: 52, padding: '0 28px', borderRadius: 12,
-                                        background: '#F1F3F9', color: '#1C2340', border: '1px solid #D5DAE7',
-                                        fontFamily: "'DM Sans', sans-serif", fontSize: 10, fontWeight: 700,
-                                        letterSpacing: '.15em', textTransform: 'uppercase', cursor: 'pointer',
-                                    }}
                                 >
-                                    Start New Application
+                                    New Application
                                 </button>
+                                <Link href="/operator/dashboard" className="pa-btn-primary">
+                                    Go to Driver Portal
+                                    <ArrowRight size={16} strokeWidth={2.4} />
+                                </Link>
                             </div>
                         </div>
                     )}
@@ -954,6 +1098,67 @@ export default function PublicApply() {
                 </div>
                 </div>
             </main>
+
+            {/* Email verification modal (Applicant Information → Continue) */}
+            {otpOpen && (
+                <div className="pa-modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="pa-otp-title">
+                    <div className="pa-modal">
+                        <button type="button" className="pa-modal-close" onClick={() => setOtpOpen(false)} aria-label="Close">
+                            <X size={18} strokeWidth={2.2} />
+                        </button>
+                        <div className="pa-modal-icon">
+                            <Mail size={22} strokeWidth={2.2} />
+                        </div>
+                        <h3 id="pa-otp-title" className="pa-modal-title">Verify your email</h3>
+                        <p className="pa-modal-sub">
+                            Enter the 6-digit code we sent to <strong>{normalizedEmail}</strong>.
+                        </p>
+
+                        {otpInfo && !otpError && <p className="pa-modal-info">{otpInfo}</p>}
+
+                        <input
+                            className={`pa-input pa-otp-input${otpError ? ' pa-input-error' : ''}`}
+                            inputMode="numeric"
+                            autoComplete="one-time-code"
+                            maxLength={6}
+                            placeholder="000000"
+                            value={otpCode}
+                            onChange={e => {
+                                setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6));
+                                if (otpError) setOtpError(null);
+                            }}
+                            onKeyDown={e => { if (e.key === 'Enter') verifyEmailCode(); }}
+                            autoFocus
+                        />
+                        {otpError && <p className="pa-field-error">{otpError}</p>}
+
+                        <button
+                            type="button"
+                            className="pa-btn-primary pa-modal-btn"
+                            onClick={verifyEmailCode}
+                            disabled={otpVerifying || otpCode.length !== 6}
+                        >
+                            {otpVerifying
+                                ? <><Loader2 size={16} strokeWidth={2.4} style={{ animation: 'paSpin .8s linear infinite' }} /> Verifying...</>
+                                : 'Verify & Continue'}
+                        </button>
+
+                        <p className="pa-modal-foot">
+                            Didn't get the code?{' '}
+                            {otpResendIn > 0 ? (
+                                <span>Resend in {otpResendIn}s</span>
+                            ) : (
+                                <button type="button" className="pa-link-btn" onClick={() => sendEmailCode(true)} disabled={otpSending}>
+                                    {otpSending ? 'Sending...' : 'Resend code'}
+                                </button>
+                            )}
+                        </p>
+                        <button type="button" className="pa-link-btn pa-modal-change" onClick={() => setOtpOpen(false)}>
+                            Change email address
+                        </button>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

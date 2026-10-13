@@ -86,7 +86,7 @@ class MobileAppDataSeeder extends Seeder
                     'heading_deg' => rand(45, 180),
                     'accuracy_m'  => rand(3, 8),
                     'source'      => $tri->active_tracking_mode === 'iot_device' ? 'gps_device' : 'mobile_app',
-                    'recorded_at' => now()->subMinutes($i * 2),
+                    'recorded_at' => now()->subSeconds($i * 5),
                 ]);
             }
         }

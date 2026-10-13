@@ -173,7 +173,7 @@ class Application extends Model
      * The separate tricycle DRIVER, or null when the owner is also the driver (or when the
      * flag says "separate" but no driver row exists — surfaced as absent, never invented).
      *
-     * @return array{first_name: ?string, last_name: ?string, full_name: ?string, birthday: ?string, contact_number: ?string, barangay: ?string}|null
+     * @return array{first_name: ?string, last_name: ?string, full_name: ?string, birthday: ?string, contact_number: ?string, email: ?string, barangay: ?string}|null
      */
     public function driverDetails(): ?array
     {
@@ -192,6 +192,7 @@ class Application extends Model
             'full_name'      => $driver->full_name,
             'birthday'       => $driver->date_of_birth?->format('m/d/Y'),
             'contact_number' => $driver->contact_number,
+            'email'          => $driver->email,
             'barangay'       => $driver->barangay,
         ];
     }

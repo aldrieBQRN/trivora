@@ -356,8 +356,8 @@ class BPLOReportController extends Controller
                 'reference'    => $scheme->application?->reference_number ?: 'N/A',
                 'operator'     => $scheme->application?->operator ? $scheme->application->operator->full_name : 'N/A',
                 'plate'        => $scheme->tricycle ? $scheme->tricycle->plate_number : 'N/A',
-                'coding_scheme_number' => $scheme->franchise_number,
-                'sticker_no'   => $scheme->sticker_number ?: ($scheme->application?->sticker_number ?: 'N/A'),
+                'coding_scheme_number' => $scheme->tricycle?->coding_scheme_number ?: ($scheme->sticker_number ?: $scheme->franchise_number),
+                'sticker_no'   => $scheme->franchise_number ?: ($scheme->sticker_number ?: ($scheme->application?->sticker_number ?: 'N/A')),
                 'release_date' => $scheme->issue_date->format('M d, Y'),
             ])
             ->values();

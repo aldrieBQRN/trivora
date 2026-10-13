@@ -9,7 +9,7 @@ import 'leaflet/dist/leaflet.css';
 import {
     MapPin, AlertCircle, Map, User, Bike, CheckCircle2,
     MessageSquareText, ThumbsUp, ThumbsDown, Clock, ImageOff, ArrowUpRight,
-    Phone, ShieldAlert, Scale, ChevronLeft, FileText, Wallet,
+    Phone, ShieldAlert, Scale, ChevronLeft, FileText, Wallet, Gavel, AlertTriangle,
 } from 'lucide-react';
 
 import Avatar from '@/Components/Avatar';
@@ -155,6 +155,62 @@ export default function ViolationDetails({ violationId = 'VIO-26-0001', initialR
         });
     };
 
+    const handleConfirmEnforcement = () => {
+        const isThird = record.offense_number === 3;
+        const actionTitle = isThird
+            ? 'Confirm 3rd Offense Enforcement'
+            : `Confirm ${record.offense_label || '4th Offense'} Revocation`;
+        const actionDesc = isThird
+            ? 'This action confirms the ₱2,500 fine, mandates tricycle impoundment, and transitions the franchise to Suspended.'
+            : 'This action confirms permanent franchise cancellation (Revoked) under the municipal traffic ordinance.';
+
+        Swal.fire({
+            title: actionTitle,
+            html: `
+                <div class="text-left text-xs text-slate-600 space-y-2.5 mt-2">
+                    <p class="font-medium text-slate-700">${actionDesc}</p>
+                    <div class="rounded-xl bg-amber-50 border border-amber-200 p-3 text-amber-900">
+                        <strong class="font-bold text-amber-950 block mb-1">Mandatory Ordinance Requirements:</strong>
+                        <ul class="list-disc list-inside space-y-1 font-medium">
+                            ${isThird
+                                ? '<li>₱2,500 Municipal Fine Penalty</li><li>Physical Tricycle Unit Impoundment</li><li>Franchise Permit Suspended (Drivers forced Offline)</li>'
+                                : '<li>Permanent Franchise Cancellation (Status: Revoked)</li><li>Drivers forced Offline</li><li>No fine amount assessed for 4th offense</li>'
+                            }
+                        </ul>
+                    </div>
+                </div>
+            `,
+            input: 'textarea',
+            inputLabel: 'Officer remarks / impoundment notes (optional):',
+            inputPlaceholder: 'e.g. Unit impounded at Municipal Compound, Memo #2026-081...',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: isThird ? 'Confirm Impoundment & Suspension' : 'Confirm Franchise Revocation',
+            confirmButtonColor: '#DC2626',
+            cancelButtonColor: '#64748B',
+        }).then((result) => {
+            if (!result.isConfirmed) return;
+
+            setIsSubmitting(true);
+            router.post(`/tmo/violations/${record.db_id}/confirm-enforcement`, {
+                notes: result.value ? result.value.trim() : '',
+            }, {
+                preserveScroll: true,
+                onFinish: () => setIsSubmitting(false),
+                onSuccess: () => {
+                    Swal.fire({
+                        title: 'Enforcement Action Confirmed',
+                        text: isThird
+                            ? 'Franchise suspended and tricycle unit flagged for impoundment.'
+                            : 'Franchise has been permanently revoked and cancelled.',
+                        icon: 'success',
+                        confirmButtonColor: '#059669',
+                    });
+                },
+            });
+        });
+    };
+
     return (
         <TrivoraLayout title="Violation Record" role="TMO Officer">
             <Head title={`Citation ${record.id} | TRIVORA`} />
@@ -192,9 +248,9 @@ export default function ViolationDetails({ violationId = 'VIO-26-0001', initialR
                 </div>
 
                 <div className="flex items-center gap-2 self-start sm:self-center shrink-0 rounded-2xl border border-slate-200/80 bg-white px-4 py-2.5 shadow-2xs font-['Plus_Jakarta_Sans',sans-serif]">
-                    <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Penalty Fine:</span>
-                    <span className="text-xl sm:text-2xl font-black text-slate-900 font-mono tabular-nums">
-                        ₱{record.fine.toFixed(2)}
+                    <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Penalty &amp; Offense:</span>
+                    <span className="text-base sm:text-lg font-black text-slate-900 font-['Plus_Jakarta_Sans',sans-serif] tabular-nums">
+                        {record.penalty_display || (record.fine ? `₱${Number(record.fine).toFixed(2)}` : 'N/A')}
                     </span>
                 </div>
             </div>
@@ -319,7 +375,7 @@ export default function ViolationDetails({ violationId = 'VIO-26-0001', initialR
 
                         {/* Interactive Leaflet Map */}
                         {record.lat != null && record.lng != null ? (
-                            <div className="relative z-[1] h-[300px] sm:h-[360px] md:h-[400px] w-full bg-slate-100">
+                            <div className="relative z-[1] h-[280px] sm:h-[320px] md:h-[340px] w-full bg-slate-100">
                                 <MapContainer
                                     center={[record.lat, record.lng]}
                                     zoom={16}
@@ -355,7 +411,7 @@ export default function ViolationDetails({ violationId = 'VIO-26-0001', initialR
                                 </div>
                             </div>
                         ) : (
-                            <div className="relative z-[1] flex h-[300px] sm:h-[360px] md:h-[400px] w-full flex-col items-center justify-center gap-2 bg-slate-50 text-center">
+                            <div className="relative z-[1] flex h-[280px] sm:h-[320px] md:h-[340px] w-full flex-col items-center justify-center gap-2 bg-slate-50 text-center">
                                 <MapPin className="text-slate-300" size={28} />
                                 <p className="text-xs font-semibold text-slate-500 font-['Plus_Jakarta_Sans',sans-serif]">
                                     No GPS location recorded for this violation
@@ -371,6 +427,184 @@ export default function ViolationDetails({ violationId = 'VIO-26-0001', initialR
                             <p className="mt-1 text-xs sm:text-sm font-medium text-slate-700 leading-relaxed font-['Plus_Jakarta_Sans',sans-serif]">
                                 {record.notes}
                             </p>
+                        </div>
+                    </div>
+
+                    {/* Municipal Ordinance Enforcement Card */}
+                    <div className={`rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-4 sm:p-5 ${CARD_SHADOW}`}>
+                        <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                            <div className="flex items-center gap-2">
+                                <div className={`flex h-8 w-8 items-center justify-center rounded-xl border ${
+                                    record.enforcement_status === 'action_required'
+                                        ? 'bg-rose-50 text-rose-600 border-rose-100'
+                                        : record.enforcement_status === 'completed'
+                                        ? 'bg-emerald-50 text-emerald-600 border-emerald-100'
+                                        : record.enforcement_status === 'pending_confirmation'
+                                        ? 'bg-amber-50 text-amber-600 border-amber-100'
+                                        : 'bg-indigo-50 text-[#182B62] border-indigo-100'
+                                }`}>
+                                    <Gavel size={16} strokeWidth={2.2} />
+                                </div>
+                                <div>
+                                    <h3 className="text-sm font-bold text-slate-900 font-['Plus_Jakarta_Sans',sans-serif]">
+                                        Ordinance Enforcement
+                                    </h3>
+                                    <span className="text-[11px] text-slate-400 font-medium">
+                                        {record.offense_label || '1st Offense'} · {record.sanctions_summary || 'Fine penalty'}
+                                    </span>
+                                </div>
+                            </div>
+                            <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-bold border font-['Plus_Jakarta_Sans',sans-serif] ${
+                                record.enforcement_status === 'action_required'
+                                    ? 'border-rose-300 bg-rose-50 text-rose-700 shadow-2xs'
+                                    : record.enforcement_status === 'completed'
+                                    ? 'border-emerald-200/90 bg-emerald-50 text-emerald-700 shadow-2xs'
+                                    : record.enforcement_status === 'pending_confirmation'
+                                    ? 'border-amber-200/90 bg-amber-50 text-amber-800 shadow-2xs'
+                                    : 'border-slate-200 bg-slate-50 text-slate-600'
+                            }`}>
+                                {record.enforcement_status === 'action_required' && <span className="h-1.5 w-1.5 rounded-full bg-rose-500 animate-pulse" />}
+                                {record.enforcement_status === 'completed' && <CheckCircle2 size={11} className="text-emerald-600 shrink-0" />}
+                                {record.enforcement_status === 'pending_confirmation' && <Clock size={11} className="text-amber-600 shrink-0" />}
+                                <span>{record.enforcement_label || 'No Action Required'}</span>
+                            </span>
+                        </div>
+
+                        <div className="mt-4">
+                            {/* State A: Action Completed */}
+                            {record.enforcement_status === 'completed' && (
+                                <div className="rounded-xl border border-emerald-200/80 bg-emerald-50/70 p-3.5 text-xs font-['Plus_Jakarta_Sans',sans-serif]">
+                                    <div className="flex items-center gap-1.5 font-bold text-emerald-900">
+                                        <CheckCircle2 size={14} className="text-emerald-600" />
+                                        <span>Enforcement Action Completed</span>
+                                    </div>
+                                    <div className="mt-2 space-y-1.5 text-emerald-800">
+                                        <p className="font-semibold">
+                                            Action: <span className="font-black text-slate-900">{record.offense_number === 3 ? 'Tricycle Impoundment & Franchise Suspension' : 'Franchise Cancellation (Revoked)'}</span>
+                                        </p>
+                                        <p>
+                                            Current Franchise Status: <span className="font-bold text-slate-900 uppercase">{record.franchise_status || 'SUSPENDED'}</span>
+                                        </p>
+                                        {record.enforcement?.confirmed_by && (
+                                            <p className="text-[11px] text-emerald-700">
+                                                Confirmed by: <strong className="text-slate-900">{record.enforcement.confirmed_by}</strong> on {record.enforcement.confirmed_at}
+                                            </p>
+                                        )}
+                                        {record.enforcement?.notes && (
+                                            <p className="mt-1 border-t border-emerald-200/60 pt-1.5 text-[11px] italic text-slate-600">
+                                                "{record.enforcement.notes}"
+                                            </p>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* State B: Third Offense Action Required */}
+                            {record.enforcement_status === 'action_required' && record.offense_number === 3 && (
+                                <div className="rounded-xl border border-rose-200 bg-rose-50/80 p-3.5 text-xs font-['Plus_Jakarta_Sans',sans-serif]">
+                                    <div className="flex items-center gap-1.5 font-bold text-rose-900">
+                                        <AlertTriangle size={15} className="text-rose-600" />
+                                        <span>3rd Offense Mandatory Enforcement Required</span>
+                                    </div>
+                                    <p className="mt-1 text-rose-800 leading-relaxed font-medium">
+                                        Under municipal ordinance, a 3rd confirmed color-coding violation requires official impoundment and franchise suspension:
+                                    </p>
+                                    <div className="mt-2.5 rounded-lg bg-white/80 border border-rose-200/80 p-2.5 space-y-1 text-[11.5px] text-slate-800">
+                                        <div className="flex items-center gap-1.5 font-bold text-rose-900">
+                                            <span>1. ₱2,500 Fine Penalty</span>
+                                        </div>
+                                        <div className="flex items-center gap-1.5 font-bold text-rose-900">
+                                            <span>2. Physical Tricycle Impoundment</span>
+                                        </div>
+                                        <div className="flex items-center gap-1.5 font-bold text-rose-900">
+                                            <span>3. Franchise Suspension (Assigned driver forced Offline)</span>
+                                        </div>
+                                    </div>
+
+                                    {isAppealed ? (
+                                        <p className="mt-3 flex items-center gap-1.5 border-t border-rose-200/70 pt-2.5 font-bold text-amber-800">
+                                            <Scale size={13} /> Driver appeal pending. Decide appeal before confirming enforcement.
+                                        </p>
+                                    ) : (
+                                        <button
+                                            type="button"
+                                            onClick={handleConfirmEnforcement}
+                                            disabled={isSubmitting}
+                                            className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-xl bg-rose-600 hover:bg-rose-700 py-2.5 text-xs font-bold text-white shadow-2xs transition-all active:scale-[0.98] disabled:opacity-50 font-['Plus_Jakarta_Sans',sans-serif]"
+                                        >
+                                            <Gavel size={14} strokeWidth={2.2} />
+                                            <span>Confirm Impoundment &amp; Suspension</span>
+                                        </button>
+                                    )}
+                                </div>
+                            )}
+
+                            {/* State C: Fourth Offense Action Required */}
+                            {record.enforcement_status === 'action_required' && record.offense_number >= 4 && (
+                                <div className="rounded-xl border border-rose-300 bg-rose-50/90 p-3.5 text-xs font-['Plus_Jakarta_Sans',sans-serif]">
+                                    <div className="flex items-center gap-1.5 font-bold text-rose-950">
+                                        <AlertTriangle size={15} className="text-rose-600" />
+                                        <span>{record.offense_label || '4th Offense'} Franchise Cancellation Required</span>
+                                    </div>
+                                    <p className="mt-1 text-rose-800 leading-relaxed font-medium">
+                                        Under municipal ordinance, this citation incurs immediate franchise cancellation:
+                                    </p>
+                                    <div className="mt-2.5 rounded-lg bg-white/80 border border-rose-200/80 p-2.5 space-y-1 text-[11.5px] text-slate-800">
+                                        <div className="flex items-center gap-1.5 font-bold text-rose-900">
+                                            <span>1. Franchise Status transition to 'Revoked' (Terminal)</span>
+                                        </div>
+                                        <div className="flex items-center gap-1.5 font-bold text-rose-900">
+                                            <span>2. Drivers forced permanently Offline</span>
+                                        </div>
+                                        <div className="flex items-center gap-1.5 font-bold text-slate-600">
+                                            <span>3. No fine amount assessed under 4th offense ordinance policy</span>
+                                        </div>
+                                    </div>
+
+                                    {isAppealed ? (
+                                        <p className="mt-3 flex items-center gap-1.5 border-t border-rose-200/70 pt-2.5 font-bold text-amber-800">
+                                            <Scale size={13} /> Driver appeal pending. Decide appeal before confirming revocation.
+                                        </p>
+                                    ) : (
+                                        <button
+                                            type="button"
+                                            onClick={handleConfirmEnforcement}
+                                            disabled={isSubmitting}
+                                            className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-xl bg-rose-700 hover:bg-rose-800 py-2.5 text-xs font-bold text-white shadow-2xs transition-all active:scale-[0.98] disabled:opacity-50 font-['Plus_Jakarta_Sans',sans-serif]"
+                                        >
+                                            <Gavel size={14} strokeWidth={2.2} />
+                                            <span>Confirm Franchise Revocation</span>
+                                        </button>
+                                    )}
+                                </div>
+                            )}
+
+                            {/* State D: Pending Confirmation (Appeal under review) */}
+                            {record.enforcement_status === 'pending_confirmation' && (
+                                <div className="rounded-xl border border-amber-200/80 bg-amber-50/70 p-3.5 text-xs font-['Plus_Jakarta_Sans',sans-serif]">
+                                    <div className="flex items-center gap-1.5 font-bold text-amber-900">
+                                        <Clock size={14} className="text-amber-600" />
+                                        <span>Enforcement Pending Appeal Determination</span>
+                                    </div>
+                                    <p className="mt-1 text-amber-800 leading-relaxed font-medium">
+                                        The designated driver has contested this citation. Administrative enforcement actions are held in abeyance pending official TMO review.
+                                    </p>
+                                </div>
+                            )}
+
+                            {/* State E: No Action Required (Offenses 1 & 2 or dismissed) */}
+                            {record.enforcement_status === 'no_action_required' && (
+                                <div className="rounded-xl border border-slate-200/80 bg-slate-50/70 p-3.5 text-xs font-['Plus_Jakarta_Sans',sans-serif]">
+                                    <p className="font-semibold text-slate-800">
+                                        {record.offense_number === 1 && '1st Offense · ₱500 Municipal Fine Penalty'}
+                                        {record.offense_number === 2 && '2nd Offense · ₱1,000 Municipal Fine Penalty'}
+                                        {record.offense_number > 2 && 'Citation Exonerated or Dismissed'}
+                                    </p>
+                                    <p className="mt-1 text-slate-500 leading-relaxed">
+                                        Administrative sanctions (tricycle impoundment and franchise suspension) take effect upon the 3rd confirmed offense under municipal ordinance.
+                                    </p>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -506,13 +740,20 @@ export default function ViolationDetails({ violationId = 'VIO-26-0001', initialR
                                     Payment &amp; Clearance
                                 </h3>
                             </div>
-                            <span className="text-xs font-black text-slate-900 font-mono tabular-nums">
-                                ₱{record.fine.toFixed(2)}
+                            <span className="text-xs font-black text-slate-900 font-['Plus_Jakarta_Sans',sans-serif]">
+                                {record.offense_number >= 4 ? 'No Fine' : `₱${Number(record.fine || 0).toFixed(2)}`}
                             </span>
                         </div>
 
                         <div className="mt-4">
-                            {isSettled ? (
+                            {record.offense_number >= 4 ? (
+                                <div className="rounded-xl border border-slate-200/80 bg-slate-50/70 p-3.5 text-xs font-['Plus_Jakarta_Sans',sans-serif]">
+                                    <p className="font-bold text-slate-800">Franchise Cancellation Case</p>
+                                    <p className="mt-1 text-slate-500 leading-relaxed">
+                                        Under the municipal traffic ordinance, 4th offense sanctions are immediate franchise revocation rather than monetary fine collection.
+                                    </p>
+                                </div>
+                            ) : isSettled ? (
                                 <div className="rounded-xl border border-emerald-200/80 bg-emerald-50/70 p-3.5 text-xs font-['Plus_Jakarta_Sans',sans-serif]">
                                     <div className="flex items-center gap-1.5 font-bold text-emerald-800">
                                         <CheckCircle2 size={14} className="text-emerald-600" />
@@ -550,6 +791,7 @@ export default function ViolationDetails({ violationId = 'VIO-26-0001', initialR
                             )}
                         </div>
                     </div>
+
 
                 </div>
             </div>

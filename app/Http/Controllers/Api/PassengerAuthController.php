@@ -31,7 +31,19 @@ class PassengerAuthController extends Controller
             // validation outright, so registration cannot proceed without real, explicit consent.
             'terms_accepted' => 'required|accepted',
             'privacy_policy_accepted' => 'required|accepted',
+            // From POST /passenger/register/verify-code: proves the email belongs to this person.
+            'email_verification_token' => 'required|string',
+        ], [
+            'email_verification_token.required' => 'Please verify your email with the code we sent.',
         ]);
+
+        $verification = app(\App\Services\RegistrationEmailVerification::class);
+        if (! $verification->tokenMatches($validated['email_verification_token'], $validated['email'])) {
+            return response()->json([
+                'message' => 'Your email verification has expired or does not match this email. Please verify your email again.',
+                'errors' => ['email' => ['Please verify your email again.']],
+            ], 422);
+        }
 
         $user = User::create([
             'name' => $validated['name'],
@@ -51,6 +63,8 @@ class PassengerAuthController extends Controller
             'consent_accepted_at' => now(),
             'terms_version' => self::TERMS_VERSION,
         ]);
+
+        $verification->forgetToken($validated['email_verification_token']);
 
         $token = $user->createToken('passenger_auth_token')->plainTextToken;
 

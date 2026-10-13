@@ -301,7 +301,7 @@ class FranchiseStatusManagementTest extends TestCase
     public function a_driver_with_an_active_franchise_can_login(): void
     {
         $response = $this->postJson('/api/v1/driver/login', [
-            'login' => '09170000070', 'password' => 'password',
+            'login' => $this->driverUser->email, 'password' => 'password',
         ]);
 
         $response->assertOk();
@@ -314,7 +314,7 @@ class FranchiseStatusManagementTest extends TestCase
         $this->franchiseScheme->transitionStatus('suspended', 'Under review.', $this->tmoUser->id);
 
         $response = $this->postJson('/api/v1/driver/login', [
-            'login' => '09170000070', 'password' => 'password',
+            'login' => $this->driverUser->email, 'password' => 'password',
         ]);
 
         $response->assertOk();
@@ -328,7 +328,7 @@ class FranchiseStatusManagementTest extends TestCase
         $this->franchiseScheme->transitionStatus('revoked', 'Franchise revoked.', $this->tmoUser->id);
 
         $response = $this->postJson('/api/v1/driver/login', [
-            'login' => '09170000070', 'password' => 'password',
+            'login' => $this->driverUser->email, 'password' => 'password',
         ]);
 
         $response->assertOk();

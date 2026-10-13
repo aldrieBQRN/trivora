@@ -245,6 +245,7 @@ class FranchiseRenewalTest extends TestCase
 
         $before = [
             'franchise_number' => $originalScheme->franchise_number,
+            'sticker_number'   => $originalScheme->sticker_number,
             'issue_date'       => $originalScheme->issue_date->toDateString(),
             'expiry_date'      => $originalScheme->expiry_date->toDateString(),
         ];
@@ -266,7 +267,7 @@ class FranchiseRenewalTest extends TestCase
         // 9 mandatory canonical documents + Prangkisa (renewal-only requirement).
         $this->assertSame(10, ApplicationDocument::where('application_id', $renewalApplication->id)->count());
 
-        $this->driveApplicationToActive($renewalApplication, $tmo, $bplo, $before['franchise_number'], 'STK-FULL-0002');
+        $this->driveApplicationToActive($renewalApplication, $tmo, $bplo, $before['sticker_number'], 'STK-FULL-0002');
 
         // ---- COMPARE OLD vs NEW ----
         $originalScheme->refresh();
@@ -287,9 +288,9 @@ class FranchiseRenewalTest extends TestCase
         // Sticker Number (proves the active-only uniqueness fix).
         $this->assertTrue($newScheme->is_active);
         $this->assertSame($renewalApplication->id, $newScheme->application_id);
-        $this->assertSame($before['franchise_number'], $newScheme->franchise_number, 'Renewal reused the same Sticker Number.');
+        $this->assertSame($before['sticker_number'], $newScheme->sticker_number, 'Renewal reused the same Sticker Number.');
         $this->assertSame(now()->toDateString(), $newScheme->issue_date->toDateString());
-        $this->assertSame(now()->addYears(3)->toDateString(), $newScheme->expiry_date->toDateString());
+        $this->assertSame(now()->addYear()->toDateString(), $newScheme->expiry_date->toDateString());
         $this->assertNotSame($originalScheme->id, $newScheme->id);
 
         // Exactly one active scheme for the tricycle; identity unchanged.
@@ -453,7 +454,7 @@ class FranchiseRenewalTest extends TestCase
 
         // A renewal automatically keeps the SAME Sticker Number as the original period — must
         // succeed (previously blocked by the global unique constraint).
-        $originalNumber = $originalScheme->franchise_number;
+        $originalNumber = $originalScheme->sticker_number;
         $response = $this->actingAs($bplo)->post(route('bplo.release.submit', $renewalApplication), [
             'sticker_number' => 'STK-HIST-0002',
         ]);
@@ -466,7 +467,7 @@ class FranchiseRenewalTest extends TestCase
         // independently queryable by id. The new one is still is_active=false at this point
         // (BPLO release only; TMO Final Confirmation, not run here, is what activates it), so
         // BOTH rows are inactive right now — that itself proves nothing was silently overwritten.
-        $this->assertCount(2, $rows->where('franchise_number', $originalNumber));
+        $this->assertCount(2, $rows->where('sticker_number', $originalNumber));
         $this->assertSame(0, $rows->where('is_active', true)->count());
         $this->assertTrue($rows->contains('id', $originalScheme->id));
         $this->assertSame(1, $rows->where('id', '!=', $originalScheme->id)->count());

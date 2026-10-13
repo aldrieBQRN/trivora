@@ -89,9 +89,9 @@ class Tricycle extends Model
             return $value;
         }
 
-        $fallback = $this->franchiseScheme?->franchise_number;
-        // Never use franchise application numbers (e.g. FRAN-DEMO-0003 or FS-...) as a Sticker Number
-        if ($fallback && !str_starts_with($fallback, 'FRAN-') && !str_starts_with($fallback, 'FS-')) {
+        $fallback = $this->franchiseScheme?->sticker_number ?: $this->franchiseScheme?->franchise_number;
+        // Never use franchise application numbers (e.g. FRAN-DEMO-0003 or FS-... or MTOP-/STK-...) as a Sticker Number
+        if ($fallback && !str_starts_with($fallback, 'FRAN-') && !str_starts_with($fallback, 'FS-') && !FranchiseScheme::isFranchiseNumberSerial($fallback)) {
             return $fallback;
         }
 
@@ -115,7 +115,7 @@ class Tricycle extends Model
      */
     public function getTricycleNumberAttribute()
     {
-        return $this->franchiseScheme?->franchise_number;
+        return $this->franchiseScheme?->sticker_number ?: $this->franchiseScheme?->franchise_number;
     }
 
     // -------------------------------------------------------------------------

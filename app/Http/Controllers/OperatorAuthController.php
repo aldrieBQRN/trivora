@@ -2,13 +2,13 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Operator;
 use App\Models\User;
 use App\Services\AuditService;
-use App\Support\MobileNumber;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -23,25 +23,42 @@ class OperatorAuthController extends Controller
             return redirect()->to($this->getDashboardRoute(Auth::user()->role));
         }
 
-        return Inertia::render('Login');
+        return Inertia::render('Login', [
+            'status' => session('status'),
+        ]);
     }
 
     /**
      * Handle an incoming authentication request.
-     * Accepts either the person's EXISTING stored email address or mobile number, resolves it
-     * to the one existing account it belongs to (never creating a duplicate user), then
-     * authenticates and redirects each role to their respective dashboard.
+     * Email-only: resolves the person's EXISTING stored email address to the one account it
+     * belongs to (never creating a duplicate user), then authenticates and redirects each role
+     * to their respective dashboard.
      */
     public function login(Request $request): RedirectResponse
     {
         $request->validate([
-            'login_id' => ['required', 'string', 'max:255'],
+            'login_id' => ['required', 'string', 'email', 'max:255'],
             'password'  => ['required', 'string'],
+        ], [
+            'login_id.required' => 'Please enter your email address.',
+            'login_id.email'    => 'Please enter a valid email address.',
         ]);
+
+        // At most 5 failed attempts per identifier + IP per minute (same policy as Laravel's
+        // stock LoginRequest), so temporary and regular passwords can't be brute-forced.
+        $throttleKey = 'web-login:' . Str::transliterate(Str::lower(trim($request->login_id))) . '|' . $request->ip();
+
+        if (RateLimiter::tooManyAttempts($throttleKey, 5)) {
+            return back()->withErrors([
+                'login_id' => 'Too many sign-in attempts. Please try again in ' . RateLimiter::availableIn($throttleKey) . ' seconds.',
+            ])->onlyInput('login_id');
+        }
 
         $email = $this->resolveLoginEmail(trim($request->login_id));
 
         if ($email === null) {
+            RateLimiter::hit($throttleKey);
+
             return back()->withErrors([
                 'login_id' => 'The provided credentials do not match our records.',
             ])->onlyInput('login_id');
@@ -53,11 +70,14 @@ class OperatorAuthController extends Controller
         ];
 
         if (! Auth::attempt($credentials, $request->boolean('remember'))) {
+            RateLimiter::hit($throttleKey);
+
             return back()->withErrors([
                 'login_id' => 'The provided credentials do not match our records.',
             ])->onlyInput('login_id');
         }
 
+        RateLimiter::clear($throttleKey);
         $request->session()->regenerate();
 
         $user = Auth::user();
@@ -70,6 +90,18 @@ class OperatorAuthController extends Controller
 
             return back()->withErrors([
                 'login_id' => 'Your account has been deactivated. Please contact the administrator.',
+            ])->onlyInput('login_id');
+        }
+
+        // A temporary password (StaffCredentials) is only valid for a limited window — never
+        // sign in with an expired one; the account recovers via resend or Forgot password.
+        if ($user->temporaryPasswordExpired()) {
+            Auth::logout();
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+
+            return back()->withErrors([
+                'login_id' => 'Your temporary password has expired. Ask your administrator to resend your credentials, or use Forgot password.',
             ])->onlyInput('login_id');
         }
 
@@ -95,55 +127,23 @@ class OperatorAuthController extends Controller
             actor: $user
         );
 
+        // First sign-in with a temporary password: straight to the mandatory change screen.
+        if ($user->must_change_password) {
+            return redirect()->route('password.change');
+        }
+
         // Redirect to the dashboard that matches the user's role
         return redirect()->to($this->getDashboardRoute($user->role));
     }
 
     /**
-     * Resolve the entered identifier (email or mobile number) to the email of the ONE existing
-     * account it belongs to (the email is only an internal lookup key for Auth::attempt — an
-     * email-typing user still just gets their own stored email back unchanged). Returns null
-     * when nothing matches, so login fails instead of ever creating a second account for the
-     * same person.
+     * Resolve the entered email to the stored email of the ONE existing account it belongs to
+     * (case-insensitively, since that's how email addresses are conventionally compared), as
+     * the lookup key for Auth::attempt. Login is email-only. Returns null when nothing matches.
      */
-    private function resolveLoginEmail(string $loginId): ?string
+    private function resolveLoginEmail(string $email): ?string
     {
-        // Email identifiers match directly against users.email — the only place an email is
-        // ever stored — case-insensitively, since that's how email addresses are conventionally
-        // compared.
-        if (str_contains($loginId, '@')) {
-            $user = User::whereRaw('LOWER(email) = ?', [strtolower($loginId)])->first();
-
-            return $user?->email;
-        }
-
-        // Mobile lookup matches both places a number is actually stored — `users.contact_number`
-        // (staff profiles) and `operators.contact_number` (owner/driver registration) — after
-        // normalizing separators and the 0/9/+63/63 prefixes via the shared MobileNumber helper.
-        $variants = MobileNumber::variants($loginId);
-        if ($variants === []) {
-            return null;
-        }
-
-        $inClause = implode(',', array_fill(0, count($variants), '?'));
-        $normalized = MobileNumber::normalizedSql('contact_number');
-
-        // 1. Staff accounts keep their mobile on users.contact_number.
-        $user = User::whereNotNull('contact_number')
-            ->whereRaw("{$normalized} IN ({$inClause})", $variants)
-            ->first();
-
-        // 2. Owners/drivers register their mobile on operators.contact_number — resolve
-        //    through the linked user, so the same person never needs a duplicate account.
-        if (! $user) {
-            $operator = Operator::whereNotNull('contact_number')
-                ->whereRaw("{$normalized} IN ({$inClause})", $variants)
-                ->first();
-
-            $user = $operator?->user;
-        }
-
-        return $user?->email;
+        return User::whereRaw('LOWER(email) = ?', [strtolower($email)])->value('email');
     }
 
     /**

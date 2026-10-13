@@ -24,6 +24,7 @@ class ApplicationDriver extends Model
         'last_name',
         'date_of_birth',
         'contact_number',
+        'email',
         'barangay',
     ];
 

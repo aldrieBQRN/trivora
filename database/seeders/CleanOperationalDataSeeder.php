@@ -42,8 +42,9 @@ class CleanOperationalDataSeeder extends Seeder
             'applications',
         ];
 
-        // 2. Violations & Appeals
+        // 2. Violations, Enforcement & Appeals
         $violationTables = [
+            'violation_enforcements',
             'violation_appeals',
             'violations',
         ];
@@ -52,6 +53,7 @@ class CleanOperationalDataSeeder extends Seeder
         $coordinationAndBookingTables = [
             'tricycle_locations',
             'gps_devices',
+            'booking_dispatch_offers',
             'booking_driver_declines',
             'ride_ratings',
             'ride_sessions',
@@ -125,16 +127,18 @@ class CleanOperationalDataSeeder extends Seeder
 
         // Display remaining active staff accounts
         $staffAccounts = User::whereIn('role', $staffRoles)
-            ->get(['name', 'email', 'role', 'contact_number'])
+            ->get(['name', 'email', 'role', 'employee_id', 'position', 'contact_number'])
             ->map(fn($u) => [
-                'Name'    => $u->name,
-                'Email'   => $u->email,
-                'Role'    => $u->role,
-                'Contact' => $u->contact_number,
+                'Emp ID'   => $u->employee_id ?? '—',
+                'Name'     => $u->name,
+                'Position' => $u->position ?? '—',
+                'Email'    => $u->email,
+                'Role'     => $u->role,
+                'Contact'  => $u->contact_number,
             ])
             ->toArray();
 
-        $this->command?->table(['Name', 'Email', 'Role', 'Contact Number'], $staffAccounts);
+        $this->command?->table(['Emp ID', 'Name', 'Position', 'Email', 'Role', 'Contact Number'], $staffAccounts);
         $this->command?->info('Preserved Rules: ' . ColorCodingScheme::count() . ' Color Coding Schemes, ' . FareConfiguration::count() . ' Fare Configuration(s).');
         $this->command?->info('');
     }
@@ -148,25 +152,37 @@ class CleanOperationalDataSeeder extends Seeder
         User::updateOrCreate(
             ['email' => 'admin@trivora.gov.ph'],
             [
-                'name'           => 'System Administrator',
+                'name'           => 'Engr. Roberto M. Gomez',
                 'password'       => Hash::make('Admin@123'),
                 'role'           => 'admin',
-                'is_active'      => true,
+                'employee_id'    => 'ADM-0001',
+                'position'       => 'IT Systems Administrator',
                 'contact_number' => '09170000001',
+                'address'        => 'Poblacion, Nasugbu, Batangas',
+                'birthday'       => '1985-04-12',
+                'is_active'      => true,
             ]
         );
 
         // 2. TMO Personnel
         $tmoUsers = [
             [
-                'name'    => 'Juan dela Cruz',
-                'email'   => 'tmo.jdelacruz@trivora.gov.ph',
-                'contact' => '09170000002',
+                'name'        => 'Juan dela Cruz',
+                'email'       => 'tmo.jdelacruz@trivora.gov.ph',
+                'contact'     => '09170000002',
+                'employee_id' => 'TMO-0002',
+                'position'    => 'Traffic Operations Officer I',
+                'address'     => 'Brgy. 3, Nasugbu, Batangas',
+                'birthday'    => '1990-06-15',
             ],
             [
-                'name'    => 'Maria Santos',
-                'email'   => 'tmo.msantos@trivora.gov.ph',
-                'contact' => '09170000003',
+                'name'        => 'Maria Santos',
+                'email'       => 'tmo.msantos@trivora.gov.ph',
+                'contact'     => '09170000003',
+                'employee_id' => 'TMO-0003',
+                'position'    => 'Senior Traffic Inspector',
+                'address'     => 'Brgy. 8, Nasugbu, Batangas',
+                'birthday'    => '1992-09-21',
             ],
         ];
 
@@ -177,6 +193,10 @@ class CleanOperationalDataSeeder extends Seeder
                     'name'           => $data['name'],
                     'password'       => Hash::make('TmoUser@123'),
                     'role'           => 'tmo_personnel',
+                    'employee_id'    => $data['employee_id'],
+                    'position'       => $data['position'],
+                    'address'        => $data['address'],
+                    'birthday'       => $data['birthday'],
                     'is_active'      => true,
                     'contact_number' => $data['contact'],
                 ]
@@ -186,14 +206,22 @@ class CleanOperationalDataSeeder extends Seeder
         // 3. BPLO Staff
         $bploUsers = [
             [
-                'name'    => 'Ana Reyes',
-                'email'   => 'bplo.areyes@trivora.gov.ph',
-                'contact' => '09170000004',
+                'name'        => 'Ana Reyes',
+                'email'       => 'bplo.areyes@trivora.gov.ph',
+                'contact'     => '09170000004',
+                'employee_id' => 'BPLO-0004',
+                'position'    => 'Licensing Officer II',
+                'address'     => 'Brgy. 10, Nasugbu, Batangas',
+                'birthday'    => '1988-11-03',
             ],
             [
-                'name'    => 'Carlos Mendoza',
-                'email'   => 'bplo.cmendoza@trivora.gov.ph',
-                'contact' => '09170000005',
+                'name'        => 'Carlos Mendoza',
+                'email'       => 'bplo.cmendoza@trivora.gov.ph',
+                'contact'     => '09170000005',
+                'employee_id' => 'BPLO-0005',
+                'position'    => 'Business Permit Inspector',
+                'address'     => 'Brgy. 11, Nasugbu, Batangas',
+                'birthday'    => '1991-03-28',
             ],
         ];
 
@@ -204,6 +232,10 @@ class CleanOperationalDataSeeder extends Seeder
                     'name'           => $data['name'],
                     'password'       => Hash::make('BploUser@123'),
                     'role'           => 'bplo_staff',
+                    'employee_id'    => $data['employee_id'],
+                    'position'       => $data['position'],
+                    'address'        => $data['address'],
+                    'birthday'       => $data['birthday'],
                     'is_active'      => true,
                     'contact_number' => $data['contact'],
                 ]

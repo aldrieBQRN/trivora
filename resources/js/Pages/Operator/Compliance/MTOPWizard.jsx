@@ -74,6 +74,7 @@ export default function MTOPWizard({ applicationType = 'new', tricycleUnit = nul
         driver_last_name: '',
         driver_birthday: '',
         driver_contact: '',
+        driver_email: '',
         driver_barangay: '',
         documents: {},
     });
@@ -144,6 +145,7 @@ export default function MTOPWizard({ applicationType = 'new', tricycleUnit = nul
             formData.append('driver_last_name', data.driver_last_name || '');
             formData.append('driver_birthday', data.driver_birthday || '');
             formData.append('driver_contact', data.driver_contact || '');
+            formData.append('driver_email', data.driver_email || '');
             formData.append('driver_barangay', data.driver_barangay || '');
         }
 
@@ -366,6 +368,15 @@ export default function MTOPWizard({ applicationType = 'new', tricycleUnit = nul
                                                         {NASUGBU_BARANGAYS.map(b => <option key={b.value} value={b.value}>{b.label}</option>)}
                                                     </select>
                                                     <MapPin size={15} strokeWidth={2} />
+                                                </div>
+                                            </Field>
+                                            <Field label="Email Address" error={fieldError('driver_email')}>
+                                                <div className="pa-input-wrap">
+                                                    <span className="pa-input-wrap-icon"><Mail size={15} strokeWidth={2} /></span>
+                                                    <input className={`pa-input${fieldError('driver_email') ? ' pa-input-error' : ''}`}
+                                                        type="email" placeholder="e.g. pedro@example.com" autoComplete="off"
+                                                        value={data.driver_email || ''} onChange={e => setData('driver_email', e.target.value)}
+                                                        onBlur={() => markTouched('driver_email')} />
                                                 </div>
                                             </Field>
                                         </div>

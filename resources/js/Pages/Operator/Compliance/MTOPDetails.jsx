@@ -530,6 +530,10 @@ export default function MTOPDetails({ application }) {
                                         <span className="font-semibold text-slate-800">{app.tricycleDriver.contact_number || '—'}</span>
                                     </div>
                                     <div>
+                                        <span className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">Email</span>
+                                        <span className="font-semibold text-slate-800 break-all">{app.tricycleDriver.email || '—'}</span>
+                                    </div>
+                                    <div>
                                         <span className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">Barangay</span>
                                         <span className="font-semibold text-slate-800">{app.tricycleDriver.barangay || '—'}</span>
                                     </div>

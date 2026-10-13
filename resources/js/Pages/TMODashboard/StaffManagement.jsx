@@ -6,7 +6,7 @@ import Swal from 'sweetalert2';
 import {
     Users, UserPlus, ShieldCheck, CheckCircle2, XCircle, Clock,
     Edit2, Trash2, Search, X, RotateCcw, ChevronLeft, ChevronRight,
-    Phone, MapPin, CalendarDays, Mail, Lock, Loader2, AlertCircle,
+    Phone, MapPin, CalendarDays, Mail, Lock, Loader2, AlertCircle, Send,
 } from 'lucide-react';
 import { Modal } from '@/Components/TMO';
 
@@ -33,9 +33,48 @@ function StatusPill({ user, onToggleStatus }) {
                     : 'border border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100/80'
             }`}
         >
-            <span className={`h-1.5 w-1.5 rounded-full ${isActive ? 'bg-emerald-500' : 'bg-rose-500'}`} />
             <span>{isActive ? 'Active' : 'Inactive'}</span>
         </button>
+    );
+}
+
+// Credential-email outcome is reported by the server's flash message — the UI never assumes
+// the email went out.
+function showCredentialsResult(page, successTitle) {
+    const { success, warning, error } = page.props.flash || {};
+    if (warning || error) {
+        Swal.fire({
+            title: warning ? 'Email Not Sent' : 'Action Not Available',
+            text: warning || error,
+            icon: warning ? 'warning' : 'error',
+            confirmButtonColor: '#182B62',
+        });
+        return;
+    }
+    Swal.fire({
+        title: successTitle,
+        text: success,
+        icon: 'success',
+        confirmButtonColor: '#182B62',
+        timer: 2500,
+        showConfirmButton: false,
+    });
+}
+
+// Temporary-password state for accounts that haven't set their own password yet.
+const CREDENTIAL_BADGES = {
+    not_sent: { label: 'Credentials email not sent', className: 'border-rose-200 bg-rose-50 text-rose-700' },
+    pending: { label: 'Awaiting first sign-in', className: 'border-amber-200 bg-amber-50 text-amber-700' },
+    expired: { label: 'Temporary password expired', className: 'border-slate-200 bg-slate-100 text-slate-600' },
+};
+
+function CredentialsBadge({ status }) {
+    const badge = CREDENTIAL_BADGES[status];
+    if (!badge) return null;
+    return (
+        <span className={`mt-1.5 inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-bold ${badge.className}`}>
+            {badge.label}
+        </span>
     );
 }
 
@@ -62,7 +101,6 @@ export default function StaffManagement({
         contact_number: '',
         address: '',
         email: '',
-        password: '',
         is_active: true,
     });
 
@@ -138,17 +176,10 @@ export default function StaffManagement({
     const handleAddSubmit = (e) => {
         if (e) e.preventDefault();
         addForm.post(route('tmo.users.store'), {
-            onSuccess: () => {
+            onSuccess: (page) => {
                 setAddModalOpen(false);
                 addForm.reset();
-                Swal.fire({
-                    title: 'Account Created',
-                    text: 'New TMO staff account created successfully.',
-                    icon: 'success',
-                    confirmButtonColor: '#182B62',
-                    timer: 2000,
-                    showConfirmButton: false,
-                });
+                showCredentialsResult(page, 'Account Created');
             },
         });
     };
@@ -172,6 +203,26 @@ export default function StaffManagement({
                     showConfirmButton: false,
                 });
             },
+        });
+    };
+
+    // Generate and email a NEW temporary password (failed delivery or expired before first sign-in)
+    const handleResendCredentials = (user) => {
+        Swal.fire({
+            title: 'Resend Credentials?',
+            text: `A new temporary password will be generated and emailed to ${user.email}. Any previous temporary password will stop working.`,
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#182B62',
+            cancelButtonColor: '#64748B',
+            confirmButtonText: 'Resend',
+            cancelButtonText: 'Cancel',
+        }).then((result) => {
+            if (!result.isConfirmed) return;
+            router.post(route('tmo.users.resend-credentials', user.id), {}, {
+                preserveScroll: true,
+                onSuccess: (page) => showCredentialsResult(page, 'Credentials Sent'),
+            });
         });
     };
 
@@ -507,6 +558,9 @@ export default function StaffManagement({
                                                 Contact Info
                                             </th>
                                             <th scope="col" className="py-3 px-4 text-[10.5px] font-bold uppercase tracking-wider text-slate-400">
+                                                Birthday
+                                            </th>
+                                            <th scope="col" className="py-3 px-4 text-[10.5px] font-bold uppercase tracking-wider text-slate-400">
                                                 Status
                                             </th>
                                             <th scope="col" className="py-3 px-4 text-[10.5px] font-bold uppercase tracking-wider text-slate-400">
@@ -525,6 +579,7 @@ export default function StaffManagement({
                                                 onEdit={handleOpenEdit}
                                                 onToggleStatus={handleToggleStatus}
                                                 onDelete={handleDeleteUser}
+                                                onResend={handleResendCredentials}
                                             />
                                         ))}
                                     </tbody>
@@ -604,6 +659,7 @@ export default function StaffManagement({
                                     onEdit={handleOpenEdit}
                                     onToggleStatus={handleToggleStatus}
                                     onDelete={handleDeleteUser}
+                                    onResend={handleResendCredentials}
                                 />
                             ))}
 
@@ -792,26 +848,12 @@ export default function StaffManagement({
                         )}
                     </div>
 
-                    {/* Initial Password */}
-                    <div className="sm:col-span-2">
-                        <label className="block text-xs font-bold text-slate-900 mb-1">
-                            Initial Password <span className="text-rose-600">*</span>
-                        </label>
-                        <input
-                            type="password"
-                            value={addForm.data.password}
-                            onChange={(e) => addForm.setData('password', e.target.value)}
-                            placeholder="Enter secure initial password"
-                            className={`w-full rounded-xl border bg-slate-50/50 px-3.5 py-2 text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:bg-white focus:outline-none focus:ring-2 transition-all ${
-                                addForm.errors.password ? 'border-rose-300 focus:border-rose-500 focus:ring-rose-200' : 'border-slate-200 focus:border-[#182B62] focus:ring-[#182B62]/10'
-                            }`}
-                            required
-                        />
-                        {addForm.errors.password && (
-                            <p className="mt-1 flex items-center gap-1 text-[11px] font-semibold text-rose-600">
-                                <AlertCircle size={12} /> {addForm.errors.password}
-                            </p>
-                        )}
+                    {/* Sign-in credentials are generated and emailed by the server */}
+                    <div className="sm:col-span-2 flex items-start gap-2.5 rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-3">
+                        <Lock size={14} className="mt-0.5 shrink-0 text-[#182B62]" />
+                        <p className="text-[11.5px] leading-relaxed text-slate-600">
+                            A secure temporary password will be generated and emailed to this address. The staff member must change it the first time they sign in, within 24 hours.
+                        </p>
                     </div>
 
                     {/* Active Checkbox */}
@@ -1038,7 +1080,7 @@ export default function StaffManagement({
    SUBCOMPONENTS: Table Row & Mobile Card
 ───────────────────────────────────────────────────────────────────────── */
 
-function DesktopStaffRow({ user, onEdit, onToggleStatus, onDelete }) {
+function DesktopStaffRow({ user, onEdit, onToggleStatus, onDelete, onResend }) {
 
     return (
         <tr className="group transition-colors hover:bg-slate-50/80">
@@ -1095,20 +1137,27 @@ function DesktopStaffRow({ user, onEdit, onToggleStatus, onDelete }) {
                     <span className="mt-0.5 truncate text-[11px] text-slate-500 font-medium max-w-[170px]">
                         {user.address || 'No address on file'}
                     </span>
-                    {user.birthday_label && (
-                        <span className="mt-0.5 text-[10.5px] text-slate-400 font-medium">
-                            Birthday: {user.birthday_label}
-                        </span>
-                    )}
                 </div>
             </td>
 
-            {/* Column 4: Status */}
+            {/* Column 4: Birthday */}
             <td className="py-4 px-4 align-middle">
-                <StatusPill user={user} onToggleStatus={onToggleStatus} />
+                {user.birthday_label ? (
+                    <span className="text-xs font-bold text-slate-800 tabular-nums">{user.birthday_label}</span>
+                ) : (
+                    <span className="text-xs text-slate-400 font-medium">Not on file</span>
+                )}
             </td>
 
-            {/* Column 5: Joined */}
+            {/* Column 5: Status */}
+            <td className="py-4 px-4 align-middle">
+                <div className="flex flex-col items-start">
+                    <StatusPill user={user} onToggleStatus={onToggleStatus} />
+                    <CredentialsBadge status={user.credentials_status} />
+                </div>
+            </td>
+
+            {/* Column 6: Joined */}
             <td className="py-4 px-4 align-middle">
                 <div className="flex flex-col">
                     <span className="text-xs font-bold text-slate-800 tabular-nums">{user.created_at}</span>
@@ -1116,9 +1165,19 @@ function DesktopStaffRow({ user, onEdit, onToggleStatus, onDelete }) {
                 </div>
             </td>
 
-            {/* Column 6: Actions */}
+            {/* Column 7: Actions */}
             <td className="py-4 pl-3 pr-6 text-right align-middle">
                 <div className="flex items-center justify-end gap-1.5">
+                    {user.credentials_status && (
+                        <button
+                            type="button"
+                            onClick={() => onResend(user)}
+                            title="Resend sign-in credentials"
+                            className="flex h-8 w-8 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 hover:bg-slate-100 hover:text-slate-900 shadow-2xs transition-colors cursor-pointer"
+                        >
+                            <Send size={13} strokeWidth={2.2} />
+                        </button>
+                    )}
                     <button
                         type="button"
                         onClick={() => onEdit(user)}
@@ -1142,7 +1201,7 @@ function DesktopStaffRow({ user, onEdit, onToggleStatus, onDelete }) {
     );
 }
 
-function MobileStaffCard({ user, onEdit, onToggleStatus, onDelete }) {
+function MobileStaffCard({ user, onEdit, onToggleStatus, onDelete, onResend }) {
 
     return (
         <div className={`rounded-2xl border border-slate-200/80 bg-white p-4 transition-all ${CARD_SHADOW}`}>
@@ -1162,7 +1221,10 @@ function MobileStaffCard({ user, onEdit, onToggleStatus, onDelete }) {
                         <p className="mt-0.5 truncate text-[11px] text-slate-500 font-medium">{user.email}</p>
                     </div>
                 </div>
-                <StatusPill user={user} onToggleStatus={onToggleStatus} />
+                <div className="flex flex-col items-end">
+                    <StatusPill user={user} onToggleStatus={onToggleStatus} />
+                    <CredentialsBadge status={user.credentials_status} />
+                </div>
             </div>
 
             {/* Position & Employee ID */}
@@ -1206,6 +1268,16 @@ function MobileStaffCard({ user, onEdit, onToggleStatus, onDelete }) {
 
             {/* Action Buttons */}
             <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-center gap-2">
+                {user.credentials_status && (
+                    <button
+                        type="button"
+                        onClick={() => onResend(user)}
+                        className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 py-2 text-xs font-bold text-slate-700 shadow-2xs transition-all active:scale-[0.98] cursor-pointer"
+                    >
+                        <Send size={13} strokeWidth={2.2} />
+                        <span>Resend</span>
+                    </button>
+                )}
                 <button
                     type="button"
                     onClick={() => onEdit(user)}

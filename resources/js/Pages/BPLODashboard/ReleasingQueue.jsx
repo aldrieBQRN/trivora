@@ -1,5 +1,6 @@
-import React, { useState, useMemo } from 'react';
-import { Head, Link } from '@inertiajs/react';
+import React, { useState, useMemo, useEffect } from 'react';
+import { Head, Link, usePage } from '@inertiajs/react';
+import Swal from 'sweetalert2';
 import useBackgroundRefresh from '@/hooks/useBackgroundRefresh';
 import BPLOLayout from '@/Layouts/BPLOLayout';
 import {
@@ -28,6 +29,14 @@ export default function ReleasingQueue({
     // Silent background refresh — a TMO physical inspection pass elsewhere feeds new units into
     // this queue without a manual reload.
     useBackgroundRefresh(['applications', 'pendingCount', 'issuedTodayCount', 'activeRegistryCount']);
+
+    // e.g. "already released by another staff member" when opening a stale queue entry.
+    const flashError = usePage().props.flash?.error;
+    useEffect(() => {
+        if (flashError) {
+            Swal.fire({ title: 'Not Available', text: flashError, icon: 'info', confirmButtonColor: '#182B62' });
+        }
+    }, [flashError]);
 
     const filtered = useMemo(() => {
         const q = query.trim().toLowerCase();

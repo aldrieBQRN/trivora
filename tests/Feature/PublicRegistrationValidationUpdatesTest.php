@@ -27,28 +27,28 @@ class PublicRegistrationValidationUpdatesTest extends TestCase
         $payloadWithLetters = $this->registrationPayload([
             'contact' => '0917ABC4567',
         ]);
-        $response = $this->post(route('register.public.submit'), $payloadWithLetters);
+        $response = $this->postRegistration($payloadWithLetters);
         $response->assertSessionHasErrors(['contact']);
 
         // Symbols in mobile number
         $payloadWithSymbols = $this->registrationPayload([
             'contact' => '0917-123-456',
         ]);
-        $response = $this->post(route('register.public.submit'), $payloadWithSymbols);
+        $response = $this->postRegistration($payloadWithSymbols);
         $response->assertSessionHasErrors(['contact']);
 
         // Non-09 prefix
         $payloadWrongPrefix = $this->registrationPayload([
             'contact' => '08123456789',
         ]);
-        $response = $this->post(route('register.public.submit'), $payloadWrongPrefix);
+        $response = $this->postRegistration($payloadWrongPrefix);
         $response->assertSessionHasErrors(['contact']);
 
         // Invalid length
         $payloadShort = $this->registrationPayload([
             'contact' => '091234567',
         ]);
-        $response = $this->post(route('register.public.submit'), $payloadShort);
+        $response = $this->postRegistration($payloadShort);
         $response->assertSessionHasErrors(['contact']);
 
         // Valid 11-digit 09 format
@@ -57,7 +57,7 @@ class PublicRegistrationValidationUpdatesTest extends TestCase
             'email' => 'validmobile@example.com',
             'plate_number' => 'VAL-MOB-001',
         ]);
-        $response = $this->post(route('register.public.submit'), $payloadValid);
+        $response = $this->postRegistration($payloadValid);
         $response->assertSessionDoesntHaveErrors(['contact']);
     }
 
@@ -67,14 +67,14 @@ class PublicRegistrationValidationUpdatesTest extends TestCase
         $payloadInvalidEmail = $this->registrationPayload([
             'email' => 'not-an-email-address',
         ]);
-        $response = $this->post(route('register.public.submit'), $payloadInvalidEmail);
+        $response = $this->postRegistration($payloadInvalidEmail);
         $response->assertSessionHasErrors(['email']);
 
         $payloadValidEmail = $this->registrationPayload([
             'email' => 'john.doe@example.com',
             'plate_number' => 'EML-VAL-001',
         ]);
-        $response = $this->post(route('register.public.submit'), $payloadValidEmail);
+        $response = $this->postRegistration($payloadValidEmail);
         $response->assertSessionDoesntHaveErrors(['email']);
     }
 
@@ -86,7 +86,7 @@ class PublicRegistrationValidationUpdatesTest extends TestCase
             'password' => 'SecurePass123!',
             'password_confirmation' => 'DifferentPass456!',
         ]);
-        $response = $this->post(route('register.public.submit'), $payloadMismatched);
+        $response = $this->postRegistration($payloadMismatched);
         $response->assertSessionHasErrors(['password']);
 
         // Missing confirmation
@@ -94,7 +94,7 @@ class PublicRegistrationValidationUpdatesTest extends TestCase
             'password' => 'SecurePass123!',
         ]);
         unset($payloadMissing['password_confirmation']);
-        $response = $this->post(route('register.public.submit'), $payloadMissing);
+        $response = $this->postRegistration($payloadMissing);
         $response->assertSessionHasErrors(['password']);
 
         // Matching confirmation
@@ -104,7 +104,7 @@ class PublicRegistrationValidationUpdatesTest extends TestCase
             'email' => 'matching.pass@example.com',
             'plate_number' => 'PSS-MAT-001',
         ]);
-        $response = $this->post(route('register.public.submit'), $payloadMatching);
+        $response = $this->postRegistration($payloadMatching);
         $response->assertSessionDoesntHaveErrors(['password']);
     }
 
@@ -117,14 +117,14 @@ class PublicRegistrationValidationUpdatesTest extends TestCase
         $payloadBefore2000 = $this->registrationPayload([
             'year_model' => 1999,
         ]);
-        $response = $this->post(route('register.public.submit'), $payloadBefore2000);
+        $response = $this->postRegistration($payloadBefore2000);
         $response->assertSessionHasErrors(['year_model']);
 
         // Future year rejected
         $payloadFuture = $this->registrationPayload([
             'year_model' => $currentYear + 1,
         ]);
-        $response = $this->post(route('register.public.submit'), $payloadFuture);
+        $response = $this->postRegistration($payloadFuture);
         $response->assertSessionHasErrors(['year_model']);
 
         // Year 2000 accepted
@@ -133,7 +133,7 @@ class PublicRegistrationValidationUpdatesTest extends TestCase
             'email' => 'year2000@example.com',
             'plate_number' => 'YR-2000-01',
         ]);
-        $response = $this->post(route('register.public.submit'), $payload2000);
+        $response = $this->postRegistration($payload2000);
         $response->assertSessionDoesntHaveErrors(['year_model']);
 
         // Current year accepted
@@ -142,7 +142,7 @@ class PublicRegistrationValidationUpdatesTest extends TestCase
             'email' => 'yearcurrent@example.com',
             'plate_number' => 'YR-CURR-01',
         ]);
-        $response = $this->post(route('register.public.submit'), $payloadCurrent);
+        $response = $this->postRegistration($payloadCurrent);
         $response->assertSessionDoesntHaveErrors(['year_model']);
     }
 
@@ -155,7 +155,7 @@ class PublicRegistrationValidationUpdatesTest extends TestCase
             'email' => 'color.predefined@example.com',
             'plate_number' => 'CLR-PRE-001',
         ]);
-        $response = $this->post(route('register.public.submit'), $payloadPredefined);
+        $response = $this->postRegistration($payloadPredefined);
         $response->assertSessionDoesntHaveErrors(['body_color']);
 
         // Other with valid custom color accepted and stored
@@ -165,7 +165,7 @@ class PublicRegistrationValidationUpdatesTest extends TestCase
             'email' => 'color.other@example.com',
             'plate_number' => 'CLR-OTH-001',
         ]);
-        $response = $this->post(route('register.public.submit'), $payloadOtherValid);
+        $response = $this->postRegistration($payloadOtherValid);
         $response->assertSessionDoesntHaveErrors(['body_color', 'body_color_other']);
 
         $tricycle = Tricycle::where('plate_number', 'CLR-OTH-001')->firstOrFail();
@@ -176,14 +176,14 @@ class PublicRegistrationValidationUpdatesTest extends TestCase
             'body_color' => 'Other',
             'body_color_other' => '',
         ]);
-        $response = $this->post(route('register.public.submit'), $payloadOtherEmpty);
+        $response = $this->postRegistration($payloadOtherEmpty);
         $response->assertSessionHasErrors(['body_color_other']);
 
         // Arbitrary unapproved color without Other rejected
         $payloadArbitrary = $this->registrationPayload([
             'body_color' => 'Neon Turquoise',
         ]);
-        $response = $this->post(route('register.public.submit'), $payloadArbitrary);
+        $response = $this->postRegistration($payloadArbitrary);
         $response->assertSessionHasErrors(['body_color']);
     }
 
@@ -196,7 +196,7 @@ class PublicRegistrationValidationUpdatesTest extends TestCase
             'email' => 'type.predefined@example.com',
             'plate_number' => 'TYP-PRE-001',
         ]);
-        $response = $this->post(route('register.public.submit'), $payloadPredefined);
+        $response = $this->postRegistration($payloadPredefined);
         $response->assertSessionDoesntHaveErrors(['body_type']);
 
         // Other with valid custom type accepted and stored
@@ -206,7 +206,7 @@ class PublicRegistrationValidationUpdatesTest extends TestCase
             'email' => 'type.other@example.com',
             'plate_number' => 'TYP-OTH-001',
         ]);
-        $response = $this->post(route('register.public.submit'), $payloadOtherValid);
+        $response = $this->postRegistration($payloadOtherValid);
         $response->assertSessionDoesntHaveErrors(['body_type', 'body_type_other']);
 
         $tricycle = Tricycle::where('plate_number', 'TYP-OTH-001')->firstOrFail();
@@ -217,20 +217,20 @@ class PublicRegistrationValidationUpdatesTest extends TestCase
             'body_type' => 'Other',
             'body_type_other' => '',
         ]);
-        $response = $this->post(route('register.public.submit'), $payloadOtherEmpty);
+        $response = $this->postRegistration($payloadOtherEmpty);
         $response->assertSessionHasErrors(['body_type_other']);
 
         // Generic car body types rejected
         $payloadSedan = $this->registrationPayload([
             'body_type' => 'Sedan',
         ]);
-        $response = $this->post(route('register.public.submit'), $payloadSedan);
+        $response = $this->postRegistration($payloadSedan);
         $response->assertSessionHasErrors(['body_type']);
 
         $payloadSuv = $this->registrationPayload([
             'body_type' => 'SUV',
         ]);
-        $response = $this->post(route('register.public.submit'), $payloadSuv);
+        $response = $this->postRegistration($payloadSuv);
         $response->assertSessionHasErrors(['body_type']);
     }
 
@@ -248,7 +248,7 @@ class PublicRegistrationValidationUpdatesTest extends TestCase
             'email' => 'driver.invalid@example.com',
             'plate_number' => 'DRV-INV-001',
         ]);
-        $response = $this->post(route('register.public.submit'), $payloadInvalidDriver);
+        $response = $this->postRegistration($payloadInvalidDriver);
         $response->assertSessionHasErrors(['driver_contact']);
 
         // Valid driver mobile
@@ -262,7 +262,7 @@ class PublicRegistrationValidationUpdatesTest extends TestCase
             'email' => 'driver.valid@example.com',
             'plate_number' => 'DRV-VAL-001',
         ]);
-        $response = $this->post(route('register.public.submit'), $payloadValidDriver);
+        $response = $this->postRegistration($payloadValidDriver);
         $response->assertSessionDoesntHaveErrors(['driver_contact']);
     }
 

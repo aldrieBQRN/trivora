@@ -24,7 +24,11 @@ class RegistrationController extends Controller
     // For the Public Landing Page Registration
     public function publicWizard()
     {
-        return Inertia::render('Registration/PublicApply');
+        // The email this applicant already verified in this session (if any), so a page reload
+        // doesn't ask for a new code for the same address.
+        return Inertia::render('Registration/PublicApply', [
+            'verifiedEmail' => session(\App\Services\RegistrationEmailVerification::SESSION_KEY),
+        ]);
     }
 
     /**
@@ -126,6 +130,9 @@ class RegistrationController extends Controller
                 'driver_last_name'  => 'required|string|max:100',
                 'driver_birthday'   => 'required|date|before_or_equal:today',
                 'driver_contact'    => ['required', 'string', 'regex:/^09\d{9}$/'],
+                // The driver's own Driver App login (login is email-only), so it can't belong
+                // to an existing account or be the owner's address.
+                'driver_email'      => 'required|string|email|max:255|unique:users,email|different:email',
                 'driver_barangay'   => ['required', 'string', Rule::in(NasugbuBarangays::values())],
             ]);
         }
@@ -141,9 +148,19 @@ class RegistrationController extends Controller
             'body_type_other.required_if'  => 'Please specify body type.',
             'password.confirmed'           => 'The password confirmation does not match.',
             'email.email'                  => 'Please enter a valid email address.',
+            'driver_email.email'           => 'Please enter a valid email address for the driver.',
+            'driver_email.unique'          => 'This driver email is already used by another Trivora account.',
+            'driver_email.different'       => "The driver's email must be different from the owner's email.",
         ];
 
         $request->validate($rules, $messages);
+
+        // The applicant must have proven they own this email (code sent at Applicant Information).
+        if (! app(\App\Services\RegistrationEmailVerification::class)->isVerified($request->input('email'))) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'email' => 'Please verify your email address with the code we sent before submitting.',
+            ]);
+        }
 
         [$user, $reference, $application] = DB::transaction(function () use ($request, $ownerIsDriver) {
             // 1. Create User
@@ -224,6 +241,7 @@ class RegistrationController extends Controller
                     'last_name'      => $request->input('driver_last_name'),
                     'date_of_birth'  => $request->date('driver_birthday')->toDateString(),
                     'contact_number' => $request->input('driver_contact'),
+                    'email'          => strtolower(trim($request->input('driver_email'))),
                     'barangay'       => $request->input('driver_barangay'),
                 ]);
             }
@@ -303,6 +321,7 @@ class RegistrationController extends Controller
         \App\Services\StaffNotifier::applicationStatusChanged($application, 'draft', 'pending_review', $user->id);
 
         // Automatically authenticate user session
+        session()->forget(\App\Services\RegistrationEmailVerification::SESSION_KEY);
         auth()->login($user);
 
         // Redirect back with reference parameter

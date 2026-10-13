@@ -487,6 +487,22 @@ export default function TricycleDetails({
                                             )}
                                         </div>
                                         <SpecItem label="Barangay (Nasugbu)" value={driver.barangay || '—'} />
+                                        <div>
+                                            <span className="mb-1 text-[10.5px] font-bold uppercase tracking-wider text-slate-400 truncate block font-['Plus_Jakarta_Sans',sans-serif]">
+                                                Email Address
+                                            </span>
+                                            {driver.email ? (
+                                                <a
+                                                    href={`mailto:${driver.email}`}
+                                                    className="text-xs sm:text-sm font-medium text-[#182B62] hover:underline truncate block"
+                                                    title={driver.email}
+                                                >
+                                                    {driver.email}
+                                                </a>
+                                            ) : (
+                                                <span className="text-xs sm:text-sm font-semibold text-slate-400">—</span>
+                                            )}
+                                        </div>
                                     </div>
                                 ) : (
                                     <div className="rounded-xl border border-slate-100 bg-slate-50/80 p-3.5 text-xs text-slate-500">

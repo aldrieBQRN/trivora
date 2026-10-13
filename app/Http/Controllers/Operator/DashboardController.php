@@ -140,7 +140,7 @@ class DashboardController extends Controller
                 // dashboard never renders a raw value like "1095.9565737817825d".
                 $daysLeft = (int) now()->diffInDays($scheme->expiry_date, false);
                 return [
-                    'coding_scheme_number' => $scheme->franchise_number,
+                    'coding_scheme_number' => $scheme->tricycle?->coding_scheme_number ?: ($scheme->sticker_number ?: $scheme->franchise_number),
                     'expiration_date' => $scheme->expiry_date->toDateString(),
                     'days_left'       => $daysLeft,
                 ];

@@ -68,7 +68,22 @@ class User extends Authenticatable
             'password'          => 'hashed',
             'is_active'         => 'boolean',
             'birthday'          => 'date',
+            'must_change_password'          => 'boolean',
+            'temporary_password_expires_at' => 'datetime',
+            'credentials_sent_at'           => 'datetime',
         ];
+    }
+
+    /**
+     * True while the account still signs in with a server-generated temporary password whose
+     * validity window has passed (see App\Services\StaffCredentials). These flags are set with
+     * forceFill only — deliberately not mass assignable.
+     */
+    public function temporaryPasswordExpired(): bool
+    {
+        return $this->must_change_password
+            && $this->temporary_password_expires_at !== null
+            && $this->temporary_password_expires_at->isPast();
     }
 
     /**

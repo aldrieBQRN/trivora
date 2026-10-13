@@ -80,7 +80,7 @@ trait DrivesFranchiseWorkflow
     {
         $payload = $this->registrationPayload($overrides);
 
-        $response = $this->post(route('register.public.submit'), $payload);
+        $response = $this->postRegistration($payload);
 
         $user = User::where('email', $payload['email'])->firstOrFail();
         $application = Application::where('operator_id', $user->operator->id)

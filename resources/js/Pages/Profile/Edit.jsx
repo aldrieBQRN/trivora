@@ -47,7 +47,7 @@ export default function Edit({ account }) {
 
                 <ProfileHero account={a} />
 
-                <div className="mt-6 grid grid-cols-1 items-start gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,440px)]">
+                <div className="mt-6 grid grid-cols-1 items-stretch gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,440px)]">
                     <ProfileDetails account={a} />
                     <PasswordCard />
                 </div>
@@ -100,7 +100,6 @@ function ProfileHero({ account }) {
                     <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-bold ${
                         account.is_active ? 'border-emerald-200/80 bg-emerald-50 text-emerald-700' : 'border-rose-200/80 bg-rose-50 text-rose-700'
                     }`}>
-                        <span className={`h-1.5 w-1.5 rounded-full ${account.is_active ? 'bg-emerald-500' : 'bg-rose-500'}`} />
                         {account.is_active ? 'Active Account' : 'Inactive Account'}
                     </span>
                     {account.member_since && (
@@ -394,7 +393,7 @@ function ProfileDetails({ account }) {
     ].filter(Boolean);
 
     return (
-        <section className={`overflow-hidden rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white ${CARD_SHADOW}`}>
+        <section className={`flex flex-col overflow-hidden rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white ${CARD_SHADOW}`}>
             <CardHeader
                 icon={User}
                 title="Profile Information"
@@ -406,7 +405,7 @@ function ProfileDetails({ account }) {
                 )}
             />
 
-            <dl className="grid grid-cols-1 gap-x-6 gap-y-1 px-5 py-4 sm:grid-cols-2 sm:px-6">
+            <dl className="grid flex-1 grid-cols-1 content-start gap-x-6 gap-y-1 px-5 py-4 sm:grid-cols-2 sm:px-6">
                 {rows.map(({ icon: Icon, label, value, wide, mono }) => (
                     <div key={label} className={`flex items-start gap-3 rounded-xl px-1 py-3 ${wide ? 'sm:col-span-2' : ''}`}>
                         <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-slate-200/80 bg-slate-50 text-slate-500">
@@ -466,7 +465,7 @@ function PasswordCard() {
         <form onSubmit={submit} className={`overflow-hidden rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white ${CARD_SHADOW}`}>
             <CardHeader icon={KeyRound} title="Change Password" description="Update the password you use to sign in." />
 
-            <div className="space-y-4 px-5 py-5 sm:px-6">
+            <div className="space-y-3 px-5 py-4 sm:px-6">
                 {recentlySuccessful && (
                     <div className="flex items-center gap-2.5 rounded-xl border border-emerald-200/80 bg-emerald-50/70 px-3.5 py-2.5 text-[12.5px] font-semibold text-emerald-800">
                         <CheckCircle2 size={15} className="shrink-0 text-emerald-600" />
@@ -499,9 +498,9 @@ function PasswordCard() {
                     onChange={(v) => setData('password_confirmation', v)}
                 />
 
-                <ul className="space-y-1.5 rounded-xl border border-slate-200/80 bg-slate-50/70 px-3.5 py-3">
+                <ul className="flex flex-wrap gap-x-4 gap-y-1.5 pt-1">
                     {checks.map((c) => (
-                        <li key={c.label} className={`flex items-center gap-2 text-[12px] font-medium ${c.ok ? 'text-emerald-700' : 'text-slate-500'}`}>
+                        <li key={c.label} className={`flex items-center gap-1.5 text-[11.5px] font-medium ${c.ok ? 'text-emerald-700' : 'text-slate-500'}`}>
                             {c.ok
                                 ? <CheckCircle2 size={13} className="shrink-0 text-emerald-600" />
                                 : <Circle size={13} className="shrink-0 text-slate-300" />}
@@ -530,7 +529,7 @@ function PasswordField({ id, label, value, error, autoComplete, onChange }) {
 
     return (
         <div>
-            <label htmlFor={id} className="mb-1.5 block text-xs font-bold text-slate-900">{label}</label>
+            <label htmlFor={id} className="mb-1 block text-xs font-bold text-slate-900">{label}</label>
             <div className="relative">
                 <input
                     id={id}

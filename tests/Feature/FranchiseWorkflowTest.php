@@ -84,7 +84,9 @@ class FranchiseWorkflowTest extends TestCase
 
         $application->refresh();
         $this->assertSame('awaiting_tmo_confirmation', $application->status);
-        $this->assertSame('STK-0001', $application->sticker_number);
+        // Both numbers are allocated by the server at release — never taken from the form.
+        $this->assertMatchesRegularExpression('/^MTOP-' . date('Y') . '-\d{4}$/', $application->sticker_number);
+        $this->assertMatchesRegularExpression('/^\d{4}$/', $application->tricycle->coding_scheme_number);
         $franchiseScheme = FranchiseScheme::where('tricycle_id', $tricycleId)->where('is_active', false)->first();
         $this->assertNotNull($franchiseScheme, 'BPLO release must create the franchise scheme, inactive until Final Confirmation.');
 

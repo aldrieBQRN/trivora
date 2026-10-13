@@ -4,7 +4,11 @@ namespace Tests\Feature;
 
 use App\Models\Passenger;
 use App\Models\User;
+use App\Notifications\RegistrationEmailCodeNotice;
+use App\Services\RegistrationEmailVerification;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Illuminate\Notifications\AnonymousNotifiable;
+use Illuminate\Support\Facades\Notification;
 use Laravel\Sanctum\Sanctum;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
@@ -15,7 +19,7 @@ class PassengerAuthTest extends TestCase
 
     private function validPayload(array $overrides = []): array
     {
-        return array_merge([
+        $payload = array_merge([
             'name' => 'Maria Santos',
             'email' => 'maria.santos@trivora.test',
             'password' => 'PassengerPass123!',
@@ -23,6 +27,93 @@ class PassengerAuthTest extends TestCase
             'terms_accepted' => true,
             'privacy_policy_accepted' => true,
         ], $overrides);
+
+        // Sign-up requires the token from verifying the emailed code.
+        if (! array_key_exists('email_verification_token', $overrides)) {
+            $payload['email_verification_token'] = $this->verificationTokenFor($payload['email']);
+        }
+
+        return $payload;
+    }
+
+    /** Runs the real send-code -> verify-code exchange and returns the verification token. */
+    private function verificationTokenFor(string $email): string
+    {
+        Notification::fake();
+
+        $this->postJson('/api/v1/passenger/register/send-code', ['email' => $email])->assertOk();
+
+        $code = null;
+        Notification::assertSentTo(new AnonymousNotifiable, RegistrationEmailCodeNotice::class, function ($notification) use (&$code) {
+            $code = $notification->code;
+
+            return true;
+        });
+
+        return $this->postJson('/api/v1/passenger/register/verify-code', ['email' => $email, 'code' => $code])
+            ->assertOk()
+            ->json('verification_token');
+    }
+
+    #[Test]
+    public function registration_requires_a_verified_email()
+    {
+        // No token at all.
+        $this->postJson('/api/v1/passenger/register', $this->validPayload(['email_verification_token' => null]))
+            ->assertStatus(422)->assertJsonValidationErrors(['email_verification_token']);
+
+        // A token issued for a DIFFERENT email.
+        $otherToken = $this->verificationTokenFor('someone.else@trivora.test');
+        $this->postJson('/api/v1/passenger/register', $this->validPayload(['email_verification_token' => $otherToken]))
+            ->assertStatus(422)->assertJsonValidationErrors(['email']);
+
+        $this->assertDatabaseMissing('users', ['email' => 'maria.santos@trivora.test']);
+    }
+
+    #[Test]
+    public function the_verification_token_works_once_and_the_email_says_passenger_account()
+    {
+        $payload = $this->validPayload();
+
+        Notification::assertSentTo(new AnonymousNotifiable, RegistrationEmailCodeNotice::class, function ($notification) {
+            return $notification->context === RegistrationEmailVerification::CONTEXT_PASSENGER;
+        });
+
+        $this->postJson('/api/v1/passenger/register', $payload)->assertStatus(201);
+
+        // Reusing the same token for another sign-up is refused.
+        $this->postJson('/api/v1/passenger/register', array_merge($payload, [
+            'email' => 'second.passenger@trivora.test',
+            'mobile_number' => '+63 917 555 0000',
+        ]))->assertStatus(422);
+    }
+
+    #[Test]
+    public function a_code_cannot_be_sent_to_an_email_that_already_has_an_account()
+    {
+        User::factory()->create(['email' => 'existing@trivora.test']);
+
+        $this->postJson('/api/v1/passenger/register/send-code', ['email' => 'Existing@Trivora.test'])
+            ->assertStatus(422)->assertJsonValidationErrors(['email']);
+    }
+
+    #[Test]
+    public function a_wrong_code_is_rejected()
+    {
+        Notification::fake();
+        $this->postJson('/api/v1/passenger/register/send-code', ['email' => 'new.rider@trivora.test'])->assertOk();
+
+        $code = null;
+        Notification::assertSentTo(new AnonymousNotifiable, RegistrationEmailCodeNotice::class, function ($n) use (&$code) {
+            $code = $n->code;
+
+            return true;
+        });
+
+        $this->postJson('/api/v1/passenger/register/verify-code', [
+            'email' => 'new.rider@trivora.test',
+            'code'  => $code === '000000' ? '111111' : '000000',
+        ])->assertStatus(422)->assertJsonValidationErrors(['code'])->assertJsonMissing(['verification_token']);
     }
 
     #[Test]
@@ -79,6 +170,8 @@ class PassengerAuthTest extends TestCase
 
         $res = $this->postJson('/api/v1/passenger/register', $this->validPayload([
             'mobile_number' => '+63 917 555 9999',
+            // The email already has an account, so no new code can be issued for it.
+            'email_verification_token' => 'not-needed',
         ]));
 
         $res->assertStatus(422)->assertJsonValidationErrors(['email']);

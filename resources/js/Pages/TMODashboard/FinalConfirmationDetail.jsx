@@ -585,6 +585,10 @@ export default function FinalConfirmationDetail({ application }) {
                                             <span className="font-medium text-slate-400">Mobile</span>
                                             <span className="font-bold text-slate-800">{application.tricycleDriver.contact_number || '—'}</span>
                                         </div>
+                                        <div className="flex items-center justify-between gap-3 text-slate-600">
+                                            <span className="font-medium text-slate-400">Email</span>
+                                            <span className="font-bold text-slate-800 break-all text-right">{application.tricycleDriver.email || '—'}</span>
+                                        </div>
                                         <div className="flex items-center justify-between text-slate-600">
                                             <span className="font-medium text-slate-400">Barangay</span>
                                             <span className="font-bold text-slate-800">{application.tricycleDriver.barangay || '—'}</span>

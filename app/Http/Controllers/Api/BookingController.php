@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Booking;
+use App\Models\BookingDispatchOffer;
 use App\Models\BookingDriverDecline;
 use App\Models\Driver;
 use App\Models\Passenger;
@@ -58,14 +59,20 @@ class BookingController extends Controller
             ], 409);
         }
 
-        // Cancel any existing pending bookings for this passenger
-        Booking::where('passenger_id', $passenger->id)
+        // Cancel any existing pending bookings for this passenger and expire their offers
+        $existingPending = Booking::where('passenger_id', $passenger->id)
             ->where('status', 'pending')
-            ->update([
+            ->get();
+        foreach ($existingPending as $ep) {
+            $ep->update([
                 'status' => 'cancelled',
                 'cancelled_at' => now(),
                 'cancellation_reason' => 'Replaced by new booking request',
             ]);
+            BookingDispatchOffer::where('booking_id', $ep->id)
+                ->where('status', BookingDispatchOffer::STATUS_OFFERED)
+                ->update(['status' => BookingDispatchOffer::STATUS_EXPIRED]);
+        }
 
         $bookingCode = 'BK-' . date('Ymd') . '-' . strtoupper(Str::random(4));
 
@@ -124,11 +131,11 @@ class BookingController extends Controller
     {
         $driver = Driver::where('user_id', $request->user()->id)->first();
 
-        // Only online and available drivers receive booking requests
-        if (!$driver || !$driver->isEffectivelyOnline() || !$driver->is_available) {
+        // Only online, available, and operational drivers receive booking requests
+        if (!$driver || !$driver->isEffectivelyOnline() || !$driver->is_available || !$driver->canOperate()) {
             return response()->json([
                 'requests' => [],
-                'notice' => $driver ? 'Driver is offline or unavailable.' : 'Driver not found.',
+                'notice' => $driver ? 'Driver is offline, unavailable, or unauthorized.' : 'Driver not found.',
             ]);
         }
 
@@ -145,10 +152,18 @@ class BookingController extends Controller
 
         $myRequests = [];
         foreach ($pendingBookings as $booking) {
-            // Evaluate sequential nearest-driver queue for this booking
-            $targetedDriver = BookingDispatchService::evaluateDispatch($booking);
-            if ($targetedDriver && $targetedDriver->id === $driver->id && $booking->status === 'pending') {
-                $myRequests[] = $booking;
+            // Evaluate simultaneous dispatch for this booking (advances rounds or marks exhausted)
+            BookingDispatchService::evaluateDispatch($booking);
+
+            if ($booking->status === 'pending' && BookingDispatchService::hasActiveOffer($booking, $driver->id)) {
+                $elapsed = $booking->dispatched_at ? $booking->dispatched_at->diffInSeconds(now()) : 0;
+                $remainingSeconds = max(0, BookingDispatchService::ROUND_TIMEOUT_SECONDS - $elapsed);
+
+                $bookingArray = $booking->toArray();
+                $bookingArray['offer_expires_in_seconds'] = $remainingSeconds;
+                $bookingArray['dispatch_round'] = (int) ($booking->dispatch_round ?: 1);
+                $bookingArray['dispatch_radius_m'] = $booking->dispatch_radius_m;
+                $myRequests[] = $bookingArray;
             }
         }
 
@@ -175,8 +190,9 @@ class BookingController extends Controller
         $booking = null;
         $conflict = false;
         $stale = false;
+        $ineligible = false;
 
-        DB::transaction(function () use ($id, $driver, &$booking, &$conflict, &$stale) {
+        DB::transaction(function () use ($id, $driver, &$booking, &$conflict, &$stale, &$ineligible) {
             $locked = Booking::where('id', $id)->where('booking_type', Booking::TYPE_BOOKING)->lockForUpdate()->first();
 
             if (!$locked) {
@@ -184,25 +200,40 @@ class BookingController extends Controller
             }
 
             // A driver running a QR walk-in session or a Manual Ride can't take a booked ride too.
+            // Also, if another driver has already won the booking, it is no longer pending.
             if ($locked->status !== 'pending' || QrRideService::driverHasOpenSession($driver)
                 || ManualRideService::driverHasActiveManualRide($driver)) {
                 $conflict = true;
                 return;
             }
 
-            // The sequential dispatch queue is only meaningful if acceptance is restricted to
-            // whoever it currently targets — otherwise a driver holding a stale copy of a request
-            // that has already moved on to the next nearest driver (or expired outright) could
-            // still grab it out of turn. Both conditions are re-checked against the just-locked
-            // row, never a cached value.
-            $offerExpired = $locked->dispatched_at
-                && $locked->dispatched_at->diffInSeconds(now()) >= BookingDispatchService::OFFER_TIMEOUT_SECONDS;
+            if (!$driver->is_online || !$driver->is_available || !$driver->canOperate()) {
+                $ineligible = true;
+                return;
+            }
 
-            if ($locked->dispatched_driver_id !== $driver->id || $offerExpired) {
+            // Re-verify the active offer for this driver under the row lock.
+            $offer = BookingDispatchOffer::where('booking_id', $locked->id)
+                ->where('driver_id', $driver->id)
+                ->first();
+
+            $offerExpired = false;
+            if ($locked->dispatched_at) {
+                $secondsElapsed = $locked->dispatched_at->diffInSeconds(now());
+                if ($secondsElapsed >= BookingDispatchService::ROUND_TIMEOUT_SECONDS) {
+                    $offerExpired = true;
+                }
+            }
+
+            $isAuthorizedOffer = ($offer && $offer->status === BookingDispatchOffer::STATUS_OFFERED && !$offerExpired)
+                || ($locked->dispatched_driver_id === $driver->id && !$offerExpired);
+
+            if (!$isAuthorizedOffer) {
                 $stale = true;
                 return;
             }
 
+            // WINNER: Atomically assign the booking to this driver
             $locked->update([
                 'driver_id' => $driver->id,
                 'tricycle_id' => $driver->tricycle_id,
@@ -210,6 +241,16 @@ class BookingController extends Controller
                 'status' => 'accepted',
                 'accepted_at' => now(),
             ]);
+
+            if ($offer) {
+                $offer->update(['status' => BookingDispatchOffer::STATUS_ACCEPTED]);
+            }
+
+            // Invalidate and expire all other outstanding offers for this booking immediately
+            BookingDispatchOffer::where('booking_id', $locked->id)
+                ->where('driver_id', '!=', $driver->id)
+                ->where('status', BookingDispatchOffer::STATUS_OFFERED)
+                ->update(['status' => BookingDispatchOffer::STATUS_EXPIRED]);
 
             $driver->update([
                 'is_available' => false,
@@ -221,11 +262,15 @@ class BookingController extends Controller
         });
 
         if ($conflict) {
-            return response()->json(['message' => 'This ride is no longer available.'], 409);
+            return response()->json(['message' => 'Another driver already accepted this ride.'], 409);
         }
 
         if ($stale) {
             return response()->json(['message' => 'This ride offer is no longer assigned to you or has expired.'], 409);
+        }
+
+        if ($ineligible) {
+            return response()->json(['message' => 'You are not eligible to accept rides at this time.'], 403);
         }
 
         if (!$booking) {
@@ -383,6 +428,11 @@ class BookingController extends Controller
                 if ($locked->driver) {
                     $locked->driver->update(['is_available' => true]);
                 }
+
+                // Invalidate all active offers for this booking so drivers stop seeing it immediately
+                BookingDispatchOffer::where('booking_id', $locked->id)
+                    ->where('status', BookingDispatchOffer::STATUS_OFFERED)
+                    ->update(['status' => BookingDispatchOffer::STATUS_EXPIRED]);
             }
 
             $locked->update($updateData);
@@ -459,7 +509,12 @@ class BookingController extends Controller
                 ($driver && $booking->driver_id === $driver->id)
             );
 
-            if ($owns && $booking->driver) {
+            if ($owns && $booking && $booking->status === 'pending') {
+                BookingDispatchService::evaluateDispatch($booking);
+                $booking->refresh();
+            }
+
+            if ($owns && $booking && $booking->driver) {
                 $booking->driver->append('heading_deg');
             }
 

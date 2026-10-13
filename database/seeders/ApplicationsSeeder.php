@@ -222,6 +222,7 @@ class ApplicationsSeeder extends Seeder
         // must be able to repair drifted demo data instead of skipping it via an exists()
         // guard.
         if ($op1 && $tri1) {
+            $tri1->update(['operator_id' => $op1->id]);
             $app1 = Application::updateOrCreate(
                 ['reference_number' => 'APP-2026-00001'],
                 [
@@ -230,7 +231,7 @@ class ApplicationsSeeder extends Seeder
                     'application_type' => 'new',
                     'current_step'     => 5,
                     'status'           => 'completed',
-                    'sticker_number'   => 'STK-2026-0001',
+                    'sticker_number'   => 'MTOP-2026-0001',
                     'submitted_at'     => now()->subDays(30),
                     'completed_at'     => now()->subDays(10),
                     'remarks'          => 'All requirements complete. Franchise Number released.',
@@ -251,6 +252,7 @@ class ApplicationsSeeder extends Seeder
                     'last_name'      => 'Ramos',
                     'date_of_birth'  => '1995-06-12',
                     'contact_number' => '09171234701',
+                    'email'          => 'driver.nramos@trivora.ph',
                     'barangay'       => $op1->barangay ?: 'Bucana',
                 ]
             );
@@ -293,8 +295,8 @@ class ApplicationsSeeder extends Seeder
                     ['tricycle_id' => $tri1->id],
                     [
                         'application_id'         => $app1->id,
-                        'franchise_number'       => $tri1->coding_scheme_number ?: '0142',
-                        'sticker_number'         => $app1->sticker_number,
+                        'franchise_number'       => $app1->sticker_number ?: 'MTOP-2026-0001',
+                        'sticker_number'         => $tri1->coding_scheme_number ?: '0142',
                         'color_coding_scheme_id' => $redScheme->id,
                         'issued_by'              => $bplo->id,
                         'issue_date'             => now()->subYears(3)->subDays(30)->toDateString(),
@@ -580,7 +582,7 @@ class ApplicationsSeeder extends Seeder
                     'application_type' => 'new',
                     'current_step'     => 4,
                     'status'           => 'awaiting_tmo_confirmation',
-                    'sticker_number'   => 'STK-2026-0512',
+                    'sticker_number'   => 'MTOP-2026-0512',
                     'submitted_at'     => now()->subDays(12),
                     'completed_at'     => null,
                     'remarks'          => 'Sticker and coding plate released by BPLO. Returned to TMO for tracking setup and activation.',
@@ -654,7 +656,7 @@ class ApplicationsSeeder extends Seeder
                 'to_status'      => 'awaiting_tmo_confirmation',
                 'from_step'      => 3,
                 'to_step'        => 4,
-                'notes'          => 'Franchise Number STK-2026-0512 released by BPLO. Driver instructed to return to TMO for GPS configuration.',
+                'notes'          => 'Franchise Number MTOP-2026-0512 released by BPLO. Driver instructed to return to TMO for GPS configuration.',
                 'created_at'     => now()->subDays(2),
             ]);
 
@@ -684,8 +686,8 @@ class ApplicationsSeeder extends Seeder
                     ['tricycle_id' => $tri6->id],
                     [
                         'application_id'         => $app6->id,
-                        'franchise_number'       => $tri6->coding_scheme_number ?: '0512',
-                        'sticker_number'         => $app6->sticker_number,
+                        'franchise_number'       => $app6->sticker_number ?: 'MTOP-2026-0512',
+                        'sticker_number'         => $tri6->coding_scheme_number ?: '0512',
                         'color_coding_scheme_id' => $blueScheme->id,
                         'issued_by'              => $bplo->id,
                         'issue_date'             => now()->subDays(2)->toDateString(),
@@ -1273,7 +1275,7 @@ class ApplicationsSeeder extends Seeder
                 'application_type' => 'new',
                 'current_step'     => 5,
                 'status'           => 'completed',
-                'sticker_number'   => 'STK-2026-7788',
+                'sticker_number'   => 'MTOP-2026-7788',
                 'submitted_at'     => now()->subDays(30),
                 'completed_at'     => now()->subDays(10),
                 'remarks'          => 'All requirements complete. Franchise issued; driver is a separate person from the owner.',
@@ -1290,6 +1292,7 @@ class ApplicationsSeeder extends Seeder
                 'last_name'      => 'Mercado',
                 'date_of_birth'  => '1996-03-08',
                 'contact_number' => '09175550008',
+                'email'          => 'driver.imercado@trivora.ph',
                 'barangay'       => 'Poblacion',
             ]
         );
@@ -1299,8 +1302,8 @@ class ApplicationsSeeder extends Seeder
                 ['tricycle_id' => $triRegDemo->id],
                 [
                     'application_id'         => $appRegDemo->id,
-                    'franchise_number'       => '0777',
-                    'sticker_number'         => $appRegDemo->sticker_number,
+                    'franchise_number'       => $appRegDemo->sticker_number ?: 'MTOP-2026-7788',
+                    'sticker_number'         => '0777',
                     'color_coding_scheme_id' => $redScheme->id,
                     'issued_by'              => $bplo->id,
                     'issue_date'             => now()->subDays(10)->toDateString(),
@@ -1710,12 +1713,12 @@ class ApplicationsSeeder extends Seeder
 
         $codingNumber = $tricycle->coding_scheme_number ?: '0001';
 
-        // Franchise Number (STK-YYYY-NNNN): BPLO release generates it once
+        // Franchise Number (MTOP-YYYY-NNNN): BPLO release generates it once
         // (BPLOController::showReleaseForm) and persists it to the application first, then
         // copies that same serial onto the franchise scheme (release()). An already-issued
         // serial is reused verbatim, so a re-run can never hand out a different number.
         $franchiseNumber = $app->sticker_number
-            ?: 'STK-' . now()->format('Y') . '-' . str_pad($codingNumber, 4, '0', STR_PAD_LEFT);
+            ?: 'MTOP-' . now()->format('Y') . '-' . str_pad($codingNumber, 4, '0', STR_PAD_LEFT);
         if ($app->sticker_number !== $franchiseNumber) {
             $app->update(['sticker_number' => $franchiseNumber]);
         }
@@ -1726,8 +1729,8 @@ class ApplicationsSeeder extends Seeder
                 [
                     'application_id'         => $app->id,
                     'color_coding_scheme_id' => $colorScheme->id,
-                    'franchise_number'       => $codingNumber,
-                    'sticker_number'         => $franchiseNumber,
+                    'franchise_number'       => $franchiseNumber,
+                    'sticker_number'         => $codingNumber,
                     'issued_by'              => $bplo->id,
                     'issue_date'             => now()->subDays(2)->toDateString(),
                     'expiry_date'            => now()->addYears(3)->toDateString(),

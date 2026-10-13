@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Booking;
+use App\Models\BookingDispatchOffer;
 use App\Models\BookingDriverDecline;
 use App\Models\Driver;
 use App\Models\FranchiseScheme;
@@ -12,27 +13,56 @@ use Illuminate\Support\Facades\DB;
 class BookingDispatchService
 {
     /**
-     * How long a single driver has to accept a booking before dispatch moves to the next nearest driver.
+     * Search radius configurations per round in kilometers.
      */
-    public const OFFER_TIMEOUT_SECONDS = 25;
+    public const ROUND_1_MAX_RADIUS_KM = 0.5; // 500 meters
+    public const ROUND_2_MAX_RADIUS_KM = 1.0; // 1,000 meters
+    public const ROUND_3_MAX_RADIUS_KM = 2.0; // 2,000 meters
 
     /**
-     * Maximum radius from pickup to search for eligible drivers in kilometers.
+     * Maximum response window per dispatch round in seconds.
      */
-    public const MAX_SEARCH_RADIUS_KM = 3.0;
+    public const ROUND_TIMEOUT_SECONDS = 20;
 
     /**
-     * Get all eligible drivers for a booking, sorted by distance from pickup (nearest first).
+     * Maximum number of dispatch rounds before search is exhausted.
+     */
+    public const MAX_ROUNDS = 3;
+
+    // Backward-compatibility aliases
+    public const OFFER_TIMEOUT_SECONDS = self::ROUND_TIMEOUT_SECONDS;
+    public const MAX_SEARCH_RADIUS_KM = self::ROUND_3_MAX_RADIUS_KM;
+
+    /**
+     * Get maximum radius in kilometers for a given dispatch round.
+     */
+    public static function getRadiusForRound(int $round): float
+    {
+        return match ($round) {
+            1 => self::ROUND_1_MAX_RADIUS_KM,
+            2 => self::ROUND_2_MAX_RADIUS_KM,
+            default => self::ROUND_3_MAX_RADIUS_KM,
+        };
+    }
+
+    /**
+     * Get all eligible drivers for a booking within a given radius, excluding specified driver IDs.
      *
      * @param Booking $booking
      * @param float $maxRadiusKm
+     * @param array<int> $excludedDriverIds
      * @return Collection<int, Driver>
      */
-    public static function getEligibleDrivers(Booking $booking, float $maxRadiusKm = self::MAX_SEARCH_RADIUS_KM): Collection
-    {
+    public static function getEligibleDrivers(
+        Booking $booking,
+        float $maxRadiusKm = self::ROUND_1_MAX_RADIUS_KM,
+        array $excludedDriverIds = []
+    ): Collection {
         $declinedDriverIds = BookingDriverDecline::where('booking_id', $booking->id)
             ->pluck('driver_id')
             ->all();
+
+        $allExcluded = array_values(array_unique(array_merge($declinedDriverIds, $excludedDriverIds)));
 
         $drivers = Driver::effectivelyOnline()
             ->where('is_available', true)
@@ -50,13 +80,14 @@ class BookingDispatchService
             ->when($booking->payment_method === Booking::PAYMENT_METHOD_GCASH, fn ($q) => $q->whereNotNull('gcash_qr_path'))
             ->whereNotNull('current_lat')
             ->whereNotNull('current_lng')
-            ->whereNotIn('id', $declinedDriverIds)
+            ->whereNotIn('id', $allExcluded)
             ->get();
 
         $pickupLat = (float) $booking->pickup_lat;
         $pickupLng = (float) $booking->pickup_lng;
 
         return $drivers
+            ->filter(fn (Driver $driver) => $driver->canOperate())
             ->map(function (Driver $driver) use ($pickupLat, $pickupLng) {
                 $distanceKm = GeoService::haversineKm(
                     (float) $driver->current_lat,
@@ -75,163 +106,145 @@ class BookingDispatchService
     }
 
     /**
-     * Evaluate the current dispatch state of a pending booking.
-     * Checks for timeouts or declines and automatically advances to the next nearest driver if needed.
-     *
-     * Runs inside a row lock on the booking so this never races with a concurrent call for the
-     * same booking (e.g. the passenger's own poll and another driver's poll evaluating the same
-     * booking at the same instant, or this racing an in-flight acceptBooking()) — whichever
-     * request acquires the lock first sees and writes the authoritative state; the other blocks
-     * briefly and then re-reads the now-current row instead of clobbering it with a stale decision.
-     *
-     * @param Booking $booking
-     * @return Driver|null The currently targeted driver, or null if no drivers available.
+     * Dispatches the specified round to all newly eligible drivers within that round's radius.
      */
-    public static function evaluateDispatch(Booking $booking): ?Driver
+    public static function dispatchRound(Booking $locked, int $round): Collection
     {
-        return DB::transaction(function () use ($booking) {
-            $locked = Booking::where('id', $booking->id)->lockForUpdate()->first();
+        $radiusKm = self::getRadiusForRound($round);
 
-            if (!$locked || $locked->status !== 'pending') {
-                return null;
-            }
+        // Drivers who already received an offer for this booking in ANY round are never offered it again
+        $alreadyOfferedDriverIds = BookingDispatchOffer::where('booking_id', $locked->id)
+            ->pluck('driver_id')
+            ->all();
 
-            $target = self::evaluateLocked($locked);
+        $eligibleDrivers = self::getEligibleDrivers($locked, $radiusKm, $alreadyOfferedDriverIds);
 
-            // Keep the caller's in-memory copy in sync with whatever this call just committed,
-            // since several call sites read $booking's attributes again right after calling this.
-            $booking->setRawAttributes($locked->getAttributes(), true);
-
-            return $target;
-        });
-    }
-
-    /**
-     * The actual evaluate logic, run against an already row-locked Booking inside a transaction.
-     */
-    private static function evaluateLocked(Booking $locked): ?Driver
-    {
-        // If a driver is currently dispatched, verify if the offer has expired or been declined
-        if ($locked->dispatched_driver_id) {
-            $hasDeclined = BookingDriverDecline::where('booking_id', $locked->id)
-                ->where('driver_id', $locked->dispatched_driver_id)
-                ->exists();
-
-            $isExpired = false;
-            if ($locked->dispatched_at) {
-                // Carbon 3 (in use here) returns a SIGNED diff by default — dispatched_at (past)
-                // ->diffInSeconds(now()) is the order that yields a positive elapsed-time value,
-                // matching the convention already used elsewhere in this codebase (see
-                // GpsDevice::status(), Tricycle's staleness check). The previous now()->diffInSeconds
-                // ($dispatched_at) ordering returned a NEGATIVE number for any past timestamp, so
-                // this check was never true and offers never expired via timeout — the root cause
-                // of a driver staying the dispatch target long after they should have been passed
-                // over.
-                $secondsElapsed = $locked->dispatched_at->diffInSeconds(now());
-                if ($secondsElapsed >= self::OFFER_TIMEOUT_SECONDS) {
-                    $isExpired = true;
-                }
-            }
-
-            if ($hasDeclined || $isExpired) {
-                // If expired without an explicit decline record, log it so the queue moves forward permanently
-                if ($isExpired && !$hasDeclined) {
-                    BookingDriverDecline::firstOrCreate([
-                        'booking_id' => $locked->id,
-                        'driver_id'  => $locked->dispatched_driver_id,
-                    ]);
-                }
-
-                return self::advanceLocked($locked);
-            }
-
-            // Current driver is still within the active offer window — re-check their eligibility
-            // against the CURRENT driver row, never a cached/stale copy. Includes canOperate() so
-            // a driver whose FRANCHISE is suspended/revoked WHILE an offer is outstanding to them
-            // is advanced past, not left holding a live offer they're no longer authorized to accept.
-            $currentDriver = Driver::find($locked->dispatched_driver_id);
-            if ($currentDriver && $currentDriver->is_online && $currentDriver->is_available && $currentDriver->canOperate()) {
-                return $currentDriver;
-            }
-
-            // Driver went offline or became unavailable mid-offer -> advance
-            BookingDriverDecline::firstOrCreate([
-                'booking_id' => $locked->id,
-                'driver_id'  => $locked->dispatched_driver_id,
-            ]);
-            return self::advanceLocked($locked);
+        foreach ($eligibleDrivers as $driver) {
+            BookingDispatchOffer::firstOrCreate(
+                [
+                    'booking_id' => $locked->id,
+                    'driver_id'  => $driver->id,
+                ],
+                [
+                    'dispatch_round' => $round,
+                    'status'         => BookingDispatchOffer::STATUS_OFFERED,
+                ]
+            );
         }
 
-        // No driver dispatched yet -> advance
-        return self::advanceLocked($locked);
-    }
-
-    /**
-     * Advance the dispatch queue to the next nearest eligible driver.
-     *
-     * @param Booking $booking
-     * @return Driver|null
-     */
-    public static function advanceDispatch(Booking $booking): ?Driver
-    {
-        return DB::transaction(function () use ($booking) {
-            $locked = Booking::where('id', $booking->id)->lockForUpdate()->first();
-
-            if (!$locked || $locked->status !== 'pending') {
-                return null;
-            }
-
-            $target = self::advanceLocked($locked);
-            $booking->setRawAttributes($locked->getAttributes(), true);
-
-            return $target;
-        });
-    }
-
-    /**
-     * The actual advance logic, run against an already row-locked Booking inside a transaction.
-     * Recalculates eligible drivers from current DB state every time — never reuses a cached
-     * candidate — and re-targets the nearest one not yet declined/timed-out for this booking.
-     * If no drivers remain, clears the dispatch target so the booking stays pending for the next
-     * eligible driver to come online/into range, without ever silently cancelling it.
-     */
-    private static function advanceLocked(Booking $locked): ?Driver
-    {
-        $eligibleDrivers = self::getEligibleDrivers($locked);
-        $nextDriver = $eligibleDrivers->first();
-
-        if ($nextDriver) {
-            $locked->update([
-                'dispatched_driver_id' => $nextDriver->id,
-                'dispatched_at'        => now(),
-            ]);
-
-            return $nextDriver;
-        }
-
-        // No eligible drivers currently available — keep booking pending for any driver coming online/in range
         $locked->update([
-            'dispatched_driver_id' => null,
-            'dispatched_at'        => null,
+            'dispatch_round'       => $round,
+            'dispatched_at'        => now(),
+            'dispatched_driver_id' => $eligibleDrivers->first()?->id,
         ]);
 
-        return null;
+        return $eligibleDrivers;
     }
 
     /**
-     * Handle explicit decline from a driver and immediately advance to the next nearest driver.
+     * Evaluate the dispatch state of a pending booking.
+     * Advances rounds if timed out, or cancels as 'no_driver_available' if all 3 rounds exhaust.
+     *
+     * @param Booking $booking
+     * @return Collection<int, Driver> Drivers with active offers in the current round.
+     */
+    public static function evaluateDispatch(Booking $booking): Collection
+    {
+        return DB::transaction(function () use ($booking) {
+            $locked = Booking::where('id', $booking->id)->lockForUpdate()->first();
+
+            if (!$locked || $locked->status !== 'pending') {
+                return collect();
+            }
+
+            $currentRound = (int) ($locked->dispatch_round ?: 1);
+
+            // 1. Initial dispatch if not yet started
+            if (!$locked->dispatched_at) {
+                $drivers = self::dispatchRound($locked, 1);
+                $booking->setRawAttributes($locked->getAttributes(), true);
+                return $drivers;
+            }
+
+            // 2. Check elapsed time in current round
+            $secondsElapsed = $locked->dispatched_at->diffInSeconds(now());
+
+            if ($secondsElapsed >= self::ROUND_TIMEOUT_SECONDS) {
+                // Mark current round's unaccepted offers as expired
+                BookingDispatchOffer::where('booking_id', $locked->id)
+                    ->where('dispatch_round', $currentRound)
+                    ->where('status', BookingDispatchOffer::STATUS_OFFERED)
+                    ->update(['status' => BookingDispatchOffer::STATUS_EXPIRED]);
+
+                if ($currentRound < self::MAX_ROUNDS) {
+                    // Advance to next round
+                    $nextRound = $currentRound + 1;
+                    $drivers = self::dispatchRound($locked, $nextRound);
+                    $booking->setRawAttributes($locked->getAttributes(), true);
+                    return $drivers;
+                }
+
+                // All 3 rounds exhausted!
+                $locked->update([
+                    'status'              => 'cancelled',
+                    'cancelled_by'        => 'system',
+                    'cancellation_reason' => 'no_driver_available',
+                    'cancelled_at'        => now(),
+                ]);
+
+                $booking->setRawAttributes($locked->getAttributes(), true);
+                return collect();
+            }
+
+            // 3. Current round still active: offer to any newly online/in-range drivers who haven't received an offer yet
+            $radiusKm = self::getRadiusForRound($currentRound);
+            $alreadyOfferedDriverIds = BookingDispatchOffer::where('booking_id', $locked->id)
+                ->pluck('driver_id')
+                ->all();
+            $newlyEligible = self::getEligibleDrivers($locked, $radiusKm, $alreadyOfferedDriverIds);
+
+            foreach ($newlyEligible as $driver) {
+                BookingDispatchOffer::firstOrCreate(
+                    [
+                        'booking_id' => $locked->id,
+                        'driver_id'  => $driver->id,
+                    ],
+                    [
+                        'dispatch_round' => $currentRound,
+                        'status'         => BookingDispatchOffer::STATUS_OFFERED,
+                    ]
+                );
+            }
+
+            // Return all drivers who currently have active 'offered' status in this round
+            $activeDriverIds = BookingDispatchOffer::where('booking_id', $locked->id)
+                ->where('dispatch_round', $currentRound)
+                ->where('status', BookingDispatchOffer::STATUS_OFFERED)
+                ->pluck('driver_id');
+
+            $activeDrivers = Driver::whereIn('id', $activeDriverIds)->get();
+
+            $booking->setRawAttributes($locked->getAttributes(), true);
+            return $activeDrivers;
+        });
+    }
+
+    /**
+     * Handle explicit decline from a driver.
+     * Records decline without cancelling for other drivers; if all offered drivers in this round have declined,
+     * advances immediately to next round or exhausts if at max rounds.
      *
      * @param Booking $booking
      * @param int $driverId
-     * @return Driver|null
+     * @return Collection<int, Driver>
      */
-    public static function handleDriverDecline(Booking $booking, int $driverId): ?Driver
+    public static function handleDriverDecline(Booking $booking, int $driverId): Collection
     {
         return DB::transaction(function () use ($booking, $driverId) {
             $locked = Booking::where('id', $booking->id)->lockForUpdate()->first();
 
             if (!$locked) {
-                return null;
+                return collect();
             }
 
             BookingDriverDecline::firstOrCreate([
@@ -239,15 +252,63 @@ class BookingDispatchService
                 'driver_id'  => $driverId,
             ]);
 
+            BookingDispatchOffer::where('booking_id', $locked->id)
+                ->where('driver_id', $driverId)
+                ->update(['status' => BookingDispatchOffer::STATUS_DECLINED]);
+
             if ($locked->status !== 'pending') {
                 $booking->setRawAttributes($locked->getAttributes(), true);
-                return null;
+                return collect();
             }
 
-            $target = self::advanceLocked($locked);
+            $currentRound = (int) ($locked->dispatch_round ?: 1);
+
+            // Check if any other drivers still hold an active offer in this round
+            $hasRemainingOffers = BookingDispatchOffer::where('booking_id', $locked->id)
+                ->where('dispatch_round', $currentRound)
+                ->where('status', BookingDispatchOffer::STATUS_OFFERED)
+                ->exists();
+
+            if (!$hasRemainingOffers) {
+                // All offered drivers in this round have declined!
+                if ($currentRound < self::MAX_ROUNDS) {
+                    $nextRound = $currentRound + 1;
+                    $drivers = self::dispatchRound($locked, $nextRound);
+                    $booking->setRawAttributes($locked->getAttributes(), true);
+                    return $drivers;
+                }
+
+                // Exhausted!
+                $locked->update([
+                    'status'              => 'cancelled',
+                    'cancelled_by'        => 'system',
+                    'cancellation_reason' => 'no_driver_available',
+                    'cancelled_at'        => now(),
+                ]);
+
+                $booking->setRawAttributes($locked->getAttributes(), true);
+                return collect();
+            }
+
             $booking->setRawAttributes($locked->getAttributes(), true);
 
-            return $target;
+            $activeDriverIds = BookingDispatchOffer::where('booking_id', $locked->id)
+                ->where('dispatch_round', $currentRound)
+                ->where('status', BookingDispatchOffer::STATUS_OFFERED)
+                ->pluck('driver_id');
+
+            return Driver::whereIn('id', $activeDriverIds)->get();
         });
+    }
+
+    /**
+     * Check if a driver has an active offer for a booking.
+     */
+    public static function hasActiveOffer(Booking $booking, int $driverId): bool
+    {
+        return BookingDispatchOffer::where('booking_id', $booking->id)
+            ->where('driver_id', $driverId)
+            ->where('status', BookingDispatchOffer::STATUS_OFFERED)
+            ->exists();
     }
 }

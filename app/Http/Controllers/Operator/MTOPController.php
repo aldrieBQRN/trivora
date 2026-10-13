@@ -157,12 +157,17 @@ class MTOPController extends Controller
                 'driver_last_name'  => 'required|string|max:100',
                 'driver_birthday'   => 'required|date|before_or_equal:today',
                 'driver_contact'    => ['required', 'string', 'regex:/^09\d{9}$/'],
+                // The driver's own Driver App login (login is email-only). The signed-in owner's
+                // address is already in users, so this also keeps it different from theirs.
+                'driver_email'      => 'required|string|email|max:255|unique:users,email',
                 'driver_barangay'   => ['required', 'string', Rule::in(\App\Support\NasugbuBarangays::values())],
             ]);
         }
 
         $messages = [
             'driver_contact.regex'         => 'The driver mobile number must be an 11-digit Philippine mobile number starting with 09 (e.g. 09171234567).',
+            'driver_email.email'           => 'Please enter a valid email address for the driver.',
+            'driver_email.unique'          => 'This driver email is already used by another Trivora account.',
             'year_model.min'               => 'Year model cannot be earlier than 2000.',
             'year_model.max'               => 'Year model cannot be in the future.',
             'body_color_other.required_if' => 'Please specify the custom body color.',
@@ -290,6 +295,7 @@ class MTOPController extends Controller
                     'last_name'      => $request->input('driver_last_name'),
                     'date_of_birth'  => $request->date('driver_birthday')->toDateString(),
                     'contact_number' => $request->input('driver_contact'),
+                    'email'          => strtolower(trim($request->input('driver_email'))),
                     'barangay'       => $request->input('driver_barangay'),
                 ]);
             }
@@ -594,7 +600,7 @@ class MTOPController extends Controller
         $franchiseScheme = FranchiseScheme::with('colorCodingScheme')->where('application_id', $app->id)->first();
         if ($franchiseScheme) {
             $bplo = [
-                'assignedStickerNumber' => $franchiseScheme->franchise_number,
+                'assignedStickerNumber' => $franchiseScheme->sticker_number ?: ($app->tricycle?->coding_scheme_number ?: $franchiseScheme->franchise_number),
                 'issueDate'    => $franchiseScheme->issue_date ? $franchiseScheme->issue_date->format('M d, Y') : null,
                 'expiryDate'   => $franchiseScheme->expiry_date ? $franchiseScheme->expiry_date->format('M d, Y') : null,
                 'colorCoding'  => $franchiseScheme->colorCodingScheme ? [

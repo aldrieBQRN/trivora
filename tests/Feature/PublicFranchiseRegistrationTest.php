@@ -199,7 +199,7 @@ class PublicFranchiseRegistrationTest extends TestCase
         // Missing toda_clearance document is rejected by validation
         $invalidPayload = $this->registrationPayload();
         unset($invalidPayload['documents']['toda_clearance']);
-        $response = $this->post(route('register.public.submit'), $invalidPayload);
+        $response = $this->postRegistration($invalidPayload);
         $response->assertSessionHasErrors('documents.toda_clearance');
     }
 
@@ -209,7 +209,7 @@ class PublicFranchiseRegistrationTest extends TestCase
         $payload = $this->registrationPayload();
         unset($payload['year_model']);
 
-        $response = $this->post(route('register.public.submit'), $payload);
+        $response = $this->postRegistration($payload);
 
         $response->assertSessionHasErrors('year_model');
         $this->assertSame(0, Application::count());
@@ -218,7 +218,7 @@ class PublicFranchiseRegistrationTest extends TestCase
     #[Test]
     public function an_unreasonable_year_model_is_rejected(): void
     {
-        $response = $this->post(route('register.public.submit'), $this->registrationPayload(['year_model' => 1899]));
+        $response = $this->postRegistration($this->registrationPayload(['year_model' => 1899]));
 
         $response->assertSessionHasErrors('year_model');
     }
@@ -229,7 +229,7 @@ class PublicFranchiseRegistrationTest extends TestCase
         $payload = $this->registrationPayload();
         unset($payload['body_color']);
 
-        $response = $this->post(route('register.public.submit'), $payload);
+        $response = $this->postRegistration($payload);
 
         $response->assertSessionHasErrors('body_color');
     }
@@ -240,7 +240,7 @@ class PublicFranchiseRegistrationTest extends TestCase
         $payload = $this->registrationPayload();
         unset($payload['or_number']);
 
-        $response = $this->post(route('register.public.submit'), $payload);
+        $response = $this->postRegistration($payload);
 
         $response->assertSessionHasErrors('or_number');
     }
@@ -290,7 +290,7 @@ class PublicFranchiseRegistrationTest extends TestCase
             'privacy_policy_accepted' => '0',
         ]);
 
-        $response = $this->post(route('register.public.submit'), $payload);
+        $response = $this->postRegistration($payload);
 
         $response->assertSessionHasErrors(['terms_accepted', 'privacy_policy_accepted']);
         $this->assertSame(0, Application::count());
@@ -301,7 +301,7 @@ class PublicFranchiseRegistrationTest extends TestCase
     {
         $payload = $this->registrationPayload(['terms_accepted' => false]);
 
-        $response = $this->post(route('register.public.submit'), $payload);
+        $response = $this->postRegistration($payload);
 
         $response->assertSessionHasErrors('terms_accepted');
         $this->assertSame(0, Application::count());
@@ -313,7 +313,7 @@ class PublicFranchiseRegistrationTest extends TestCase
     {
         $payload = $this->registrationPayload(['privacy_policy_accepted' => false]);
 
-        $response = $this->post(route('register.public.submit'), $payload);
+        $response = $this->postRegistration($payload);
 
         $response->assertSessionHasErrors('privacy_policy_accepted');
         $this->assertSame(0, Application::count());
@@ -325,7 +325,7 @@ class PublicFranchiseRegistrationTest extends TestCase
         $payload = $this->registrationPayload();
         unset($payload['terms_accepted'], $payload['privacy_policy_accepted']);
 
-        $response = $this->post(route('register.public.submit'), $payload);
+        $response = $this->postRegistration($payload);
 
         $response->assertSessionHasErrors(['terms_accepted', 'privacy_policy_accepted']);
         $this->assertSame(0, Application::count());
@@ -337,7 +337,7 @@ class PublicFranchiseRegistrationTest extends TestCase
         $payload = $this->registrationPayload();
         unset($payload['first_name']);
 
-        $response = $this->post(route('register.public.submit'), $payload);
+        $response = $this->postRegistration($payload);
 
         $response->assertSessionHasErrors('first_name');
         $this->assertGuest();
@@ -348,7 +348,7 @@ class PublicFranchiseRegistrationTest extends TestCase
     {
         $payload = $this->registrationPayload(['email' => 'not-an-email']);
 
-        $response = $this->post(route('register.public.submit'), $payload);
+        $response = $this->postRegistration($payload);
 
         $response->assertSessionHasErrors('email');
     }
@@ -359,7 +359,7 @@ class PublicFranchiseRegistrationTest extends TestCase
         $existing = User::factory()->create(['email' => 'taken@trivora.test']);
         $payload = $this->registrationPayload(['email' => $existing->email]);
 
-        $response = $this->post(route('register.public.submit'), $payload);
+        $response = $this->postRegistration($payload);
 
         $response->assertSessionHasErrors('email');
     }
@@ -370,7 +370,7 @@ class PublicFranchiseRegistrationTest extends TestCase
         [, , $first] = $this->registerNewApplication(['plate_number' => 'DUP-0001']);
 
         $payload = $this->registrationPayload(['plate_number' => 'DUP-0001']);
-        $response = $this->post(route('register.public.submit'), $payload);
+        $response = $this->postRegistration($payload);
 
         $response->assertSessionHasErrors('plate_number');
         // Only the first registration's tricycle exists.
@@ -383,7 +383,7 @@ class PublicFranchiseRegistrationTest extends TestCase
         $payload = $this->registrationPayload();
         unset($payload['toda']);
 
-        $response = $this->post(route('register.public.submit'), $payload);
+        $response = $this->postRegistration($payload);
 
         $response->assertSessionDoesntHaveErrors(['toda']);
         $this->assertSame(1, Application::count());
@@ -395,7 +395,7 @@ class PublicFranchiseRegistrationTest extends TestCase
         $payload = $this->registrationPayload();
         unset($payload['plate_number']);
 
-        $response = $this->post(route('register.public.submit'), $payload);
+        $response = $this->postRegistration($payload);
 
         $response->assertSessionHasErrors('plate_number');
     }
@@ -406,7 +406,7 @@ class PublicFranchiseRegistrationTest extends TestCase
         $payload = $this->registrationPayload();
         unset($payload['documents']['orcr_photocopy']);
 
-        $response = $this->post(route('register.public.submit'), $payload);
+        $response = $this->postRegistration($payload);
 
         $response->assertSessionHasErrors('documents.orcr_photocopy');
         $this->assertSame(0, Application::count());
@@ -429,7 +429,7 @@ class PublicFranchiseRegistrationTest extends TestCase
             ],
         ]);
 
-        $response = $this->post(route('register.public.submit'), $payload);
+        $response = $this->postRegistration($payload);
 
         $response->assertSessionHasErrors('documents.police_clearance.0');
     }
@@ -440,7 +440,7 @@ class PublicFranchiseRegistrationTest extends TestCase
         $payload = $this->registrationPayload();
         unset($payload['email']);
 
-        $this->post(route('register.public.submit'), $payload);
+        $this->postRegistration($payload);
 
         $this->assertSame(0, User::where('name', 'Juan Dela Cruz')->count());
         $this->assertSame(0, Application::count());

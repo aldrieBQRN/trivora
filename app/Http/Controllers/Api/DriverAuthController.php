@@ -43,6 +43,10 @@ class DriverAuthController extends Controller
     private function resolveAndValidateFranchise(string $franchiseNumber): array {
         $franchiseScheme = FranchiseScheme::where('franchise_number', $franchiseNumber)->first();
 
+        if (!$franchiseScheme) {
+            $franchiseScheme = FranchiseScheme::where('sticker_number', $franchiseNumber)->first();
+        }
+
         // Applicants copy the identifier they were shown. The registry used to print a
         // `PERMIT-2026-<unit>` display string (built from the unit's coding scheme number),
         // so a typed number in that shape still has to resolve rather than 404. The display
@@ -52,9 +56,10 @@ class DriverAuthController extends Controller
         // scheme number. Everything downstream (token, response echo, register) still uses
         // the AUTHORITATIVE franchise_schemes.franchise_number, never the typed display format.
         if (!$franchiseScheme) {
-            $suffix = preg_replace('/^PERMIT-\d{4}-/', '', $franchiseNumber);
+            $suffix = preg_replace('/^(PERMIT|STK)-\d{4}-/', '', $franchiseNumber);
             if ($suffix !== '' && $suffix !== $franchiseNumber) {
                 $franchiseScheme = FranchiseScheme::where('franchise_number', $suffix)
+                    ->orWhere('sticker_number', $suffix)
                     ->orderByDesc('id')
                     ->first();
             }
@@ -203,9 +208,18 @@ class DriverAuthController extends Controller
      */
     private function personPayload($person, string $type, string $role): array
     {
+        // Login is email-only. An owner who already has a Trivora account keeps that account's
+        // email (locked); otherwise the email on file — the separate driver's registration
+        // email — is only a prefill the user confirms or corrects in the app.
+        $existingAccount = $person instanceof Operator ? $person->user : null;
+
         return array_merge(
             ['type' => $type, 'role' => $role],
-            $this->personalInformationPayload($person)
+            $this->personalInformationPayload($person),
+            [
+                'email'        => $existingAccount?->email ?? ($person instanceof \App\Models\ApplicationDriver ? $person->email : null),
+                'email_locked' => $existingAccount !== null,
+            ]
         );
     }
 
@@ -323,6 +337,9 @@ class DriverAuthController extends Controller
             // account is for — constrained to the only two roles that can ever exist, then
             // independently resolved against the franchise's actual records below.
             'person_type'        => 'required|string|in:owner,driver',
+            // The account's sign-in email (login is email-only). Ignored for an owner who
+            // already has a Trivora account — that account keeps its own email.
+            'email'              => 'required|string|email|max:255',
             'verification_token' => 'required|string',
             'password'           => 'required|string|min:6',
             'confirm_password'   => 'sometimes|nullable|string|same:password',
@@ -449,23 +466,44 @@ class DriverAuthController extends Controller
             }
 
             // ---- Account resolution: ONE source of truth = the selected person ----
-            // The driver never supplies an email; users.email is NOT NULL UNIQUE, so a
-            // deterministic system address is derived per franchise and looked up first
-            // (a retry can't collide). Selecting the OWNER reuses the owner's existing login
-            // instead of ever creating a duplicate user for the same person; selecting the
-            // separate driver builds their own account and never touches the owner's.
+            // Selecting the OWNER reuses the owner's existing login (and its email) instead of
+            // ever creating a duplicate user for the same person; selecting the separate driver
+            // builds their own account, signed in with the email entered here, and never
+            // touches the owner's. A pre-email driver account for this franchise (system
+            // address driver.{id}@trivora.test) is reused and given the real email.
             $user = null;
             if ($selectedIsOwner && $operator->user) {
                 $user = $operator->user;
             } else {
-                $email = 'driver.' . $franchiseScheme->id . '@trivora.test';
-                $user = User::where('email', $email)->first() ?: User::create([
+                $email = strtolower(trim($request->email));
+                $legacyUser = User::where('email', 'driver.' . $franchiseScheme->id . '@trivora.test')->first();
+
+                $emailTaken = User::whereRaw('LOWER(email) = ?', [$email])
+                    ->when($legacyUser, fn ($q) => $q->where('id', '!=', $legacyUser->id))
+                    ->exists();
+                if ($emailTaken) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'This email is already used by another Trivora account. Please use a different email.',
+                        'code'    => 'EMAIL_ALREADY_USED',
+                        'errors'  => ['email' => ['This email is already used by another Trivora account.']],
+                    ], 422);
+                }
+
+                $user = $legacyUser ?: User::create([
                     'name'      => $person->full_name,
                     'email'     => $email,
                     'password'  => Hash::make($request->password),
                     'role'      => 'tricycle_driver',
                     'is_active' => true,
                 ]);
+                $user->email = $email;
+
+                // Keep the franchise record's driver email in step with their login.
+                if ($person instanceof \App\Models\ApplicationDriver && $person->email !== $email) {
+                    $person->email = $email;
+                    $person->save();
+                }
             }
 
             // The password the driver just typed is authoritative for their driver-app account
@@ -569,16 +607,18 @@ class DriverAuthController extends Controller
     /**
      * Driver Login Endpoint
      *
-     * The user-facing credential is the driver's EXISTING mobile number + password — the
-     * same mobile-number login the owner web portal uses. Email is no longer part of the
-     * flow. Franchise permit number and operator license number remain accepted as
-     * non-email fallbacks for existing clients.
+     * Email-only: the driver's account email + password — the same email login the web portal
+     * uses. The account email is the one entered when the Driver App account was registered
+     * (or the owner's existing web account email).
      */
     public function login(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'login'    => 'required|string', // the account's mobile number (or franchise/license number)
+            'login'    => 'required|string|email|max:255', // the account's email address
             'password' => 'required|string',
+        ], [
+            'login.required' => 'Please enter your email address.',
+            'login.email'    => 'Please enter a valid email address.',
         ]);
 
         if ($validator->fails()) {
@@ -589,64 +629,8 @@ class DriverAuthController extends Controller
             ], 422);
         }
 
-        $login = trim($request->login);
-        $user = null;
-
-        // Mobile number — the primary, user-facing login credential: the person's own
-        // verified number already on file. Every stored source resolves to the account of
-        // the person who actually drives this franchise: the registered Driver row's
-        // mobile_number (copied from the verified person at registration), a staff/owner
-        // account's users.contact_number, or the owner's operators.contact_number resolved
-        // through its linked user. MobileNumber::variants covers the 09…/9…/+63…/63…
-        // forms so any stored equivalent matches.
-        if (MobileNumber::looksLikeMobile($login)) {
-            $variants = MobileNumber::variants($login);
-            $inClause = implode(',', array_fill(0, count($variants), '?'));
-
-            $user = Driver::whereNotNull('mobile_number')
-                ->whereRaw(MobileNumber::normalizedSql('mobile_number') . " IN ({$inClause})", $variants)
-                ->first()?->user;
-
-            if (!$user) {
-                $user = User::whereNotNull('contact_number')
-                    ->whereRaw(MobileNumber::normalizedSql('contact_number') . " IN ({$inClause})", $variants)
-                    ->first();
-            }
-
-            if (!$user) {
-                $mobileOperator = Operator::whereNotNull('contact_number')
-                    ->whereRaw(MobileNumber::normalizedSql('contact_number') . " IN ({$inClause})", $variants)
-                    ->first();
-
-                $user = $mobileOperator?->user
-                    ?? ($mobileOperator ? Driver::where('operator_id', $mobileOperator->id)->first()?->user : null);
-            }
-        }
-
-        if (!$user) {
-            // Franchise permit number — a non-email fallback identifier for the actual
-            // driver of a franchise. Resolves strictly through the registered Driver row
-            // for that franchise's tricycle, so an unregistered franchise (no Driver row
-            // yet) can never log in.
-            $franchiseScheme = FranchiseScheme::where('franchise_number', strtoupper($login))->first();
-            if ($franchiseScheme) {
-                $user = Driver::where('tricycle_id', $franchiseScheme->tricycle_id)->first()?->user;
-            }
-        }
-
-        if (!$user) {
-            // Operator license number → the owner-linked account, falling back to the
-            // Driver row's account when operators.user_id was never linked (a separate
-            // driver registration deliberately never overwrites the owner's link).
-            $licensedOperator = Operator::where('license_number', strtoupper($login))->first();
-            if ($licensedOperator) {
-                $user = $licensedOperator->user
-                    ?? Driver::where('operator_id', $licensedOperator->id)->first()?->user;
-            }
-        }
-
-        // Email identifiers are intentionally NOT resolved — email is no longer part of
-        // the login flow, so an email-shaped input simply fails to match any account above.
+        // Case-insensitive, like the web portal's login lookup.
+        $user = User::whereRaw('LOWER(email) = ?', [strtolower(trim($request->login))])->first();
 
         if (!$user || !Hash::check($request->password, $user->password)) {
             return response()->json([

@@ -6,7 +6,8 @@ import Swal from 'sweetalert2';
 import {
     ChevronLeft, Hash, ShieldCheck, Loader2,
     CheckCircle2, Info, Lock, Bike, User,
-    Phone, MapPin, Gauge, AlertCircle
+    Phone, MapPin, Gauge, AlertCircle, CalendarDays, Mail,
+    Palette, FileText, CreditCard
 } from 'lucide-react';
 
 /**
@@ -117,7 +118,7 @@ export default function IssueStickerNumber({ application, codingSchemes = [] }) 
                     </div>
                 </div>
                 <p class="mt-3 text-[11px] text-slate-500 text-left">
-                    Note: Driver must report to <b>TMO for Final Confirmation</b> to turn on GPS tracking and get final clearance.
+                    The final numbers are assigned when you confirm. If another staff member releases first, the next available numbers are used.
                 </p>
             `,
             icon: 'question',
@@ -129,14 +130,16 @@ export default function IssueStickerNumber({ application, codingSchemes = [] }) 
         }).then((result) => {
             if (result.isConfirmed) {
                 post(`/bplo/issue/${application.id}`, {
-                    onSuccess: () => {
+                    // The server allocates the numbers, so report exactly what it issued (or why not).
+                    // A refusal (e.g. already released) is shown by the Releasing Queue page itself.
+                    onSuccess: (page) => {
+                        const { success, error } = page.props.flash || {};
+                        if (error) return;
                         Swal.fire({
                             title: 'Franchise Released!',
-                            text: `Sticker Number #${data.coding_scheme_number} and Franchise Number #${data.sticker_number} have been released. Unit advanced to TMO Final Confirmation.`,
+                            text: success || 'Unit advanced to TMO Final Confirmation.',
                             icon: 'success',
                             confirmButtonColor: '#059669',
-                            timer: 2500,
-                            showConfirmButton: false
                         });
                     },
                     onError: (errs) => {
@@ -223,20 +226,38 @@ export default function IssueStickerNumber({ application, codingSchemes = [] }) 
                                         Applicant &amp; Tricycle Information
                                     </h3>
                                 </div>
-                                <span className="text-[11px] font-semibold text-slate-400 font-mono">
-                                    #{application.id}
+                                <span className="text-[11px] font-semibold text-slate-500 font-mono">
+                                    {application.reference}
                                 </span>
                             </div>
 
                             <div className="p-5 divide-y divide-slate-100 text-xs">
                                 {/* Tricycle Owner — primary applicant/owner, never the driver */}
-                                <div className="pb-3.5 flex items-start justify-between gap-3">
-                                    <div>
-                                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Tricycle Owner</span>
-                                        <span className="text-sm font-bold text-slate-900 mt-0.5 block">{application.operator || '—'}</span>
+                                <div className="pb-3.5">
+                                    <div className="flex items-start justify-between gap-3">
+                                        <div>
+                                            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Tricycle Owner</span>
+                                            <span className="text-sm font-bold text-slate-900 mt-0.5 block">{application.operator || '—'}</span>
+                                        </div>
+                                        <div className="h-8 w-8 rounded-full bg-gradient-to-br from-[#182B62] to-[#25449B] text-white flex items-center justify-center text-xs font-bold shadow-2xs shrink-0">
+                                            {application.operator ? application.operator.charAt(0).toUpperCase() : 'O'}
+                                        </div>
                                     </div>
-                                    <div className="h-8 w-8 rounded-full bg-gradient-to-br from-[#182B62] to-[#25449B] text-white flex items-center justify-center text-xs font-bold shadow-2xs shrink-0">
-                                        {application.operator ? application.operator.charAt(0).toUpperCase() : 'O'}
+                                    <div className="mt-2.5 space-y-1.5 rounded-lg border border-slate-200/80 bg-slate-50/70 px-3 py-2.5 text-[11px]">
+                                        {[
+                                            { icon: CalendarDays, label: 'Birthday', value: application.owner?.birthday },
+                                            { icon: Phone, label: 'Mobile', value: application.owner?.contact_number },
+                                            { icon: Mail, label: 'Email', value: application.owner?.email },
+                                            { icon: MapPin, label: 'Barangay', value: application.owner?.barangay },
+                                        ].map(({ icon: Icon, label, value }) => (
+                                            <div key={label} className="flex items-start justify-between gap-3">
+                                                <span className="flex items-center gap-1.5 text-slate-500 shrink-0">
+                                                    <Icon size={12} className="text-slate-400" />
+                                                    {label}
+                                                </span>
+                                                <strong className="text-slate-800 text-right break-all">{value || '—'}</strong>
+                                            </div>
+                                        ))}
                                     </div>
                                 </div>
 
@@ -257,74 +278,38 @@ export default function IssueStickerNumber({ application, codingSchemes = [] }) 
                                         <div className="mt-2 space-y-1 rounded-lg border border-indigo-200/70 bg-indigo-50/60 px-3 py-2 text-[11px] text-slate-600">
                                             <p>Birthday: <strong className="text-slate-800">{application.tricycleDriver.birthday || '—'}</strong></p>
                                             <p>Mobile: <strong className="text-slate-800">{application.tricycleDriver.contact_number || '—'}</strong></p>
+                                            <p>Email: <strong className="text-slate-800 break-all">{application.tricycleDriver.email || '—'}</strong></p>
                                             <p>Barangay: <strong className="text-slate-800">{application.tricycleDriver.barangay || '—'}</strong></p>
                                         </div>
                                     )}
                                 </div>
 
-                                {/* Make & Model */}
-                                <div className="py-3 flex items-center justify-between gap-2">
-                                    <span className="text-slate-500 font-medium flex items-center gap-1.5">
-                                        <Bike size={13} className="text-slate-400" />
-                                        Make &amp; Model
-                                    </span>
-                                    <span className="font-semibold text-slate-800">{application.make || '—'}</span>
-                                </div>
-
-                                {/* Engine Number */}
-                                <div className="py-3 flex items-center justify-between gap-2">
-                                    <span className="text-slate-500 font-medium flex items-center gap-1.5">
-                                        <Gauge size={13} className="text-slate-400" />
-                                        Engine Serial
-                                    </span>
-                                    <span className="font-mono font-semibold text-slate-700 bg-slate-50 px-2 py-0.5 rounded border border-slate-100">
-                                        {application.engine_number || 'N/A'}
-                                    </span>
-                                </div>
-
-                                {/* Chassis Number */}
-                                <div className="pt-3 flex items-center justify-between gap-2">
-                                    <span className="text-slate-500 font-medium flex items-center gap-1.5">
-                                        <Hash size={13} className="text-slate-400" />
-                                        Chassis Serial
-                                    </span>
-                                    <span className="font-mono font-semibold text-slate-700 bg-slate-50 px-2 py-0.5 rounded border border-slate-100">
-                                        {application.chassis_number || 'N/A'}
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Card 2: Before-Release Notice — BPLO does not record, verify, or process
-                            payment in this system. Payment happens entirely offline at the
-                            Municipal Treasurer's Office; this is a manual, in-person check only. */}
-                        <div className={`overflow-hidden rounded-2xl sm:rounded-3xl border border-amber-200/80 bg-amber-50/40 ${CARD_SHADOW}`}>
-                            <div className="flex items-center gap-2 border-b border-amber-100 bg-amber-50/60 px-5 py-3.5">
-                                <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-amber-500/[0.16] to-amber-500/[0.02] text-amber-700">
-                                    <AlertCircle size={15} strokeWidth={2.2} />
-                                </div>
-                                <h3 className="text-xs font-bold uppercase tracking-wider text-amber-800">
-                                    Before You Release
-                                </h3>
-                            </div>
-
-                            <div className="p-5 text-xs leading-relaxed text-slate-700">
-                                Verify the applicant's TMO ticket and confirm that the required payment receipt has been presented before releasing the sticker and plate for coding.
-                            </div>
-                        </div>
-
-                        {/* Card 3: Handover Notice to TMO */}
-                        <div className={`rounded-2xl sm:rounded-3xl border border-amber-200/80 bg-amber-50/60 p-4 sm:p-5 flex items-start gap-3.5 ${CARD_SHADOW}`}>
-                            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-amber-500/[0.14] to-amber-500/[0.03] text-amber-600 shrink-0 mt-0.5">
-                                <Info size={18} strokeWidth={2.2} />
-                            </div>
-                            <div className="min-w-0">
-                                <h4 className="text-xs font-bold uppercase tracking-wider text-amber-900">
-                                    Next Step: Final Confirmation at TMO
-                                </h4>
-                                <p className="mt-1 text-xs text-amber-800 leading-relaxed font-medium">
-                                    BPLO releases the Franchise Number and coding plate. <strong>BPLO does not install GPS devices.</strong> After releasing the Franchise Number and plate, tell the driver to go to <strong>TMO for Final Confirmation</strong> to turn on GPS tracking.
-                                </p>
+                                {/* Tricycle — every registered vehicle detail */}
+                                {[
+                                    { icon: CreditCard, label: 'Plate Number', value: application.plate_number, mono: true },
+                                    { icon: Bike, label: 'Make & Model', value: application.make },
+                                    { icon: CalendarDays, label: 'Year Model', value: application.year_model },
+                                    { icon: Palette, label: 'Body Color', value: application.body_color },
+                                    { icon: Bike, label: 'Body Type', value: application.body_type },
+                                    { icon: Gauge, label: 'Engine Serial', value: application.engine_number, mono: true },
+                                    { icon: Hash, label: 'Chassis Serial', value: application.chassis_number, mono: true },
+                                    { icon: FileText, label: 'LTO OR No.', value: application.or_number, mono: true },
+                                    { icon: FileText, label: 'LTO CR No.', value: application.cr_number, mono: true },
+                                ].map(({ icon: Icon, label, value, mono }) => (
+                                    <div key={label} className="py-3 last:pb-0 flex items-center justify-between gap-2">
+                                        <span className="text-slate-500 font-medium flex items-center gap-1.5 shrink-0">
+                                            <Icon size={13} className="text-slate-400" />
+                                            {label}
+                                        </span>
+                                        {mono ? (
+                                            <span className="font-mono font-semibold text-slate-700 bg-slate-50 px-2 py-0.5 rounded border border-slate-100 text-right break-all">
+                                                {value && value !== 'N/A' ? value : '—'}
+                                            </span>
+                                        ) : (
+                                            <span className="font-semibold text-slate-800 text-right">{value && value !== 'N/A' ? value : '—'}</span>
+                                        )}
+                                    </div>
+                                ))}
                             </div>
                         </div>
 
@@ -373,13 +358,13 @@ export default function IssueStickerNumber({ application, codingSchemes = [] }) 
                                         </div>
                                         <span className="absolute right-3.5 top-1/2 -translate-y-1/2 inline-flex items-center gap-1 text-xs font-mono text-slate-400">
                                             <Lock size={11} />
-                                            AUTO-GENERATED
+                                            PREVIEW
                                         </span>
                                     </div>
                                     <p className="text-[11px] text-slate-400">
                                         {application.is_renewal
                                             ? "Renewal keeps this tricycle's existing 4-digit municipal sticker number."
-                                            : 'Automatically assigned by the system as the next available 4-digit municipal sticker number.'}
+                                            : 'Preview of the next 4-digit municipal sticker number. Assigned when you release.'}
                                     </p>
                                     {(errors.coding_scheme_number || errors.body_number) && (
                                         <p className="text-[11px] font-medium text-rose-600 flex items-center gap-1 mt-1">
@@ -446,7 +431,7 @@ export default function IssueStickerNumber({ application, codingSchemes = [] }) 
                                         </span>
                                         <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200/80">
                                             <CheckCircle2 size={11} />
-                                            Auto-Generated &amp; Persisted
+                                            Assigned on release
                                         </span>
                                     </label>
 
@@ -461,7 +446,7 @@ export default function IssueStickerNumber({ application, codingSchemes = [] }) 
                                         <Lock size={14} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
                                     </div>
                                     <p className="text-[11px] text-slate-400">
-                                        The unique Franchise Number issued and registered to this application.
+                                        Preview of the next Franchise Number. The final number is assigned when you release.
                                     </p>
 
                                     {errors.sticker_number && (
@@ -494,6 +479,23 @@ export default function IssueStickerNumber({ application, codingSchemes = [] }) 
                                     </button>
                                 </div>
 
+                            </div>
+                        </div>
+
+                        {/* Release notices — short, directly under the assignment card. Payment is
+                            offline (Municipal Treasurer); BPLO only checks the receipt in person. */}
+                        <div className={`rounded-2xl sm:rounded-3xl border border-amber-200/80 bg-amber-50/50 p-4 sm:p-5 space-y-3 ${CARD_SHADOW}`}>
+                            <div className="flex items-start gap-3">
+                                <AlertCircle size={16} strokeWidth={2.2} className="mt-0.5 shrink-0 text-amber-600" />
+                                <p className="text-xs leading-relaxed text-amber-900">
+                                    <strong className="font-bold">Before you release:</strong> check the TMO ticket and the official payment receipt.
+                                </p>
+                            </div>
+                            <div className="flex items-start gap-3 border-t border-amber-200/70 pt-3">
+                                <Info size={16} strokeWidth={2.2} className="mt-0.5 shrink-0 text-amber-600" />
+                                <p className="text-xs leading-relaxed text-amber-900">
+                                    <strong className="font-bold">Next step:</strong> send the driver to the TMO for Final Confirmation and GPS setup.
+                                </p>
                             </div>
                         </div>
 

@@ -7,7 +7,7 @@ import {
     Users, UserPlus, Search, ShieldCheck, CheckCircle2,
     XCircle, Clock, Edit2, Trash2, Key, Mail,
     User, Lock, X, AlertCircle, RotateCcw,
-    ChevronLeft, ChevronRight, Eye, EyeOff, Loader2,
+    ChevronLeft, ChevronRight, Eye, EyeOff, Loader2, Send,
 } from 'lucide-react';
 import { Modal } from '@/Components/TMO';
 
@@ -21,6 +21,46 @@ const STATUS_OPTIONS = [
     { value: 'active', label: 'Active' },
     { value: 'inactive', label: 'Inactive' },
 ];
+
+// Credential-email outcome is reported by the server's flash message — the UI never assumes
+// the email went out.
+function showCredentialsResult(page, successTitle) {
+    const { success, warning, error } = page.props.flash || {};
+    if (warning || error) {
+        Swal.fire({
+            title: warning ? 'Email Not Sent' : 'Action Not Available',
+            text: warning || error,
+            icon: warning ? 'warning' : 'error',
+            confirmButtonColor: '#182B62',
+        });
+        return;
+    }
+    Swal.fire({
+        title: successTitle,
+        text: success,
+        icon: 'success',
+        confirmButtonColor: '#182B62',
+        timer: 2500,
+        showConfirmButton: false,
+    });
+}
+
+// Temporary-password state for accounts that haven't set their own password yet.
+const CREDENTIAL_BADGES = {
+    not_sent: { label: 'Credentials email not sent', className: 'border-rose-200 bg-rose-50 text-rose-700' },
+    pending: { label: 'Awaiting first sign-in', className: 'border-amber-200 bg-amber-50 text-amber-700' },
+    expired: { label: 'Temporary password expired', className: 'border-slate-200 bg-slate-100 text-slate-600' },
+};
+
+function CredentialsBadge({ status }) {
+    const badge = CREDENTIAL_BADGES[status];
+    if (!badge) return null;
+    return (
+        <span className={`mt-1.5 inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-bold ${badge.className}`}>
+            {badge.label}
+        </span>
+    );
+}
 
 export default function StaffManagement({
     users = [],
@@ -43,7 +83,6 @@ export default function StaffManagement({
         contact_number: '',
         address: '',
         email: '',
-        password: '',
         is_active: true
     });
 
@@ -121,16 +160,10 @@ export default function StaffManagement({
     // Submit Add
     const handleAddSubmit = () => {
         addForm.post(route('bplo.users.store'), {
-            onSuccess: () => {
+            onSuccess: (page) => {
                 setAddModalOpen(false);
                 addForm.reset();
-                Swal.fire({
-                    title: 'Account Created',
-                    text: 'New BPLO staff member has been successfully added.',
-                    icon: 'success',
-                    timer: 2000,
-                    showConfirmButton: false
-                });
+                showCredentialsResult(page, 'Account Created');
             }
         });
     };
@@ -152,6 +185,26 @@ export default function StaffManagement({
                     showConfirmButton: false
                 });
             }
+        });
+    };
+
+    // Generate and email a NEW temporary password (failed delivery or expired before first sign-in)
+    const handleResendCredentials = (user) => {
+        Swal.fire({
+            title: 'Resend Credentials?',
+            text: `A new temporary password will be generated and emailed to ${user.email}. Any previous temporary password will stop working.`,
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#182B62',
+            cancelButtonColor: '#64748B',
+            confirmButtonText: 'Resend',
+            cancelButtonText: 'Cancel',
+        }).then((result) => {
+            if (!result.isConfirmed) return;
+            router.post(route('bplo.users.resend-credentials', user.id), {}, {
+                preserveScroll: true,
+                onSuccess: (page) => showCredentialsResult(page, 'Credentials Sent'),
+            });
         });
     };
 
@@ -467,6 +520,7 @@ export default function StaffManagement({
                                         <th scope="col" className="py-3 pl-5 pr-3">Staff Member</th>
                                         <th scope="col" className="py-3 px-4">Position & Employee ID</th>
                                         <th scope="col" className="py-3 px-4">Contact</th>
+                                        <th scope="col" className="py-3 px-4">Birthday</th>
                                         <th scope="col" className="py-3 px-4">Status</th>
                                         <th scope="col" className="py-3 px-4">Joined Date</th>
                                         <th scope="col" className="py-3 pl-3 pr-5 text-right">Actions</th>
@@ -480,6 +534,7 @@ export default function StaffManagement({
                                             onEdit={handleOpenEdit}
                                             onToggleStatus={handleToggleStatus}
                                             onDelete={handleDeleteUser}
+                                            onResend={handleResendCredentials}
                                         />
                                     ))}
                                 </tbody>
@@ -559,6 +614,7 @@ export default function StaffManagement({
                                 onEdit={handleOpenEdit}
                                 onToggleStatus={handleToggleStatus}
                                 onDelete={handleDeleteUser}
+                                onResend={handleResendCredentials}
                             />
                         ))}
 
@@ -678,15 +734,13 @@ export default function StaffManagement({
                             />
                         </FormField>
 
-                        <FormField label="Initial Password" required error={addForm.errors.password} className="sm:col-span-2">
-                            <PasswordInput
-                                value={addForm.data.password}
-                                onChange={(e) => addForm.setData('password', e.target.value)}
-                                placeholder="Enter a secure initial password"
-                                error={addForm.errors.password}
-                                required
-                            />
-                        </FormField>
+                        {/* Sign-in credentials are generated and emailed by the server */}
+                        <div className="sm:col-span-2 flex items-start gap-2.5 rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-3">
+                            <Lock size={14} className="mt-0.5 shrink-0 text-[#182B62]" />
+                            <p className="text-[11.5px] leading-relaxed text-slate-600">
+                                A secure temporary password will be generated and emailed to this address. The staff member must change it the first time they sign in, within 24 hours.
+                            </p>
+                        </div>
 
                         <ActiveToggle
                             checked={addForm.data.is_active}
@@ -850,7 +904,7 @@ function StatusPill({ user, onToggleStatus }) {
     );
 }
 
-function DesktopStaffRow({ u, user: userProp, onEdit, onToggleStatus, onDelete }) {
+function DesktopStaffRow({ u, user: userProp, onEdit, onToggleStatus, onDelete, onResend }) {
     const user = u || userProp;
 
     return (
@@ -903,18 +957,27 @@ function DesktopStaffRow({ u, user: userProp, onEdit, onToggleStatus, onDelete }
                     <span className="mt-0.5 truncate text-[11px] text-slate-400 max-w-[160px]">
                         {user.address || 'No address on file'}
                     </span>
-                    {user.birthday_label && (
-                        <span className="mt-0.5 text-[11px] text-slate-400">Birthday: {user.birthday_label}</span>
-                    )}
                 </div>
             </td>
 
-            {/* Column 4: Status */}
+            {/* Column 4: Birthday */}
             <td className="py-3.5 px-4 align-middle">
-                <StatusPill user={user} onToggleStatus={onToggleStatus} />
+                {user.birthday_label ? (
+                    <span className="text-xs font-semibold text-slate-800">{user.birthday_label}</span>
+                ) : (
+                    <span className="text-xs text-slate-300">Not on file</span>
+                )}
             </td>
 
-            {/* Column 5: Joined Date */}
+            {/* Column 5: Status */}
+            <td className="py-3.5 px-4 align-middle">
+                <div className="flex flex-col items-start">
+                    <StatusPill user={user} onToggleStatus={onToggleStatus} />
+                    <CredentialsBadge status={user.credentials_status} />
+                </div>
+            </td>
+
+            {/* Column 6: Joined Date */}
             <td className="py-3.5 px-4 align-middle">
                 <div className="flex flex-col">
                     <span className="text-xs font-semibold text-slate-800">{user.created_at}</span>
@@ -924,9 +987,19 @@ function DesktopStaffRow({ u, user: userProp, onEdit, onToggleStatus, onDelete }
                 </div>
             </td>
 
-            {/* Column 6: Actions */}
+            {/* Column 7: Actions */}
             <td className="py-3.5 pl-3 pr-5 text-right align-middle">
                 <div className="flex items-center justify-end gap-1.5">
+                    {user.credentials_status && (
+                        <button
+                            type="button"
+                            onClick={() => onResend(user)}
+                            title="Resend sign-in credentials"
+                            className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700"
+                        >
+                            <Send size={14} strokeWidth={2.2} />
+                        </button>
+                    )}
                     <button
                         type="button"
                         onClick={() => onEdit(user)}
@@ -950,7 +1023,7 @@ function DesktopStaffRow({ u, user: userProp, onEdit, onToggleStatus, onDelete }
     );
 }
 
-function MobileStaffCard({ u, user: userProp, onEdit, onToggleStatus, onDelete }) {
+function MobileStaffCard({ u, user: userProp, onEdit, onToggleStatus, onDelete, onResend }) {
     const user = u || userProp;
 
     return (
@@ -970,7 +1043,10 @@ function MobileStaffCard({ u, user: userProp, onEdit, onToggleStatus, onDelete }
                         </div>
                     </div>
                 </div>
-                <StatusPill user={user} onToggleStatus={onToggleStatus} />
+                <div className="flex flex-col items-end">
+                    <StatusPill user={user} onToggleStatus={onToggleStatus} />
+                    <CredentialsBadge status={user.credentials_status} />
+                </div>
             </div>
 
             {/* Email & Position */}
@@ -1007,6 +1083,16 @@ function MobileStaffCard({ u, user: userProp, onEdit, onToggleStatus, onDelete }
 
             {/* Action Buttons */}
             <div className="mt-2.5 flex items-center gap-1.5 border-t border-slate-100 pt-2">
+                {user.credentials_status && (
+                    <button
+                        type="button"
+                        onClick={() => onResend(user)}
+                        className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-slate-200/80 bg-white py-2 text-xs font-semibold text-slate-700 shadow-2xs hover:bg-slate-50 active:scale-[0.98] transition-all"
+                    >
+                        <Send size={13} strokeWidth={2.2} />
+                        <span>Resend</span>
+                    </button>
+                )}
                 <button
                     type="button"
                     onClick={() => onEdit(user)}

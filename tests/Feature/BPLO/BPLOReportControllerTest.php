@@ -91,8 +91,9 @@ class BPLOReportControllerTest extends TestCase
         // BPLOController::release()'s FranchiseScheme::create([..., 'sticker_number' => ...])
         // silently dropped it on every real release. Confirms the fix actually persists it.
         $scheme = FranchiseScheme::where('application_id', $application->id)->firstOrFail();
+        $this->assertNotNull($scheme->franchise_number);
+        $this->assertSame($application->refresh()->sticker_number, $scheme->franchise_number);
         $this->assertNotNull($scheme->sticker_number);
-        $this->assertSame($application->refresh()->sticker_number, $scheme->sticker_number);
 
         // And the recent-activity list (and, by extension, the export) reflects the real record.
         $this->assertTrue(collect($data['recentActivity'])->contains(fn ($r) => $r['plate'] === 'BPR-REL-0001'));

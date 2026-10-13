@@ -23,20 +23,26 @@ class ViolationsSeeder extends Seeder
         $redScheme = ColorCodingScheme::where('name', 'Red')->first();
         $tmo = User::where('email', 'tmo.msantos@trivora.gov.ph')->first();
 
+        // Ensure AAA-1234 is owned by legitimate operator Pedro Ramos
+        $opPedro = \App\Models\Operator::whereHas('user', fn ($q) => $q->where('email', 'driver.pramos@trivora.ph'))->first();
+        if ($tricycle && $opPedro && $tricycle->operator_id !== $opPedro->id) {
+            $tricycle->update(['operator_id' => $opPedro->id]);
+        }
+
         if (! $tricycle || ! $franchise || ! $redScheme) {
             $this->command->warn('⚠  Skipping violations seeder — required franchise/scheme data not found.');
             return;
         }
 
         // -----------------------------------------------------------------
-        // Seed recent GPS location pings (map monitoring data)
+        // Seed recent GPS location pings (map monitoring data in Nasugbu, Batangas)
         // -----------------------------------------------------------------
         $locationPings = [
-            ['lat' => 14.5996000, 'lng' => 120.9843000, 'offset_minutes' => 5],
-            ['lat' => 14.5998000, 'lng' => 120.9845000, 'offset_minutes' => 10],
-            ['lat' => 14.6001000, 'lng' => 120.9847000, 'offset_minutes' => 15],
-            ['lat' => 14.6003000, 'lng' => 120.9844000, 'offset_minutes' => 20],
-            ['lat' => 14.5999000, 'lng' => 120.9840000, 'offset_minutes' => 25],
+            ['lat' => 14.0725000, 'lng' => 120.6320000, 'offset_minutes' => 5],
+            ['lat' => 14.0728000, 'lng' => 120.6324000, 'offset_minutes' => 10],
+            ['lat' => 14.0732000, 'lng' => 120.6328000, 'offset_minutes' => 15],
+            ['lat' => 14.0735000, 'lng' => 120.6331000, 'offset_minutes' => 20],
+            ['lat' => 14.0738000, 'lng' => 120.6335000, 'offset_minutes' => 25],
         ];
 
         $locationRecords = [];
@@ -60,8 +66,8 @@ class ViolationsSeeder extends Seeder
         // -----------------------------------------------------------------
         $pastLocation = TricycleLocation::create([
             'tricycle_id' => $tricycle->id,
-            'latitude'    => 14.5997500,
-            'longitude'   => 120.9844000,
+            'latitude'    => 14.0728000,
+            'longitude'   => 120.6322000,
             'speed_kmh'   => 22.5,
             'heading_deg' => 90,
             'accuracy_m'  => 5.0,
@@ -130,8 +136,8 @@ class ViolationsSeeder extends Seeder
         ) {
             $officerLocation = TricycleLocation::create([
                 'tricycle_id' => $tricycle->id,
-                'latitude'    => 14.5996000,
-                'longitude'   => 120.9843000,
+                'latitude'    => 14.0725000,
+                'longitude'   => 120.6320000,
                 'speed_kmh'   => 18.0,
                 'heading_deg' => 270,
                 'accuracy_m'  => 6.0,
@@ -150,7 +156,7 @@ class ViolationsSeeder extends Seeder
                 'day_of_week'             => 'Friday',
                 'detection_method'        => 'manual',
                 'status'                  => 'acknowledged',
-                'fine_amount'             => 300.00,
+                'fine_amount'             => 500.00,
                 'fine_paid_at'            => null,
                 'notes'                   => 'Red-coded tricycle observed operating on a restricted Friday. Manually filed by TMO Officer Maria Santos.',
             ]);
@@ -224,7 +230,7 @@ class ViolationsSeeder extends Seeder
                     'day_of_week'             => now()->subDays(2)->format('l'),
                     'detection_method'        => 'manual',
                     'status'                  => 'open',
-                    'fine_amount'             => 300.00,
+                    'fine_amount'             => 500.00,
                     'fine_paid_at'            => null,
                     'notes'                   => 'Red-coded tricycle observed operating on a restricted day. Filed by TMO Officer.',
                 ]);
@@ -268,7 +274,7 @@ class ViolationsSeeder extends Seeder
         // all. Coordinates are the same seeded operating position each scenario above uses.
         // -----------------------------------------------------------------
         $seededCoords = [
-            'AAA-1234' => [14.5996000, 120.9843000],
+            'AAA-1234' => [14.0725000, 120.6320000],
             'DDD-3456' => [14.0733000, 120.6302000],
             'EEE-7890' => [14.0740000, 120.6380000],
         ];

@@ -4,6 +4,7 @@ use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\ConfirmablePasswordController;
 use App\Http\Controllers\Auth\EmailVerificationNotificationController;
 use App\Http\Controllers\Auth\EmailVerificationPromptController;
+use App\Http\Controllers\Auth\ForcePasswordChangeController;
 use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Auth\PasswordController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
@@ -26,17 +27,36 @@ Route::middleware('guest')->group(function () {
     Route::get('forgot-password', [PasswordResetLinkController::class, 'create'])
         ->name('password.request');
 
+    // Password reset by emailed 6-digit code (App\Services\PasswordResetOtp)
     Route::post('forgot-password', [PasswordResetLinkController::class, 'store'])
+        ->middleware('throttle:10,1')
         ->name('password.email');
 
-    Route::get('reset-password/{token}', [NewPasswordController::class, 'create'])
+    Route::get('reset-password', [NewPasswordController::class, 'create'])
         ->name('password.reset');
 
+    Route::post('reset-password/verify', [NewPasswordController::class, 'verify'])
+        ->middleware('throttle:10,1')
+        ->name('password.verify');
+
+    Route::get('reset-password/new', [NewPasswordController::class, 'edit'])
+        ->name('password.new');
+
     Route::post('reset-password', [NewPasswordController::class, 'store'])
+        ->middleware('throttle:10,1')
         ->name('password.store');
 });
 
 Route::middleware('auth')->group(function () {
+    // First sign-in with a server-generated temporary password (staff accounts) — the only
+    // pages EnsurePasswordIsChanged lets such an account reach, besides logout.
+    Route::get('change-password', [ForcePasswordChangeController::class, 'show'])
+        ->name('password.change');
+
+    Route::put('change-password', [ForcePasswordChangeController::class, 'update'])
+        ->middleware('throttle:6,1')
+        ->name('password.change.update');
+
     Route::get('verify-email', EmailVerificationPromptController::class)
         ->name('verification.notice');
 
