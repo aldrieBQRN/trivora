@@ -44,7 +44,12 @@ return [
     // Public link to the latest Trivora Driver Android build (an EAS build/APK URL). Shown as the
     // "Download Driver App" card in the Driver panel sidebar; the card is hidden while unset.
     'driver_app' => [
-        'download_url' => env('DRIVER_APP_DOWNLOAD_URL', 'https://expo.dev/artifacts/eas/b1anSc1xFmWTR0pOWkNjzQRYo9F8eyIiXVpNy7Wih54.apk'),
+        'download_url' => env('DRIVER_APP_DOWNLOAD_URL', 'https://expo.dev/artifacts/eas/Rl7oahSYg3zSaYsh_-A6-C801tdPUDpw15YtDUVc-k8.apk'),
+    ],
+
+    // Public link to the latest Trivora Passenger Android build.
+    'passenger_app' => [
+        'download_url' => env('PASSENGER_APP_DOWNLOAD_URL', 'https://expo.dev/artifacts/eas/Mby5sTRxzQs2VnglssSVFCHKkC1MWBhcXB7CtQpfBCQ.apk'),
     ],
 
 ];
