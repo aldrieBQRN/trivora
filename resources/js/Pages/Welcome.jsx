@@ -1608,6 +1608,15 @@ export default function Welcome() {
     }
 
     setSendingMsg(true);
+    Swal.fire({
+      title: 'Sending your inquiry…',
+      text: 'Please wait while we deliver your message to the TMO.',
+      allowOutsideClick: false,
+      allowEscapeKey: false,
+      showConfirmButton: false,
+      didOpen: () => Swal.showLoading(),
+      customClass: { title: 'font-jakarta', popup: 'font-inter' }
+    });
     try {
       await window.axios.post(route('public.inquiry'), {
         ...contactForm,
