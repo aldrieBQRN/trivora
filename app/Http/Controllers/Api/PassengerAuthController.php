@@ -111,6 +111,15 @@ class PassengerAuthController extends Controller
             ], 401);
         }
 
+        // Mirrors DriverAuthController::login — driver/staff accounts must not get a passenger
+        // session (or a passenger profile auto-created below).
+        if ($user->role !== 'passenger') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Access restricted to passenger accounts only.',
+            ], 403);
+        }
+
         $passenger = Passenger::where('user_id', $user->id)->first();
         if (!$passenger) {
             $passenger = Passenger::create([

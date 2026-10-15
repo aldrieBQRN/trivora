@@ -189,6 +189,33 @@ class PassengerAuthTest extends TestCase
         $res->assertStatus(422)->assertJsonValidationErrors(['mobile_number']);
     }
 
+    #[Test]
+    public function a_driver_account_cannot_log_in_to_the_passenger_app()
+    {
+        $driver = User::create([
+            'name' => 'Driver Not Passenger '.uniqid(),
+            'email' => 'drv.'.uniqid().'@trivora.test',
+            'password' => bcrypt('password'),
+            'role' => 'tricycle_driver',
+        ]);
+
+        $this->postJson('/api/v1/passenger/login', ['email' => $driver->email, 'password' => 'password'])
+            ->assertStatus(403)
+            ->assertJson(['message' => 'Access restricted to passenger accounts only.']);
+
+        $this->assertDatabaseMissing('passengers', ['user_id' => $driver->id]);
+    }
+
+    #[Test]
+    public function a_passenger_account_can_log_in()
+    {
+        [$user] = $this->makePassenger();
+
+        $this->postJson('/api/v1/passenger/login', ['email' => $user->email, 'password' => 'password'])
+            ->assertOk()
+            ->assertJsonPath('success', true);
+    }
+
     private function makePassenger(): array
     {
         $user = User::create([
