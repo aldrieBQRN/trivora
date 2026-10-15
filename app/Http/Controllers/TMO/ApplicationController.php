@@ -93,7 +93,7 @@ class ApplicationController extends Controller
                 'id'            => $doc->id,
                 'category'      => $frontendId,
                 'file_name'     => $doc->file_name,
-                'file_path'     => '/storage/' . ltrim($doc->file_path, '/'),
+                'file_path'     => route('documents.application.show', $doc->id),
                 'mime_type'     => $doc->mime_type,
                 'review_status' => $doc->review_status,
             ];

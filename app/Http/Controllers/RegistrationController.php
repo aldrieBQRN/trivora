@@ -268,7 +268,7 @@ class RegistrationController extends Controller
                     if (isset($docKeys[$key])) {
                         $files = is_array($fileOrFiles) ? $fileOrFiles : [$fileOrFiles];
                         foreach ($files as $file) {
-                            $path = $file->store('applications/documents', 'public');
+                            $path = $file->store('applications/documents', 'local');
                             \App\Models\ApplicationDocument::create([
                                 'application_id' => $application->id,
                                 'document_type'  => $docKeys[$key],

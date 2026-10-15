@@ -125,6 +125,226 @@ export default function LiveMonitoring({ initialTricycles = [], stats = {}, acti
         return searchFilteredUnits;
     }, [searchFilteredUnits, unitStatusFilter]);
 
+    // Units/Alerts console — rendered in the side card and, in Full View, beside the map.
+    const telemetryConsole = (
+        <>
+            {/* Top Console Navigation Tabs */}
+            <div className="flex items-center border-b border-slate-200/80 bg-slate-50/90 p-1.5 gap-1.5 shrink-0">
+                <button
+                    type="button"
+                    onClick={() => setActiveTab('units')}
+                    className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-2.5 rounded-xl text-xs font-extrabold transition-all font-['Plus_Jakarta_Sans',sans-serif] ${
+                        activeTab === 'units'
+                            ? 'bg-[#182B62] text-white shadow-xs'
+                            : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/70'
+                    }`}
+                >
+                    <Bike size={14} />
+                    <span>Units</span>
+                    <span className={`rounded-md px-1.5 py-0.5 text-[10px] font-mono font-bold ${
+                        activeTab === 'units' ? 'bg-white/20 text-white' : 'bg-slate-200/70 text-slate-700'
+                    }`}>
+                        {filteredUnits.length}
+                    </span>
+                </button>
+
+                <button
+                    type="button"
+                    onClick={() => setActiveTab('alerts')}
+                    className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-2.5 rounded-xl text-xs font-extrabold transition-all font-['Plus_Jakarta_Sans',sans-serif] ${
+                        activeTab === 'alerts'
+                            ? 'bg-[#182B62] text-white shadow-xs'
+                            : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/70'
+                    }`}
+                >
+                    <ShieldAlert size={14} className={realViolations.length > 0 && activeTab !== 'alerts' ? 'text-rose-500' : ''} />
+                    <span>Alerts</span>
+                    <span className={`rounded-md px-1.5 py-0.5 text-[10px] font-mono font-bold ${
+                        realViolations.length > 0
+                            ? (activeTab === 'alerts' ? 'bg-rose-500 text-white' : 'bg-rose-100 text-rose-700')
+                            : (activeTab === 'alerts' ? 'bg-white/20 text-white' : 'bg-slate-200/70 text-slate-700')
+                    }`}>
+                        {realViolations.length}
+                    </span>
+                </button>
+            </div>
+
+            {/* ── TAB 1: LIVE UNITS ROSTER ── */}
+            {activeTab === 'units' && (
+                <div className="flex flex-col flex-1 min-h-0">
+                    {/* Search + status filter */}
+                    <div className="p-3 border-b border-slate-100 bg-white shrink-0">
+                        <div className="flex flex-col sm:flex-row lg:flex-col xl:flex-row items-stretch sm:items-center lg:items-stretch xl:items-center gap-2">
+                            <div className="relative flex-1 min-w-0">
+                                <Search size={13} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                                <input
+                                    type="text"
+                                    placeholder="Search plate, sticker, or driver..."
+                                    value={unitSearch}
+                                    onChange={(e) => setUnitSearch(e.target.value)}
+                                    className="w-full h-9 rounded-xl border border-slate-200 bg-slate-50/70 pl-9 pr-8 text-xs font-medium text-slate-800 placeholder:text-slate-400 focus:bg-white focus:outline-none focus:border-[#182B62] focus:ring-1 focus:ring-[#182B62] transition-colors"
+                                />
+                                {unitSearch && (
+                                    <button
+                                        type="button"
+                                        onClick={() => setUnitSearch('')}
+                                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                                    >
+                                        <X size={12} />
+                                    </button>
+                                )}
+                            </div>
+
+                            <select
+                                value={unitStatusFilter}
+                                onChange={(e) => setUnitStatusFilter(e.target.value)}
+                                aria-label="Filter units by status"
+                                className="w-full sm:w-auto lg:w-full xl:w-auto sm:min-w-[110px] xl:min-w-[110px] h-9 shrink-0 rounded-xl border border-slate-200 bg-slate-50/70 pl-2.5 pr-7 text-xs font-bold text-slate-700 focus:border-[#182B62] focus:outline-none focus:ring-1 focus:ring-[#182B62]"
+                            >
+                                <option value="all">All ({statusCounts.all})</option>
+                                <option value="online">Online ({statusCounts.online})</option>
+                                <option value="no_signal">No Signal ({statusCounts.no_signal})</option>
+                                <option value="offline">Offline ({statusCounts.offline})</option>
+                                <option value="not_configured">No GPS ({statusCounts.not_configured})</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    {/* Scrollable Units List */}
+                    <div className="flex-1 overflow-y-auto p-2.5 space-y-1.5 custom-scrollbar">
+                        {filteredUnits.length > 0 ? (
+                            filteredUnits.map((unit) => {
+                                const isSelected = selectedUnitId === unit.db_id;
+                                const isOffline = !unit.is_online;
+                                const isNotConfigured = unit.connection_status === 'not_configured';
+                                const connection = CONNECTION_META[unit.connection_status] || CONNECTION_META.offline;
+                                const lastUpdateLabel = unit.last_update_label || '—';
+
+                                return (
+                                    <div
+                                        key={unit.db_id}
+                                        onClick={() => {
+                                            if (unit.hasRealGPS && unit.lat && unit.lng) {
+                                                setSelectedUnitId(unit.db_id);
+                                            }
+                                        }}
+                                        className={`p-2.5 rounded-xl border transition-all ${
+                                            !unit.hasRealGPS ? 'cursor-default opacity-75' : 'cursor-pointer'
+                                        } ${
+                                            isSelected
+                                                ? 'border-[#182B62] bg-indigo-50/40 ring-1 ring-[#182B62]/20 shadow-xs'
+                                                : 'border-slate-100 hover:border-slate-200 hover:bg-slate-50/60'
+                                        }`}
+                                    >
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-1.5">
+                                                <span className="font-mono text-xs font-extrabold text-slate-900 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200/60">
+                                                    {unit.plate}
+                                                </span>
+                                                {unit.id && unit.id !== unit.plate && (
+                                                    <span className="rounded bg-indigo-50/70 border border-indigo-100/70 px-1.5 py-0.5 font-mono text-[10px] font-bold text-[#182B62]">
+                                                        #{unit.id}
+                                                    </span>
+                                                )}
+                                            </div>
+                                            <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[9.5px] font-bold font-['Plus_Jakarta_Sans',sans-serif] ${connection.badge}`}>
+                                                {connection.label}
+                                            </span>
+                                        </div>
+
+                                        <div className="mt-1.5 flex items-center justify-between text-[11px] text-slate-500">
+                                            <span className="truncate max-w-[170px] font-semibold text-slate-700">
+                                                {unit.operator}
+                                            </span>
+                                            <span className="text-[10px] font-medium text-slate-400 font-mono">
+                                                {unit.hasRealGPS ? 'GPS Active' : 'No GPS Setup'}
+                                            </span>
+                                        </div>
+
+                                        <div className="mt-2 flex items-center justify-between text-[10.5px] border-t border-slate-100/80 pt-1.5">
+                                            {(() => {
+                                                const stMeta = resolveTricycleStatus(unit.status, unit.is_online, unit.connection_status);
+                                                const dotColor = isNotConfigured ? '#CBD5E1' : stMeta.color;
+                                                const label = isNotConfigured ? 'No GPS Setup' : stMeta.label;
+                                                return (
+                                                    <span className="flex items-center gap-1.5 font-semibold text-slate-700 font-['Plus_Jakarta_Sans',sans-serif]">
+                                                        <span
+                                                            className="h-1.5 w-1.5 rounded-full shrink-0"
+                                                            style={{ backgroundColor: dotColor }}
+                                                        />
+                                                        <span>{label}</span>
+                                                    </span>
+                                                );
+                                            })()}
+                                            <span className="text-slate-400 font-medium font-mono text-[10px]">
+                                                {lastUpdateLabel}
+                                            </span>
+                                        </div>
+                                    </div>
+                                );
+                            })
+                        ) : (
+                            <div className="py-12 text-center text-slate-400 text-xs px-4">
+                                {realTricycles.length === 0 ? (
+                                    <>No units reporting real GPS coordinates currently.</>
+                                ) : (
+                                    <>No units matching "{unitSearch}"</>
+                                )}
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
+
+            {/* ── TAB 2: ACTIVE INCIDENTS FEED ── */}
+            {activeTab === 'alerts' && (
+                <div className="flex-1 overflow-y-auto p-3 flex flex-col gap-2 custom-scrollbar">
+                    {realViolations.length > 0 ? (
+                        realViolations.map((v) => (
+                            <div
+                                key={v.db_id}
+                                className="p-3 rounded-xl border border-rose-200/90 bg-rose-50/50 shadow-2xs"
+                            >
+                                <div className="flex items-center justify-between">
+                                    <span className="font-mono text-xs font-extrabold text-slate-900 bg-white px-2 py-0.5 rounded border border-rose-200">
+                                        {v.plate}
+                                    </span>
+                                    <span className="rounded-full bg-rose-100 text-rose-800 px-2 py-0.5 text-[9.5px] font-extrabold font-['Plus_Jakarta_Sans',sans-serif] uppercase">
+                                        Coding Violation
+                                    </span>
+                                </div>
+                                <p className="mt-1.5 text-xs font-bold text-slate-900">{v.operator}</p>
+                                <p className="mt-0.5 text-[11px] text-slate-600 leading-relaxed font-normal">
+                                    Operating during restricted color coding day (#{v.coding_scheme || v.id}).
+                                </p>
+                                <div className="mt-2.5 flex items-center justify-between border-t border-rose-200/60 pt-2 text-[10.5px]">
+                                    <span className="text-slate-400 font-medium">GPS Location</span>
+                                    <button
+                                        type="button"
+                                        onClick={() => setSelectedUnitId(v.db_id)}
+                                        className="font-bold text-[#182B62] hover:text-[#25449B] inline-flex items-center gap-0.5 transition-colors font-['Plus_Jakarta_Sans',sans-serif]"
+                                    >
+                                        View on Map <ChevronRight size={12} />
+                                    </button>
+                                </div>
+                            </div>
+                        ))
+                    ) : (
+                        <div className="flex flex-col items-center justify-center flex-1 py-16 text-center">
+                            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600 border border-emerald-100 mb-3 shadow-2xs">
+                                <ShieldCheck size={22} strokeWidth={2.2} />
+                            </div>
+                            <h4 className="text-sm font-bold text-slate-900 font-['Plus_Jakarta_Sans',sans-serif]">No Violations Today</h4>
+                            <p className="mt-1 text-xs text-slate-500 max-w-[210px] leading-relaxed">
+                                All active tricycles are following today's color coding rules.
+                            </p>
+                        </div>
+                    )}
+                </div>
+            )}
+        </>
+    );
+
     return (
         <TrivoraLayout title="Live Monitoring" role="TMO Supervisor">
             <Head title="Live Fleet Monitoring | TRIVORA" />
@@ -341,6 +561,7 @@ export default function LiveMonitoring({ initialTricycles = [], stats = {}, acti
                             tricycles={realTricycles}
                             selectedUnitId={selectedUnitId}
                             onSelectUnit={(unitId) => setSelectedUnitId(unitId)}
+                            fullscreenPanel={telemetryConsole}
                         />
                     </div>
                 </div>
@@ -349,220 +570,7 @@ export default function LiveMonitoring({ initialTricycles = [], stats = {}, acti
                 <div className="lg:col-span-4 flex flex-col gap-4">
                     <div className={`overflow-hidden rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white flex flex-col h-[460px] sm:h-[520px] lg:h-[636px] ${CARD_SHADOW}`}>
 
-                        {/* Top Console Navigation Tabs */}
-                        <div className="flex items-center border-b border-slate-200/80 bg-slate-50/90 p-1.5 gap-1.5 shrink-0">
-                            <button
-                                type="button"
-                                onClick={() => setActiveTab('units')}
-                                className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-2.5 rounded-xl text-xs font-extrabold transition-all font-['Plus_Jakarta_Sans',sans-serif] ${
-                                    activeTab === 'units'
-                                        ? 'bg-[#182B62] text-white shadow-xs'
-                                        : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/70'
-                                }`}
-                            >
-                                <Bike size={14} />
-                                <span>Units</span>
-                                <span className={`rounded-md px-1.5 py-0.5 text-[10px] font-mono font-bold ${
-                                    activeTab === 'units' ? 'bg-white/20 text-white' : 'bg-slate-200/70 text-slate-700'
-                                }`}>
-                                    {filteredUnits.length}
-                                </span>
-                            </button>
-
-                            <button
-                                type="button"
-                                onClick={() => setActiveTab('alerts')}
-                                className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-2.5 rounded-xl text-xs font-extrabold transition-all font-['Plus_Jakarta_Sans',sans-serif] ${
-                                    activeTab === 'alerts'
-                                        ? 'bg-[#182B62] text-white shadow-xs'
-                                        : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/70'
-                                }`}
-                            >
-                                <ShieldAlert size={14} className={realViolations.length > 0 && activeTab !== 'alerts' ? 'text-rose-500' : ''} />
-                                <span>Alerts</span>
-                                <span className={`rounded-md px-1.5 py-0.5 text-[10px] font-mono font-bold ${
-                                    realViolations.length > 0
-                                        ? (activeTab === 'alerts' ? 'bg-rose-500 text-white' : 'bg-rose-100 text-rose-700')
-                                        : (activeTab === 'alerts' ? 'bg-white/20 text-white' : 'bg-slate-200/70 text-slate-700')
-                                }`}>
-                                    {realViolations.length}
-                                </span>
-                            </button>
-                        </div>
-
-                        {/* ── TAB 1: LIVE UNITS ROSTER ── */}
-                        {activeTab === 'units' && (
-                            <div className="flex flex-col flex-1 min-h-0">
-                                {/* Search + status filter */}
-                                <div className="p-3 border-b border-slate-100 bg-white shrink-0">
-                                    <div className="flex flex-col sm:flex-row lg:flex-col xl:flex-row items-stretch sm:items-center lg:items-stretch xl:items-center gap-2">
-                                        <div className="relative flex-1 min-w-0">
-                                            <Search size={13} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                                            <input
-                                                type="text"
-                                                placeholder="Search plate, sticker, or driver..."
-                                                value={unitSearch}
-                                                onChange={(e) => setUnitSearch(e.target.value)}
-                                                className="w-full h-9 rounded-xl border border-slate-200 bg-slate-50/70 pl-9 pr-8 text-xs font-medium text-slate-800 placeholder:text-slate-400 focus:bg-white focus:outline-none focus:border-[#182B62] focus:ring-1 focus:ring-[#182B62] transition-colors"
-                                            />
-                                            {unitSearch && (
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setUnitSearch('')}
-                                                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
-                                                >
-                                                    <X size={12} />
-                                                </button>
-                                            )}
-                                        </div>
-
-                                        <select
-                                            value={unitStatusFilter}
-                                            onChange={(e) => setUnitStatusFilter(e.target.value)}
-                                            aria-label="Filter units by status"
-                                            className="w-full sm:w-auto lg:w-full xl:w-auto sm:min-w-[110px] xl:min-w-[110px] h-9 shrink-0 rounded-xl border border-slate-200 bg-slate-50/70 pl-2.5 pr-7 text-xs font-bold text-slate-700 focus:border-[#182B62] focus:outline-none focus:ring-1 focus:ring-[#182B62]"
-                                        >
-                                            <option value="all">All ({statusCounts.all})</option>
-                                            <option value="online">Online ({statusCounts.online})</option>
-                                            <option value="no_signal">No Signal ({statusCounts.no_signal})</option>
-                                            <option value="offline">Offline ({statusCounts.offline})</option>
-                                            <option value="not_configured">No GPS ({statusCounts.not_configured})</option>
-                                        </select>
-                                    </div>
-                                </div>
-
-                                {/* Scrollable Units List */}
-                                <div className="flex-1 overflow-y-auto p-2.5 space-y-1.5 custom-scrollbar">
-                                    {filteredUnits.length > 0 ? (
-                                        filteredUnits.map((unit) => {
-                                            const isSelected = selectedUnitId === unit.db_id;
-                                            const isOffline = !unit.is_online;
-                                            const isNotConfigured = unit.connection_status === 'not_configured';
-                                            const connection = CONNECTION_META[unit.connection_status] || CONNECTION_META.offline;
-                                            const lastUpdateLabel = unit.last_update_label || '—';
-
-                                            return (
-                                                <div
-                                                    key={unit.db_id}
-                                                    onClick={() => {
-                                                        if (unit.hasRealGPS && unit.lat && unit.lng) {
-                                                            setSelectedUnitId(unit.db_id);
-                                                        }
-                                                    }}
-                                                    className={`p-2.5 rounded-xl border transition-all ${
-                                                        !unit.hasRealGPS ? 'cursor-default opacity-75' : 'cursor-pointer'
-                                                    } ${
-                                                        isSelected
-                                                            ? 'border-[#182B62] bg-indigo-50/40 ring-1 ring-[#182B62]/20 shadow-xs'
-                                                            : 'border-slate-100 hover:border-slate-200 hover:bg-slate-50/60'
-                                                    }`}
-                                                >
-                                                    <div className="flex items-center justify-between">
-                                                        <div className="flex items-center gap-1.5">
-                                                            <span className="font-mono text-xs font-extrabold text-slate-900 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200/60">
-                                                                {unit.plate}
-                                                            </span>
-                                                            {unit.id && unit.id !== unit.plate && (
-                                                                <span className="rounded bg-indigo-50/70 border border-indigo-100/70 px-1.5 py-0.5 font-mono text-[10px] font-bold text-[#182B62]">
-                                                                    #{unit.id}
-                                                                </span>
-                                                            )}
-                                                        </div>
-                                                        <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[9.5px] font-bold font-['Plus_Jakarta_Sans',sans-serif] ${connection.badge}`}>
-                                                            {connection.label}
-                                                        </span>
-                                                    </div>
-
-                                                    <div className="mt-1.5 flex items-center justify-between text-[11px] text-slate-500">
-                                                        <span className="truncate max-w-[170px] font-semibold text-slate-700">
-                                                            {unit.operator}
-                                                        </span>
-                                                        <span className="text-[10px] font-medium text-slate-400 font-mono">
-                                                            {unit.hasRealGPS ? 'GPS Active' : 'No GPS Setup'}
-                                                        </span>
-                                                    </div>
-
-                                                    <div className="mt-2 flex items-center justify-between text-[10.5px] border-t border-slate-100/80 pt-1.5">
-                                                        {(() => {
-                                                            const stMeta = resolveTricycleStatus(unit.status, unit.is_online, unit.connection_status);
-                                                            const dotColor = isNotConfigured ? '#CBD5E1' : stMeta.color;
-                                                            const label = isNotConfigured ? 'No GPS Setup' : stMeta.label;
-                                                            return (
-                                                                <span className="flex items-center gap-1.5 font-semibold text-slate-700 font-['Plus_Jakarta_Sans',sans-serif]">
-                                                                    <span
-                                                                        className="h-1.5 w-1.5 rounded-full shrink-0"
-                                                                        style={{ backgroundColor: dotColor }}
-                                                                    />
-                                                                    <span>{label}</span>
-                                                                </span>
-                                                            );
-                                                        })()}
-                                                        <span className="text-slate-400 font-medium font-mono text-[10px]">
-                                                            {lastUpdateLabel}
-                                                        </span>
-                                                    </div>
-                                                </div>
-                                            );
-                                        })
-                                    ) : (
-                                        <div className="py-12 text-center text-slate-400 text-xs px-4">
-                                            {realTricycles.length === 0 ? (
-                                                <>No units reporting real GPS coordinates currently.</>
-                                            ) : (
-                                                <>No units matching "{unitSearch}"</>
-                                            )}
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                        )}
-
-                        {/* ── TAB 2: ACTIVE INCIDENTS FEED ── */}
-                        {activeTab === 'alerts' && (
-                            <div className="flex-1 overflow-y-auto p-3 flex flex-col gap-2 custom-scrollbar">
-                                {realViolations.length > 0 ? (
-                                    realViolations.map((v) => (
-                                        <div
-                                            key={v.db_id}
-                                            className="p-3 rounded-xl border border-rose-200/90 bg-rose-50/50 shadow-2xs"
-                                        >
-                                            <div className="flex items-center justify-between">
-                                                <span className="font-mono text-xs font-extrabold text-slate-900 bg-white px-2 py-0.5 rounded border border-rose-200">
-                                                    {v.plate}
-                                                </span>
-                                                <span className="rounded-full bg-rose-100 text-rose-800 px-2 py-0.5 text-[9.5px] font-extrabold font-['Plus_Jakarta_Sans',sans-serif] uppercase">
-                                                    Coding Violation
-                                                </span>
-                                            </div>
-                                            <p className="mt-1.5 text-xs font-bold text-slate-900">{v.operator}</p>
-                                            <p className="mt-0.5 text-[11px] text-slate-600 leading-relaxed font-normal">
-                                                Operating during restricted color coding day (#{v.coding_scheme || v.id}).
-                                            </p>
-                                            <div className="mt-2.5 flex items-center justify-between border-t border-rose-200/60 pt-2 text-[10.5px]">
-                                                <span className="text-slate-400 font-medium">GPS Location</span>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setSelectedUnitId(v.db_id)}
-                                                    className="font-bold text-[#182B62] hover:text-[#25449B] inline-flex items-center gap-0.5 transition-colors font-['Plus_Jakarta_Sans',sans-serif]"
-                                                >
-                                                    View on Map <ChevronRight size={12} />
-                                                </button>
-                                            </div>
-                                        </div>
-                                    ))
-                                ) : (
-                                    <div className="flex flex-col items-center justify-center flex-1 py-16 text-center">
-                                        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600 border border-emerald-100 mb-3 shadow-2xs">
-                                            <ShieldCheck size={22} strokeWidth={2.2} />
-                                        </div>
-                                        <h4 className="text-sm font-bold text-slate-900 font-['Plus_Jakarta_Sans',sans-serif]">No Violations Today</h4>
-                                        <p className="mt-1 text-xs text-slate-500 max-w-[210px] leading-relaxed">
-                                            All active tricycles are following today's color coding rules.
-                                        </p>
-                                    </div>
-                                )}
-                            </div>
-                        )}
+                        {telemetryConsole}
 
                     </div>
                 </div>

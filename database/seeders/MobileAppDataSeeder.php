@@ -20,7 +20,7 @@ class MobileAppDataSeeder extends Seeder
      *  - Links drivers to tricycles and TODA zones
      *  - Real-time driver online status, GPS location, rating & earnings
      *  - Live location breadcrumb pings (TricycleLocation)
-     *  - Active bookings (pending, accepted, arrived, in_transit)
+     *  - Active bookings (accepted, arrived, in_transit) — never pending, see section 4
      *  - Historical completed bookings with fares & distance
      *  - Cancelled bookings with reasons
      *  - Passenger ride ratings & detailed customer feedback
@@ -117,49 +117,10 @@ class MobileAppDataSeeder extends Seeder
         // 4. Seed Active Bookings (For Real-Time Mobile App Demo)
         // ---------------------------------------------------------------------
 
-        // Booking A: PENDING Request (TODA Bucana) - Appears in Driver's Request Feed
-        Booking::updateOrCreate(
-            ['booking_code' => 'BK-' . date('Ymd') . '-PND1'],
-            [
-                'passenger_id'            => $p1->id,
-                'pickup_name'             => 'Poblacion Public Market',
-                'pickup_lat'              => 14.0725,
-                'pickup_lng'              => 120.6322,
-                'dropoff_name'            => 'Bucana Beach Park',
-                'dropoff_lat'             => 14.0640,
-                'dropoff_lng'             => 120.6298,
-                'fare_amount'             => 45.00,
-                'distance_km'             => 1.8,
-                'estimated_duration_mins' => 7,
-                'passenger_notes'         => 'Wait at market gate 2 near bakery',
-                'status'                  => 'pending',
-                'payment_method'          => 'cash',
-                'payment_status'          => 'pending',
-                'requested_at'            => now()->subMinutes(3),
-            ]
-        );
-
-        // Booking B: PENDING Request (TODA Brgy 8)
-        Booking::updateOrCreate(
-            ['booking_code' => 'BK-' . date('Ymd') . '-PND2'],
-            [
-                'passenger_id'            => $p2->id,
-                'pickup_name'             => 'Nasugbu Municipal Hall',
-                'pickup_lat'              => 14.0715,
-                'pickup_lng'              => 120.6330,
-                'dropoff_name'            => 'Barangay 8 Chapel',
-                'dropoff_lat'             => 14.0691,
-                'dropoff_lng'             => 120.6335,
-                'fare_amount'             => 35.00,
-                'distance_km'             => 1.2,
-                'estimated_duration_mins' => 5,
-                'passenger_notes'         => 'With 2 small bags',
-                'status'                  => 'pending',
-                'payment_method'          => 'gcash',
-                'payment_status'          => 'pending',
-                'requested_at'            => now()->subMinutes(1),
-            ]
-        );
+        // No PENDING bookings are seeded on purpose. A seeded pending request is dated "now", so it
+        // lands in the 15-minute live dispatch window and gets offered to every online driver as
+        // a real ride request (e.g. a fake "Default Passenger" request on first login). Pending
+        // requests must only come from a passenger actually booking in the app.
 
         // Booking C: ACCEPTED (Pedro Ramos accepted passenger Juan Mercado)
         if ($dPedro) {

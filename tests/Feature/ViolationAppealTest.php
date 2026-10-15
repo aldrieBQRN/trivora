@@ -224,7 +224,8 @@ class ViolationAppealTest extends TestCase
         $this->assertEquals($this->driver->id, $appeal->driver_id);
         $this->assertEquals('under_review', $appeal->status);
         $this->assertNotNull($appeal->evidence_path);
-        Storage::disk('public')->assertExists($appeal->evidence_path);
+        Storage::disk('local')->assertExists($appeal->evidence_path);
+        Storage::disk('public')->assertMissing($appeal->evidence_path);
 
         $this->assertEquals('contested', $this->violation->refresh()->status);
     }

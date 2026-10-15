@@ -339,10 +339,12 @@ class FinalConfirmationController extends Controller
                 $trackingSummary = $trackingMethod === 'iot_device'
                     ? "IoT Hardware Device #{$iotDeviceId}"
                     : "Trivora Driver Mobile App GPS";
+                $officerName = Auth::user()?->name ?? 'TMO Officer';
+                $activationNote = " [Activated by TMO Officer {$officerName} on " . now()->toDateTimeString() . " | Tracking: {$trackingSummary}]";
 
                 $scheme->update([
                     'is_active' => true,
-                    'notes'     => DB::raw("CONCAT(COALESCE(notes, ''), ' [Activated by TMO Officer " . Auth::user()->name . " on " . now()->toDateTimeString() . " | Tracking: {$trackingSummary}]')"),
+                    'notes'     => ($scheme->notes ?? '') . $activationNote,
                 ]);
             }
 

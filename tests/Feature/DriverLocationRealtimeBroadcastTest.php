@@ -309,6 +309,8 @@ class DriverLocationRealtimeBroadcastTest extends TestCase
             'longitude'   => 120.6285,
             'heading_deg' => 270,
             'recorded_at' => '2026-10-05T12:00:00Z',
+            'pickup_distance_km' => null,
+            'pickup_eta_mins'    => null,
         ], $payload);
 
         // Verify sensitive or unnecessary fields are NOT present

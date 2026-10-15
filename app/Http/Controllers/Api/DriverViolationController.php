@@ -105,7 +105,7 @@ class DriverViolationController extends Controller
                 ? [
                     'id' => $appeal->id,
                     'reason' => $appeal->reason,
-                    'evidence_url' => $appeal->evidence_path ? asset('storage/' . $appeal->evidence_path) : null,
+                    'evidence_url' => $appeal->evidence_path ? \Illuminate\Support\Facades\URL::temporarySignedRoute('documents.violation_appeal.show', now()->addDays(7), ['id' => $appeal->id]) : null,
                     'status' => $appeal->status,
                     'submitted_at' => $appeal->submitted_at?->toIso8601String(),
                     'reviewed_at' => $appeal->reviewed_at?->toIso8601String(),
@@ -173,7 +173,7 @@ class DriverViolationController extends Controller
 
         $evidencePath = null;
         if ($request->hasFile('proof')) {
-            $evidencePath = $request->file('proof')->store('violation_appeals', 'public');
+            $evidencePath = $request->file('proof')->store('violation_appeals', 'local');
         }
 
         $appeal = null;

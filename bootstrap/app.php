@@ -13,7 +13,16 @@ $app = Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        $middleware->trustProxies(at: '*');
+        $trustedProxies = env('TRUSTED_PROXIES');
+        if ($trustedProxies === '*') {
+            $middleware->trustProxies(at: '*');
+        } elseif (is_string($trustedProxies) && trim($trustedProxies) !== '') {
+            $middleware->trustProxies(at: array_map('trim', explode(',', $trustedProxies)));
+        } elseif (env('APP_ENV') === 'production') {
+            $middleware->trustProxies(at: ['127.0.0.1', '::1']);
+        } else {
+            $middleware->trustProxies(at: '*');
+        }
 
         $middleware->web(append: [
             \App\Http\Middleware\HandleInertiaRequests::class,

@@ -326,6 +326,10 @@ class DriverTelematicsController extends Controller
 
         foreach ($activeBookings as $booking) {
             try {
+                // Computed here, right after the position is stored, so the same OSRM lookup is
+                // cached for both apps' next polls of this booking.
+                $pickupEta = $booking->pickupEta();
+
                 broadcast(new DriverLocationUpdated(
                     bookingId: $booking->id,
                     driverId: $driver->id,
@@ -333,7 +337,9 @@ class DriverTelematicsController extends Controller
                     latitude: $latitude,
                     longitude: $longitude,
                     headingDeg: $headingDeg,
-                    recordedAt: $recordedAt->toIso8601String()
+                    recordedAt: $recordedAt->toIso8601String(),
+                    pickupDistanceKm: $pickupEta['pickup_distance_km'] ?? null,
+                    pickupEtaMins: $pickupEta['pickup_eta_mins'] ?? null
                 ));
             } catch (\Throwable $e) {
                 Log::warning("Driver location broadcast failed for booking {$booking->id}: {$e->getMessage()}");

@@ -424,4 +424,46 @@ class DriverOnlineTelemetryTimeoutTest extends TestCase
             'Movement under 100m from NEW anchor does not flag violation, proving old session was cleared'
         );
     }
+
+    #[Test]
+    public function status_endpoint_reports_an_online_session_within_the_10_minute_window(): void
+    {
+        $this->driver->update([
+            'is_online' => true,
+            'is_available' => true,
+            'last_location_updated_at' => now()->subMinutes(4),
+        ]);
+
+        $token = $this->driverUser->createToken('driver-resume')->plainTextToken;
+        $this->withHeader('Authorization', 'Bearer ' . $token)
+            ->getJson('/api/v1/driver/status')
+            ->assertOk()
+            ->assertJson([
+                'is_online' => true,
+                'effectively_online' => true,
+                'seconds_since_last_location' => 240,
+            ]);
+
+        // Reading the status never changes the session (unlike the old startup push of Offline).
+        $this->assertTrue($this->driver->fresh()->is_online);
+    }
+
+    #[Test]
+    public function status_endpoint_reports_not_effectively_online_after_the_10_minute_window(): void
+    {
+        $this->driver->update([
+            'is_online' => true,
+            'last_location_updated_at' => now()->subMinutes(11),
+        ]);
+
+        $token = $this->driverUser->createToken('driver-resume-stale')->plainTextToken;
+        $this->withHeader('Authorization', 'Bearer ' . $token)
+            ->getJson('/api/v1/driver/status')
+            ->assertOk()
+            ->assertJson([
+                'is_online' => true,
+                'effectively_online' => false,
+                'seconds_since_last_location' => 660,
+            ]);
+    }
 }

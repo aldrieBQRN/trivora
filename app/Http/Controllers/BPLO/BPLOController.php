@@ -579,7 +579,7 @@ class BPLOController extends Controller
                 return [
                     'name'        => $labelsMap[$doc->document_type] ?? ucwords(str_replace('_', ' ', $doc->document_type)),
                     'type'        => $doc->document_type,
-                    'preview_url' => $doc->file_path ? "/storage/{$doc->file_path}" : '/document/orcr-preview',
+                    'preview_url' => $doc->file_path ? route('documents.application.show', $doc->id) : '/document/orcr-preview',
                     'verified_at' => $doc->updated_at ? $doc->updated_at->format('M d, Y') : 'Verified',
                 ];
             })->values()->all();

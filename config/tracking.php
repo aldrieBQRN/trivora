@@ -87,15 +87,26 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | SinoTrack IoT receiver port
+    | SinoTrack IoT TCP receiver port & listener hardening
     |--------------------------------------------------------------------------
     |
     | TCP port `php artisan gps:listen` binds to. Must match the port set on
     | each tracker by SMS ("804<password> <public-ip> <port>") and be reachable
     | from the internet (router port-forward, VPS, or a TCP tunnel).
     |
+    | Hardening limits protect against unbounded memory growth, excessive
+    | simultaneous TCP connections, stalled connections, and corrupted feeds.
+    |
     */
 
     'iot_listen_port' => env('GPS_LISTEN_PORT', 9001),
+
+    'iot_max_connections' => (int) env('GPS_MAX_CONNECTIONS', 100),
+
+    'iot_idle_timeout_seconds' => (int) env('GPS_IDLE_TIMEOUT_SECONDS', 180),
+
+    'iot_client_buffer_limit_bytes' => (int) env('GPS_CLIENT_BUFFER_LIMIT_BYTES', 4096),
+
+    'iot_max_malformed_packets' => (int) env('GPS_MAX_MALFORMED_PACKETS', 5),
 
 ];

@@ -65,11 +65,14 @@ class RouteDistanceService
     }
 
     /**
-     * @return array{distance_km: float, duration_mins: int, distance_source: string}
+     * @return array{distance_km: float, distance_m: int, duration_mins: int, distance_source: string}
+     *
+     * $useCache = false skips the ~11 m coordinate-grid cache (both read and write) — for callers
+     * that need the exact figure for one specific position (Booking::pickupEta caches per exact fix).
      *
      * @throws \InvalidArgumentException for out-of-range coordinates
      */
-    public function calculateDistance(float $pickupLat, float $pickupLng, float $destinationLat, float $destinationLng): array
+    public function calculateDistance(float $pickupLat, float $pickupLng, float $destinationLat, float $destinationLng, bool $useCache = true): array
     {
         foreach ([[$pickupLat, $pickupLng], [$destinationLat, $destinationLng]] as [$lat, $lng]) {
             if (!is_finite($lat) || !is_finite($lng) || abs($lat) > 90 || abs($lng) > 180) {
@@ -82,7 +85,7 @@ class RouteDistanceService
         }
 
         $cacheKey = $this->cacheKey($pickupLat, $pickupLng, $destinationLat, $destinationLng);
-        $cached = Cache::get($cacheKey);
+        $cached = $useCache ? Cache::get($cacheKey) : null;
         if (is_array($cached) && isset($cached['distance_km'], $cached['duration_mins'], $cached['distance_source'])) {
             Log::debug('RouteDistanceService: cache hit.', ['key' => $cacheKey]);
 
@@ -123,11 +126,14 @@ class RouteDistanceService
 
             $result = [
                 'distance_km' => round(((float) $route['distance'] + $accessMeters) / 1000, 2),
+                'distance_m' => (int) round((float) $route['distance'] + $accessMeters),
                 'duration_mins' => max(1, (int) round(((float) $route['duration'] + $accessMeters / self::ACCESS_SPEED_MPS) / 60)),
                 'distance_source' => self::SOURCE_OSRM,
             ];
 
-            Cache::put($cacheKey, $result, now()->addSeconds(self::CACHE_TTL_SECONDS));
+            if ($useCache) {
+                Cache::put($cacheKey, $result, now()->addSeconds(self::CACHE_TTL_SECONDS));
+            }
 
             return $result;
         } catch (\Throwable $e) {
@@ -155,6 +161,7 @@ class RouteDistanceService
 
         return [
             'distance_km' => $distanceKm,
+            'distance_m' => (int) round($distanceKm * 1000),
             'duration_mins' => max(3, (int) round($distanceKm * 3.3)),
             'distance_source' => self::SOURCE_FALLBACK,
         ];

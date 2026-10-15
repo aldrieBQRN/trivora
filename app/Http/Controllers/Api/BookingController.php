@@ -11,13 +11,16 @@ use App\Models\Passenger;
 use App\Models\RideRating;
 use App\Services\BookingDispatchService;
 use App\Services\FareService;
+use App\Services\GeoService;
 use App\Services\ManualRideService;
 use App\Services\MobileNotifier;
 use App\Services\QrRideService;
+use App\Services\RouteDistanceService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
 class BookingController extends Controller
 {
@@ -28,21 +31,56 @@ class BookingController extends Controller
     {
         $validated = $request->validate([
             'pickup_name' => 'required|string|max:255',
-            'pickup_lat' => 'required|numeric',
-            'pickup_lng' => 'required|numeric',
+            'pickup_lat' => 'required|numeric|between:-90,90',
+            'pickup_lng' => 'required|numeric|between:-180,180',
             'dropoff_name' => 'required|string|max:255',
-            'dropoff_lat' => 'required|numeric',
-            'dropoff_lng' => 'required|numeric',
-            'passenger_count' => 'required|integer|min:1',
-            // The authoritative route distance for this trip — already computed by the Passenger
-            // app from its real route (not a straight-line estimate) before confirmation. Required,
-            // not defaulted: silently falling back to a fake distance would make the fare wrong
-            // rather than honest about a missing value.
-            'distance_km' => 'required|numeric|min:0',
+            'dropoff_lat' => 'required|numeric|between:-90,90',
+            'dropoff_lng' => 'required|numeric|between:-180,180',
+            'passenger_count' => 'required|integer|min:1|max:10',
+            'distance_km' => 'required|numeric|gt:0',
             'estimated_duration_mins' => 'nullable|integer',
             'passenger_notes' => 'nullable|string',
             'payment_method' => 'nullable|string|in:cash,gcash,wallet',
         ]);
+
+        $pickupLat = (float) $validated['pickup_lat'];
+        $pickupLng = (float) $validated['pickup_lng'];
+        $dropoffLat = (float) $validated['dropoff_lat'];
+        $dropoffLng = (float) $validated['dropoff_lng'];
+        $submittedDistance = (float) $validated['distance_km'];
+        $passengerCount = (int) $validated['passenger_count'];
+
+        if (!is_finite($pickupLat) || !is_finite($pickupLng) || !is_finite($dropoffLat) || !is_finite($dropoffLng) || !is_finite($submittedDistance)) {
+            throw ValidationException::withMessages([
+                'distance_km' => ['Coordinates and distance must be valid finite numbers.'],
+            ]);
+        }
+
+        // Server-side Haversine straight-line distance minimum sanity check
+        $haversineKm = GeoService::haversineKm($pickupLat, $pickupLng, $dropoffLat, $dropoffLng);
+
+        // Sanity boundary check: local municipal tricycle service cannot exceed 50 km
+        if ($haversineKm > 50.0) {
+            throw ValidationException::withMessages([
+                'dropoff_name' => ['The trip distance between pick-up and drop-off exceeds the maximum allowable municipal service area.'],
+            ]);
+        }
+
+        // The road distance can never be less than the straight-line (Haversine) distance.
+        // If the client submitted an implausibly low or manipulated distance (< 95% of Haversine),
+        // we safely resolve the authoritative road distance using RouteDistanceService.
+        $minPlausibleKm = round($haversineKm * 0.95, 2);
+        if ($submittedDistance < $minPlausibleKm) {
+            $route = app(RouteDistanceService::class)->calculateDistance(
+                $pickupLat,
+                $pickupLng,
+                $dropoffLat,
+                $dropoffLng
+            );
+            $effectiveDistance = $route['distance_km'];
+        } else {
+            $effectiveDistance = $submittedDistance;
+        }
 
         // This endpoint requires auth:sanctum (see routes/api.php), so $request->user() is
         // guaranteed here — the real booking flow must always belong to the authenticated
@@ -78,27 +116,24 @@ class BookingController extends Controller
 
         $bookingCode = 'BK-' . date('Ymd') . '-' . strtoupper(Str::random(4));
 
-        // Fare is always server-computed from the route distance and passenger count via
-        // FareService — never trust a client-supplied amount. The base fare depends on passenger
-        // count (₱50 flat for 1, ₱25/passenger for 2+); the total is that per-passenger figure
-        // charged once per rider (never a client-typed "fare per passenger" — the system derives
-        // it automatically from distance and passenger count).
-        $farePerPassenger = FareService::perPassengerFare((float) $validated['distance_km'], (int) $validated['passenger_count']);
-        $totalFare = FareService::calculate((float) $validated['distance_km'], (int) $validated['passenger_count']);
+        // Fare is always server-computed from the validated distance and passenger count via
+        // FareService — never trust a client-supplied amount.
+        $farePerPassenger = FareService::perPassengerFare($effectiveDistance, $passengerCount);
+        $totalFare = FareService::calculate($effectiveDistance, $passengerCount);
 
         $booking = Booking::create([
             'booking_code' => $bookingCode,
             'passenger_id' => $passenger->id,
             'pickup_name' => $validated['pickup_name'],
-            'pickup_lat' => $validated['pickup_lat'],
-            'pickup_lng' => $validated['pickup_lng'],
+            'pickup_lat' => $pickupLat,
+            'pickup_lng' => $pickupLng,
             'dropoff_name' => $validated['dropoff_name'],
-            'dropoff_lat' => $validated['dropoff_lat'],
-            'dropoff_lng' => $validated['dropoff_lng'],
-            'passenger_count' => $validated['passenger_count'],
+            'dropoff_lat' => $dropoffLat,
+            'dropoff_lng' => $dropoffLng,
+            'passenger_count' => $passengerCount,
             'fare_per_passenger' => $farePerPassenger,
             'fare_amount' => $totalFare,
-            'distance_km' => $validated['distance_km'],
+            'distance_km' => $effectiveDistance,
             'estimated_duration_mins' => $validated['estimated_duration_mins'] ?? 8,
             'passenger_notes' => $validated['passenger_notes'] ?? null,
             'payment_method' => $validated['payment_method'] ?? Booking::PAYMENT_METHOD_CASH,
@@ -285,8 +320,21 @@ class BookingController extends Controller
 
         return response()->json([
             'message' => 'Booking accepted successfully.',
-            'booking' => $booking->load(['passenger.user', 'driver.user', 'tricycle']),
+            'booking' => $this->withPickupEta($booking->load(['passenger.user', 'driver.user', 'tricycle'])),
         ]);
+    }
+
+    /**
+     * Serializes a booking with the server's pick-up distance/ETA (Booking::pickupEta) merged in,
+     * so the passenger and driver apps display the same figure instead of each estimating its own.
+     */
+    private function withPickupEta(?Booking $booking): ?array
+    {
+        if (!$booking) {
+            return null;
+        }
+
+        return array_merge($booking->toArray(), $booking->pickupEta() ?? []);
     }
 
     /**
@@ -531,7 +579,7 @@ class BookingController extends Controller
                 $booking->driver->append('heading_deg');
             }
 
-            return response()->json(['booking' => $owns ? $booking : null]);
+            return response()->json(['booking' => $owns ? $this->withPickupEta($booking) : null]);
         }
 
         $query = Booking::with(['passenger.user', 'driver.user', 'tricycle'])
@@ -587,7 +635,7 @@ class BookingController extends Controller
         }
 
         return response()->json([
-            'booking' => $booking,
+            'booking' => $this->withPickupEta($booking),
         ]);
     }
 

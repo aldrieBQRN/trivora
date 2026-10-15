@@ -90,7 +90,7 @@ class GpsReplayCommand extends Command
                     $message = $this->describe($frame);
                 } else {
                     try {
-                        $result = $ingest->ingest($frame);
+                        $result = $ingest->ingest($frame, allowHistorical: true);
                     } catch (\Throwable $e) {
                         $result = ['outcome' => 'error', 'message' => $e->getMessage()];
                     }

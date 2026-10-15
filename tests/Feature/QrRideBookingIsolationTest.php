@@ -20,7 +20,7 @@ class QrRideBookingIsolationTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->fakeOsrm();
+        $this->fakeOsrm(2500);
     }
 
     private function normalBookingPayload(): array

@@ -310,7 +310,7 @@ class MTOPController extends Controller
                     if (in_array($key, $validDocKeys, true)) {
                         $files = is_array($fileOrFiles) ? $fileOrFiles : [$fileOrFiles];
                         foreach ($files as $file) {
-                            $path = $file->store('applications/documents', 'public');
+                            $path = $file->store('applications/documents', 'local');
                             \App\Models\ApplicationDocument::create([
                                 'application_id' => $application->id,
                                 'document_type'  => $key,
@@ -562,9 +562,8 @@ class MTOPController extends Controller
                 'name'   => $meta['label'],
                 'status' => $doc->review_status,
                 'note'   => $doc->review_status === 'rejected' ? $doc->rejection_reason : '',
-                // Openable link to the file the driver actually uploaded (only present when
-                // a file exists), matching TMO Document Review's '/storage/' URL shape.
-                'url'    => $doc->file_path ? '/storage/' . ltrim($doc->file_path, '/') : null,
+                // Openable link to the file the driver actually uploaded via authorized route
+                'url'    => $doc->file_path ? route('documents.application.show', $doc->id) : null,
                 'file_name' => $doc->file_name,
             ];
         }
@@ -891,7 +890,8 @@ class MTOPController extends Controller
                             );
 
                             foreach ($oldDocs as $oldDoc) {
-                                // Optional: Delete physical file if exists
+                                // Delete physical file from whichever disk it was stored on
+                                \Illuminate\Support\Facades\Storage::disk('local')->delete($oldDoc->file_path);
                                 \Illuminate\Support\Facades\Storage::disk('public')->delete($oldDoc->file_path);
                                 $oldDoc->delete();
                             }
@@ -899,7 +899,7 @@ class MTOPController extends Controller
                             // 2. Store the new files under this requirement
                             $files = is_array($fileOrFiles) ? $fileOrFiles : [$fileOrFiles];
                             foreach ($files as $file) {
-                                $path = $file->store('applications/documents', 'public');
+                                $path = $file->store('applications/documents', 'local');
                                 \App\Models\ApplicationDocument::create([
                                     'application_id' => $app->id,
                                     'document_type'  => $key,

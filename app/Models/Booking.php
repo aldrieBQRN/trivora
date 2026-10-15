@@ -2,10 +2,13 @@
 
 namespace App\Models;
 
+use App\Services\GeoService;
+use App\Services\RouteDistanceService;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Support\Facades\Cache;
 
 class Booking extends Model
 {
@@ -129,6 +132,66 @@ class Booking extends Model
         }
         $elapsed = $this->dispatched_at->diffInSeconds(now());
         return max(0, 20 - $elapsed);
+    }
+
+    /**
+     * Road distance and drive time from the assigned driver's last reported position to the
+     * pick-up point — the single figure both mobile apps show while the driver is heading there,
+     * so they always agree. Only while 'accepted'; null otherwise or without a driver GPS fix.
+     *
+     * Deliberately not an $appends accessor: it can call OSRM, so it's attached only to the
+     * active-ride responses and the live location event, and cached per exact driver fix (below),
+     * so the location upload and both apps' polls for the same fix share one lookup.
+     *
+     * @return array{pickup_distance_km: float, pickup_eta_mins: int}|null
+     */
+    public function pickupEta(): ?array
+    {
+        $driver = $this->driver;
+        if ($this->status !== 'accepted' || !$driver
+            || $driver->current_lat === null || $driver->current_lng === null
+            || $this->pickup_lat === null || $this->pickup_lng === null) {
+            return null;
+        }
+
+        // Practically at the pick-up point: report the real straight-line gap. Routing such a short
+        // hop is pointless, and RouteDistanceService treats near-identical points as "routing
+        // unavailable" and returns its 0.8 km fare floor, which would be wrong here.
+        $straightKm = GeoService::haversineKm(
+            (float) $driver->current_lat,
+            (float) $driver->current_lng,
+            (float) $this->pickup_lat,
+            (float) $this->pickup_lng
+        );
+        if ($straightKm < 0.05) {
+            return ['pickup_distance_km' => round($straightKm, 3), 'pickup_eta_mins' => 1];
+        }
+
+        // Cached per EXACT stored driver fix (not RouteDistanceService's ~11 m grid, which would
+        // reuse a figure from a slightly different position): the location upload computes it once,
+        // and both apps' polls — which read the same stored coordinates — get that same figure.
+        $cacheKey = sprintf('pickup_eta:%d:%s,%s', $this->id, $driver->current_lat, $driver->current_lng);
+
+        return Cache::remember($cacheKey, now()->addMinutes(2), function () use ($driver) {
+            try {
+                $route = app(RouteDistanceService::class)->calculateDistance(
+                    (float) $driver->current_lat,
+                    (float) $driver->current_lng,
+                    (float) $this->pickup_lat,
+                    (float) $this->pickup_lng,
+                    useCache: false
+                );
+            } catch (\InvalidArgumentException) {
+                return null;
+            }
+
+            // Exact meters (km to 3 decimals) so both apps show whole meters under 1 km and km to
+            // 2 decimals above — never a nearby driver collapsing to "0 km".
+            return [
+                'pickup_distance_km' => round($route['distance_m'] / 1000, 3),
+                'pickup_eta_mins' => $route['duration_mins'],
+            ];
+        });
     }
 
     public function passenger(): BelongsTo

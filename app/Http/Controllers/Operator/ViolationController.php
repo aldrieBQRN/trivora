@@ -145,7 +145,7 @@ class ViolationController extends Controller
             'appeal'                  => $appeal ? [
                 'id'           => $appeal->id,
                 'reason'       => $appeal->reason,
-                'evidenceUrl'  => $appeal->evidence_path ? asset('storage/' . $appeal->evidence_path) : null,
+                'evidenceUrl'  => $appeal->evidence_path ? route('documents.violation_appeal.show', $appeal->id) : null,
                 'status'       => $appeal->status,
                 'submittedAt'  => $appeal->submitted_at?->format('M d, Y \a\t h:i A'),
                 'reviewedAt'   => $appeal->reviewed_at?->format('M d, Y \a\t h:i A'),
@@ -201,7 +201,7 @@ class ViolationController extends Controller
 
         $evidencePath = null;
         if ($request->hasFile('proof')) {
-            $evidencePath = $request->file('proof')->store('violation_appeals', 'public');
+            $evidencePath = $request->file('proof')->store('violation_appeals', 'local');
         }
 
         $statusBeforeAppeal = $violation->status;

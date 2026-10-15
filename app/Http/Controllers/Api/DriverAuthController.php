@@ -173,13 +173,36 @@ class DriverAuthController extends Controller
     }
 
     /**
+     * Mask a mobile number for public/unauthenticated display (e.g. 09171234567 -> 0917****567).
+     */
+    private function maskMobileNumber(?string $mobile): ?string
+    {
+        if (!$mobile) {
+            return null;
+        }
+
+        $cleaned = trim($mobile);
+        $len = strlen($cleaned);
+
+        if ($len <= 4) {
+            return str_repeat('*', $len);
+        }
+
+        if ($len >= 10) {
+            $prefix = substr($cleaned, 0, 4);
+            $suffix = substr($cleaned, -3);
+            return $prefix . '****' . $suffix;
+        }
+
+        return substr($cleaned, 0, 2) . str_repeat('*', max(3, $len - 4)) . substr($cleaned, -2);
+    }
+
+    /**
      * The verified person's EXISTING personal information, read-only, for the registration
      * UI to display for confirmation — never re-collected and never a second person record.
      *
-     * `date_of_birth` is the exact date-only Y-m-d value and `birthday` its display form —
-     * both formatted straight from the model's `date` cast attribute, never round-tripped
-     * through a UTC/timezone conversion that could shift the day by one (picking Sep 23 must
-     * always show Sep 23).
+     * In accordance with privacy & data minimization standards, mobile numbers and birthdates
+     * are masked/minimized so unauthenticated callers cannot harvest sensitive PII.
      *
      * @param  Operator|\App\Models\ApplicationDriver  $person
      * @return array{first_name: ?string, last_name: ?string, full_name: ?string, birthday: ?string, date_of_birth: ?string, mobile_number: ?string, barangay: ?string}
@@ -190,9 +213,9 @@ class DriverAuthController extends Controller
             'first_name'    => $person->first_name,
             'last_name'     => $person->last_name,
             'full_name'     => $person->full_name,
-            'birthday'      => $person->date_of_birth?->format('M d, Y'),
-            'date_of_birth' => $person->date_of_birth?->format('Y-m-d'),
-            'mobile_number' => $person->contact_number,
+            'birthday'      => $person->date_of_birth ? '*** **, ' . $person->date_of_birth->format('Y') : null,
+            'date_of_birth' => $person->date_of_birth?->format('Y'),
+            'mobile_number' => $this->maskMobileNumber($person->contact_number),
             'barangay'      => $person->barangay,
         ];
     }
@@ -305,7 +328,6 @@ class DriverAuthController extends Controller
             'operator'           => [
                 'id'             => $operator->id,
                 'full_name'      => $operator->full_name,
-                'license_number' => $operator->license_number,
                 'barangay'       => $operator->barangay,
             ],
             'tricycle' => [
@@ -793,6 +815,35 @@ class DriverAuthController extends Controller
             ] : null,
             'coding_status' => $codingStatus,
         ], 200);
+    }
+
+    /**
+     * Current online session, read by the driver app when it starts so a relaunch/reload resumes
+     * an online shift instead of dropping it. `effectively_online` is the same 10-minute telemetry
+     * rule dispatch uses (Driver::isEffectivelyOnline); `seconds_since_last_location` lets the app
+     * continue its own 10-minute countdown from the real last fix (server clock, no skew).
+     */
+    public function getStatus(Request $request)
+    {
+        $driver = \App\Models\Driver::where('user_id', $request->user()->id)->first();
+
+        if (!$driver) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Driver record not found for this account.',
+            ], 404);
+        }
+
+        return response()->json([
+            'success'                    => true,
+            'is_online'                  => (bool) $driver->is_online,
+            'is_available'               => (bool) $driver->is_available,
+            'effectively_online'         => $driver->isEffectivelyOnline(),
+            'can_operate'                => $driver->canOperate(),
+            'seconds_since_last_location' => $driver->last_location_updated_at
+                ? (int) $driver->last_location_updated_at->diffInSeconds(now())
+                : null,
+        ]);
     }
 
     /**

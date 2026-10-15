@@ -439,6 +439,7 @@ class DashboardController extends Controller
             'color'                => $codingMeta['color'],
             'cityOfRegistration'   => 'Nasugbu, Batangas',
             'registrationDate'     => $tri->created_at ? $tri->created_at->format('F j, Y') : null,
+            'qr_ride'              => \App\Services\QrRideService::tmoSummary($tri),
         ];
 
         // Fetch documents linked to the application, resolved against the canonical franchise
@@ -594,8 +595,8 @@ class DashboardController extends Controller
                         : $doc->created_at->format('M d, Y'),
                     // Openable link to the file the applicant actually uploaded (null when
                     // the requirement has no file yet) — lets TMO open Verified Requirements
-                    // directly from this page, same URL shape as Document Review.
-                    'file_path' => $doc->file_path ? '/storage/' . ltrim($doc->file_path, '/') : null,
+                    // directly from this page, via authorized document route.
+                    'file_path' => $doc->file_path ? route('documents.application.show', $doc->id) : null,
                 ];
             }
         }
@@ -1005,7 +1006,7 @@ class DashboardController extends Controller
                 'id'            => $appeal->id,
                 'driver_name'   => $appeal->driver?->user?->name ?: 'N/A',
                 'reason'        => $appeal->reason,
-                'evidence_url'  => $appeal->evidence_path ? asset('storage/' . $appeal->evidence_path) : null,
+                'evidence_url'  => $appeal->evidence_path ? route('documents.violation_appeal.show', $appeal->id) : null,
                 'status'        => $appeal->status,
                 'submitted_at'  => $appeal->submitted_at?->format('M j, Y g:i A'),
                 'reviewed_at'   => $appeal->reviewed_at?->format('M j, Y g:i A'),

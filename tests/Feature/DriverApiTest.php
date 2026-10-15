@@ -11,6 +11,7 @@ use App\Models\Operator;
 use App\Models\Tricycle;
 use App\Models\User;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
@@ -31,6 +32,7 @@ class DriverApiTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        Cache::flush();
 
 
 
@@ -317,13 +319,15 @@ class DriverApiTest extends TestCase
             ->assertJsonPath('people.0.first_name', 'Juan')
             ->assertJsonPath('people.0.last_name', 'Dela Cruz')
             ->assertJsonPath('people.0.full_name', 'Juan Dela Cruz')
-            ->assertJsonPath('people.0.birthday', 'Jan 01, 1990')
-            ->assertJsonPath('people.0.date_of_birth', '1990-01-01')
-            ->assertJsonPath('people.0.mobile_number', '09171234567')
+            ->assertJsonPath('people.0.birthday', '*** **, 1990')
+            ->assertJsonPath('people.0.date_of_birth', '1990')
+            ->assertJsonPath('people.0.mobile_number', '0917****567')
             ->assertJsonPath('people.0.barangay', 'Poblacion')
             ->assertJsonCount(1, 'people')
             ->assertJsonPath('owner_is_driver', true)
             ->assertJsonPath('application_reference', null);
+
+        $this->assertArrayNotHasKey('license_number', $response->json('operator'));
 
         $this->assertSame($userCountBefore, User::count());
         $this->assertDatabaseCount('drivers', 0);
@@ -354,7 +358,7 @@ class DriverApiTest extends TestCase
 
         $response->assertStatus(200)
             ->assertJsonPath('eligible', true)
-            ->assertJsonPath('people.0.date_of_birth', '1990-01-01');
+            ->assertJsonPath('people.0.date_of_birth', '1990');
     }
 
     #[Test]
@@ -423,16 +427,16 @@ class DriverApiTest extends TestCase
             ->assertJsonPath('people.0.type', 'owner')
             ->assertJsonPath('people.0.role', 'Tricycle Owner')
             ->assertJsonPath('people.0.full_name', 'Mario Santos')
-            ->assertJsonPath('people.0.birthday', 'May 05, 1985')
-            ->assertJsonPath('people.0.date_of_birth', '1985-05-05')
-            ->assertJsonPath('people.0.mobile_number', '09179876543')
+            ->assertJsonPath('people.0.birthday', '*** **, 1985')
+            ->assertJsonPath('people.0.date_of_birth', '1985')
+            ->assertJsonPath('people.0.mobile_number', '0917****543')
             ->assertJsonPath('people.0.barangay', 'Bucana')
             ->assertJsonPath('people.1.type', 'driver')
             ->assertJsonPath('people.1.role', 'Tricycle Driver')
             ->assertJsonPath('people.1.full_name', 'Nemesio Ramos')
-            ->assertJsonPath('people.1.birthday', 'Jun 12, 1995')
-            ->assertJsonPath('people.1.date_of_birth', '1995-06-12')
-            ->assertJsonPath('people.1.mobile_number', '09175551234')
+            ->assertJsonPath('people.1.birthday', '*** **, 1995')
+            ->assertJsonPath('people.1.date_of_birth', '1995')
+            ->assertJsonPath('people.1.mobile_number', '0917****234')
             ->assertJsonPath('people.1.barangay', 'Bucana');
     }
 
@@ -475,8 +479,8 @@ class DriverApiTest extends TestCase
             ->assertJsonPath('people.0.full_name', 'Juan Dela Cruz')
             ->assertJsonPath('people.1.type', 'driver')
             ->assertJsonPath('people.1.full_name', 'Ramon Dela Cruz')
-            ->assertJsonPath('people.1.date_of_birth', '1992-04-15')
-            ->assertJsonPath('people.1.mobile_number', '09171112222')
+            ->assertJsonPath('people.1.date_of_birth', '1992')
+            ->assertJsonPath('people.1.mobile_number', '0917****222')
             ->assertJsonPath('people.1.barangay', 'Poblacion');
     }
 
@@ -526,7 +530,7 @@ class DriverApiTest extends TestCase
             ->assertJsonPath('application_reference', 'APP-2026-99012')
             ->assertJsonCount(2, 'people')
             ->assertJsonPath('people.1.full_name', 'Pedro Santos')
-            ->assertJsonPath('people.1.date_of_birth', '1988-07-20');
+            ->assertJsonPath('people.1.date_of_birth', '1988');
     }
 
     #[Test]
@@ -1132,5 +1136,43 @@ class DriverApiTest extends TestCase
 
         $this->operatorA->refresh();
         $this->assertNull($this->operatorA->user_id);
+    }
+
+    #[Test]
+    public function dangerous_seed_and_artisan_migrate_endpoints_are_not_available()
+    {
+        $this->get('/seed-database')->assertNotFound();
+        $this->post('/seed-database')->assertNotFound();
+
+        $this->get('/artisan-migrate')->assertNotFound();
+        $this->post('/artisan-migrate')->assertNotFound();
+    }
+
+    #[Test]
+    public function public_verification_does_not_expose_government_license_number()
+    {
+        $response = $this->postJson('/api/v1/driver/verify-eligibility', [
+            'franchise_number' => 'FS-TEST-AAAA',
+        ]);
+
+        $response->assertStatus(200);
+        $this->assertArrayNotHasKey('license_number', $response->json('operator'));
+        $this->assertStringNotContainsString($this->operatorA->license_number, $response->getContent());
+    }
+
+    #[Test]
+    public function driver_eligibility_verification_is_rate_limited()
+    {
+        for ($i = 0; $i < 10; $i++) {
+            $response = $this->postJson('/api/v1/driver/verify-eligibility', [
+                'franchise_number' => 'FS-TEST-AAAA',
+            ]);
+            $this->assertNotEquals(429, $response->status(), "Request {$i} should not be rate limited.");
+        }
+
+        $throttled = $this->postJson('/api/v1/driver/verify-eligibility', [
+            'franchise_number' => 'FS-TEST-AAAA',
+        ]);
+        $throttled->assertStatus(429);
     }
 }

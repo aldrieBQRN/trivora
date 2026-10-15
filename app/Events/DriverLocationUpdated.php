@@ -19,7 +19,9 @@ class DriverLocationUpdated implements ShouldBroadcastNow
         public float $latitude,
         public float $longitude,
         public ?int $headingDeg,
-        public string $recordedAt
+        public string $recordedAt,
+        public ?float $pickupDistanceKm = null,
+        public ?int $pickupEtaMins = null
     ) {
     }
 
@@ -58,6 +60,9 @@ class DriverLocationUpdated implements ShouldBroadcastNow
             'longitude'   => $this->longitude,
             'heading_deg' => $this->headingDeg,
             'recorded_at' => $this->recordedAt,
+            // Booking::pickupEta() — only while the driver is heading to pick-up, else null.
+            'pickup_distance_km' => $this->pickupDistanceKm,
+            'pickup_eta_mins'    => $this->pickupEtaMins,
         ];
     }
 }

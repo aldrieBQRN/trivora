@@ -35,9 +35,9 @@ Route::get('v1/places/nearby', [NearbyPlaceController::class, 'index'])->middlew
 Route::prefix('v1/driver')->group(function () {
 
     // Public Auth Routes
-    Route::post('/verify-eligibility', [DriverAuthController::class, 'verifyEligibility']);
-    Route::post('/register', [DriverAuthController::class, 'register']);
-    Route::post('/login', [DriverAuthController::class, 'login']);
+    Route::post('/verify-eligibility', [DriverAuthController::class, 'verifyEligibility'])->middleware('throttle:10,1');
+    Route::post('/register', [DriverAuthController::class, 'register'])->middleware('throttle:20,1');
+    Route::post('/login', [DriverAuthController::class, 'login'])->middleware('throttle:10,1');
 
     // Forgot password — emailed 6-digit code (shared with the passenger app)
     Route::middleware('throttle:10,1')->group(function () {
@@ -68,6 +68,8 @@ Route::prefix('v1/driver')->group(function () {
         // based on the driver's FRANCHISE status, not the payload — a driver whose franchise is
         // suspended can always still turn themself off.
         Route::post('/status', [DriverAuthController::class, 'updateStatus'])->middleware('franchise.operational');
+        // Read-only (no franchise gate): the app resumes Online only when `can_operate` is true.
+        Route::get('/status', [DriverAuthController::class, 'getStatus']);
 
         // Driver Booking Dispatch Operations — every one of these resolves the driver strictly
         // from $request->user() (see BookingController), never a client-supplied driver_id/
@@ -158,8 +160,8 @@ Route::prefix('v1/driver')->group(function () {
 Route::prefix('v1/passenger')->group(function () {
 
     // Public Auth Routes
-    Route::post('/register', [PassengerAuthController::class, 'register']);
-    Route::post('/login', [PassengerAuthController::class, 'login']);
+    Route::post('/register', [PassengerAuthController::class, 'register'])->middleware('throttle:20,1');
+    Route::post('/login', [PassengerAuthController::class, 'login'])->middleware('throttle:10,1');
 
     // Sign-up email verification — the code's token is required by /register.
     Route::middleware('throttle:10,1')->group(function () {
