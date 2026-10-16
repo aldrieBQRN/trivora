@@ -12,6 +12,9 @@ class NearbyPlacesService
     /** Cache duration for successfully fetched POIs: 24 hours */
     public const CACHE_TTL_SECONDS = 86400;
 
+    /** Cache duration for the approximate local fallback list: short, so real OSM data replaces it soon after Overpass recovers */
+    public const FALLBACK_CACHE_TTL_SECONDS = 600;
+
     /** Maximum POIs returned per request to keep payloads lightweight */
     public const MAX_RESULTS = 50;
 
@@ -89,7 +92,7 @@ class NearbyPlacesService
         if ($enableFallback) {
             $fallback = $this->getLocalFallbackPlaces($lat, $lng, $radius, $normalizedCategory);
             if (!empty($fallback)) {
-                Cache::put($cacheKey, $fallback, self::CACHE_TTL_SECONDS);
+                Cache::put($cacheKey, $fallback, self::FALLBACK_CACHE_TTL_SECONDS);
                 return $fallback;
             }
         }
