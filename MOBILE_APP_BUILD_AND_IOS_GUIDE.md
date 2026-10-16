@@ -38,8 +38,8 @@ eas build -p android --profile preview
 
 | App | Version | Direct Download Link |
 | :--- | :---: | :--- |
-| 🚕 **Trivora Driver App** | 1.0.0 | [Download Driver APK](https://expo.dev/artifacts/eas/lHOljW5R4O4efljQD_hs1FPiPHzFCnMK5dzSMJJs6jc.apk) |
-| 👤 **Trivora Passenger App** | 1.0.0 | [Download Passenger APK](https://expo.dev/artifacts/eas/i5OY4TdR8DYZbMOizLVogoHmRznrcVSoY0SXZTUrKDM.apk) |
+| 🚕 **Trivora Driver App** | 1.1.0 (Build 18) | [Download Driver APK (Build 18)](https://expo.dev/artifacts/eas/7QjVxIjZesjojUn4yPhRfjxaRbSxU6YCedWwf69LTpY.apk) |
+| 👤 **Trivora Passenger App** | 1.1.0 (Build 12) | [Download Passenger APK (Build 12)](https://expo.dev/artifacts/eas/fJlIb-haxuhPgCWe-EDIR2FrrdsxMhrMI9QsF305TDo.apk) |
 
 > 💡 **Can I rename the APK file after downloading?**  
 > **Yes!** The downloaded filename is a random hash from EAS (e.g. `lHOljW5R...apk`). You can safely rename it to:
