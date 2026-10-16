@@ -1,10 +1,12 @@
 @php
-    // Inline (CID) logo so it shows even when APP_URL isn't publicly reachable; plain URL when
-    // the view is rendered outside a mail send (e.g. a browser preview).
-    $logoPath = public_path('images/email-logo.png');
-    $logoSrc = (isset($message) && $message instanceof \Illuminate\Mail\Message)
-        ? $message->embed($logoPath)
-        : asset('images/email-logo.png');
+    // Hosted logo URL when APP_URL is public (https), so mail clients don't list it as an
+    // attachment. Locally (http://localhost) the URL isn't reachable from the inbox, so the
+    // logo is embedded inline (CID) instead.
+    $appUrl = rtrim((string) config('app.url'), '/');
+    $isPublicUrl = str_starts_with($appUrl, 'https://');
+    $logoSrc = (! $isPublicUrl && isset($message) && $message instanceof \Illuminate\Mail\Message)
+        ? $message->embed(public_path('images/email-logo.png'))
+        : ($isPublicUrl ? $appUrl . '/images/email-logo.png' : asset('images/email-logo.png'));
 @endphp
 <!DOCTYPE html>
 <html lang="en">
