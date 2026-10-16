@@ -261,7 +261,7 @@ class NearbyPlacesService
     /**
      * Normalize raw Overpass elements into clean, structured place items.
      */
-    public function normalizeElements(array $elements, string $queriedCategory): array
+    public function normalizeElements(array $elements, string $queriedCategory, int $limit = self::MAX_RESULTS): array
     {
         $places = [];
         $seenIds = [];
@@ -305,7 +305,7 @@ class NearbyPlacesService
                 'address' => $address ?: null,
             ];
 
-            if (count($places) >= self::MAX_RESULTS) {
+            if (count($places) >= $limit) {
                 break;
             }
         }
@@ -375,369 +375,25 @@ class NearbyPlacesService
         return implode(', ', $parts);
     }
 
+    /** Bundled OpenStreetMap snapshot used when Overpass is unavailable (real OSM coordinates). */
+    public const FALLBACK_SNAPSHOT_PATH = 'data/nasugbu_places_osm.json';
+
     /**
-     * Curated local landmarks and essential points of interest in Nasugbu, Batangas.
-     * Used when Overpass API is unavailable, times out, or returns no results.
+     * Real Nasugbu points of interest from a bundled OpenStreetMap snapshot, used when the Overpass
+     * API is unavailable, times out, or returns no results. Normalized exactly like a live Overpass
+     * response, so the coordinates are the same ones the map and place search show.
      */
     public function getLocalFallbackPlaces(float $lat, float $lng, int $radius, string $category): array
     {
-        $allLandmarks = [
-            // Restaurants
-            [
-                'id' => 'fallback/rest-1',
-                'name' => 'Jollibee Nasugbu Poblacion',
-                'category' => 'restaurants',
-                'category_label' => 'Restaurants',
-                'latitude' => 14.0725,
-                'longitude' => 120.6322,
-                'address' => 'J.P. Laurel St., Barangay 1, Nasugbu',
-            ],
-            [
-                'id' => 'fallback/rest-2',
-                'name' => "McDonald's Nasugbu",
-                'category' => 'restaurants',
-                'category_label' => 'Restaurants',
-                'latitude' => 14.0732,
-                'longitude' => 120.6338,
-                'address' => 'F. Alix St. cor. J.P. Laurel St., Nasugbu',
-            ],
-            [
-                'id' => 'fallback/rest-3',
-                'name' => 'Mang Inasal Nasugbu',
-                'category' => 'restaurants',
-                'category_label' => 'Restaurants',
-                'latitude' => 14.0721,
-                'longitude' => 120.6328,
-                'address' => 'Poblacion, Nasugbu',
-            ],
-            [
-                'id' => 'fallback/rest-4',
-                'name' => 'Chowking Nasugbu',
-                'category' => 'restaurants',
-                'category_label' => 'Restaurants',
-                'latitude' => 14.0719,
-                'longitude' => 120.6330,
-                'address' => 'J.P. Laurel St., Poblacion, Nasugbu',
-            ],
-            [
-                'id' => 'fallback/rest-5',
-                'name' => "Andok's Litson Manok",
-                'category' => 'restaurants',
-                'category_label' => 'Restaurants',
-                'latitude' => 14.0740,
-                'longitude' => 120.6318,
-                'address' => 'P. Burgos St., Nasugbu',
-            ],
-
-            // Coffee & Cafes
-            [
-                'id' => 'fallback/cafe-1',
-                'name' => 'Cafe Plaza Nasugbu',
-                'category' => 'coffee',
-                'category_label' => 'Coffee',
-                'latitude' => 14.0735,
-                'longitude' => 120.6342,
-                'address' => 'Town Plaza, Barangay 3, Nasugbu',
-            ],
-            [
-                'id' => 'fallback/cafe-2',
-                'name' => 'Highlands Coffee & Bakery',
-                'category' => 'coffee',
-                'category_label' => 'Coffee',
-                'latitude' => 14.0715,
-                'longitude' => 120.6320,
-                'address' => 'Rizal St., Barangay 5, Nasugbu',
-            ],
-            [
-                'id' => 'fallback/cafe-3',
-                'name' => 'Kape Umali Nasugbu Hub',
-                'category' => 'coffee',
-                'category_label' => 'Coffee',
-                'latitude' => 14.0750,
-                'longitude' => 120.6335,
-                'address' => 'F. Alix St., Nasugbu',
-            ],
-
-            // Hotels & Accommodations
-            [
-                'id' => 'fallback/hotel-1',
-                'name' => 'Bucana Beach Resort & Hotel',
-                'category' => 'hotels',
-                'category_label' => 'Hotels',
-                'latitude' => 14.0790,
-                'longitude' => 120.6280,
-                'address' => 'Brgy. Bucana, Nasugbu',
-            ],
-            [
-                'id' => 'fallback/hotel-2',
-                'name' => 'Nasugbu Bay Tourist Hotel',
-                'category' => 'hotels',
-                'category_label' => 'Hotels',
-                'latitude' => 14.0760,
-                'longitude' => 120.6295,
-                'address' => 'Wawa Port Rd., Nasugbu',
-            ],
-            [
-                'id' => 'fallback/hotel-3',
-                'name' => 'Poblacion Heritage Inn',
-                'category' => 'hotels',
-                'category_label' => 'Hotels',
-                'latitude' => 14.0712,
-                'longitude' => 120.6335,
-                'address' => 'G. Alvarez St., Nasugbu',
-            ],
-
-            // Gas Stations
-            [
-                'id' => 'fallback/gas-1',
-                'name' => 'Petron Service Station Nasugbu',
-                'category' => 'gas_stations',
-                'category_label' => 'Gas Stations',
-                'latitude' => 14.0705,
-                'longitude' => 120.6345,
-                'address' => 'National Hwy, Brgy. 4, Nasugbu',
-            ],
-            [
-                'id' => 'fallback/gas-2',
-                'name' => 'Caltex Station Poblacion',
-                'category' => 'gas_stations',
-                'category_label' => 'Gas Stations',
-                'latitude' => 14.0748,
-                'longitude' => 120.6310,
-                'address' => 'J.P. Laurel St., Brgy. 1, Nasugbu',
-            ],
-            [
-                'id' => 'fallback/gas-3',
-                'name' => 'Shell Gas Station Bucana',
-                'category' => 'gas_stations',
-                'category_label' => 'Gas Stations',
-                'latitude' => 14.0775,
-                'longitude' => 120.6325,
-                'address' => 'Nasugbu-Palico Hwy, Nasugbu',
-            ],
-
-            // Hospitals & Healthcare
-            [
-                'id' => 'fallback/hosp-1',
-                'name' => 'Nasugbu Doctors Hospital',
-                'category' => 'hospitals',
-                'category_label' => 'Hospitals',
-                'latitude' => 14.0685,
-                'longitude' => 120.6350,
-                'address' => 'National Highway, Barangay 10, Nasugbu',
-            ],
-            [
-                'id' => 'fallback/hosp-2',
-                'name' => 'Jabez Medical Center',
-                'category' => 'hospitals',
-                'category_label' => 'Hospitals',
-                'latitude' => 14.0730,
-                'longitude' => 120.6315,
-                'address' => 'J.P. Laurel St., Nasugbu',
-            ],
-            [
-                'id' => 'fallback/hosp-3',
-                'name' => 'Apacible Memorial District Hospital',
-                'category' => 'hospitals',
-                'category_label' => 'Hospitals',
-                'latitude' => 14.0665,
-                'longitude' => 120.6370,
-                'address' => 'Lumbangan, Nasugbu',
-            ],
-            [
-                'id' => 'fallback/hosp-4',
-                'name' => 'Mercury Drug Nasugbu Poblacion',
-                'category' => 'hospitals',
-                'category_label' => 'Hospitals',
-                'latitude' => 14.0728,
-                'longitude' => 120.6327,
-                'address' => 'J.P. Laurel St., Nasugbu',
-            ],
-
-            // Schools & Universities
-            [
-                'id' => 'fallback/school-1',
-                'name' => 'Batangas State University - ARASOF Nasugbu',
-                'category' => 'schools',
-                'category_label' => 'Schools',
-                'latitude' => 14.0765,
-                'longitude' => 120.6355,
-                'address' => 'R. Martinez St., Nasugbu',
-            ],
-            [
-                'id' => 'fallback/school-2',
-                'name' => 'Nasugbu West Central School',
-                'category' => 'schools',
-                'category_label' => 'Schools',
-                'latitude' => 14.0742,
-                'longitude' => 120.6325,
-                'address' => 'F. Alix St., Barangay 2, Nasugbu',
-            ],
-            [
-                'id' => 'fallback/school-3',
-                'name' => 'Nasugbu Integrated National High School',
-                'category' => 'schools',
-                'category_label' => 'Schools',
-                'latitude' => 14.0690,
-                'longitude' => 120.6360,
-                'address' => 'Barangay 8, Nasugbu',
-            ],
-            [
-                'id' => 'fallback/school-4',
-                'name' => 'St. Paul College of Nasugbu',
-                'category' => 'schools',
-                'category_label' => 'Schools',
-                'latitude' => 14.0720,
-                'longitude' => 120.6350,
-                'address' => 'P. Burgos St., Nasugbu',
-            ],
-
-            // Banks & ATMs
-            [
-                'id' => 'fallback/bank-1',
-                'name' => 'BDO Unibank Nasugbu Branch & ATM',
-                'category' => 'banks',
-                'category_label' => 'Banks',
-                'latitude' => 14.0722,
-                'longitude' => 120.6323,
-                'address' => 'J.P. Laurel St., Nasugbu',
-            ],
-            [
-                'id' => 'fallback/bank-2',
-                'name' => 'BPI Family Bank & ATM',
-                'category' => 'banks',
-                'category_label' => 'Banks',
-                'latitude' => 14.0730,
-                'longitude' => 120.6330,
-                'address' => 'F. Alix St., Nasugbu',
-            ],
-            [
-                'id' => 'fallback/bank-3',
-                'name' => 'Landbank of the Philippines Nasugbu',
-                'category' => 'banks',
-                'category_label' => 'Banks',
-                'latitude' => 14.0716,
-                'longitude' => 120.6332,
-                'address' => 'Rizal St. cor. F. Alix St., Nasugbu',
-            ],
-            [
-                'id' => 'fallback/bank-4',
-                'name' => 'Metrobank Nasugbu Branch',
-                'category' => 'banks',
-                'category_label' => 'Banks',
-                'latitude' => 14.0738,
-                'longitude' => 120.6320,
-                'address' => 'J.P. Laurel St., Nasugbu',
-            ],
-
-            // Shops & Markets
-            [
-                'id' => 'fallback/shop-1',
-                'name' => 'Savemore Market Nasugbu',
-                'category' => 'shops',
-                'category_label' => 'Shops',
-                'latitude' => 14.0700,
-                'longitude' => 120.6340,
-                'address' => 'National Highway, Barangay 10, Nasugbu',
-            ],
-            [
-                'id' => 'fallback/shop-2',
-                'name' => 'Nasugbu Public Market',
-                'category' => 'shops',
-                'category_label' => 'Shops',
-                'latitude' => 14.0745,
-                'longitude' => 120.6312,
-                'address' => 'Market Site, Barangay 1, Nasugbu',
-            ],
-            [
-                'id' => 'fallback/shop-3',
-                'name' => 'WalterMart Nasugbu',
-                'category' => 'shops',
-                'category_label' => 'Shops',
-                'latitude' => 14.0650,
-                'longitude' => 120.6380,
-                'address' => 'Km. 98 National Rd, Nasugbu',
-            ],
-            [
-                'id' => 'fallback/shop-4',
-                'name' => '7-Eleven Nasugbu Poblacion',
-                'category' => 'shops',
-                'category_label' => 'Shops',
-                'latitude' => 14.0726,
-                'longitude' => 120.6326,
-                'address' => 'J.P. Laurel St., Nasugbu',
-            ],
-
-            // Government Offices
-            [
-                'id' => 'fallback/gov-1',
-                'name' => 'Nasugbu Municipal Hall',
-                'category' => 'government',
-                'category_label' => 'Government',
-                'latitude' => 14.0718,
-                'longitude' => 120.6325,
-                'address' => 'J.P. Rizal St., Poblacion, Nasugbu',
-            ],
-            [
-                'id' => 'fallback/gov-2',
-                'name' => 'Nasugbu Municipal Police Station',
-                'category' => 'government',
-                'category_label' => 'Government',
-                'latitude' => 14.0714,
-                'longitude' => 120.6321,
-                'address' => 'Beside Municipal Hall, Poblacion, Nasugbu',
-            ],
-            [
-                'id' => 'fallback/gov-3',
-                'name' => 'Nasugbu Central Post Office',
-                'category' => 'government',
-                'category_label' => 'Government',
-                'latitude' => 14.0720,
-                'longitude' => 120.6318,
-                'address' => 'Municipal Compound, Poblacion, Nasugbu',
-            ],
-            [
-                'id' => 'fallback/gov-4',
-                'name' => 'Nasugbu Bureau of Fire Protection',
-                'category' => 'government',
-                'category_label' => 'Government',
-                'latitude' => 14.0710,
-                'longitude' => 120.6330,
-                'address' => 'Rizal St., Poblacion, Nasugbu',
-            ],
-
-            // Places of Interest & Parks
-            [
-                'id' => 'fallback/place-1',
-                'name' => 'St. Francis Xavier Parish Church',
-                'category' => 'places',
-                'category_label' => 'Places',
-                'latitude' => 14.0722,
-                'longitude' => 120.6345,
-                'address' => 'P. Burgos St., Barangay 3, Nasugbu',
-            ],
-            [
-                'id' => 'fallback/place-2',
-                'name' => 'Nasugbu Town Plaza Park',
-                'category' => 'places',
-                'category_label' => 'Places',
-                'latitude' => 14.0732,
-                'longitude' => 120.6340,
-                'address' => 'Town Plaza, Barangay 3, Nasugbu',
-            ],
-            [
-                'id' => 'fallback/place-3',
-                'name' => 'Wawa Port & Baywalk',
-                'category' => 'places',
-                'category_label' => 'Places',
-                'latitude' => 14.0785,
-                'longitude' => 120.6275,
-                'address' => 'Brgy. Wawa, Nasugbu',
-            ],
-        ];
+        $path = database_path(self::FALLBACK_SNAPSHOT_PATH);
+        $snapshot = is_file($path) ? json_decode((string) file_get_contents($path), true) : null;
+        if (!is_array($snapshot) || !isset($snapshot['elements']) || !is_array($snapshot['elements'])) {
+            Log::warning('Nearby places fallback snapshot missing or unreadable: ' . $path);
+            return [];
+        }
 
         $results = [];
-        foreach ($allLandmarks as $item) {
+        foreach ($this->normalizeElements($snapshot['elements'], 'all', PHP_INT_MAX) as $item) {
             if ($category !== 'all' && $item['category'] !== $category) {
                 continue;
             }

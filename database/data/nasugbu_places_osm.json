@@ -1,0 +1,3107 @@
+{
+ "meta": {
+  "source": "OpenStreetMap via Overpass API",
+  "attribution": "© OpenStreetMap contributors (ODbL)",
+  "fetched_at": "2026-10-16",
+  "bbox": [
+   14.03,
+   120.6,
+   14.1,
+   120.67
+  ],
+  "note": "Fallback for NearbyPlacesService when Overpass is unavailable. Regenerate with the same Overpass query when OSM data changes."
+ },
+ "elements": [
+  {
+   "type": "node",
+   "id": 369910566,
+   "lat": 14.0711196,
+   "lon": 120.6325975,
+   "tags": {
+    "addr:city": "Nasugbu",
+    "addr:street": "J. P. Laurel Street",
+    "amenity": "pharmacy",
+    "brand": "Mercury Drug",
+    "name": "Mercury Drug"
+   }
+  },
+  {
+   "type": "node",
+   "id": 934864701,
+   "lat": 14.0713912,
+   "lon": 120.6324736,
+   "tags": {
+    "addr:city": "Nasugbu",
+    "addr:street": "J. P. Laurel Street",
+    "addr:street:corner": "F. Alix",
+    "amenity": "fast_food",
+    "brand": "Dunkin'",
+    "name": "Dunkin'"
+   }
+  },
+  {
+   "type": "node",
+   "id": 934864702,
+   "lat": 14.0713956,
+   "lon": 120.6322944,
+   "tags": {
+    "addr:city": "Nasugbu",
+    "addr:street": "J. P. Laurel Street",
+    "addr:street:corner": "F. Alix",
+    "amenity": "fast_food",
+    "brand": "Chowking",
+    "name": "Chowking"
+   }
+  },
+  {
+   "type": "node",
+   "id": 934864707,
+   "lat": 14.0739465,
+   "lon": 120.6320225,
+   "tags": {
+    "amenity": "police",
+    "name": "Nasugbu Police",
+    "operator": "Philippine National Police"
+   }
+  },
+  {
+   "type": "node",
+   "id": 1295111876,
+   "lat": 14.0845849,
+   "lon": 120.6230494,
+   "tags": {
+    "name": "Azon Store",
+    "shop": "convenience"
+   }
+  },
+  {
+   "type": "node",
+   "id": 1295111890,
+   "lat": 14.0399896,
+   "lon": 120.6518349,
+   "tags": {
+    "amenity": "restaurant",
+    "name": "Sr. Pedro"
+   }
+  },
+  {
+   "type": "node",
+   "id": 1645122712,
+   "lat": 14.0368166,
+   "lon": 120.6522827,
+   "tags": {
+    "amenity": "townhall",
+    "name": "Barangay Uno Hall"
+   }
+  },
+  {
+   "type": "node",
+   "id": 1735379828,
+   "lat": 14.071485,
+   "lon": 120.6322733,
+   "tags": {
+    "addr:city": "Nasugbu",
+    "addr:postcode": "4231",
+    "addr:street": "J. P. Laurel Street",
+    "addr:street:corner": "F. Alix",
+    "amenity": "bank",
+    "brand": "PNB",
+    "name": "PNB",
+    "operator": "Philippine National Bank"
+   }
+  },
+  {
+   "type": "node",
+   "id": 1735379847,
+   "lat": 14.0724693,
+   "lon": 120.6320926,
+   "tags": {
+    "addr:street": "J. P. Laurel Street",
+    "addr:street:corner": "C. Alvarez Street",
+    "addr:town": "Nasugbu",
+    "amenity": "fast_food",
+    "brand": "Andok's",
+    "name": "Andok's"
+   }
+  },
+  {
+   "type": "node",
+   "id": 1735379851,
+   "lat": 14.0703628,
+   "lon": 120.6324592,
+   "tags": {
+    "addr:city": "Nasugbu",
+    "addr:postcode": "4231",
+    "addr:street": "J. P. Laurel Street",
+    "amenity": "bank",
+    "brand": "BDO",
+    "name": "BDO",
+    "operator": "BDO Unibank"
+   }
+  },
+  {
+   "type": "node",
+   "id": 1735379867,
+   "lat": 14.0518911,
+   "lon": 120.6618961,
+   "tags": {
+    "addr:city": "Nasugbu",
+    "addr:street": "Tagaytay-Nasugbu Road",
+    "amenity": "bank",
+    "name": "BPI"
+   }
+  },
+  {
+   "type": "node",
+   "id": 1735379904,
+   "lat": 14.0688897,
+   "lon": 120.6327675,
+   "tags": {
+    "addr:city": "Nasugbu",
+    "addr:street": "J. P. Laurel Street",
+    "addr:street:corner": "P. Roxas",
+    "amenity": "fuel",
+    "brand": "Caltex",
+    "name": "Caltex"
+   }
+  },
+  {
+   "type": "node",
+   "id": 1735379917,
+   "lat": 14.0713756,
+   "lon": 120.6321838,
+   "tags": {
+    "addr:city": "Nasugbu",
+    "addr:street": "J. P. Laurel Street",
+    "addr:street:corner": "F. Alix",
+    "name": "Centro Royale Hotel",
+    "tourism": "hotel"
+   }
+  },
+  {
+   "type": "node",
+   "id": 1735379921,
+   "lat": 14.0674003,
+   "lon": 120.6330637,
+   "tags": {
+    "addr:city": "Nasugbu",
+    "addr:street": "J. P. Laurel Street",
+    "addr:street:corner": "R. Martinez",
+    "amenity": "clinic",
+    "name": "Clinica Nasugbu"
+   }
+  },
+  {
+   "type": "node",
+   "id": 1735379944,
+   "lat": 14.0702446,
+   "lon": 120.6313441,
+   "tags": {
+    "addr:city": "Nasugbu",
+    "addr:street": "F. Castro Street",
+    "addr:unit": "Stall 3",
+    "amenity": "pharmacy",
+    "brand": "Generika",
+    "name": "Generika"
+   }
+  },
+  {
+   "type": "node",
+   "id": 1735380012,
+   "lat": 14.072778,
+   "lon": 120.6319616,
+   "tags": {
+    "addr:street": "J. P. Laurel Street",
+    "addr:town": "Nasugbu",
+    "amenity": "fast_food",
+    "brand": "Mang Inasal",
+    "name": "Mang Inasal"
+   }
+  },
+  {
+   "type": "node",
+   "id": 1735380033,
+   "lat": 14.0685567,
+   "lon": 120.6362662,
+   "tags": {
+    "addr:city": "Nasugbu",
+    "addr:postcode": "4231",
+    "addr:street": "San Agustin Street",
+    "addr:street:corner": "M. Rojales Street",
+    "amenity": "school",
+    "name": "Nasugbu Adventist Elementary School"
+   }
+  },
+  {
+   "type": "node",
+   "id": 1735380059,
+   "lat": 14.0687069,
+   "lon": 120.6340061,
+   "tags": {
+    "addr:city": "Nasugbu",
+    "addr:housenumber": "152",
+    "addr:postcode": "4231",
+    "addr:street": "Concepcion Street",
+    "amenity": "school",
+    "name": "Pedagogia School"
+   }
+  },
+  {
+   "type": "node",
+   "id": 1735380088,
+   "lat": 14.0712017,
+   "lon": 120.6325806,
+   "tags": {
+    "addr:city": "Nasugbu",
+    "addr:street": "J. P. Laurel Street",
+    "addr:street:corner": "F. Alix",
+    "amenity": "bank",
+    "name": "Pres. J.P. Laurel Rural Bank"
+   }
+  },
+  {
+   "type": "node",
+   "id": 1735380096,
+   "lat": 14.0713031,
+   "lon": 120.6335485,
+   "tags": {
+    "addr:city": "Nasugbu",
+    "addr:postcode": "4231",
+    "addr:street": "Concepcion Street",
+    "amenity": "school",
+    "name": "RB Cordero Academy"
+   }
+  },
+  {
+   "type": "node",
+   "id": 1735380130,
+   "lat": 14.0699156,
+   "lon": 120.6326294,
+   "tags": {
+    "addr:city": "Nasugbu",
+    "addr:street": "J. P. Laurel Street",
+    "amenity": "bank",
+    "name": "Rural Bank of Calaca"
+   }
+  },
+  {
+   "type": "node",
+   "id": 1735380132,
+   "lat": 14.0704702,
+   "lon": 120.6324401,
+   "tags": {
+    "addr:city": "Nasugbu",
+    "addr:street": "J. P. Laurel Street",
+    "amenity": "bank",
+    "name": "Rural Bank of Nasugbu"
+   }
+  },
+  {
+   "type": "node",
+   "id": 1735380145,
+   "lat": 14.0699099,
+   "lon": 120.6317914,
+   "tags": {
+    "addr:city": "Nasugbu",
+    "addr:street": "Mulingbayan Street",
+    "addr:street:corner": "P. Riñoza",
+    "name": "Savers' Supermarket",
+    "shop": "supermarket"
+   }
+  },
+  {
+   "type": "node",
+   "id": 1735380177,
+   "lat": 14.0712492,
+   "lon": 120.63257,
+   "tags": {
+    "addr:city": "Nasugbu",
+    "addr:street": "J. P. Laurel Street",
+    "addr:street:corner": "F. Alix",
+    "name": "Sukitel",
+    "tourism": "hotel"
+   }
+  },
+  {
+   "type": "node",
+   "id": 1735380305,
+   "lat": 14.0724741,
+   "lon": 120.6323111,
+   "tags": {
+    "addr:street": "J. P. Laurel Street",
+    "addr:street:corner": "C. Alvarez Street",
+    "addr:town": "Nasugbu",
+    "brand": "7-Eleven",
+    "name": "7-Eleven",
+    "shop": "convenience"
+   }
+  },
+  {
+   "type": "node",
+   "id": 1823035955,
+   "lat": 14.0372184,
+   "lon": 120.6538598,
+   "tags": {
+    "amenity": "townhall",
+    "name": "Barangay Quatro Hall"
+   }
+  },
+  {
+   "type": "node",
+   "id": 1823045404,
+   "lat": 14.0408314,
+   "lon": 120.6503768,
+   "tags": {
+    "amenity": "townhall",
+    "name": "Barangay Tres Hall"
+   }
+  },
+  {
+   "type": "node",
+   "id": 1913974799,
+   "lat": 14.0913947,
+   "lon": 120.6214739,
+   "tags": {
+    "name": "Canyon Cove",
+    "tourism": "hotel"
+   }
+  },
+  {
+   "type": "node",
+   "id": 3698538092,
+   "lat": 14.0795921,
+   "lon": 120.635745,
+   "tags": {
+    "amenity": "place_of_worship",
+    "name": "Nasugbu Bible Baptist Church"
+   }
+  },
+  {
+   "type": "node",
+   "id": 3736801929,
+   "lat": 14.0372141,
+   "lon": 120.6528718,
+   "tags": {
+    "amenity": "bank",
+    "name": "Farmers Rural Bank"
+   }
+  },
+  {
+   "type": "node",
+   "id": 4107873893,
+   "lat": 14.0644171,
+   "lon": 120.6339857,
+   "tags": {
+    "addr:street": "J. P. Laurel Street",
+    "amenity": "clinic",
+    "name": "Immanuel Medical"
+   }
+  },
+  {
+   "type": "node",
+   "id": 4414620502,
+   "lat": 14.0779529,
+   "lon": 120.6365719,
+   "tags": {
+    "amenity": "place_of_worship",
+    "name": "IEMILEF Church"
+   }
+  },
+  {
+   "type": "node",
+   "id": 4486329529,
+   "lat": 14.0723732,
+   "lon": 120.6321188,
+   "tags": {
+    "amenity": "fast_food",
+    "brand": "Goldilocks",
+    "name": "Goldilocks",
+    "shop": "bakery"
+   }
+  },
+  {
+   "type": "node",
+   "id": 4486329530,
+   "lat": 14.0724226,
+   "lon": 120.6320973,
+   "tags": {
+    "amenity": "fast_food",
+    "brand": "Minute Burger",
+    "name": "Minute Burger"
+   }
+  },
+  {
+   "type": "node",
+   "id": 4486329532,
+   "lat": 14.0716187,
+   "lon": 120.6322421,
+   "tags": {
+    "amenity": "marketplace",
+    "name": "Shopper's Nest"
+   }
+  },
+  {
+   "type": "node",
+   "id": 4816146921,
+   "lat": 14.0779329,
+   "lon": 120.6355224,
+   "tags": {
+    "amenity": "place_of_worship",
+    "name": "JHLF Church"
+   }
+  },
+  {
+   "type": "node",
+   "id": 4834657221,
+   "lat": 14.0760093,
+   "lon": 120.6246239,
+   "tags": {
+    "addr:street": "Apacible Boulevard",
+    "name": "Fortune Island Resort",
+    "tourism": "hotel"
+   }
+  },
+  {
+   "type": "node",
+   "id": 4879613121,
+   "lat": 14.039278,
+   "lon": 120.62257,
+   "tags": {
+    "name": "San Diego Beach",
+    "tourism": "guest_house"
+   }
+  },
+  {
+   "type": "node",
+   "id": 4898849124,
+   "lat": 14.0715114,
+   "lon": 120.6324435,
+   "tags": {
+    "addr:postcode": "4231",
+    "addr:street": "J. P. Laurel Street",
+    "amenity": "clinic",
+    "name": "FMB Ultrasound and X-ray Clinic"
+   }
+  },
+  {
+   "type": "node",
+   "id": 5036093024,
+   "lat": 14.0674249,
+   "lon": 120.6252247,
+   "tags": {
+    "addr:postcode": "4231",
+    "addr:street": "R. Martinez Street",
+    "name": "RJ Bearis Resort",
+    "tourism": "hotel"
+   }
+  },
+  {
+   "type": "node",
+   "id": 6127589137,
+   "lat": 14.0725409,
+   "lon": 120.6428411,
+   "tags": {
+    "addr:street": "Looc Road",
+    "amenity": "fuel",
+    "name": "V7"
+   }
+  },
+  {
+   "type": "node",
+   "id": 6127602278,
+   "lat": 14.0745858,
+   "lon": 120.6305727,
+   "tags": {
+    "amenity": "cafe",
+    "name": "Mango Tango Shake with a Twist"
+   }
+  },
+  {
+   "type": "node",
+   "id": 6127606603,
+   "lat": 14.0722703,
+   "lon": 120.6321887,
+   "tags": {
+    "amenity": "fast_food",
+    "name": "The Shawarma Shack"
+   }
+  },
+  {
+   "type": "node",
+   "id": 6127614231,
+   "lat": 14.06766,
+   "lon": 120.6294623,
+   "tags": {
+    "amenity": "fast_food",
+    "name": "Bagong Lugawan"
+   }
+  },
+  {
+   "type": "node",
+   "id": 6127724666,
+   "lat": 14.0823267,
+   "lon": 120.6242956,
+   "tags": {
+    "amenity": "fuel",
+    "brand": "TotalEnergies",
+    "name": "TotalEnergies"
+   }
+  },
+  {
+   "type": "node",
+   "id": 6351453997,
+   "lat": 14.0494163,
+   "lon": 120.6234144,
+   "tags": {
+    "name": "EXACT Site",
+    "tourism": "attraction"
+   }
+  },
+  {
+   "type": "node",
+   "id": 7092611485,
+   "lat": 14.0725202,
+   "lon": 120.6324578,
+   "tags": {
+    "amenity": "clinic",
+    "name": "Shechem Laboratory and Polymedical Center"
+   }
+  },
+  {
+   "type": "node",
+   "id": 7092966559,
+   "lat": 14.0753071,
+   "lon": 120.6313088,
+   "tags": {
+    "addr:street": "J. P. Laurel Street",
+    "amenity": "restaurant",
+    "name": "La Locanda Ristorante Pizzeria"
+   }
+  },
+  {
+   "type": "node",
+   "id": 8627773485,
+   "lat": 14.0679151,
+   "lon": 120.6256746,
+   "tags": {
+    "addr:housenumber": "193",
+    "addr:street": "Apacible Boulevard",
+    "addr:town": "Nasugbu",
+    "name": "Oktòwaves Hotel",
+    "tourism": "hotel"
+   }
+  },
+  {
+   "type": "node",
+   "id": 9562486077,
+   "lat": 14.0791759,
+   "lon": 120.6299286,
+   "tags": {
+    "addr:street": "J. P. Laurel Street",
+    "amenity": "fast_food",
+    "name": "Chick-a-minute"
+   }
+  },
+  {
+   "type": "node",
+   "id": 9562487343,
+   "lat": 14.0791636,
+   "lon": 120.6294861,
+   "tags": {
+    "addr:street": "J. P. Laurel Street",
+    "amenity": "fast_food",
+    "name": "Concepcion Fried Chicken"
+   }
+  },
+  {
+   "type": "node",
+   "id": 9921619223,
+   "lat": 14.0715764,
+   "lon": 120.6308485,
+   "tags": {
+    "addr:postcode": "4231",
+    "addr:quarter": "Barangay 3",
+    "addr:street": "F. Castro Street",
+    "name": "SaveWay Department Store",
+    "shop": "department_store"
+   }
+  },
+  {
+   "type": "node",
+   "id": 9921619318,
+   "lat": 14.0742118,
+   "lon": 120.6309557,
+   "tags": {
+    "addr:postcode": "4231",
+    "addr:street": "P. Riñoza Street",
+    "amenity": "hospital",
+    "name": "Ospital Ng Nasugbu"
+   }
+  },
+  {
+   "type": "node",
+   "id": 9921619522,
+   "lat": 14.0888897,
+   "lon": 120.6640146,
+   "tags": {
+    "addr:postcode": "4231",
+    "addr:street": "So. Cambio, Brgy. Dayap Nasugbu Batangas",
+    "name": "Farm Level Grain Center (FLGC)",
+    "office": "government"
+   }
+  },
+  {
+   "type": "node",
+   "id": 9921631317,
+   "lat": 14.0707235,
+   "lon": 120.6313479,
+   "tags": {
+    "addr:postcode": "4231",
+    "addr:quarter": "Barangay 10",
+    "addr:street": "F. Castro Street",
+    "name": "New Star Department Store",
+    "shop": "department_store"
+   }
+  },
+  {
+   "type": "node",
+   "id": 10542152668,
+   "lat": 14.0748442,
+   "lon": 120.6253447,
+   "tags": {
+    "amenity": "fuel",
+    "name": "Gasso"
+   }
+  },
+  {
+   "type": "node",
+   "id": 10542182469,
+   "lat": 14.0684274,
+   "lon": 120.6255447,
+   "tags": {
+    "amenity": "restaurant",
+    "name": "Bernabe"
+   }
+  },
+  {
+   "type": "node",
+   "id": 10542235472,
+   "lat": 14.0743619,
+   "lon": 120.6316681,
+   "tags": {
+    "amenity": "post_office",
+    "name": "J&T Express Courier",
+    "operator": "J&T Express"
+   }
+  },
+  {
+   "type": "node",
+   "id": 10542330967,
+   "lat": 14.0697603,
+   "lon": 120.6328868,
+   "tags": {
+    "amenity": "cafe",
+    "name": "Big brew"
+   }
+  },
+  {
+   "type": "node",
+   "id": 11109235373,
+   "lat": 14.0561085,
+   "lon": 120.6401299,
+   "tags": {
+    "amenity": "fast_food",
+    "brand": "KFC",
+    "name": "KFC"
+   }
+  },
+  {
+   "type": "node",
+   "id": 11155369605,
+   "lat": 14.0744658,
+   "lon": 120.663992,
+   "tags": {
+    "name": "imee Lpg store",
+    "shop": "convenience"
+   }
+  },
+  {
+   "type": "node",
+   "id": 11189641337,
+   "lat": 14.0714806,
+   "lon": 120.6332102,
+   "tags": {
+    "name": "Princess kyrie",
+    "shop": "convenience"
+   }
+  },
+  {
+   "type": "node",
+   "id": 11189692837,
+   "lat": 14.0693359,
+   "lon": 120.6340365,
+   "tags": {
+    "name": "J and J store",
+    "shop": "convenience"
+   }
+  },
+  {
+   "type": "node",
+   "id": 11189723137,
+   "lat": 14.0706122,
+   "lon": 120.6345033,
+   "tags": {
+    "name": "MKH",
+    "shop": "convenience"
+   }
+  },
+  {
+   "type": "node",
+   "id": 11189746537,
+   "lat": 14.0717058,
+   "lon": 120.6342675,
+   "tags": {
+    "name": "Eleri's mini store",
+    "shop": "convenience"
+   }
+  },
+  {
+   "type": "node",
+   "id": 11189756737,
+   "lat": 14.0727627,
+   "lon": 120.6347885,
+   "tags": {
+    "name": "Shirley Store",
+    "shop": "convenience"
+   }
+  },
+  {
+   "type": "node",
+   "id": 11189784837,
+   "lat": 14.0693347,
+   "lon": 120.6359873,
+   "tags": {
+    "name": "Rolando Store",
+    "shop": "convenience"
+   }
+  },
+  {
+   "type": "node",
+   "id": 11189787337,
+   "lat": 14.0692208,
+   "lon": 120.6359992,
+   "tags": {
+    "name": "Neneth Store",
+    "shop": "convenience"
+   }
+  },
+  {
+   "type": "node",
+   "id": 11191878737,
+   "lat": 14.0517565,
+   "lon": 120.6667726,
+   "tags": {
+    "name": "3 Angels Store",
+    "shop": "convenience"
+   }
+  },
+  {
+   "type": "node",
+   "id": 11191881737,
+   "lat": 14.051712,
+   "lon": 120.6597617,
+   "tags": {
+    "name": "Cherish and antonete",
+    "shop": "convenience"
+   }
+  },
+  {
+   "type": "node",
+   "id": 11191889137,
+   "lat": 14.0515112,
+   "lon": 120.6572149,
+   "tags": {
+    "name": "charmel mendoza store",
+    "shop": "convenience"
+   }
+  },
+  {
+   "type": "node",
+   "id": 11191890337,
+   "lat": 14.0515837,
+   "lon": 120.6569395,
+   "tags": {
+    "name": "AJJ store",
+    "shop": "convenience"
+   }
+  },
+  {
+   "type": "node",
+   "id": 11191898637,
+   "lat": 14.0555072,
+   "lon": 120.645458,
+   "tags": {
+    "name": "Rod and Grace",
+    "shop": "convenience"
+   }
+  },
+  {
+   "type": "node",
+   "id": 11191910937,
+   "lat": 14.0566839,
+   "lon": 120.6401922,
+   "tags": {
+    "name": "Crispulo eatery",
+    "shop": "convenience"
+   }
+  },
+  {
+   "type": "node",
+   "id": 11191910938,
+   "lat": 14.0581942,
+   "lon": 120.6383726,
+   "tags": {
+    "name": "CJ store",
+    "shop": "convenience"
+   }
+  },
+  {
+   "type": "node",
+   "id": 11191916137,
+   "lat": 14.0583098,
+   "lon": 120.6384907,
+   "tags": {
+    "name": "Kelay's sari sari store",
+    "shop": "convenience"
+   }
+  },
+  {
+   "type": "node",
+   "id": 11191928737,
+   "lat": 14.0660508,
+   "lon": 120.6353283,
+   "tags": {
+    "name": "Tessa Sari sari Store",
+    "shop": "convenience"
+   }
+  },
+  {
+   "type": "node",
+   "id": 11191929837,
+   "lat": 14.0654684,
+   "lon": 120.635346,
+   "tags": {
+    "name": "Mary ann store",
+    "shop": "convenience"
+   }
+  },
+  {
+   "type": "node",
+   "id": 11191968637,
+   "lat": 14.0653893,
+   "lon": 120.636239,
+   "tags": {
+    "name": "neneth Store",
+    "shop": "convenience"
+   }
+  },
+  {
+   "type": "node",
+   "id": 11192019937,
+   "lat": 14.0668559,
+   "lon": 120.6362208,
+   "tags": {
+    "name": "Mariel Store",
+    "shop": "convenience"
+   }
+  },
+  {
+   "type": "node",
+   "id": 11192019938,
+   "lat": 14.0672289,
+   "lon": 120.6358489,
+   "tags": {
+    "name": "J and M Store",
+    "shop": "convenience"
+   }
+  },
+  {
+   "type": "node",
+   "id": 11192077037,
+   "lat": 14.0678511,
+   "lon": 120.6374862,
+   "tags": {
+    "name": "Gloria Store",
+    "shop": "convenience"
+   }
+  },
+  {
+   "type": "node",
+   "id": 11192100037,
+   "lat": 14.0688937,
+   "lon": 120.6371645,
+   "tags": {
+    "name": "Princess Store",
+    "shop": "convenience"
+   }
+  },
+  {
+   "type": "node",
+   "id": 11192123337,
+   "lat": 14.0712624,
+   "lon": 120.6367276,
+   "tags": {
+    "name": "Betty Store",
+    "shop": "convenience"
+   }
+  },
+  {
+   "type": "node",
+   "id": 11192123338,
+   "lat": 14.0716226,
+   "lon": 120.6366112,
+   "tags": {
+    "name": "victoria store",
+    "shop": "convenience"
+   }
+  },
+  {
+   "type": "node",
+   "id": 11192146937,
+   "lat": 14.0728108,
+   "lon": 120.6365566,
+   "tags": {
+    "name": "Tess Store",
+    "shop": "convenience"
+   }
+  },
+  {
+   "type": "node",
+   "id": 11192155937,
+   "lat": 14.0730327,
+   "lon": 120.63652,
+   "tags": {
+    "name": "Joy Store",
+    "shop": "convenience"
+   }
+  },
+  {
+   "type": "node",
+   "id": 11192193337,
+   "lat": 14.0727665,
+   "lon": 120.6359048,
+   "tags": {
+    "name": "Donalyn pauit store",
+    "shop": "convenience"
+   }
+  },
+  {
+   "type": "node",
+   "id": 11192193338,
+   "lat": 14.0696841,
+   "lon": 120.6362162,
+   "tags": {
+    "name": "Jean Store",
+    "shop": "convenience"
+   }
+  },
+  {
+   "type": "node",
+   "id": 11192203638,
+   "lat": 14.0686417,
+   "lon": 120.6366727,
+   "tags": {
+    "name": "Rita Store",
+    "shop": "convenience"
+   }
+  },
+  {
+   "type": "node",
+   "id": 11192284437,
+   "lat": 14.0671434,
+   "lon": 120.6368106,
+   "tags": {
+    "name": "Sopia store",
+    "shop": "convenience"
+   }
+  },
+  {
+   "type": "node",
+   "id": 11192341737,
+   "lat": 14.0685146,
+   "lon": 120.6378772,
+   "tags": {
+    "name": "LV Store",
+    "shop": "convenience"
+   }
+  },
+  {
+   "type": "node",
+   "id": 11198806837,
+   "lat": 14.0731067,
+   "lon": 120.6492085,
+   "tags": {
+    "name": "5J's Store",
+    "shop": "convenience"
+   }
+  },
+  {
+   "type": "node",
+   "id": 11198821837,
+   "lat": 14.0728352,
+   "lon": 120.646761,
+   "tags": {
+    "name": "Rhosevin Sarisari Store",
+    "shop": "convenience"
+   }
+  },
+  {
+   "type": "node",
+   "id": 11198881437,
+   "lat": 14.0916096,
+   "lon": 120.6468018,
+   "tags": {
+    "name": "Jean's Store",
+    "shop": "convenience"
+   }
+  },
+  {
+   "type": "node",
+   "id": 11198891937,
+   "lat": 14.0922056,
+   "lon": 120.6468607,
+   "tags": {
+    "name": "michelle store",
+    "shop": "convenience"
+   }
+  },
+  {
+   "type": "node",
+   "id": 11198899037,
+   "lat": 14.0935611,
+   "lon": 120.6436418,
+   "tags": {
+    "name": "Jocelyn Store",
+    "shop": "convenience"
+   }
+  },
+  {
+   "type": "node",
+   "id": 11198902537,
+   "lat": 14.0936739,
+   "lon": 120.6439101,
+   "tags": {
+    "name": "Mylen and Mel sari sati store",
+    "shop": "convenience"
+   }
+  },
+  {
+   "type": "node",
+   "id": 11198911937,
+   "lat": 14.0943258,
+   "lon": 120.6465277,
+   "tags": {
+    "name": "Chato store",
+    "shop": "convenience"
+   }
+  },
+  {
+   "type": "node",
+   "id": 11198921437,
+   "lat": 14.095134,
+   "lon": 120.6481412,
+   "tags": {
+    "name": "Begilia sari sari store",
+    "shop": "convenience"
+   }
+  },
+  {
+   "type": "node",
+   "id": 11198930837,
+   "lat": 14.0963022,
+   "lon": 120.6435163,
+   "tags": {
+    "name": "Tessie Store",
+    "shop": "convenience"
+   }
+  },
+  {
+   "type": "node",
+   "id": 11198938137,
+   "lat": 14.0973462,
+   "lon": 120.6421766,
+   "tags": {
+    "name": "tess store",
+    "shop": "convenience"
+   }
+  },
+  {
+   "type": "node",
+   "id": 11209291937,
+   "lat": 14.0831854,
+   "lon": 120.6213282,
+   "tags": {
+    "name": "AK Belinda Canete",
+    "shop": "convenience"
+   }
+  },
+  {
+   "type": "node",
+   "id": 11209320937,
+   "lat": 14.0830445,
+   "lon": 120.6214662,
+   "tags": {
+    "name": "AK aljane Store",
+    "shop": "convenience"
+   }
+  },
+  {
+   "type": "node",
+   "id": 11209334637,
+   "lat": 14.0838558,
+   "lon": 120.6217661,
+   "tags": {
+    "name": "AK Jhona Store",
+    "shop": "convenience"
+   }
+  },
+  {
+   "type": "node",
+   "id": 11209350037,
+   "lat": 14.083261,
+   "lon": 120.62341,
+   "tags": {
+    "name": "Vangie Store",
+    "shop": "convenience"
+   }
+  },
+  {
+   "type": "node",
+   "id": 11209376338,
+   "lat": 14.082743,
+   "lon": 120.6225764,
+   "tags": {
+    "name": "Malou Store",
+    "shop": "convenience"
+   }
+  },
+  {
+   "type": "node",
+   "id": 11219036037,
+   "lat": 14.0827833,
+   "lon": 120.6224791,
+   "tags": {
+    "name": "Dennis Store",
+    "shop": "convenience"
+   }
+  },
+  {
+   "type": "node",
+   "id": 11219036137,
+   "lat": 14.0827492,
+   "lon": 120.6227805,
+   "tags": {
+    "name": "Tisay Store",
+    "shop": "convenience"
+   }
+  },
+  {
+   "type": "node",
+   "id": 11219081637,
+   "lat": 14.0822503,
+   "lon": 120.6230859,
+   "tags": {
+    "name": "Gigi Store",
+    "shop": "convenience"
+   }
+  },
+  {
+   "type": "node",
+   "id": 11219082737,
+   "lat": 14.082164,
+   "lon": 120.62299,
+   "tags": {
+    "name": "Manilyn store",
+    "shop": "convenience"
+   }
+  },
+  {
+   "type": "node",
+   "id": 11219082738,
+   "lat": 14.0822046,
+   "lon": 120.6229556,
+   "tags": {
+    "name": "Rowena Store",
+    "shop": "convenience"
+   }
+  },
+  {
+   "type": "node",
+   "id": 11219094737,
+   "lat": 14.0818607,
+   "lon": 120.6229767,
+   "tags": {
+    "name": "Fe store",
+    "shop": "convenience"
+   }
+  },
+  {
+   "type": "node",
+   "id": 11219102437,
+   "lat": 14.0816053,
+   "lon": 120.6235708,
+   "tags": {
+    "name": "Janet Store",
+    "shop": "convenience"
+   }
+  },
+  {
+   "type": "node",
+   "id": 11219103437,
+   "lat": 14.0816513,
+   "lon": 120.6239777,
+   "tags": {
+    "name": "JL Store",
+    "shop": "convenience"
+   }
+  },
+  {
+   "type": "node",
+   "id": 11219108637,
+   "lat": 14.0815764,
+   "lon": 120.6240032,
+   "tags": {
+    "name": "Thelma Store",
+    "shop": "convenience"
+   }
+  },
+  {
+   "type": "node",
+   "id": 11219125437,
+   "lat": 14.0811874,
+   "lon": 120.6234828,
+   "tags": {
+    "name": "Annie Store",
+    "shop": "convenience"
+   }
+  },
+  {
+   "type": "node",
+   "id": 11219134037,
+   "lat": 14.0807075,
+   "lon": 120.623669,
+   "tags": {
+    "name": "Fe Victor Store",
+    "shop": "convenience"
+   }
+  },
+  {
+   "type": "node",
+   "id": 11219137737,
+   "lat": 14.0809242,
+   "lon": 120.6237005,
+   "tags": {
+    "name": "Arlene Store",
+    "shop": "convenience"
+   }
+  },
+  {
+   "type": "node",
+   "id": 11219150237,
+   "lat": 14.0804125,
+   "lon": 120.6236658,
+   "tags": {
+    "name": "Estrella Store",
+    "shop": "convenience"
+   }
+  },
+  {
+   "type": "node",
+   "id": 11219193737,
+   "lat": 14.0803506,
+   "lon": 120.6241305,
+   "tags": {
+    "name": "Ma.Luisa Store",
+    "shop": "convenience"
+   }
+  },
+  {
+   "type": "node",
+   "id": 11219210837,
+   "lat": 14.0801546,
+   "lon": 120.6241295,
+   "tags": {
+    "name": "Rosezyn Store",
+    "shop": "convenience"
+   }
+  },
+  {
+   "type": "node",
+   "id": 11219212837,
+   "lat": 14.0802315,
+   "lon": 120.6246046,
+   "tags": {
+    "name": "Waldo Store",
+    "shop": "convenience"
+   }
+  },
+  {
+   "type": "node",
+   "id": 11219226337,
+   "lat": 14.0800178,
+   "lon": 120.6243389,
+   "tags": {
+    "name": "Violeta Store",
+    "shop": "convenience"
+   }
+  },
+  {
+   "type": "node",
+   "id": 11219246638,
+   "lat": 14.0794617,
+   "lon": 120.6242066,
+   "tags": {
+    "name": "Eva Store",
+    "shop": "convenience"
+   }
+  },
+  {
+   "type": "node",
+   "id": 11219246937,
+   "lat": 14.0796224,
+   "lon": 120.6239356,
+   "tags": {
+    "name": "Virgilia Store",
+    "shop": "convenience"
+   }
+  },
+  {
+   "type": "node",
+   "id": 11219255637,
+   "lat": 14.0795033,
+   "lon": 120.6243325,
+   "tags": {
+    "name": "Elvie Store",
+    "shop": "convenience"
+   }
+  },
+  {
+   "type": "node",
+   "id": 11219261537,
+   "lat": 14.0791897,
+   "lon": 120.6243499,
+   "tags": {
+    "name": "Zeny Store",
+    "shop": "convenience"
+   }
+  },
+  {
+   "type": "node",
+   "id": 11219267237,
+   "lat": 14.07909,
+   "lon": 120.6242538,
+   "tags": {
+    "name": "Imelda Store",
+    "shop": "convenience"
+   }
+  },
+  {
+   "type": "node",
+   "id": 11219271237,
+   "lat": 14.0790303,
+   "lon": 120.6239265,
+   "tags": {
+    "name": "Ofelia Store",
+    "shop": "convenience"
+   }
+  },
+  {
+   "type": "node",
+   "id": 11221686437,
+   "lat": 14.0846263,
+   "lon": 120.6221569,
+   "tags": {
+    "name": "Cielo Store",
+    "shop": "convenience"
+   }
+  },
+  {
+   "type": "node",
+   "id": 11221690037,
+   "lat": 14.0846735,
+   "lon": 120.6220497,
+   "tags": {
+    "name": "Krisel Perez Store",
+    "shop": "convenience"
+   }
+  },
+  {
+   "type": "node",
+   "id": 11221693937,
+   "lat": 14.0845666,
+   "lon": 120.62174,
+   "tags": {
+    "name": "Majorie Serapino Store",
+    "shop": "convenience"
+   }
+  },
+  {
+   "type": "node",
+   "id": 11221693938,
+   "lat": 14.0845474,
+   "lon": 120.6218297,
+   "tags": {
+    "name": "Ellen Store",
+    "shop": "convenience"
+   }
+  },
+  {
+   "type": "node",
+   "id": 11221699437,
+   "lat": 14.0845049,
+   "lon": 120.6218857,
+   "tags": {
+    "name": "Mabel Store",
+    "shop": "convenience"
+   }
+  },
+  {
+   "type": "node",
+   "id": 11221712337,
+   "lat": 14.0839349,
+   "lon": 120.621886,
+   "tags": {
+    "name": "Ellen Store",
+    "shop": "convenience"
+   }
+  },
+  {
+   "type": "node",
+   "id": 11221713837,
+   "lat": 14.0840123,
+   "lon": 120.6215887,
+   "tags": {
+    "name": "Gemma Mariano Store",
+    "shop": "convenience"
+   }
+  },
+  {
+   "type": "node",
+   "id": 11221720537,
+   "lat": 14.0828347,
+   "lon": 120.6218241,
+   "tags": {
+    "name": "Mercy Store",
+    "shop": "convenience"
+   }
+  },
+  {
+   "type": "node",
+   "id": 11221738537,
+   "lat": 14.0830177,
+   "lon": 120.6217102,
+   "tags": {
+    "name": "Rizza Store",
+    "shop": "convenience"
+   }
+  },
+  {
+   "type": "node",
+   "id": 11221740537,
+   "lat": 14.0832281,
+   "lon": 120.6216572,
+   "tags": {
+    "name": "Wilma Limbok Store",
+    "shop": "convenience"
+   }
+  },
+  {
+   "type": "node",
+   "id": 11221750237,
+   "lat": 14.0834825,
+   "lon": 120.6222062,
+   "tags": {
+    "name": "Bubbles Store",
+    "shop": "convenience"
+   }
+  },
+  {
+   "type": "node",
+   "id": 11221760137,
+   "lat": 14.0836325,
+   "lon": 120.6223581,
+   "tags": {
+    "name": "Librada Caisip Store",
+    "shop": "convenience"
+   }
+  },
+  {
+   "type": "node",
+   "id": 11221773037,
+   "lat": 14.0836608,
+   "lon": 120.6224687,
+   "tags": {
+    "name": "Ramon Domingo Store",
+    "shop": "convenience"
+   }
+  },
+  {
+   "type": "node",
+   "id": 11221780137,
+   "lat": 14.0839065,
+   "lon": 120.6220861,
+   "tags": {
+    "name": "Jenny Store",
+    "shop": "convenience"
+   }
+  },
+  {
+   "type": "node",
+   "id": 11221781337,
+   "lat": 14.0839128,
+   "lon": 120.6221731,
+   "tags": {
+    "name": "Idang Store",
+    "shop": "convenience"
+   }
+  },
+  {
+   "type": "node",
+   "id": 11224291339,
+   "lat": 14.0796968,
+   "lon": 120.6245213,
+   "tags": {
+    "name": "Fatima Store",
+    "shop": "convenience"
+   }
+  },
+  {
+   "type": "node",
+   "id": 11232896937,
+   "lat": 14.082727,
+   "lon": 120.6223618,
+   "tags": {
+    "name": "Marilyn Store",
+    "shop": "convenience"
+   }
+  },
+  {
+   "type": "node",
+   "id": 11232896938,
+   "lat": 14.0826629,
+   "lon": 120.6223608,
+   "tags": {
+    "name": "Malda Alla",
+    "shop": "convenience"
+   }
+  },
+  {
+   "type": "node",
+   "id": 11232907437,
+   "lat": 14.0827346,
+   "lon": 120.6227462,
+   "tags": {
+    "name": "Myra Store",
+    "shop": "convenience"
+   }
+  },
+  {
+   "type": "node",
+   "id": 11232911137,
+   "lat": 14.0822805,
+   "lon": 120.6228073,
+   "tags": {
+    "name": "Tisay Store",
+    "shop": "convenience"
+   }
+  },
+  {
+   "type": "node",
+   "id": 11294571769,
+   "lat": 14.0372305,
+   "lon": 120.6534569,
+   "tags": {
+    "amenity": "restaurant",
+    "name": "Kawali Ala Eh!!!"
+   }
+  },
+  {
+   "type": "node",
+   "id": 11755253860,
+   "lat": 14.0573142,
+   "lon": 120.6388963,
+   "tags": {
+    "addr:street": "J. P. Laurel Street",
+    "amenity": "fuel",
+    "name": "Una 6:33"
+   }
+  },
+  {
+   "type": "node",
+   "id": 13109856898,
+   "lat": 14.0590154,
+   "lon": 120.6356662,
+   "tags": {
+    "name": "Nasugbu Traveler's Inn",
+    "tourism": "guest_house"
+   }
+  },
+  {
+   "type": "node",
+   "id": 13109886595,
+   "lat": 14.0781537,
+   "lon": 120.6303791,
+   "tags": {
+    "brand": "Dali",
+    "name": "Dali",
+    "shop": "convenience"
+   }
+  },
+  {
+   "type": "node",
+   "id": 13109886596,
+   "lat": 14.078551,
+   "lon": 120.630164,
+   "tags": {
+    "amenity": "restaurant",
+    "name": "El Cocinero"
+   }
+  },
+  {
+   "type": "node",
+   "id": 13149509301,
+   "lat": 14.078145,
+   "lon": 120.6577138,
+   "tags": {
+    "addr:postcode": "4231",
+    "addr:street": "Looc Road",
+    "amenity": "restaurant",
+    "name": "Primia’s Lomi"
+   }
+  },
+  {
+   "type": "node",
+   "id": 13260573839,
+   "lat": 14.0619237,
+   "lon": 120.6587115,
+   "tags": {
+    "addr:place": "Cogonan",
+    "addr:town": "Nasugbu",
+    "name": "Cogonan Barangay Disaster Risk Reduction and Management Committee",
+    "office": "government"
+   }
+  },
+  {
+   "type": "node",
+   "id": 13260573840,
+   "lat": 14.0619683,
+   "lon": 120.6586311,
+   "tags": {
+    "addr:place": "Cogonan",
+    "addr:town": "Nasugbu",
+    "name": "Sangguniang Kabataan ng Cogonan",
+    "office": "government"
+   }
+  },
+  {
+   "type": "node",
+   "id": 13260573841,
+   "lat": 14.0619796,
+   "lon": 120.6586287,
+   "tags": {
+    "addr:place": "Cogonan",
+    "addr:town": "Nasugbu",
+    "name": "Sangguniang Pambarangay ng Cogonan",
+    "office": "government"
+   }
+  },
+  {
+   "type": "node",
+   "id": 13260573842,
+   "lat": 14.0619357,
+   "lon": 120.6587105,
+   "tags": {
+    "addr:place": "Cogonan",
+    "addr:town": "Nasugbu",
+    "name": "Cogonan Local Government Unit",
+    "office": "government"
+   }
+  },
+  {
+   "type": "node",
+   "id": 13429995198,
+   "lat": 14.0644258,
+   "lon": 120.6340423,
+   "tags": {
+    "addr:street": "J. P. Laurel Street",
+    "amenity": "cafe",
+    "name": "Project: Craving"
+   }
+  },
+  {
+   "type": "way",
+   "id": 161568732,
+   "center": {
+    "lat": 14.0732793,
+    "lon": 120.6326892
+   },
+   "tags": {
+    "addr:street": "J. P. Laurel Street",
+    "addr:street:corner": "Escalera Street",
+    "addr:town": "Nasugbu",
+    "leisure": "park",
+    "name": "Plaza de Roxas"
+   }
+  },
+  {
+   "type": "way",
+   "id": 247096811,
+   "center": {
+    "lat": 14.0747148,
+    "lon": 120.6322066
+   },
+   "tags": {
+    "addr:city": "Nasugbu",
+    "addr:postcode": "4231",
+    "addr:street": "J. P. Laurel Street",
+    "addr:street:corner": "Saint Francis Xavier",
+    "amenity": "place_of_worship",
+    "name": "Parish of Saint Francis Xavier"
+   }
+  },
+  {
+   "type": "way",
+   "id": 263362195,
+   "center": {
+    "lat": 14.0725969,
+    "lon": 120.6311593
+   },
+   "tags": {
+    "addr:street": "P. Riñoza Street",
+    "addr:street:corner": "C. Alvarez Street",
+    "addr:town": "Nasugbu",
+    "amenity": "place_of_worship",
+    "name": "The Church of Jesus Christ of Latter-day Saints"
+   }
+  },
+  {
+   "type": "way",
+   "id": 263365399,
+   "center": {
+    "lat": 14.0706768,
+    "lon": 120.6308877
+   },
+   "tags": {
+    "amenity": "marketplace",
+    "name": "Nasugbu Public Market"
+   }
+  },
+  {
+   "type": "way",
+   "id": 312552878,
+   "center": {
+    "lat": 14.039381,
+    "lon": 120.660064
+   },
+   "tags": {
+    "addr:barangay": "Malaruhatan",
+    "addr:postcode": "4216",
+    "addr:province": "Batangas",
+    "addr:street": "Palico-Lian Provincial Road",
+    "addr:town": "Lian",
+    "name": "Malaruhatan Country Club",
+    "tourism": "hotel"
+   }
+  },
+  {
+   "type": "way",
+   "id": 317481945,
+   "center": {
+    "lat": 14.0740914,
+    "lon": 120.6354185
+   },
+   "tags": {
+    "addr:barangay": "Barangay 5",
+    "addr:city": "Nasugbu",
+    "addr:street": "R. Vasquez Street",
+    "amenity": "townhall",
+    "name": "Barangay 5 Hall",
+    "office": "government"
+   }
+  },
+  {
+   "type": "way",
+   "id": 317483409,
+   "center": {
+    "lat": 14.0729706,
+    "lon": 120.6335758
+   },
+   "tags": {
+    "addr:barangay": "Barangay 4",
+    "addr:city": "Nasugbu",
+    "addr:province": "Batangas",
+    "addr:street": "C. Alvarez Street",
+    "addr:town": "Nasugbu",
+    "amenity": "townhall",
+    "name": "Barangay 4 Hall",
+    "office": "government"
+   }
+  },
+  {
+   "type": "way",
+   "id": 317485557,
+   "center": {
+    "lat": 14.0757313,
+    "lon": 120.6322251
+   },
+   "tags": {
+    "addr:barangay": "Barangay 2",
+    "addr:city": "Nasugbu",
+    "addr:province": "Batangas",
+    "addr:street": "R. Vasquez Street",
+    "addr:street:corner": "Consuelo Street",
+    "amenity": "townhall",
+    "name": "Barangay 2 Hall",
+    "office": "government"
+   }
+  },
+  {
+   "type": "way",
+   "id": 365851049,
+   "center": {
+    "lat": 14.079549,
+    "lon": 120.6357575
+   },
+   "tags": {
+    "amenity": "place_of_worship",
+    "name": "Nasugbu Bible Baptist Church"
+   }
+  },
+  {
+   "type": "way",
+   "id": 370517766,
+   "center": {
+    "lat": 14.0386443,
+    "lon": 120.6504891
+   },
+   "tags": {
+    "amenity": "marketplace",
+    "name": "Lian Public Market"
+   }
+  },
+  {
+   "type": "way",
+   "id": 370731999,
+   "center": {
+    "lat": 14.0368646,
+    "lon": 120.653806
+   },
+   "tags": {
+    "addr:province": "Batangas",
+    "amenity": "place_of_worship",
+    "name": "St. John the Baptist Parish"
+   }
+  },
+  {
+   "type": "way",
+   "id": 370732000,
+   "center": {
+    "lat": 14.0369039,
+    "lon": 120.6525673
+   },
+   "tags": {
+    "addr:province": "Batangas",
+    "amenity": "townhall",
+    "name": "Lian Municipal Hall"
+   }
+  },
+  {
+   "type": "way",
+   "id": 410754772,
+   "center": {
+    "lat": 14.0613572,
+    "lon": 120.6349125
+   },
+   "tags": {
+    "addr:barangay": "Barangay 11",
+    "addr:city": "Nasugbu",
+    "addr:province": "Batangas",
+    "addr:street": "J. P. Laurel Street",
+    "amenity": "townhall",
+    "name": "Barangay 11 Hall",
+    "office": "government"
+   }
+  },
+  {
+   "type": "way",
+   "id": 410757010,
+   "center": {
+    "lat": 14.0619485,
+    "lon": 120.6586736
+   },
+   "tags": {
+    "addr:place": "Cogonan",
+    "addr:town": "Nasugbu",
+    "amenity": "townhall",
+    "name": "Bahay Pamahalaan ng Barangay Cogonan"
+   }
+  },
+  {
+   "type": "way",
+   "id": 451298674,
+   "center": {
+    "lat": 14.0742304,
+    "lon": 120.630957
+   },
+   "tags": {
+    "amenity": "clinic",
+    "name": "Nasugbu Rural Health Unit"
+   }
+  },
+  {
+   "type": "way",
+   "id": 451298677,
+   "center": {
+    "lat": 14.0738274,
+    "lon": 120.6334975
+   },
+   "tags": {
+    "addr:municipality": "Nasugbu",
+    "addr:postcode": "4231",
+    "addr:province": "Batangas",
+    "addr:town": "Nasugbu",
+    "amenity": "school",
+    "name": "Nasugbu West Central School",
+    "operator": "Nasugbu West District of Batangas Schools Division, DepEd"
+   }
+  },
+  {
+   "type": "way",
+   "id": 451476182,
+   "center": {
+    "lat": 14.0735191,
+    "lon": 120.6316131
+   },
+   "tags": {
+    "addr:postcode": "4231",
+    "addr:street": "Escalera Street",
+    "addr:town": "Nasugbu",
+    "amenity": "fast_food",
+    "brand": "McDonald's",
+    "name": "McDonald's"
+   }
+  },
+  {
+   "type": "way",
+   "id": 451476191,
+   "center": {
+    "lat": 14.0741018,
+    "lon": 120.632928
+   },
+   "tags": {
+    "amenity": "courthouse",
+    "name": "Justice Hall"
+   }
+  },
+  {
+   "type": "way",
+   "id": 451488578,
+   "center": {
+    "lat": 14.0673497,
+    "lon": 120.6334271
+   },
+   "tags": {
+    "amenity": "bank",
+    "brand": "Landbank",
+    "name": "Landbank"
+   }
+  },
+  {
+   "type": "way",
+   "id": 451488580,
+   "center": {
+    "lat": 14.0671993,
+    "lon": 120.6334425
+   },
+   "tags": {
+    "addr:city": "Nasugbu",
+    "addr:street": "J. P. Laurel Street",
+    "amenity": "bank",
+    "brand": "Metrobank",
+    "name": "Metrobank",
+    "office": "accountant"
+   }
+  },
+  {
+   "type": "way",
+   "id": 451488581,
+   "center": {
+    "lat": 14.0670449,
+    "lon": 120.6331294
+   },
+   "tags": {
+    "addr:city": "Nasugbu",
+    "addr:postcode": "4231",
+    "addr:street": "J. P. Laurel Street",
+    "addr:street:corner": "R. Martinez",
+    "amenity": "school",
+    "name": "Adelaido A. Bayot Memorial School"
+   }
+  },
+  {
+   "type": "way",
+   "id": 451488582,
+   "center": {
+    "lat": 14.0742162,
+    "lon": 120.6326979
+   },
+   "tags": {
+    "name": "Comelec",
+    "office": "government",
+    "operator": "Commission on Elections"
+   }
+  },
+  {
+   "type": "way",
+   "id": 451488584,
+   "center": {
+    "lat": 14.0742896,
+    "lon": 120.6324863
+   },
+   "tags": {
+    "addr:city": "Nasugbu",
+    "addr:postcode": "4231",
+    "addr:street": "Escalera Street",
+    "amenity": "townhall",
+    "name": "Nasugbu Municipal Hall"
+   }
+  },
+  {
+   "type": "way",
+   "id": 451491428,
+   "center": {
+    "lat": 14.0718923,
+    "lon": 120.6307823
+   },
+   "tags": {
+    "name": "Super Mac",
+    "shop": "supermarket"
+   }
+  },
+  {
+   "type": "way",
+   "id": 451803232,
+   "center": {
+    "lat": 14.0702153,
+    "lon": 120.638341
+   },
+   "tags": {
+    "addr:barangay": "Barangay 6",
+    "addr:city": "Nasugbu",
+    "addr:province": "Batangas",
+    "addr:street": "A. Oriondo Street",
+    "amenity": "townhall",
+    "name": "Barangay 6 Hall",
+    "office": "government"
+   }
+  },
+  {
+   "type": "way",
+   "id": 451803236,
+   "center": {
+    "lat": 14.0737781,
+    "lon": 120.6311137
+   },
+   "tags": {
+    "addr:postcode": "4231",
+    "addr:street": "P. Riñoza Street",
+    "addr:town": "Nasugbu",
+    "amenity": "restaurant",
+    "name": "Parekoy"
+   }
+  },
+  {
+   "type": "way",
+   "id": 451818278,
+   "center": {
+    "lat": 14.0724425,
+    "lon": 120.6324835
+   },
+   "tags": {
+    "addr:housenumber": "10",
+    "amenity": "post_office",
+    "name": "LBC",
+    "operator": "LBC"
+   }
+  },
+  {
+   "type": "way",
+   "id": 451818283,
+   "center": {
+    "lat": 14.07231,
+    "lon": 120.6325677
+   },
+   "tags": {
+    "name": "Savemore Market",
+    "shop": "supermarket"
+   }
+  },
+  {
+   "type": "way",
+   "id": 451819394,
+   "center": {
+    "lat": 14.0716195,
+    "lon": 120.6308648
+   },
+   "tags": {
+    "name": "Mega Value",
+    "shop": "supermarket"
+   }
+  },
+  {
+   "type": "way",
+   "id": 452006496,
+   "center": {
+    "lat": 14.0775935,
+    "lon": 120.6304082
+   },
+   "tags": {
+    "addr:barangay": "Barangay 1",
+    "addr:city": "Nasugbu",
+    "addr:province": "Batangas",
+    "amenity": "townhall",
+    "name": "Barangay 1 Hall",
+    "office": "government"
+   }
+  },
+  {
+   "type": "way",
+   "id": 452006498,
+   "center": {
+    "lat": 14.068267,
+    "lon": 120.6377989
+   },
+   "tags": {
+    "amenity": "place_of_worship",
+    "name": "Black Nazareth Church"
+   }
+  },
+  {
+   "type": "way",
+   "id": 453438812,
+   "center": {
+    "lat": 14.0580807,
+    "lon": 120.6377082
+   },
+   "tags": {
+    "addr:city": "Nasugbu",
+    "addr:place": "Lumbangan",
+    "addr:province": "Batangas",
+    "amenity": "college",
+    "name": "Dr. Francisco L. Calingasan Memorial Colleges Foundation"
+   }
+  },
+  {
+   "type": "way",
+   "id": 453438813,
+   "center": {
+    "lat": 14.0576221,
+    "lon": 120.639124
+   },
+   "tags": {
+    "addr:city": "Nasugbu",
+    "addr:place": "Camp Avejar",
+    "addr:province": "Batangas",
+    "amenity": "school",
+    "name": "St. Paul Foundational Learning Centre"
+   }
+  },
+  {
+   "type": "way",
+   "id": 453446540,
+   "center": {
+    "lat": 14.0522362,
+    "lon": 120.659865
+   },
+   "tags": {
+    "addr:municipality": "Nasugbu",
+    "addr:place": "Lumbangan",
+    "addr:province": "Batangas",
+    "amenity": "school",
+    "name": "Lumbangan National High School",
+    "operator": "Nasugbu East District of Batangas Schools Division, DepEd"
+   }
+  },
+  {
+   "type": "way",
+   "id": 453461345,
+   "center": {
+    "lat": 14.082526,
+    "lon": 120.6597674
+   },
+   "tags": {
+    "amenity": "place_of_worship",
+    "name": "Brgy.Chapel"
+   }
+  },
+  {
+   "type": "way",
+   "id": 453461349,
+   "center": {
+    "lat": 14.0940316,
+    "lon": 120.6638587
+   },
+   "tags": {
+    "addr:municipality": "Nasugbu",
+    "addr:place": "Dayap",
+    "addr:province": "Batangas",
+    "amenity": "school",
+    "name": "Paaralang Elementarya ng Dayap",
+    "operator": "Nasugbu West District of Batangas Schools Division, DepEd"
+   }
+  },
+  {
+   "type": "way",
+   "id": 453649781,
+   "center": {
+    "lat": 14.0821043,
+    "lon": 120.6670907
+   },
+   "tags": {
+    "addr:municipality": "Nasugbu",
+    "addr:province": "Batangas",
+    "amenity": "school",
+    "name": "Balokbalok Elementary School",
+    "operator": "Nasugbu West District of Batangas Schools Division, DepEd"
+   }
+  },
+  {
+   "type": "way",
+   "id": 453941279,
+   "center": {
+    "lat": 14.0336928,
+    "lon": 120.6535973
+   },
+   "tags": {
+    "addr:province": "Batangas",
+    "amenity": "fuel",
+    "brand": "Petron",
+    "name": "Petron"
+   }
+  },
+  {
+   "type": "way",
+   "id": 454148312,
+   "center": {
+    "lat": 14.0352088,
+    "lon": 120.6531705
+   },
+   "tags": {
+    "addr:municipality": "Lian",
+    "addr:province": "Batangas",
+    "addr:street": "D. Lapitan Street",
+    "amenity": "school",
+    "name": "Lian Central School",
+    "operator": "Lian District of Batangas Schools Division, DepEd"
+   }
+  },
+  {
+   "type": "way",
+   "id": 454156447,
+   "center": {
+    "lat": 14.0784765,
+    "lon": 120.6248028
+   },
+   "tags": {
+    "addr:street": "Apacible Boulevard",
+    "amenity": "place_of_worship",
+    "name": "Iglesia ni Cristo"
+   }
+  },
+  {
+   "type": "way",
+   "id": 454160580,
+   "center": {
+    "lat": 14.0371958,
+    "lon": 120.6529015
+   },
+   "tags": {
+    "amenity": "bank",
+    "name": "Farmers Rural Bank"
+   }
+  },
+  {
+   "type": "way",
+   "id": 454166031,
+   "center": {
+    "lat": 14.0830281,
+    "lon": 120.6241491
+   },
+   "tags": {
+    "addr:street": "J. P. Laurel Street",
+    "amenity": "fuel",
+    "brand": "Petron",
+    "name": "Petron",
+    "operator": "Atienza"
+   }
+  },
+  {
+   "type": "way",
+   "id": 454167347,
+   "center": {
+    "lat": 14.0394445,
+    "lon": 120.6519951
+   },
+   "tags": {
+    "addr:province": "Batangas",
+    "addr:street": "J. P. Rizal Street",
+    "addr:town": "Lian",
+    "brand": "7-Eleven",
+    "name": "7-Eleven",
+    "shop": "convenience"
+   }
+  },
+  {
+   "type": "way",
+   "id": 454167463,
+   "center": {
+    "lat": 14.0402455,
+    "lon": 120.6522315
+   },
+   "tags": {
+    "addr:barangay": "Singko",
+    "addr:city": "Batangas City",
+    "addr:postcode": "4200",
+    "addr:province": "Batangas",
+    "amenity": "townhall",
+    "name": "Singko Barangay Hall"
+   }
+  },
+  {
+   "type": "way",
+   "id": 454184538,
+   "center": {
+    "lat": 14.0946036,
+    "lon": 120.6642417
+   },
+   "tags": {
+    "addr:province": "Batangas",
+    "amenity": "townhall",
+    "name": "Dayap Barangay Hall"
+   }
+  },
+  {
+   "type": "way",
+   "id": 454190965,
+   "center": {
+    "lat": 14.0388277,
+    "lon": 120.6571215
+   },
+   "tags": {
+    "addr:province": "Batangas",
+    "amenity": "police",
+    "name": "PNP Police Station Malaruhatan"
+   }
+  },
+  {
+   "type": "way",
+   "id": 454191287,
+   "center": {
+    "lat": 14.0382208,
+    "lon": 120.6569032
+   },
+   "tags": {
+    "addr:barangay": "Malaruhatan",
+    "addr:postcode": "4216",
+    "addr:province": "Batangas",
+    "addr:street": "Sampaguita Street",
+    "addr:town": "Lian",
+    "amenity": "place_of_worship",
+    "name": "San Juan Chapel"
+   }
+  },
+  {
+   "type": "way",
+   "id": 454240888,
+   "center": {
+    "lat": 14.0517172,
+    "lon": 120.6361069
+   },
+   "tags": {
+    "addr:province": "Batangas",
+    "amenity": "place_of_worship",
+    "name": "Iglesia ni Cristo"
+   }
+  },
+  {
+   "type": "way",
+   "id": 458228117,
+   "center": {
+    "lat": 14.0510333,
+    "lon": 120.6507883
+   },
+   "tags": {
+    "addr:city": "Nasugbu",
+    "addr:province": "Batangas",
+    "brand": "Shell Select",
+    "name": "Shell Select",
+    "shop": "convenience"
+   }
+  },
+  {
+   "type": "way",
+   "id": 458228119,
+   "center": {
+    "lat": 14.0509735,
+    "lon": 120.6498649
+   },
+   "tags": {
+    "addr:place": "Lumbangan",
+    "addr:province": "Batangas",
+    "amenity": "fuel",
+    "name": "iGas"
+   }
+  },
+  {
+   "type": "way",
+   "id": 458228120,
+   "center": {
+    "lat": 14.0510792,
+    "lon": 120.6471909
+   },
+   "tags": {
+    "addr:city": "Nasugbu",
+    "addr:postcode": "4231",
+    "addr:province": "Batangas",
+    "amenity": "hospital",
+    "name": "Apacible Memorial District Hospital"
+   }
+  },
+  {
+   "type": "way",
+   "id": 458228123,
+   "center": {
+    "lat": 14.066697,
+    "lon": 120.6386031
+   },
+   "tags": {
+    "addr:street": "R. Martinez Street",
+    "amenity": "school",
+    "name": "Academia de San Francisco Javier"
+   }
+  },
+  {
+   "type": "way",
+   "id": 463579183,
+   "center": {
+    "lat": 14.0746317,
+    "lon": 120.6646689
+   },
+   "tags": {
+    "amenity": "place_of_worship",
+    "name": "Manggahan Church"
+   }
+  },
+  {
+   "type": "way",
+   "id": 464856587,
+   "center": {
+    "lat": 14.0869572,
+    "lon": 120.6313796
+   },
+   "tags": {
+    "amenity": "townhall",
+    "name": "Parian Oeste Barangay Hall"
+   }
+  },
+  {
+   "type": "way",
+   "id": 464900385,
+   "center": {
+    "lat": 14.0781973,
+    "lon": 120.630638
+   },
+   "tags": {
+    "brand": "7-Eleven",
+    "name": "7-Eleven",
+    "shop": "convenience"
+   }
+  },
+  {
+   "type": "way",
+   "id": 465147252,
+   "center": {
+    "lat": 14.0642631,
+    "lon": 120.6340641
+   },
+   "tags": {
+    "addr:street": "J. P. Laurel Street",
+    "amenity": "fuel",
+    "name": "Fuel Center"
+   }
+  },
+  {
+   "type": "way",
+   "id": 503696240,
+   "center": {
+    "lat": 14.0706223,
+    "lon": 120.6373504
+   },
+   "tags": {
+    "addr:street": "P. Hugo Street",
+    "amenity": "place_of_worship",
+    "name": "Old Church"
+   }
+  },
+  {
+   "type": "way",
+   "id": 537377354,
+   "center": {
+    "lat": 14.0712213,
+    "lon": 120.6254206
+   },
+   "tags": {
+    "leisure": "park",
+    "name": "Nasugbu Beach Park"
+   }
+  },
+  {
+   "type": "way",
+   "id": 537377371,
+   "center": {
+    "lat": 14.0812313,
+    "lon": 120.6244742
+   },
+   "tags": {
+    "addr:municipality": "Nasugbu",
+    "addr:province": "Batangas",
+    "addr:street": "J. P. Laurel Street",
+    "amenity": "school",
+    "name": "Wawa Elementary School",
+    "operator": "Nasugbu West District"
+   }
+  },
+  {
+   "type": "way",
+   "id": 537377373,
+   "center": {
+    "lat": 14.0818174,
+    "lon": 120.6243997
+   },
+   "tags": {
+    "amenity": "place_of_worship",
+    "name": "Nuestra Senora De La Paz"
+   }
+  },
+  {
+   "type": "way",
+   "id": 574913748,
+   "center": {
+    "lat": 14.0607912,
+    "lon": 120.635092
+   },
+   "tags": {
+    "addr:city": "Nasugbu",
+    "addr:postcode": "4231",
+    "addr:street": "J. P. Laurel Street",
+    "amenity": "fuel",
+    "brand": "Petron",
+    "name": "Petron"
+   }
+  },
+  {
+   "type": "way",
+   "id": 574913750,
+   "center": {
+    "lat": 14.0601355,
+    "lon": 120.6357316
+   },
+   "tags": {
+    "addr:city": "Nasugbu",
+    "addr:postcode": "4231",
+    "addr:street": "J. P. Laurel Street",
+    "amenity": "fuel",
+    "brand": "Total",
+    "name": "Total"
+   }
+  },
+  {
+   "type": "way",
+   "id": 577659376,
+   "center": {
+    "lat": 14.0793316,
+    "lon": 120.6267708
+   },
+   "tags": {
+    "addr:city": "Nasugbu",
+    "addr:neighbourhood": "Wawa",
+    "addr:postcode": "4231",
+    "addr:province": "Batangas",
+    "addr:street": "J. P. Laurel Street",
+    "amenity": "fuel",
+    "brand": "Phoenix",
+    "name": "Phoenix"
+   }
+  },
+  {
+   "type": "way",
+   "id": 577659377,
+   "center": {
+    "lat": 14.0793521,
+    "lon": 120.6264523
+   },
+   "tags": {
+    "addr:city": "Nasugbu",
+    "addr:place": "Wawa",
+    "addr:postcode": "4231",
+    "addr:province": "Batangas",
+    "addr:street": "J. P. Laurel Street",
+    "brand": "Alfamart",
+    "name": "Alfamart",
+    "shop": "convenience"
+   }
+  },
+  {
+   "type": "way",
+   "id": 585008164,
+   "center": {
+    "lat": 14.0726834,
+    "lon": 120.6319841
+   },
+   "tags": {
+    "addr:city": "Nasugbu",
+    "addr:postcode": "4231",
+    "addr:street": "J. P. Laurel Street",
+    "addr:street:corner": "C. Alvarez",
+    "amenity": "fast_food",
+    "brand": "Jollibee",
+    "name": "Jollibee"
+   }
+  },
+  {
+   "type": "way",
+   "id": 653872384,
+   "center": {
+    "lat": 14.0720263,
+    "lon": 120.6334194
+   },
+   "tags": {
+    "amenity": "restaurant",
+    "name": "Shrimp Bucket"
+   }
+  },
+  {
+   "type": "way",
+   "id": 653872895,
+   "center": {
+    "lat": 14.070823,
+    "lon": 120.6324204
+   },
+   "tags": {
+    "amenity": "fast_food",
+    "brand": "Lots'a Pizza",
+    "name": "Lots'a Pizza"
+   }
+  },
+  {
+   "type": "way",
+   "id": 653874461,
+   "center": {
+    "lat": 14.0512488,
+    "lon": 120.6497662
+   },
+   "tags": {
+    "amenity": "restaurant",
+    "brand": "Shakey's",
+    "name": "Shakey's"
+   }
+  },
+  {
+   "type": "way",
+   "id": 653876449,
+   "center": {
+    "lat": 14.0738417,
+    "lon": 120.6331089
+   },
+   "tags": {
+    "addr:city": "Nasugbu",
+    "addr:postcode": "4231",
+    "addr:province": "Batangas",
+    "addr:street": "Concepcion Street",
+    "amenity": "post_office",
+    "brand": "PHLPost",
+    "name": "Nasugbu Post Office",
+    "operator": "PHLPost"
+   }
+  },
+  {
+   "type": "way",
+   "id": 685034544,
+   "center": {
+    "lat": 14.0737544,
+    "lon": 120.6348516
+   },
+   "tags": {
+    "amenity": "school",
+    "name": "Nicolites Montessori School"
+   }
+  },
+  {
+   "type": "way",
+   "id": 729746920,
+   "center": {
+    "lat": 14.062417,
+    "lon": 120.6586349
+   },
+   "tags": {
+    "addr:place": "Cogonan",
+    "addr:province": "Batangas",
+    "addr:town": "Nasugbu",
+    "amenity": "school",
+    "name": "Cogonan Elementary School",
+    "operator": "Nasugbu East District of Batangas Schools Division, DepEd"
+   }
+  },
+  {
+   "type": "way",
+   "id": 764689249,
+   "center": {
+    "lat": 14.0656284,
+    "lon": 120.6266374
+   },
+   "tags": {
+    "addr:municipality": "Nasugbu",
+    "addr:province": "Batangas",
+    "addr:street": "Maya-Maya Street",
+    "amenity": "school",
+    "name": "Bucana Primary School",
+    "operator": "Nasugbu West District of Batangas Schools Division, DepEd"
+   }
+  },
+  {
+   "type": "way",
+   "id": 764883346,
+   "center": {
+    "lat": 14.0490232,
+    "lon": 120.6383098
+   },
+   "tags": {
+    "addr:municipality": "Lian",
+    "addr:place": "Balanoy",
+    "addr:province": "Batangas",
+    "addr:village": "Bungahan",
+    "amenity": "school",
+    "name": "Bungahan Elementary School",
+    "operator": "Lian District of Batangas Schools Division, DepEd"
+   }
+  },
+  {
+   "type": "way",
+   "id": 863215860,
+   "center": {
+    "lat": 14.038574,
+    "lon": 120.6552458
+   },
+   "tags": {
+    "addr:city": "Lian",
+    "amenity": "school",
+    "name": "Grand Prairie Learning School"
+   }
+  },
+  {
+   "type": "way",
+   "id": 863215890,
+   "center": {
+    "lat": 14.0340795,
+    "lon": 120.6528164
+   },
+   "tags": {
+    "addr:city": "Lian",
+    "addr:street": "J. P. Rizal Street",
+    "amenity": "school",
+    "name": "Lian Institute"
+   }
+  },
+  {
+   "type": "way",
+   "id": 865536460,
+   "center": {
+    "lat": 14.056289,
+    "lon": 120.6393718
+   },
+   "tags": {
+    "addr:street": "J. P. Laurel",
+    "brand": "WalterMart",
+    "name": "WalterMart",
+    "shop": "mall"
+   }
+  },
+  {
+   "type": "way",
+   "id": 878048453,
+   "center": {
+    "lat": 14.0670656,
+    "lon": 120.6276864
+   },
+   "tags": {
+    "addr:street": "R. Martinez Street",
+    "addr:town": "Nasugbu",
+    "amenity": "restaurant",
+    "name": "Kainan sa Dalampasigan"
+   }
+  },
+  {
+   "type": "way",
+   "id": 1088802608,
+   "center": {
+    "lat": 14.0703837,
+    "lon": 120.6374216
+   },
+   "tags": {
+    "addr:postcode": "4231",
+    "addr:street": "P. Hugo Street",
+    "addr:town": "Nasugbu",
+    "amenity": "place_of_worship",
+    "name": "Nasugbu United Methodist Church"
+   }
+  },
+  {
+   "type": "way",
+   "id": 1155750495,
+   "center": {
+    "lat": 14.0787799,
+    "lon": 120.6297915
+   },
+   "tags": {
+    "amenity": "fuel",
+    "brand": "Shell",
+    "name": "Shell"
+   }
+  },
+  {
+   "type": "way",
+   "id": 1176284919,
+   "center": {
+    "lat": 14.0767823,
+    "lon": 120.6307487
+   },
+   "tags": {
+    "addr:city": "Nasugbu",
+    "addr:postcode": "4231",
+    "addr:street": "P. Riñoza Street",
+    "amenity": "school",
+    "name": "Creative Dreams School"
+   }
+  },
+  {
+   "type": "way",
+   "id": 1176284920,
+   "center": {
+    "lat": 14.0702165,
+    "lon": 120.6343491
+   },
+   "tags": {
+    "addr:city": "Nasugbu",
+    "addr:postcode": "4231",
+    "addr:street": "Margarita Street",
+    "amenity": "restaurant",
+    "name": "The Place by Buena"
+   }
+  },
+  {
+   "type": "way",
+   "id": 1416345468,
+   "center": {
+    "lat": 14.0794021,
+    "lon": 120.6304628
+   },
+   "tags": {
+    "addr:municipality": "Nasugbu",
+    "addr:province": "Batangas",
+    "amenity": "school",
+    "name": "Dr. Crisogono B. Ermita, Sr. Memorial National High School",
+    "operator": "Nasugbu East District of Batangas Schools Division, DepEd"
+   }
+  },
+  {
+   "type": "way",
+   "id": 1464084235,
+   "center": {
+    "lat": 14.0648663,
+    "lon": 120.6333077
+   },
+   "tags": {
+    "addr:street": "J. P. Laurel Street",
+    "amenity": "clinic",
+    "name": "Jabez Medical Center"
+   }
+  },
+  {
+   "type": "way",
+   "id": 1507534206,
+   "center": {
+    "lat": 14.0421919,
+    "lon": 120.6276378
+   },
+   "tags": {
+    "addr:municipality": "Lian",
+    "addr:province": "Batangas",
+    "addr:village": "San Diego",
+    "amenity": "school",
+    "name": "San Diego Elementary School",
+    "operator": "Lian District of Batangas Schools Division, DepEd"
+   }
+  },
+  {
+   "type": "way",
+   "id": 1539385266,
+   "center": {
+    "lat": 14.0675602,
+    "lon": 120.6281508
+   },
+   "tags": {
+    "amenity": "fuel",
+    "name": "Power Fill Nasugbu"
+   }
+  },
+  {
+   "type": "relation",
+   "id": 10606580,
+   "center": {
+    "lat": 14.0944389,
+    "lon": 120.6456305
+   },
+   "tags": {
+    "addr:municipality": "Nasugbu",
+    "addr:place": "Bunducan",
+    "addr:province": "Batangas",
+    "amenity": "school",
+    "name": "Bunducan Elementary School",
+    "operator": "Nasugbu West District of Batangas Schools Division, DepEd"
+   }
+  },
+  {
+   "type": "relation",
+   "id": 10606581,
+   "center": {
+    "lat": 14.0948167,
+    "lon": 120.6455052
+   },
+   "tags": {
+    "addr:municipality": "Nasugbu",
+    "addr:place": "Bunducan",
+    "addr:province": "Batangas",
+    "amenity": "school",
+    "name": "Bunducan National High School",
+    "operator": "Nasugbu West District of Batangas Schools Division, DepEd"
+   }
+  },
+  {
+   "type": "relation",
+   "id": 11952316,
+   "center": {
+    "lat": 14.0671306,
+    "lon": 120.6265025
+   },
+   "tags": {
+    "addr:street": "R. Martinez Street",
+    "amenity": "university",
+    "name": "Batangas University Nasugbu Campus"
+   }
+  },
+  {
+   "type": "relation",
+   "id": 19080209,
+   "center": {
+    "lat": 14.0375445,
+    "lon": 120.657293
+   },
+   "tags": {
+    "addr:place": "Malaruhatan",
+    "addr:province": "Batangas",
+    "addr:town": "Lian",
+    "amenity": "school",
+    "name": "Malaruhatan Elementary School"
+   }
+  },
+  {
+   "type": "relation",
+   "id": 19080210,
+   "center": {
+    "lat": 14.0375426,
+    "lon": 120.6570932
+   },
+   "tags": {
+    "addr:municipality": "Lian",
+    "addr:place": "Malaruhatan",
+    "addr:province": "Batangas",
+    "amenity": "school",
+    "name": "Lian National High School",
+    "operator": "Lian District of Batangas Schools Division, DepEd"
+   }
+  },
+  {
+   "type": "relation",
+   "id": 19080222,
+   "center": {
+    "lat": 14.0527668,
+    "lon": 120.6682975
+   },
+   "tags": {
+    "addr:place": "Lumbangan",
+    "addr:province": "Batangas",
+    "addr:town": "Nasugbu",
+    "amenity": "school",
+    "name": "Nasugbu East Senior High School"
+   }
+  },
+  {
+   "type": "relation",
+   "id": 19080223,
+   "center": {
+    "lat": 14.0526285,
+    "lon": 120.6674662
+   },
+   "tags": {
+    "addr:municipality": "Nasugbu",
+    "addr:place": "Lumbangan",
+    "addr:province": "Batangas",
+    "amenity": "school",
+    "name": "Nasugbu East Central School",
+    "operator": "Nasugbu East District of Batangas Schools Division, DepEd"
+   }
+  },
+  {
+   "type": "relation",
+   "id": 19080235,
+   "center": {
+    "lat": 14.0833397,
+    "lon": 120.6337475
+   },
+   "tags": {
+    "addr:place": "Pantalan",
+    "addr:province": "Batangas",
+    "addr:town": "Nasugbu",
+    "amenity": "school",
+    "name": "Pantalan Senior High School"
+   }
+  },
+  {
+   "type": "relation",
+   "id": 19080236,
+   "center": {
+    "lat": 14.0833569,
+    "lon": 120.6340947
+   },
+   "tags": {
+    "addr:municipality": "Nasugbu",
+    "addr:place": "Pantalan",
+    "addr:province": "Batangas",
+    "addr:village": "Pantalan",
+    "amenity": "school",
+    "name": "Pantalan Elementary School",
+    "operator": "Nasugbu West District of Batangas Schools Division, DepEd"
+   }
+  }
+ ]
+}
