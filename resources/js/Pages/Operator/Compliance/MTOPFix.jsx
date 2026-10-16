@@ -18,7 +18,7 @@ import { PHYSICAL_INSPECTION_ITEMS } from '@/data/physicalInspectionItems';
 
 // Shared soft, layered shadow token — same elevation language used across the redesigned TMO
 // and Operator panels, so this page reads as one consistent product rather than a different template.
-const CARD_SHADOW = 'shadow-[0_1px_2px_0_rgba(15,23,42,0.04),0_8px_24px_-8px_rgba(15,23,42,0.10)]';
+const CARD_SHADOW = 'shadow-[0_1px_3px_0_rgba(15,23,42,0.07),0_10px_28px_-8px_rgba(15,23,42,0.14)]';
 
 const documentList = [
     { id: 'prangkisa', label: 'Xerox Prangkisa (Kung Renew)' },
@@ -134,10 +134,10 @@ export default function MTOPFix({ application }) {
                     </div>
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                         <div>
-                            <h1 className="text-2xl font-black tracking-tight text-slate-900 sm:text-3xl">
+                            <h1 className="text-2xl sm:text-[28px] font-black tracking-tight text-slate-900 leading-tight">
                                 {isPhysFix ? 'Confirm Ready for Reinspection' : 'Submit Corrections'}
                             </h1>
-                            <p className="mt-1 text-sm font-medium text-slate-500">
+                            <p className="mt-1 text-sm font-medium text-slate-600">
                                 {isPhysFix
                                     ? 'Review the defects found during inspection and confirm vehicle readiness.'
                                     : 'Review the TMO notes below and upload the correct replacement documents.'}
@@ -175,9 +175,9 @@ export default function MTOPFix({ application }) {
                     </div>
                 </div>
 
-                <div className={`mb-6 overflow-hidden rounded-2xl border border-slate-200/70 bg-white ${CARD_SHADOW}`}>
+                <div className={`mb-6 overflow-hidden rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white ${CARD_SHADOW}`}>
                     <div className="flex items-center gap-2.5 border-b border-slate-100 bg-slate-50/60 px-6 py-4">
-                        {isPhysFix ? <Settings size={16} className="text-slate-400" /> : <FileText size={16} className="text-slate-400" />}
+                        {isPhysFix ? <Settings size={16} className="text-slate-500" /> : <FileText size={16} className="text-slate-500" />}
                         <h2 className="text-[15px] font-bold text-slate-900">{isPhysFix ? 'Physical Inspection Reference Checklist' : 'Document Submission'}</h2>
                     </div>
                     <div className="p-6 sm:p-8">
@@ -191,7 +191,7 @@ export default function MTOPFix({ application }) {
                                         <p className="text-[13.5px] font-bold leading-snug text-slate-900">
                                             {idx + 1}. {item.label}
                                         </p>
-                                        <p className="mt-1 text-[11.5px] leading-snug text-slate-500">
+                                        <p className="mt-1 text-[11.5px] leading-snug text-slate-600">
                                             {item.requirement}
                                         </p>
                                     </div>
@@ -235,7 +235,7 @@ export default function MTOPFix({ application }) {
                                                             ? `${hasFiles.length} file(s) selected: ${hasFiles.map(f => f.name).join(', ')}`
                                                             : 'Click to upload replacement file(s)'}
                                                     </p>
-                                                    <p className="mt-1 text-xs text-slate-500">{hasFiles ? 'Files ready' : 'PDF, JPG, or PNG (Max 5MB)'}</p>
+                                                    <p className="mt-1 text-xs text-slate-600">{hasFiles ? 'Files ready' : 'PDF, JPG, or PNG (Max 5MB)'}</p>
                                                 </label>
                                             </div>
                                         );
@@ -244,8 +244,8 @@ export default function MTOPFix({ application }) {
                                     return (
                                         <div key={item.id} className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4">
                                             <div>
-                                                <p className="pr-3 text-[13.5px] font-semibold leading-snug text-slate-500">{item.name}</p>
-                                                <p className="mt-0.5 text-[11px] text-slate-400">Approved &amp; Verified</p>
+                                                <p className="pr-3 text-[13.5px] font-semibold leading-snug text-slate-600">{item.name}</p>
+                                                <p className="mt-0.5 text-[11px] text-slate-500">Approved &amp; Verified</p>
                                             </div>
                                             <StatusBadge variant="success" icon={CheckCircle2} className="shrink-0">Verified</StatusBadge>
                                         </div>

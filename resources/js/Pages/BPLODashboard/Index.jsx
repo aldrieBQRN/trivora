@@ -13,7 +13,7 @@ import {
     CartesianGrid, Tooltip, ResponsiveContainer,
 } from 'recharts';
 
-const CARD_SHADOW = 'shadow-[0_1px_2px_0_rgba(15,23,42,0.04),0_8px_24px_-8px_rgba(15,23,42,0.10)]';
+const CARD_SHADOW = 'shadow-[0_1px_3px_0_rgba(15,23,42,0.07),0_10px_28px_-8px_rgba(15,23,42,0.14)]';
 
 function LiveClock() {
     const [time, setTime] = useState(() =>
@@ -29,7 +29,7 @@ function LiveClock() {
 
     return (
         <span className="flex items-center gap-1.5 text-xs font-bold text-slate-700 tabular-nums">
-            <Clock size={13} className="text-slate-400 shrink-0" />
+            <Clock size={13} className="text-slate-500 shrink-0" />
             <span>{time}</span>
         </span>
     );
@@ -94,12 +94,12 @@ export default function BPLODashboard({
                         <h1 className="text-2xl sm:text-[28px] font-black tracking-tight text-slate-900 leading-tight">
                             Dashboard
                         </h1>
-                        <p className="mt-1 text-xs sm:text-sm text-slate-500 max-w-2xl leading-relaxed font-medium">
+                        <p className="mt-1 text-xs sm:text-sm text-slate-600 max-w-2xl leading-relaxed font-medium">
                             Municipal Tricycle Operator's Permit (MTOP) licensing, issuance &amp; fleet registry status
                         </p>
                     </div>
                     <div className="flex items-center gap-2 self-start sm:self-auto shrink-0">
-                        <div className="inline-flex items-center gap-2.5 rounded-xl border border-slate-200/90 bg-white px-3.5 py-2 shadow-2xs">
+                        <div className="inline-flex items-center gap-2.5 rounded-xl border border-slate-200/90 bg-white px-3.5 py-2 shadow-sm">
                             <div className="flex items-center gap-1.5 text-xs font-bold text-slate-800">
                                 <Calendar size={13} className="text-[#182B62] shrink-0" />
                                 <span>{todayDate}</span>
@@ -113,37 +113,37 @@ export default function BPLODashboard({
                 {/* ══════════════════════════════════════════════════════════════
                     2. OPERATIONAL KPI DECK (Strict 1-per-row on Mobile < 640px)
                    ══════════════════════════════════════════════════════════════ */}
-                <div className="mb-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4 items-stretch">
+                <div className="mb-6 grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4 items-stretch">
                     {/* Card 1: Active Registry */}
                     <Link
                         href="/bplo/registry"
-                        className={`group flex flex-col justify-between rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-4 sm:p-5 lg:p-6 ${CARD_SHADOW} transition-all hover:border-slate-300 active:scale-[0.99]`}
+                        className={`group flex flex-col justify-between rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-3 sm:p-4 lg:px-5 lg:py-4 ${CARD_SHADOW} transition-all hover:border-slate-300 hover:shadow-[0_2px_6px_0_rgba(15,23,42,0.08),0_18px_36px_-12px_rgba(15,23,42,0.20)] active:scale-[0.99]`}
                     >
                         <div>
-                            <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
-                                <span className="text-[10px] sm:text-[10.5px] font-bold uppercase tracking-wider text-slate-400">
+                            <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-2 sm:pb-2.5">
+                                <span className="text-[9.5px] sm:text-[10.5px] font-bold uppercase tracking-wide sm:tracking-wider leading-tight text-slate-500">
                                     Active Registry
                                 </span>
-                                <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-xl bg-indigo-50 border border-indigo-100 text-[#182B62]">
+                                <div className="flex h-7 w-7 shrink-0 sm:h-8 sm:w-8 items-center justify-center rounded-xl bg-indigo-50 border border-indigo-100 text-[#182B62]">
                                     <Hash size={15} strokeWidth={2.2} />
                                 </div>
                             </div>
-                            <div className="mt-2.5 flex items-baseline gap-2">
-                                <span className="text-2xl sm:text-3xl font-black tracking-tight tabular-nums text-slate-900 leading-none">
+                            <div className="mt-2 sm:mt-2.5 flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5 sm:gap-2">
+                                <span className="text-2xl lg:text-3xl font-black tracking-tight tabular-nums text-slate-900 leading-none">
                                     {totalRegistries}
                                 </span>
-                                <span className="text-[10px] sm:text-[10.5px] font-extrabold uppercase tracking-wider text-slate-400">
+                                <span className="text-[9.5px] sm:text-[10.5px] font-extrabold uppercase tracking-wider text-slate-500">
                                     Tricycles
                                 </span>
                             </div>
-                            <p className="mt-1 text-[11px] font-medium text-slate-500 line-clamp-1">
+                            <p className="mt-1 max-sm:hidden text-[10px] sm:text-[11px] font-medium text-slate-600 line-clamp-1">
                                 Recorded municipal units on file
                             </p>
                         </div>
 
-                        <div className="mt-3.5 rounded-xl bg-slate-50 border border-slate-100/90 px-3 py-2 flex items-center justify-between text-xs">
-                            <span className="font-semibold text-slate-400 text-[11px]">Masterlist:</span>
-                            <span className="font-bold text-[#182B62] group-hover:text-indigo-600 flex items-center gap-1 transition-colors text-xs">
+                        <div className="mt-2.5 max-sm:hidden rounded-xl bg-slate-50 border border-slate-100/90 shadow-sm px-2.5 py-1.5 flex items-center justify-between text-[10.5px] sm:text-xs">
+                            <span className="font-semibold text-slate-500 shrink-0">Masterlist:</span>
+                            <span className="font-bold text-[#182B62] group-hover:text-indigo-600 flex items-center gap-1 transition-colors shrink-0">
                                 View <ArrowUpRight size={13} />
                             </span>
                         </div>
@@ -152,65 +152,65 @@ export default function BPLODashboard({
                     {/* Card 2: Pending Releasing */}
                     <Link
                         href="/bplo/releasing"
-                        className={`group flex flex-col justify-between rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-4 sm:p-5 lg:p-6 ${CARD_SHADOW} transition-all hover:border-amber-300 active:scale-[0.99]`}
+                        className={`group flex flex-col justify-between rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-3 sm:p-4 lg:px-5 lg:py-4 ${CARD_SHADOW} transition-all hover:border-amber-300 hover:shadow-[0_2px_6px_0_rgba(15,23,42,0.08),0_18px_36px_-12px_rgba(15,23,42,0.20)] active:scale-[0.99]`}
                     >
                         <div>
-                            <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
-                                <span className="text-[10px] sm:text-[10.5px] font-bold uppercase tracking-wider text-slate-400">
+                            <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-2 sm:pb-2.5">
+                                <span className="text-[9.5px] sm:text-[10.5px] font-bold uppercase tracking-wide sm:tracking-wider leading-tight text-slate-500">
                                     Pending Releasing
                                 </span>
-                                <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-xl bg-amber-50 border border-amber-100 text-amber-600">
+                                <div className="flex h-7 w-7 shrink-0 sm:h-8 sm:w-8 items-center justify-center rounded-xl bg-amber-50 border border-amber-100 text-amber-600">
                                     <Clock size={15} strokeWidth={2.2} />
                                 </div>
                             </div>
-                            <div className="mt-2.5 flex items-baseline gap-2">
-                                <span className="text-2xl sm:text-3xl font-black tracking-tight tabular-nums text-amber-600 leading-none">
+                            <div className="mt-2 sm:mt-2.5 flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5 sm:gap-2">
+                                <span className="text-2xl lg:text-3xl font-black tracking-tight tabular-nums text-amber-600 leading-none">
                                     {pendingReleasing}
                                 </span>
-                                <span className="text-[10px] sm:text-[10.5px] font-extrabold uppercase tracking-wider text-slate-400">
+                                <span className="text-[9.5px] sm:text-[10.5px] font-extrabold uppercase tracking-wider text-slate-500">
                                     {pendingReleasing > 0 ? 'Awaiting Sticker' : 'Cleared'}
                                 </span>
                             </div>
-                            <p className="mt-1 text-[11px] font-medium text-slate-500 line-clamp-1">
+                            <p className="mt-1 max-sm:hidden text-[10px] sm:text-[11px] font-medium text-slate-600 line-clamp-1">
                                 Cleared inspection, pending issuance
                             </p>
                         </div>
 
-                        <div className="mt-3.5 rounded-xl bg-slate-50 border border-slate-100/90 px-3 py-2 flex items-center justify-between text-xs">
-                            <span className="font-semibold text-slate-400 text-[11px]">Queue:</span>
-                            <span className="font-bold text-amber-700 group-hover:text-amber-800 flex items-center gap-1 transition-colors text-xs">
+                        <div className="mt-2.5 max-sm:hidden rounded-xl bg-slate-50 border border-slate-100/90 shadow-sm px-2.5 py-1.5 flex items-center justify-between text-[10.5px] sm:text-xs">
+                            <span className="font-semibold text-slate-500 shrink-0">Queue:</span>
+                            <span className="font-bold text-amber-700 group-hover:text-amber-800 flex items-center gap-1 transition-colors shrink-0">
                                 Process <ArrowUpRight size={13} />
                             </span>
                         </div>
                     </Link>
 
                     {/* Card 3: Issued Today */}
-                    <div className={`flex flex-col justify-between rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-4 sm:p-5 lg:p-6 ${CARD_SHADOW}`}>
+                    <div className={`flex flex-col justify-between rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-3 sm:p-4 lg:px-5 lg:py-4 ${CARD_SHADOW} transition-all hover:border-slate-300 hover:shadow-[0_2px_6px_0_rgba(15,23,42,0.08),0_18px_36px_-12px_rgba(15,23,42,0.20)]`}>
                         <div>
-                            <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
-                                <span className="text-[10px] sm:text-[10.5px] font-bold uppercase tracking-wider text-slate-400">
+                            <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-2 sm:pb-2.5">
+                                <span className="text-[9.5px] sm:text-[10.5px] font-bold uppercase tracking-wide sm:tracking-wider leading-tight text-slate-500">
                                     Issued Today
                                 </span>
-                                <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-xl bg-blue-50 border border-blue-100 text-blue-600">
+                                <div className="flex h-7 w-7 shrink-0 sm:h-8 sm:w-8 items-center justify-center rounded-xl bg-blue-50 border border-blue-100 text-blue-600">
                                     <Award size={15} strokeWidth={2.2} />
                                 </div>
                             </div>
-                            <div className="mt-2.5 flex items-baseline gap-2">
-                                <span className="text-2xl sm:text-3xl font-black tracking-tight tabular-nums text-blue-600 leading-none">
+                            <div className="mt-2 sm:mt-2.5 flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5 sm:gap-2">
+                                <span className="text-2xl lg:text-3xl font-black tracking-tight tabular-nums text-blue-600 leading-none">
                                     {releasedToday}
                                 </span>
-                                <span className="text-[10px] sm:text-[10.5px] font-extrabold uppercase tracking-wider text-slate-400">
+                                <span className="text-[9.5px] sm:text-[10.5px] font-extrabold uppercase tracking-wider text-slate-500">
                                     Released
                                 </span>
                             </div>
-                            <p className="mt-1 text-[11px] font-medium text-slate-500 line-clamp-1">
+                            <p className="mt-1 max-sm:hidden text-[10px] sm:text-[11px] font-medium text-slate-600 line-clamp-1">
                                 Stickers signed off in current shift
                             </p>
                         </div>
 
-                        <div className="mt-3.5 rounded-xl bg-slate-50 border border-slate-100/90 px-3 py-2 flex items-center justify-between text-xs">
-                            <span className="font-semibold text-slate-400 text-[11px]">Cycle:</span>
-                            <span className="font-bold text-slate-800 text-xs">
+                        <div className="mt-2.5 max-sm:hidden rounded-xl bg-slate-50 border border-slate-100/90 shadow-sm px-2.5 py-1.5 flex items-center justify-between text-[10.5px] sm:text-xs">
+                            <span className="font-semibold text-slate-500 shrink-0">Cycle:</span>
+                            <span className="font-bold text-slate-800 shrink-0">
                                 Daily Output
                             </span>
                         </div>
@@ -219,33 +219,33 @@ export default function BPLODashboard({
                     {/* Card 4: Active Franchises */}
                     <Link
                         href="/bplo/registry"
-                        className={`group flex flex-col justify-between rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-4 sm:p-5 lg:p-6 ${CARD_SHADOW} transition-all hover:border-emerald-300 active:scale-[0.99]`}
+                        className={`group flex flex-col justify-between rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-3 sm:p-4 lg:px-5 lg:py-4 ${CARD_SHADOW} transition-all hover:border-emerald-300 hover:shadow-[0_2px_6px_0_rgba(15,23,42,0.08),0_18px_36px_-12px_rgba(15,23,42,0.20)] active:scale-[0.99]`}
                     >
                         <div>
-                            <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
-                                <span className="text-[10px] sm:text-[10.5px] font-bold uppercase tracking-wider text-slate-400">
+                            <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-2 sm:pb-2.5">
+                                <span className="text-[9.5px] sm:text-[10.5px] font-bold uppercase tracking-wide sm:tracking-wider leading-tight text-slate-500">
                                     Active Franchises
                                 </span>
-                                <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-xl bg-emerald-50 border border-emerald-100 text-emerald-600">
+                                <div className="flex h-7 w-7 shrink-0 sm:h-8 sm:w-8 items-center justify-center rounded-xl bg-emerald-50 border border-emerald-100 text-emerald-600">
                                     <ShieldCheck size={15} strokeWidth={2.2} />
                                 </div>
                             </div>
-                            <div className="mt-2.5 flex items-baseline gap-2">
-                                <span className="text-2xl sm:text-3xl font-black tracking-tight tabular-nums text-emerald-600 leading-none">
+                            <div className="mt-2 sm:mt-2.5 flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5 sm:gap-2">
+                                <span className="text-2xl lg:text-3xl font-black tracking-tight tabular-nums text-emerald-600 leading-none">
                                     {activeFranchises}
                                 </span>
-                                <span className="text-[10px] sm:text-[10.5px] font-extrabold uppercase tracking-wider text-slate-400">
+                                <span className="text-[9.5px] sm:text-[10.5px] font-extrabold uppercase tracking-wider text-slate-500">
                                     {activePct}% Rate
                                 </span>
                             </div>
-                            <p className="mt-1 text-[11px] font-medium text-slate-500 line-clamp-1">
+                            <p className="mt-1 max-sm:hidden text-[10px] sm:text-[11px] font-medium text-slate-600 line-clamp-1">
                                 In good standing ({suspendedCount} suspended)
                             </p>
                         </div>
 
-                        <div className="mt-3.5 rounded-xl bg-slate-50 border border-slate-100/90 px-3 py-2 flex items-center justify-between text-xs">
-                            <span className="font-semibold text-slate-400 text-[11px]">Status:</span>
-                            <span className="font-bold text-emerald-700 group-hover:text-emerald-800 flex items-center gap-1 transition-colors text-xs">
+                        <div className="mt-2.5 max-sm:hidden rounded-xl bg-slate-50 border border-slate-100/90 shadow-sm px-2.5 py-1.5 flex items-center justify-between text-[10.5px] sm:text-xs">
+                            <span className="font-semibold text-slate-500 shrink-0">Status:</span>
+                            <span className="font-bold text-emerald-700 group-hover:text-emerald-800 flex items-center gap-1 transition-colors shrink-0">
                                 Compliant <ArrowUpRight size={13} />
                             </span>
                         </div>
@@ -268,7 +268,7 @@ export default function BPLODashboard({
                                     <h3 className="text-sm sm:text-base font-bold text-slate-900 leading-tight">
                                         MTOP Issuance Trend
                                     </h3>
-                                    <p className="text-[11px] text-slate-500 font-medium">
+                                    <p className="text-[11px] text-slate-600 font-medium">
                                         Daily released franchise stickers &amp; permits · last 7 days
                                     </p>
                                 </div>
@@ -343,7 +343,7 @@ export default function BPLODashboard({
                                         <h3 className="text-sm sm:text-base font-bold text-slate-900 leading-tight">
                                             Recent Releases
                                         </h3>
-                                        <p className="text-[11px] text-slate-500 font-medium">
+                                        <p className="text-[11px] text-slate-600 font-medium">
                                             Latest processed franchise stickers
                                         </p>
                                     </div>
@@ -353,11 +353,11 @@ export default function BPLODashboard({
                             {/* Feed Items */}
                             {recentReleases.length === 0 ? (
                                 <div className="py-7 text-center">
-                                    <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 text-slate-400">
+                                    <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 text-slate-500">
                                         <Inbox size={20} strokeWidth={1.8} />
                                     </div>
                                     <p className="mt-2 text-xs font-semibold text-slate-700">No releases logged today</p>
-                                    <p className="text-[11px] text-slate-400 mt-0.5">Cleared applications ready for sticker issuance will appear here.</p>
+                                    <p className="text-[11px] text-slate-500 mt-0.5">Cleared applications ready for sticker issuance will appear here.</p>
                                 </div>
                             ) : (
                                 <div className="space-y-2">
@@ -376,17 +376,17 @@ export default function BPLODashboard({
                                                             {rel.sticker_number || 'Sticker Issued'}
                                                         </span>
                                                         {rel.plate_number && rel.plate_number !== 'N/A' && (
-                                                            <span className="text-[10px] text-slate-400 font-mono">
+                                                            <span className="text-[10px] text-slate-500 font-mono">
                                                                 • {rel.plate_number}
                                                             </span>
                                                         )}
                                                     </div>
-                                                    <div className="text-[11px] text-slate-500 truncate font-medium mt-0.5">
+                                                    <div className="text-[11px] text-slate-600 truncate font-medium mt-0.5">
                                                         {rel.operator_name}
                                                     </div>
                                                 </div>
                                             </div>
-                                            <span className="text-[10px] font-semibold text-slate-400 shrink-0 tabular-nums">
+                                            <span className="text-[10px] font-semibold text-slate-500 shrink-0 tabular-nums">
                                                 {rel.released_at}
                                             </span>
                                         </div>
@@ -397,7 +397,7 @@ export default function BPLODashboard({
 
                         <Link
                             href="/bplo/releasing"
-                            className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 py-2.5 px-3 text-xs font-bold text-slate-700 shadow-2xs transition-all active:scale-[0.98]"
+                            className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 py-2.5 px-3 text-xs font-bold text-slate-700 shadow-sm transition-all active:scale-[0.98]"
                         >
                             <span>Open Releasing Queue</span>
                             <ChevronRight size={14} strokeWidth={2.2} />
@@ -421,11 +421,11 @@ export default function BPLODashboard({
                             <h4 className="text-xs sm:text-sm font-bold text-slate-900 group-hover:text-[#182B62] transition-colors leading-tight">
                                 Releasing Queue
                             </h4>
-                            <p className="mt-0.5 text-[11px] text-slate-500 truncate">
+                            <p className="mt-0.5 text-[11px] text-slate-600 truncate">
                                 Assign Sticker Number &amp; release permits
                             </p>
                         </div>
-                        <ChevronRight size={16} className="text-slate-400 group-hover:translate-x-0.5 transition-transform shrink-0" />
+                        <ChevronRight size={16} className="text-slate-500 group-hover:translate-x-0.5 transition-transform shrink-0" />
                     </Link>
 
                     {/* Action 2: Franchise Masterlist */}
@@ -440,11 +440,11 @@ export default function BPLODashboard({
                             <h4 className="text-xs sm:text-sm font-bold text-slate-900 group-hover:text-emerald-700 transition-colors leading-tight">
                                 Active Registry
                             </h4>
-                            <p className="mt-0.5 text-[11px] text-slate-500 truncate">
+                            <p className="mt-0.5 text-[11px] text-slate-600 truncate">
                                 Search active units &amp; inspect records
                             </p>
                         </div>
-                        <ChevronRight size={16} className="text-slate-400 group-hover:translate-x-0.5 transition-transform shrink-0" />
+                        <ChevronRight size={16} className="text-slate-500 group-hover:translate-x-0.5 transition-transform shrink-0" />
                     </Link>
 
                     {/* Action 3: Staff Management */}
@@ -459,11 +459,11 @@ export default function BPLODashboard({
                             <h4 className="text-xs sm:text-sm font-bold text-slate-900 group-hover:text-amber-700 transition-colors leading-tight">
                                 Staff Directory
                             </h4>
-                            <p className="mt-0.5 text-[11px] text-slate-500 truncate">
+                            <p className="mt-0.5 text-[11px] text-slate-600 truncate">
                                 Manage BPLO personnel &amp; credentials
                             </p>
                         </div>
-                        <ChevronRight size={16} className="text-slate-400 group-hover:translate-x-0.5 transition-transform shrink-0" />
+                        <ChevronRight size={16} className="text-slate-500 group-hover:translate-x-0.5 transition-transform shrink-0" />
                     </Link>
                 </div>
             </div>

@@ -137,7 +137,7 @@ function FranchiseStatusHeaderActions({ tricycleId, franchiseStatus }) {
 }
 
 // Layered soft shadow token
-const CARD_SHADOW = 'shadow-[0_1px_2px_0_rgba(15,23,42,0.04),0_8px_24px_-8px_rgba(15,23,42,0.10)]';
+const CARD_SHADOW = 'shadow-[0_1px_3px_0_rgba(15,23,42,0.07),0_10px_28px_-8px_rgba(15,23,42,0.14)]';
 
 const TABS = [
     { key: 'overview', label: 'Overview & Details', shortLabel: 'Overview', icon: FileText },
@@ -150,7 +150,7 @@ const TIMELINE_STATE_META = {
         icon: CheckCircle2,
         circle: 'bg-emerald-600 text-white ring-4 ring-emerald-50',
         circleMobile: 'bg-emerald-600 text-white ring-2 ring-emerald-100',
-        sub: 'text-slate-500',
+        sub: 'text-slate-600',
     },
     current: {
         icon: Clock,
@@ -166,9 +166,9 @@ const TIMELINE_STATE_META = {
     },
     pending: {
         icon: Clock,
-        circle: 'border-2 border-slate-200 bg-white text-slate-300',
-        circleMobile: 'border-2 border-slate-200 bg-white text-slate-300',
-        sub: 'text-slate-400',
+        circle: 'border-2 border-slate-200 bg-white text-slate-400',
+        circleMobile: 'border-2 border-slate-200 bg-white text-slate-400',
+        sub: 'text-slate-500',
     },
 };
 
@@ -196,8 +196,8 @@ const DOC_STATUS_META = {
     },
     not_submitted: {
         icon: FileText,
-        iconWrap: 'bg-slate-100 text-slate-400',
-        badge: 'bg-slate-100 text-slate-500 border-slate-200',
+        iconWrap: 'bg-slate-100 text-slate-500',
+        badge: 'bg-slate-100 text-slate-600 border-slate-200',
         label: 'Not Submitted',
         dateLabel: null,
     },
@@ -206,7 +206,7 @@ const DOC_STATUS_META = {
 const GPS_STATUS_META = {
     connected: { label: 'Online', badge: 'bg-emerald-50 text-emerald-700 border-emerald-200', dot: 'bg-emerald-500' },
     stale:     { label: 'Signal Lost', badge: 'bg-amber-50 text-amber-800 border-amber-200', dot: 'bg-amber-500' },
-    awaiting:  { label: 'Awaiting Signal', badge: 'bg-slate-100 text-slate-500 border-slate-200', dot: 'bg-slate-400' },
+    awaiting:  { label: 'Awaiting Signal', badge: 'bg-slate-100 text-slate-600 border-slate-200', dot: 'bg-slate-400' },
 };
 
 export default function TricycleDetails({
@@ -307,9 +307,9 @@ export default function TricycleDetails({
             <div className="mb-4 flex items-center justify-between gap-3 border-b border-slate-200/80 pb-4">
                 <Link
                     href="/tmo/registry"
-                    className="group inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold text-slate-500 hover:text-slate-900 transition-colors font-['Plus_Jakarta_Sans',sans-serif]"
+                    className="group inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold text-slate-600 hover:text-slate-900 transition-colors font-['Plus_Jakarta_Sans',sans-serif]"
                 >
-                    <ChevronLeft size={16} strokeWidth={2.5} className="text-slate-400 group-hover:text-slate-700 transition-colors" />
+                    <ChevronLeft size={16} strokeWidth={2.5} className="text-slate-500 group-hover:text-slate-700 transition-colors" />
                     <span>Back to Registry</span>
                 </Link>
             </div>
@@ -325,7 +325,7 @@ export default function TricycleDetails({
                             {tricycle.plate_no || 'NO PLATE'}
                         </span>
                     </div>
-                    <p className="mt-1 text-xs sm:text-sm text-slate-500 font-medium">
+                    <p className="mt-1 text-xs sm:text-sm text-slate-600 font-medium">
                         {tricycle.full_model || tricycle.model || 'Tricycle'} · Official Profile · Nasugbu, Batangas
                     </p>
                 </div>
@@ -348,11 +348,11 @@ export default function TricycleDetails({
                                 onClick={() => setActiveTab(tab.key)}
                                 className={`flex items-center justify-center gap-2 py-2 px-3 sm:px-4 rounded-xl text-xs font-bold transition-all font-['Plus_Jakarta_Sans',sans-serif] ${
                                     active
-                                        ? 'bg-[#182B62] text-white shadow-2xs'
+                                        ? 'bg-[#182B62] text-white shadow-sm'
                                         : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
                                 }`}
                             >
-                                <Icon size={14} className={active ? 'text-white' : 'text-slate-400'} />
+                                <Icon size={14} className={active ? 'text-white' : 'text-slate-500'} />
                                 <span className="hidden sm:inline">{tab.label}</span>
                                 <span className="sm:hidden">{tab.shortLabel}</span>
                                 {tab.key === 'violations' && violations.length > 0 && (
@@ -378,9 +378,9 @@ export default function TricycleDetails({
                             {/* Owner profile header */}
                             <div className="flex flex-wrap items-center justify-between gap-3 mb-4 pb-3.5 border-b border-slate-100">
                                 <div className="flex items-center gap-3">
-                                    <Avatar name={operatorName} src={tricycle.operator_photo} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#182B62] to-[#25449B] text-white font-bold text-sm shadow-2xs" />
+                                    <Avatar name={operatorName} src={tricycle.operator_photo} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#182B62] to-[#25449B] text-white font-bold text-sm shadow-sm" />
                                     <div className="min-w-0">
-                                        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 font-['Plus_Jakarta_Sans',sans-serif]">Tricycle Owner</p>
+                                        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 font-['Plus_Jakarta_Sans',sans-serif]">Tricycle Owner</p>
                                         <h4 className="text-base font-bold text-slate-900 truncate font-['Plus_Jakarta_Sans',sans-serif]">
                                             {owner.full_name || '—'}
                                         </h4>
@@ -393,7 +393,7 @@ export default function TricycleDetails({
                                 <SpecItem label="First Name" value={owner.first_name || '—'} />
                                 <SpecItem label="Last Name" value={owner.last_name || '—'} />
                                 <div>
-                                    <span className="mb-1 text-[10.5px] font-bold uppercase tracking-wider text-slate-400 truncate block font-['Plus_Jakarta_Sans',sans-serif]">
+                                    <span className="mb-1 text-[10.5px] font-bold uppercase tracking-wider text-slate-500 truncate block font-['Plus_Jakarta_Sans',sans-serif]">
                                         Birthday
                                     </span>
                                     <span className="text-xs sm:text-sm font-semibold font-mono text-slate-900">
@@ -401,7 +401,7 @@ export default function TricycleDetails({
                                     </span>
                                 </div>
                                 <div>
-                                    <span className="mb-1 text-[10.5px] font-bold uppercase tracking-wider text-slate-400 truncate block font-['Plus_Jakarta_Sans',sans-serif]">
+                                    <span className="mb-1 text-[10.5px] font-bold uppercase tracking-wider text-slate-500 truncate block font-['Plus_Jakarta_Sans',sans-serif]">
                                         Mobile Number
                                     </span>
                                     {owner.contact_number ? (
@@ -412,12 +412,12 @@ export default function TricycleDetails({
                                             {owner.contact_number}
                                         </a>
                                     ) : (
-                                        <span className="text-xs sm:text-sm font-semibold text-slate-400">—</span>
+                                        <span className="text-xs sm:text-sm font-semibold text-slate-500">—</span>
                                     )}
                                 </div>
                                 <SpecItem label="Barangay (Nasugbu)" value={owner.barangay || '—'} />
                                 <div>
-                                    <span className="mb-1 text-[10.5px] font-bold uppercase tracking-wider text-slate-400 truncate block font-['Plus_Jakarta_Sans',sans-serif]">
+                                    <span className="mb-1 text-[10.5px] font-bold uppercase tracking-wider text-slate-500 truncate block font-['Plus_Jakarta_Sans',sans-serif]">
                                         Email Address
                                     </span>
                                     {owner.email ? (
@@ -429,7 +429,7 @@ export default function TricycleDetails({
                                             {owner.email}
                                         </a>
                                     ) : (
-                                        <span className="text-xs sm:text-sm font-semibold text-slate-400">—</span>
+                                        <span className="text-xs sm:text-sm font-semibold text-slate-500">—</span>
                                     )}
                                 </div>
                             </div>
@@ -438,7 +438,7 @@ export default function TricycleDetails({
                             <div className="mt-5 pt-4 border-t border-slate-100">
                                 <div className="flex items-center justify-between mb-3">
                                     <div className="flex items-center gap-1.5">
-                                        <User size={15} className="text-slate-500" />
+                                        <User size={15} className="text-slate-600" />
                                         <span className="text-xs font-bold uppercase tracking-wider text-slate-700 font-['Plus_Jakarta_Sans',sans-serif]">
                                             Tricycle Driver
                                         </span>
@@ -464,7 +464,7 @@ export default function TricycleDetails({
                                         <SpecItem label="First Name" value={driver.first_name || '—'} />
                                         <SpecItem label="Last Name" value={driver.last_name || '—'} />
                                         <div>
-                                            <span className="mb-1 text-[10.5px] font-bold uppercase tracking-wider text-slate-400 truncate block font-['Plus_Jakarta_Sans',sans-serif]">
+                                            <span className="mb-1 text-[10.5px] font-bold uppercase tracking-wider text-slate-500 truncate block font-['Plus_Jakarta_Sans',sans-serif]">
                                                 Birthday
                                             </span>
                                             <span className="text-xs sm:text-sm font-semibold font-mono text-slate-900">
@@ -472,7 +472,7 @@ export default function TricycleDetails({
                                             </span>
                                         </div>
                                         <div>
-                                            <span className="mb-1 text-[10.5px] font-bold uppercase tracking-wider text-slate-400 truncate block font-['Plus_Jakarta_Sans',sans-serif]">
+                                            <span className="mb-1 text-[10.5px] font-bold uppercase tracking-wider text-slate-500 truncate block font-['Plus_Jakarta_Sans',sans-serif]">
                                                 Mobile Number
                                             </span>
                                             {driver.contact_number ? (
@@ -483,12 +483,12 @@ export default function TricycleDetails({
                                                     {driver.contact_number}
                                                 </a>
                                             ) : (
-                                                <span className="text-xs sm:text-sm font-semibold text-slate-400">—</span>
+                                                <span className="text-xs sm:text-sm font-semibold text-slate-500">—</span>
                                             )}
                                         </div>
                                         <SpecItem label="Barangay (Nasugbu)" value={driver.barangay || '—'} />
                                         <div>
-                                            <span className="mb-1 text-[10.5px] font-bold uppercase tracking-wider text-slate-400 truncate block font-['Plus_Jakarta_Sans',sans-serif]">
+                                            <span className="mb-1 text-[10.5px] font-bold uppercase tracking-wider text-slate-500 truncate block font-['Plus_Jakarta_Sans',sans-serif]">
                                                 Email Address
                                             </span>
                                             {driver.email ? (
@@ -500,12 +500,12 @@ export default function TricycleDetails({
                                                     {driver.email}
                                                 </a>
                                             ) : (
-                                                <span className="text-xs sm:text-sm font-semibold text-slate-400">—</span>
+                                                <span className="text-xs sm:text-sm font-semibold text-slate-500">—</span>
                                             )}
                                         </div>
                                     </div>
                                 ) : (
-                                    <div className="rounded-xl border border-slate-100 bg-slate-50/80 p-3.5 text-xs text-slate-500">
+                                    <div className="rounded-xl border border-slate-100 bg-slate-50/80 p-3.5 text-xs text-slate-600">
                                         No separate driver registered for this tricycle.
                                     </div>
                                 )}
@@ -528,8 +528,8 @@ export default function TricycleDetails({
                         <Card icon={FileText} title="LTO Registration & Documents">
                             <div className="grid grid-cols-2 gap-3.5 sm:gap-5 lg:grid-cols-3">
                                 <div>
-                                    <span className="block mb-1 text-[10.5px] font-bold uppercase tracking-wider text-slate-400 font-['Plus_Jakarta_Sans',sans-serif]">LTO Plate Number</span>
-                                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-md bg-slate-100 text-slate-900 font-mono text-xs font-black tracking-wider border border-slate-300 shadow-2xs">
+                                    <span className="block mb-1 text-[10.5px] font-bold uppercase tracking-wider text-slate-500 font-['Plus_Jakarta_Sans',sans-serif]">LTO Plate Number</span>
+                                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-md bg-slate-100 text-slate-900 font-mono text-xs font-black tracking-wider border border-slate-300 shadow-sm">
                                         {tricycle.plate_no || 'NO PLATE'}
                                     </span>
                                 </div>
@@ -566,8 +566,8 @@ export default function TricycleDetails({
                             </div>
 
                             <div className="mt-3.5 space-y-3 text-xs">
-                                <div className="rounded-xl bg-slate-50 border border-slate-100 p-3">
-                                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 font-['Plus_Jakarta_Sans',sans-serif] block mb-0.5">
+                                <div className="rounded-xl bg-slate-50 border border-slate-100 shadow-sm p-3">
+                                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 font-['Plus_Jakarta_Sans',sans-serif] block mb-0.5">
                                         Franchise Number (MTOP)
                                     </span>
                                     <div className="font-mono text-lg font-black text-slate-900">
@@ -577,15 +577,15 @@ export default function TricycleDetails({
 
                                 <div className="space-y-2.5 text-xs pt-1">
                                     <div className="flex items-center justify-between">
-                                        <span className="text-slate-500 font-medium">Franchise Type:</span>
+                                        <span className="text-slate-600 font-medium">Franchise Type:</span>
                                         <span className="font-bold text-slate-800">Motorized Tricycle (MTOP)</span>
                                     </div>
                                     <div className="flex items-center justify-between">
-                                        <span className="text-slate-500 font-medium">Issuing Office:</span>
+                                        <span className="text-slate-600 font-medium">Issuing Office:</span>
                                         <span className="font-semibold text-slate-700">BPLO Nasugbu</span>
                                     </div>
                                     <div className="flex items-center justify-between">
-                                        <span className="text-slate-500 font-medium">Validity Term:</span>
+                                        <span className="text-slate-600 font-medium">Validity Term:</span>
                                         <span className="font-bold text-slate-900 font-mono text-xs">
                                             {tricycle.validity_term
                                                 || tricycle.franchise_status?.validity_term
@@ -595,7 +595,7 @@ export default function TricycleDetails({
                                         </span>
                                     </div>
                                     <div className="flex items-center justify-between">
-                                        <span className="text-slate-500 font-medium">Renewal Status:</span>
+                                        <span className="text-slate-600 font-medium">Renewal Status:</span>
                                         <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-bold border font-['Plus_Jakarta_Sans',sans-serif] ${
                                             (tricycle.renewal_badge || tricycle.franchise_status?.renewal_badge) === 'danger'
                                                 ? 'bg-rose-50 text-rose-700 border-rose-200'
@@ -632,18 +632,18 @@ export default function TricycleDetails({
                                     </div>
                                     <h3 className="text-sm font-bold text-slate-900 font-['Plus_Jakarta_Sans',sans-serif]">Color Coding Scheme</h3>
                                 </div>
-                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider font-['Plus_Jakarta_Sans',sans-serif]">Ordinance</span>
+                                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider font-['Plus_Jakarta_Sans',sans-serif]">Ordinance</span>
                             </div>
 
-                            <div className="mt-3.5 rounded-xl bg-slate-50 border border-slate-100 p-3.5">
+                            <div className="mt-3.5 rounded-xl bg-slate-50 border border-slate-100 shadow-sm p-3.5">
                                 <div className="flex items-center justify-between">
                                     <div>
-                                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 font-['Plus_Jakarta_Sans',sans-serif]">Sticker Number</span>
+                                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 font-['Plus_Jakarta_Sans',sans-serif]">Sticker Number</span>
                                         <div className="font-mono text-xl font-black text-slate-900">
                                             {tricycle.sticker_number || '—'}
                                         </div>
                                     </div>
-                                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white border border-slate-200 shadow-2xs font-['Plus_Jakarta_Sans',sans-serif]">
+                                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white border border-slate-200 shadow-sm font-['Plus_Jakarta_Sans',sans-serif]">
                                         <span
                                             className="h-2.5 w-2.5 rounded-full shrink-0"
                                             style={{ backgroundColor: tricycle.coding_hex || '#EF4444' }}
@@ -656,11 +656,11 @@ export default function TricycleDetails({
 
                                 <div className="mt-3 space-y-2 pt-3 border-t border-slate-200/70 text-xs">
                                     <div className="flex items-center justify-between">
-                                        <span className="text-slate-500 font-medium">Coding Day:</span>
+                                        <span className="text-slate-600 font-medium">Coding Day:</span>
                                         <span className="font-bold text-slate-900 font-['Plus_Jakarta_Sans',sans-serif]">{tricycle.coding_day || 'Monday'}</span>
                                     </div>
                                     <div className="flex items-center justify-between">
-                                        <span className="text-slate-500 font-medium">Status Today:</span>
+                                        <span className="text-slate-600 font-medium">Status Today:</span>
                                         {tricycle.is_coded_today ? (
                                             <span className="font-bold text-rose-600 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded-md text-[11px]">
                                                 Coded Today (Not Allowed)
@@ -691,35 +691,35 @@ export default function TricycleDetails({
 
                             <div className="mt-3.5 space-y-2.5 text-xs">
                                 <div className="flex items-center justify-between">
-                                    <span className="text-slate-500 font-medium">Tracking Type:</span>
+                                    <span className="text-slate-600 font-medium">Tracking Type:</span>
                                     <span className="font-bold text-slate-800">
                                         {tricycle.active_tracking_mode === 'iot_device' ? 'Installed GPS Device' : "Driver's Mobile Phone"}
                                     </span>
                                 </div>
                                 {tricycle.active_tracking_mode === 'iot_device' ? (
                                     <div className="flex items-center justify-between">
-                                        <span className="text-slate-500 font-medium">Device ID:</span>
+                                        <span className="text-slate-600 font-medium">Device ID:</span>
                                         <span className="font-mono font-bold text-slate-900">{tricycle.iot_device_id || 'N/A'}</span>
                                     </div>
                                 ) : (
                                     <div className="flex items-center justify-between">
-                                        <span className="text-slate-500 font-medium">Signal Source:</span>
+                                        <span className="text-slate-600 font-medium">Signal Source:</span>
                                         <span className="font-semibold text-slate-700">Driver's Mobile App</span>
                                     </div>
                                 )}
                                 <div className="flex items-center justify-between">
-                                    <span className="text-slate-500 font-medium">Last Signal:</span>
+                                    <span className="text-slate-600 font-medium">Last Signal:</span>
                                     <span className="font-semibold text-slate-700">{tricycle.gps_last_seen || 'Never'}</span>
                                 </div>
                                 <div className="flex items-center justify-between">
-                                    <span className="text-slate-500 font-medium">Update Interval:</span>
+                                    <span className="text-slate-600 font-medium">Update Interval:</span>
                                     <span className="font-semibold text-slate-700">Every {tricycle.gps_interval_seconds}s</span>
                                 </div>
                             </div>
 
                             <div className="mt-4 pt-3 border-t border-slate-100">
                                 <Link
-                                    href="/tmo/live"
+                                    href={`/tmo/live?unit=${tricycle.id}`}
                                     className="flex items-center justify-center gap-1.5 w-full py-2 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 text-xs font-bold text-[#182B62] transition-colors font-['Plus_Jakarta_Sans',sans-serif]"
                                 >
                                     <Radio size={13} />
@@ -793,7 +793,7 @@ export default function TricycleDetails({
                                             />
                                         )}
 
-                                        <div className={`absolute -left-8 flex h-7 w-7 items-center justify-center rounded-full border-2 border-white shadow-xs z-10 ${meta.circleMobile}`}>
+                                        <div className={`absolute -left-8 flex h-7 w-7 items-center justify-center rounded-full border-2 border-white shadow-sm z-10 ${meta.circleMobile}`}>
                                             <Icon size={13} strokeWidth={2.5} />
                                         </div>
                                         <div className="flex-1 rounded-xl border border-slate-100 bg-slate-50/80 p-2.5">
@@ -811,7 +811,7 @@ export default function TricycleDetails({
                         {/* Submitted Requirements & Clearances as Badges */}
                         <Card icon={FileCheck} title="Submitted Requirements & Clearances">
                             {documents.length === 0 ? (
-                                <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/60 p-5 text-center text-xs text-slate-500">
+                                <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/60 p-5 text-center text-xs text-slate-600">
                                     No submitted documents found for this tricycle.
                                 </div>
                             ) : (
@@ -833,7 +833,7 @@ export default function TricycleDetails({
                                             return (
                                                 <div
                                                     key={doc.id || idx}
-                                                    className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-800 shadow-2xs font-['Plus_Jakarta_Sans',sans-serif]"
+                                                    className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-800 shadow-sm font-['Plus_Jakarta_Sans',sans-serif]"
                                                 >
                                                     {isRejected ? (
                                                         <XCircle size={13} className="text-rose-600 shrink-0" />
@@ -872,7 +872,7 @@ export default function TricycleDetails({
                                 {PHYSICAL_INSPECTION_ITEMS.map((item) => (
                                     <div
                                         key={item.id}
-                                        className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-800 shadow-2xs font-['Plus_Jakarta_Sans',sans-serif]"
+                                        className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-800 shadow-sm font-['Plus_Jakarta_Sans',sans-serif]"
                                     >
                                         <CheckCircle2 size={13} className="text-emerald-600 shrink-0" />
                                         <span>{item.label}</span>
@@ -888,70 +888,70 @@ export default function TricycleDetails({
             {activeTab === 'violations' && (
                 <div className="space-y-5">
                     {/* KPI Summary Deck */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4">
-                        <div className={`rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-4 sm:p-5 ${CARD_SHADOW}`}>
-                            <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-                                <span className="text-[10.5px] font-bold uppercase tracking-wider text-slate-400 font-['Plus_Jakarta_Sans',sans-serif]">Total Violations</span>
-                                <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-indigo-50 text-[#182B62]">
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
+                        <div className={`rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-3 sm:p-5 ${CARD_SHADOW}`}>
+                            <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-2">
+                                <span className="text-[9.5px] sm:text-[10.5px] font-bold uppercase tracking-wide sm:tracking-wider leading-tight text-slate-500 font-['Plus_Jakarta_Sans',sans-serif]">Total Violations</span>
+                                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-indigo-50 text-[#182B62]">
                                     <ShieldAlert size={14} />
                                 </div>
                             </div>
-                            <div className="mt-2.5 flex items-baseline gap-2">
+                            <div className="mt-2.5 flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5 sm:gap-2">
                                 <span className="text-2xl sm:text-3xl font-black tracking-tight tabular-nums text-slate-900 leading-none">
                                     {violationStats?.total_count ?? violations.length}
                                 </span>
-                                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Total</span>
+                                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Total</span>
                             </div>
-                            <p className="mt-1 text-[11px] text-slate-500 font-medium font-['Plus_Jakarta_Sans',sans-serif]">All recorded violations</p>
+                            <p className="mt-1 text-[10.5px] sm:text-[11px] leading-snug text-slate-600 font-medium font-['Plus_Jakarta_Sans',sans-serif]">All recorded violations</p>
                         </div>
 
-                        <div className={`rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-4 sm:p-5 ${CARD_SHADOW}`}>
-                            <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-                                <span className="text-[10.5px] font-bold uppercase tracking-wider text-slate-400 font-['Plus_Jakarta_Sans',sans-serif]">Settled Fines</span>
-                                <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600">
+                        <div className={`rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-3 sm:p-5 ${CARD_SHADOW}`}>
+                            <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-2">
+                                <span className="text-[9.5px] sm:text-[10.5px] font-bold uppercase tracking-wide sm:tracking-wider leading-tight text-slate-500 font-['Plus_Jakarta_Sans',sans-serif]">Settled Fines</span>
+                                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600">
                                     <CheckCircle2 size={14} />
                                 </div>
                             </div>
-                            <div className="mt-2.5 flex items-baseline gap-2">
+                            <div className="mt-2.5 flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5 sm:gap-2">
                                 <span className="text-2xl sm:text-3xl font-black tracking-tight tabular-nums text-emerald-600 leading-none">
                                     {violationStats?.settled_count ?? violations.filter(v => v.paymentStatus === 'settled').length}
                                 </span>
-                                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Settled</span>
+                                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Settled</span>
                             </div>
-                            <p className="mt-1 text-[11px] text-slate-500 font-medium font-['Plus_Jakarta_Sans',sans-serif]">{violationStats?.settled_fines ?? '₱0.00'} paid</p>
+                            <p className="mt-1 text-[10.5px] sm:text-[11px] leading-snug text-slate-600 font-medium font-['Plus_Jakarta_Sans',sans-serif]">{violationStats?.settled_fines ?? '₱0.00'} paid</p>
                         </div>
 
-                        <div className={`rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-4 sm:p-5 ${CARD_SHADOW}`}>
-                            <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-                                <span className="text-[10.5px] font-bold uppercase tracking-wider text-slate-400 font-['Plus_Jakarta_Sans',sans-serif]">Pending Fines</span>
-                                <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-rose-50 text-rose-600">
+                        <div className={`rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-3 sm:p-5 ${CARD_SHADOW}`}>
+                            <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-2">
+                                <span className="text-[9.5px] sm:text-[10.5px] font-bold uppercase tracking-wide sm:tracking-wider leading-tight text-slate-500 font-['Plus_Jakarta_Sans',sans-serif]">Pending Fines</span>
+                                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-rose-50 text-rose-600">
                                     <AlertTriangle size={14} />
                                 </div>
                             </div>
-                            <div className="mt-2.5 flex items-baseline gap-2">
+                            <div className="mt-2.5 flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5 sm:gap-2">
                                 <span className={`text-2xl sm:text-3xl font-black tracking-tight tabular-nums leading-none ${
                                     (violationStats?.unsettled_count ?? 0) > 0 ? 'text-rose-600' : 'text-slate-900'
                                 }`}>
                                     {violationStats?.unsettled_count ?? violations.filter(v => v.paymentStatus === 'unsettled').length}
                                 </span>
-                                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Unsettled</span>
+                                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Unsettled</span>
                             </div>
-                            <p className="mt-1 text-[11px] text-slate-500 font-medium font-['Plus_Jakarta_Sans',sans-serif]">{violationStats?.unsettled_fines ?? '₱0.00'} due</p>
+                            <p className="mt-1 text-[10.5px] sm:text-[11px] leading-snug text-slate-600 font-medium font-['Plus_Jakarta_Sans',sans-serif]">{violationStats?.unsettled_fines ?? '₱0.00'} due</p>
                         </div>
 
-                        <div className={`rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-4 sm:p-5 ${CARD_SHADOW}`}>
-                            <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-                                <span className="text-[10.5px] font-bold uppercase tracking-wider text-slate-400 font-['Plus_Jakarta_Sans',sans-serif]">Compliance Score</span>
-                                <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-50 text-[#182B62]">
+                        <div className={`rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-3 sm:p-5 ${CARD_SHADOW}`}>
+                            <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-2">
+                                <span className="text-[9.5px] sm:text-[10.5px] font-bold uppercase tracking-wide sm:tracking-wider leading-tight text-slate-500 font-['Plus_Jakarta_Sans',sans-serif]">Compliance Score</span>
+                                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-[#182B62]">
                                     <TrendingUp size={14} />
                                 </div>
                             </div>
-                            <div className="mt-2.5 flex items-baseline gap-2">
+                            <div className="mt-2.5 flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5 sm:gap-2">
                                 <span className="text-2xl sm:text-3xl font-black tracking-tight tabular-nums text-slate-900 leading-none">
                                     {violationStats?.compliance_rate ?? '100%'}
                                 </span>
                             </div>
-                            <p className="mt-1 text-[11px] text-slate-500 font-medium font-['Plus_Jakarta_Sans',sans-serif]">Clean ordinance record rate</p>
+                            <p className="mt-1 text-[10.5px] sm:text-[11px] leading-snug text-slate-600 font-medium font-['Plus_Jakarta_Sans',sans-serif]">Clean ordinance record rate</p>
                         </div>
                     </div>
 
@@ -965,17 +965,19 @@ export default function TricycleDetails({
                                 <h4 className="mt-3 font-['Plus_Jakarta_Sans',sans-serif] text-sm font-bold text-slate-900">
                                     No Recorded Violations
                                 </h4>
-                                <p className="mt-1 text-xs text-slate-500 max-w-sm mx-auto leading-relaxed">
+                                <p className="mt-1 text-xs text-slate-600 max-w-sm mx-auto leading-relaxed">
                                     This tricycle has a clean record with no traffic or color coding violations.
                                 </p>
                             </div>
                         ) : (
-                            <div className="overflow-x-auto custom-scrollbar">
-                                <table className="w-full min-w-[760px] text-left border-collapse">
+                            <>
+                            {/* Desktop table (lg+) — scrolls sideways on narrow laptops */}
+                            <div className="hidden lg:block overflow-x-auto custom-scrollbar">
+                                <table className="w-full min-w-[900px] whitespace-nowrap text-left border-collapse">
                                     <thead>
-                                        <tr className="border-b border-slate-100 bg-slate-50/70 text-[11px] font-bold uppercase tracking-wider text-slate-400 font-['Plus_Jakarta_Sans',sans-serif]">
+                                        <tr className="border-b border-slate-100 bg-slate-50/70 text-[11px] font-bold uppercase tracking-wider text-slate-500 font-['Plus_Jakarta_Sans',sans-serif]">
                                             <th className="py-3 px-3.5 whitespace-nowrap">Date & Time</th>
-                                            <th className="py-3 px-3.5 min-w-[220px]">Violation Details</th>
+                                            <th className="py-3 px-3.5 w-[260px]">Violation Details</th>
                                             <th className="py-3 px-3.5 min-w-[160px]">Location</th>
                                             <th className="py-3 px-3.5 whitespace-nowrap">Detection</th>
                                             <th className="py-3 px-3.5 whitespace-nowrap">Fine Amount</th>
@@ -985,16 +987,19 @@ export default function TricycleDetails({
                                     <tbody className="divide-y divide-slate-100 text-xs">
                                         {violations.map((v) => (
                                             <tr key={v.id} className="hover:bg-slate-50/70 transition-colors">
-                                                <td className="py-3.5 px-3.5 font-semibold text-slate-900 whitespace-nowrap">
-                                                    {v.date}
+                                                <td className="py-3.5 px-3.5 whitespace-nowrap align-top">
+                                                    <div className="font-semibold text-slate-900">{splitDateTime(v.date).date}</div>
+                                                    {splitDateTime(v.date).time && (
+                                                        <div className="mt-0.5 text-[11px] font-medium text-slate-500">{splitDateTime(v.date).time}</div>
+                                                    )}
                                                 </td>
-                                                <td className="py-3.5 px-3.5 font-semibold text-slate-800">
-                                                    <div>{v.details}</div>
-                                                    <div className="text-[10px] text-slate-400 font-mono mt-0.5">#{v.violation_code || v.id}</div>
+                                                <td className="py-3.5 px-3.5 w-[260px] max-w-[260px] whitespace-normal align-top font-semibold text-slate-800">
+                                                    <div className="line-clamp-2 leading-snug" title={v.details}>{v.details}</div>
+                                                    <div className="text-[10px] text-slate-500 font-mono mt-0.5">#{v.violation_code || v.id}</div>
                                                 </td>
                                                 <td className="py-3.5 px-3.5 text-slate-600">
                                                     <div className="flex items-center gap-1">
-                                                        <MapPin size={11} className="text-slate-400 shrink-0" />
+                                                        <MapPin size={11} className="text-slate-500 shrink-0" />
                                                         <span>{v.location}</span>
                                                     </div>
                                                 </td>
@@ -1007,28 +1012,49 @@ export default function TricycleDetails({
                                                     {v.fine_amount_formatted || `₱${v.fine_amount}`}
                                                 </td>
                                                 <td className="py-3.5 px-3.5 whitespace-nowrap">
-                                                    {v.paymentStatus === 'settled' ? (
-                                                        <div className="flex flex-col">
-                                                            <span className="inline-flex items-center w-fit gap-1 rounded-full bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 text-[10.5px] font-bold text-emerald-700 font-['Plus_Jakarta_Sans',sans-serif]">
-                                                                <Check size={11} /> Settled
-                                                            </span>
-                                                            {v.or_receipt && (
-                                                                <span className="text-[10px] text-slate-400 font-mono mt-0.5">
-                                                                    {v.or_receipt}
-                                                                </span>
-                                                            )}
-                                                        </div>
-                                                    ) : (
-                                                        <span className="inline-flex items-center w-fit gap-1 rounded-full bg-rose-50 border border-rose-200 px-2.5 py-0.5 text-[10.5px] font-bold text-rose-700 font-['Plus_Jakarta_Sans',sans-serif]">
-                                                            <Clock size={11} /> Unsettled
-                                                        </span>
-                                                    )}
+                                                    <ViolationPaymentPill settled={v.paymentStatus === 'settled'} />
                                                 </td>
                                             </tr>
                                         ))}
                                     </tbody>
                                 </table>
                             </div>
+
+                            {/* Phones: 1 column · tablets: 2 columns */}
+                            <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:hidden">
+                                {violations.map((v) => {
+                                    const when = splitDateTime(v.date);
+                                    return (
+                                        <div key={v.id} className="flex flex-col rounded-xl border border-slate-200/90 bg-white p-3.5 shadow-sm">
+                                            <div className="flex items-start justify-between gap-2 border-b border-slate-100 pb-2.5">
+                                                <div className="min-w-0">
+                                                    <p className="text-xs font-bold text-slate-900">{when.date}</p>
+                                                    {when.time && <p className="mt-0.5 text-[11px] font-medium text-slate-500">{when.time}</p>}
+                                                </div>
+                                                <ViolationPaymentPill settled={v.paymentStatus === 'settled'} />
+                                            </div>
+
+                                            <p className="mt-2.5 text-xs font-semibold leading-snug text-slate-800 line-clamp-3">{v.details}</p>
+                                            <p className="mt-0.5 font-mono text-[10px] text-slate-500">#{v.violation_code || v.id}</p>
+
+                                            <div className="mt-2.5 flex items-start gap-1 text-[11px] text-slate-600">
+                                                <MapPin size={11} className="mt-0.5 shrink-0 text-slate-500" />
+                                                <span className="leading-snug">{v.location}</span>
+                                            </div>
+
+                                            <div className="mt-auto flex items-center justify-between gap-2 pt-3">
+                                                <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 text-[10.5px] font-semibold border border-slate-200">
+                                                    {v.detection_method || 'GPS Detection'}
+                                                </span>
+                                                <span className="font-mono text-sm font-bold text-slate-900">
+                                                    {v.fine_amount_formatted || `₱${v.fine_amount}`}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                            </>
                         )}
                     </Card>
                 </div>
@@ -1056,7 +1082,7 @@ function Card({ icon: Icon, title, children }) {
 function SpecItem({ label, value, mono, badge, span2 }) {
     return (
         <div className={`flex flex-col min-w-0 ${span2 ? 'col-span-2 sm:col-span-1' : ''}`}>
-            <span className="mb-1 text-[10.5px] font-bold uppercase tracking-wider text-slate-400 truncate font-['Plus_Jakarta_Sans',sans-serif]">{label}</span>
+            <span className="mb-1 text-[10.5px] font-bold uppercase tracking-wider text-slate-500 truncate font-['Plus_Jakarta_Sans',sans-serif]">{label}</span>
             {badge === 'success' ? (
                 <span className="inline-flex items-center w-fit gap-1 rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-bold text-emerald-700 border border-emerald-200/90 font-['Plus_Jakarta_Sans',sans-serif]">
                     <Check size={11} strokeWidth={2.5} />
@@ -1076,5 +1102,24 @@ function SpecItem({ label, value, mono, badge, span2 }) {
                 </span>
             )}
         </div>
+    );
+}
+
+// "Oct 16, 2026 at 09:41 PM" → { date: 'Oct 16, 2026', time: '09:41 PM' }; any other format stays on one line.
+function splitDateTime(value) {
+    if (!value) return { date: '—', time: null };
+    const [date, time] = String(value).split(' at ');
+    return { date, time: time || null };
+}
+
+function ViolationPaymentPill({ settled }) {
+    return settled ? (
+        <span className="inline-flex shrink-0 items-center w-fit gap-1 rounded-full bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 text-[10.5px] font-bold text-emerald-700 font-['Plus_Jakarta_Sans',sans-serif]">
+            <Check size={11} /> Settled
+        </span>
+    ) : (
+        <span className="inline-flex shrink-0 items-center w-fit gap-1 rounded-full bg-rose-50 border border-rose-200 px-2.5 py-0.5 text-[10.5px] font-bold text-rose-700 font-['Plus_Jakarta_Sans',sans-serif]">
+            <Clock size={11} /> Unsettled
+        </span>
     );
 }

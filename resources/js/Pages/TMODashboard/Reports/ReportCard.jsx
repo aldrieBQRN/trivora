@@ -1,4 +1,4 @@
-const CARD_SHADOW = 'shadow-[0_1px_2px_0_rgba(15,23,42,0.04),0_8px_24px_-8px_rgba(15,23,42,0.10)]';
+const CARD_SHADOW = 'shadow-[0_1px_3px_0_rgba(15,23,42,0.07),0_10px_28px_-8px_rgba(15,23,42,0.14)]';
 
 /**
  * Shared chart/section card for TMO Reports & Analytics — icon badge + title (+ optional
@@ -19,7 +19,7 @@ export default function ReportCard({ icon: Icon, title, subtitle, action, childr
                             {title}
                         </h3>
                         {subtitle && (
-                            <p className="mt-0.5 text-[11px] text-slate-500 font-medium font-['Plus_Jakarta_Sans',sans-serif] truncate">
+                            <p className="mt-0.5 text-[11px] text-slate-600 font-medium font-['Plus_Jakarta_Sans',sans-serif] truncate">
                                 {subtitle}
                             </p>
                         )}

@@ -41,7 +41,7 @@ function presetToRange(preset) {
     return { from: fmtLocalDate(from), to: fmtLocalDate(to) };
 }
 
-export default function DateRangeFilter({ from, to, onChange }) {
+export default function DateRangeFilter({ from, to, onChange, children = null }) {
     // Controlled: reflects whichever preset (if any) actually matches the current from/to props,
     // instead of guessing/resetting the select imperatively.
     const activePreset = PRESETS.find((p) => {
@@ -57,33 +57,38 @@ export default function DateRangeFilter({ from, to, onChange }) {
 
     return (
         <div className="flex flex-wrap items-center gap-2 sm:flex-nowrap">
-            <select
-                value={activePreset}
-                onChange={handlePreset}
-                className="h-10 w-full shrink-0 rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 shadow-2xs focus:border-[#182B62] focus:outline-none focus:ring-2 focus:ring-[#182B62]/10 sm:w-40 cursor-pointer"
-            >
-                <option value="">Quick Range…</option>
-                {PRESETS.map((p) => (
-                    <option key={p.value} value={p.value}>{p.label}</option>
-                ))}
-            </select>
+            {/* Phones: Quick Range shares its row with any extra filter passed as children
+                (e.g. a status select); from sm up the wrapper dissolves into the flex row. */}
+            <div className={`grid w-full gap-2 sm:contents ${children ? 'grid-cols-2' : 'grid-cols-1'}`}>
+                <select
+                    value={activePreset}
+                    onChange={handlePreset}
+                    className="h-10 w-full min-w-0 shrink-0 rounded-xl border border-slate-200 bg-slate-50/70 px-3 text-xs font-bold text-slate-700 transition-colors focus:border-[#182B62] focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#182B62] sm:w-40 cursor-pointer"
+                >
+                    <option value="">Quick Range…</option>
+                    {PRESETS.map((p) => (
+                        <option key={p.value} value={p.value}>{p.label}</option>
+                    ))}
+                </select>
+                {children}
+            </div>
 
             <div className="flex flex-wrap items-center gap-2 sm:flex-nowrap w-full sm:w-auto">
-                <Calendar size={14} className="hidden shrink-0 text-slate-400 sm:block" />
+                <Calendar size={14} className="hidden shrink-0 text-slate-500 sm:block" />
                 <input
                     type="date"
                     value={from}
                     max={to}
                     onChange={(e) => onChange({ from: e.target.value, to })}
-                    className="h-10 min-w-0 flex-1 shrink-0 rounded-xl border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 shadow-2xs focus:border-[#182B62] focus:outline-none focus:ring-2 focus:ring-[#182B62]/10 sm:flex-none cursor-pointer"
+                    className="h-10 min-w-0 flex-1 shrink-0 rounded-xl border border-slate-200 bg-slate-50/70 px-3 text-xs font-semibold text-slate-700 transition-colors focus:border-[#182B62] focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#182B62] sm:flex-none cursor-pointer"
                 />
-                <span className="shrink-0 text-xs text-slate-400 font-medium">to</span>
+                <span className="shrink-0 text-xs text-slate-500 font-medium">to</span>
                 <input
                     type="date"
                     value={to}
                     min={from}
                     onChange={(e) => onChange({ from, to: e.target.value })}
-                    className="h-10 min-w-0 flex-1 shrink-0 rounded-xl border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 shadow-2xs focus:border-[#182B62] focus:outline-none focus:ring-2 focus:ring-[#182B62]/10 sm:flex-none cursor-pointer"
+                    className="h-10 min-w-0 flex-1 shrink-0 rounded-xl border border-slate-200 bg-slate-50/70 px-3 text-xs font-semibold text-slate-700 transition-colors focus:border-[#182B62] focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#182B62] sm:flex-none cursor-pointer"
                 />
             </div>
         </div>

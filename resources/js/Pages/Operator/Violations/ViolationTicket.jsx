@@ -19,11 +19,11 @@ import {
 
 // Shared soft, layered shadow token — same elevation language used across the TMO/Operator SaaS
 // redesign, so this page's screen chrome reads as one consistent product.
-const CARD_SHADOW = 'shadow-[0_1px_2px_0_rgba(15,23,42,0.04),0_8px_24px_-8px_rgba(15,23,42,0.10)]';
+const CARD_SHADOW = 'shadow-[0_1px_3px_0_rgba(15,23,42,0.07),0_10px_28px_-8px_rgba(15,23,42,0.14)]';
 
 function Card({ icon: Icon, title, children }) {
     return (
-        <div className={`overflow-hidden rounded-2xl border border-slate-200/70 bg-white ${CARD_SHADOW}`}>
+        <div className={`overflow-hidden rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white ${CARD_SHADOW}`}>
             <div className="flex items-center gap-3 border-b border-slate-100 bg-slate-50/60 px-5 py-4">
                 <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-[#182B62]/[0.10] to-[#182B62]/[0.02] text-[#182B62]">
                     <Icon size={16} />
@@ -38,7 +38,7 @@ function Card({ icon: Icon, title, children }) {
 function InfoItem({ label, value, mono = false, className = '' }) {
     return (
         <div className={className}>
-            <span className="block text-[10px] font-bold uppercase tracking-wide text-slate-400">{label}</span>
+            <span className="block text-[10px] font-bold uppercase tracking-wide text-slate-500">{label}</span>
             <span className={`mt-1 block text-sm font-semibold leading-relaxed text-slate-900 ${mono ? 'font-mono' : ''}`}>{value}</span>
         </div>
     );
@@ -99,16 +99,16 @@ function AppealStatusPanel({ appeal }) {
 
                     <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
                         <div className="rounded-xl border border-white/70 bg-white/70 p-3.5">
-                            <p className="text-[10px] font-bold uppercase tracking-wide text-slate-500">Your Explanation</p>
+                            <p className="text-[10px] font-bold uppercase tracking-wide text-slate-600">Your Explanation</p>
                             <p className="mt-1 text-xs leading-relaxed text-slate-900">{appeal.reason}</p>
-                            <p className="mt-2 text-[10px] text-slate-400">Submitted {appeal.submittedAt}</p>
+                            <p className="mt-2 text-[10px] text-slate-500">Submitted {appeal.submittedAt}</p>
                         </div>
                         {appeal.evidenceUrl ? (
                             <a href={appeal.evidenceUrl} target="_blank" rel="noopener noreferrer" className="block overflow-hidden rounded-xl border border-white/70 transition-opacity hover:opacity-90">
                                 <img src={appeal.evidenceUrl} alt="Appeal proof" className="h-32 w-full object-cover" />
                             </a>
                         ) : (
-                            <div className="flex items-center justify-center rounded-xl border border-dashed border-white/70 bg-white/40 p-3.5 text-center text-[11px] text-slate-400">
+                            <div className="flex items-center justify-center rounded-xl border border-dashed border-white/70 bg-white/40 p-3.5 text-center text-[11px] text-slate-500">
                                 No photo was attached
                             </div>
                         )}
@@ -162,7 +162,7 @@ function AppealForm({ appealUrl }) {
     };
 
     return (
-        <div className={`mb-6 rounded-2xl border border-slate-200/70 bg-white p-5 sm:p-6 ${CARD_SHADOW}`}>
+        <div className={`mb-6 rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-5 sm:p-6 ${CARD_SHADOW}`}>
             <div className="mb-4 flex items-center gap-2.5">
                 <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-[#182B62]/[0.10] to-[#182B62]/[0.02] text-[#182B62]">
                     <Scale size={16} />
@@ -171,7 +171,7 @@ function AppealForm({ appealUrl }) {
                     <h3 className="text-sm font-bold text-slate-900">
                         {step === 1 ? 'File an Appeal' : 'Review Your Appeal'}
                     </h3>
-                    <p className="text-[11px] text-slate-400">Step {step} of 2</p>
+                    <p className="text-[11px] text-slate-500">Step {step} of 2</p>
                 </div>
             </div>
 
@@ -187,7 +187,7 @@ function AppealForm({ appealUrl }) {
                     />
                     <div className="mt-1 flex items-center justify-between">
                         <ErrorText>{errors.reason}</ErrorText>
-                        <span className="ml-auto text-[10px] text-slate-400">{data.reason.trim().length}/2000 (min. 10)</span>
+                        <span className="ml-auto text-[10px] text-slate-500">{data.reason.trim().length}/2000 (min. 10)</span>
                     </div>
 
                     <div className="mt-4">
@@ -228,15 +228,15 @@ function AppealForm({ appealUrl }) {
                 <>
                     <div className="space-y-4 rounded-xl bg-slate-50 p-4">
                         <div>
-                            <p className="text-[10px] font-bold uppercase tracking-wide text-slate-500">Your Explanation</p>
+                            <p className="text-[10px] font-bold uppercase tracking-wide text-slate-600">Your Explanation</p>
                             <p className="mt-1 text-[13px] leading-relaxed text-slate-900">{data.reason}</p>
                         </div>
                         <div>
-                            <p className="text-[10px] font-bold uppercase tracking-wide text-slate-500">Proof</p>
+                            <p className="text-[10px] font-bold uppercase tracking-wide text-slate-600">Proof</p>
                             {preview ? (
                                 <img src={preview} alt="Proof preview" className="mt-1.5 h-28 w-28 rounded-lg border border-slate-200 object-cover" />
                             ) : (
-                                <p className="mt-1 text-xs text-slate-400">No photo attached.</p>
+                                <p className="mt-1 text-xs text-slate-500">No photo attached.</p>
                             )}
                         </div>
                     </div>
@@ -278,8 +278,8 @@ export default function ViolationTicket({ violation }) {
                     </div>
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                         <div>
-                            <h1 className="text-2xl font-black tracking-tight text-slate-900 sm:text-3xl">Violation Details</h1>
-                            <p className="mt-1 text-sm font-medium text-slate-500">{violation.type} &bull; {violation.date}</p>
+                            <h1 className="text-2xl sm:text-[28px] font-black tracking-tight text-slate-900 leading-tight">Violation Details</h1>
+                            <p className="mt-1 text-sm font-medium text-slate-600">{violation.type} &bull; {violation.date}</p>
                         </div>
                         <div className="flex items-center gap-2">
                             <span className="rounded-xl border border-[#182B62]/20 bg-[#182B62]/[0.08] px-3.5 py-1.5 font-mono text-xs font-bold uppercase tracking-wider text-[#182B62]">
@@ -335,7 +335,7 @@ export default function ViolationTicket({ violation }) {
                             </div>
                         </Card>
 
-                        <div className={`rounded-2xl border border-slate-200/70 bg-white p-6 ${CARD_SHADOW}`}>
+                        <div className={`rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-6 ${CARD_SHADOW}`}>
                             <div className="flex items-center justify-between">
                                 <span className="text-[11px] font-extrabold uppercase tracking-[0.15em] text-slate-900">
                                     Fine Amount {violation.isPaid ? 'Paid' : 'Due'}

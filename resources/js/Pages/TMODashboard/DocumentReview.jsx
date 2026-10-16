@@ -12,7 +12,7 @@ import { Modal, Button, Textarea } from '@/Components/TMO';
 import { getApplicableDocuments } from '@/data/registrationRequirements';
 
 import Avatar from '@/Components/Avatar';
-const CARD_SHADOW = 'shadow-[0_1px_2px_0_rgba(15,23,42,0.04),0_8px_24px_-8px_rgba(15,23,42,0.10)]';
+const CARD_SHADOW = 'shadow-[0_1px_3px_0_rgba(15,23,42,0.07),0_10px_28px_-8px_rgba(15,23,42,0.14)]';
 
 const QUICK_CORRECTION_REASONS = [
     'Blurry or unreadable image',
@@ -211,7 +211,7 @@ export default function DocumentReview({ application }) {
                                     onClick={() => setActiveSubDocIndex(idx)}
                                     className={`whitespace-nowrap rounded-xl px-3 py-1.5 text-xs font-bold transition-colors ${
                                         idx === activeSubDocIndex
-                                            ? 'border border-[#182B62] bg-[#182B62] text-white shadow-2xs'
+                                            ? 'border border-[#182B62] bg-[#182B62] text-white shadow-sm'
                                             : 'border border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
                                     }`}
                                 >
@@ -227,17 +227,17 @@ export default function DocumentReview({ application }) {
                                 <img
                                     src={currentSubDoc.file_path}
                                     alt={currentSubDoc.file_name}
-                                    className="max-h-[65vh] max-w-full rounded-xl border border-slate-200/80 object-contain shadow-2xs"
+                                    className="max-h-[65vh] max-w-full rounded-xl border border-slate-200/80 object-contain shadow-sm"
                                 />
                             ) : (
                                 <iframe
                                     src={currentSubDoc.file_path}
                                     title={currentSubDoc.file_name}
-                                    className="h-[65vh] w-full rounded-xl border border-slate-200 bg-white shadow-2xs"
+                                    className="h-[65vh] w-full rounded-xl border border-slate-200 bg-white shadow-sm"
                                 />
                             )
                         ) : (
-                            <p className="py-10 text-xs font-semibold text-slate-400">No file available for preview.</p>
+                            <p className="py-10 text-xs font-semibold text-slate-500">No file available for preview.</p>
                         )}
                     </div>
                 </Modal>
@@ -298,9 +298,9 @@ export default function DocumentReview({ application }) {
                 <div className="mb-4">
                     <Link
                         href="/tmo/docs"
-                        className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold text-slate-500 hover:text-slate-900 transition-colors group"
+                        className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold text-slate-600 hover:text-slate-900 transition-colors group"
                     >
-                        <ChevronLeft size={16} strokeWidth={2.5} className="text-slate-400 group-hover:text-slate-700 transition-colors" />
+                        <ChevronLeft size={16} strokeWidth={2.5} className="text-slate-500 group-hover:text-slate-700 transition-colors" />
                         <span>Back to Document Review Queue</span>
                     </Link>
                 </div>
@@ -315,11 +315,11 @@ export default function DocumentReview({ application }) {
                                 <h1 className="text-2xl sm:text-[28px] font-black tracking-tight text-slate-900 leading-tight">
                                     {appData.reference || appData.id}
                                 </h1>
-                                <span className="text-xs sm:text-sm font-semibold text-slate-500">
+                                <span className="text-xs sm:text-sm font-semibold text-slate-600">
                                     · {isRenewal ? 'Franchise Renewal' : 'New Franchise Application'}
                                 </span>
                             </div>
-                            <p className="mt-1 text-xs sm:text-sm text-slate-500 font-medium">
+                            <p className="mt-1 text-xs sm:text-sm text-slate-600 font-medium">
                                 Applicant: <strong className="font-bold text-slate-900">{appData.operator}</strong>
                             </p>
                         </div>
@@ -345,7 +345,7 @@ export default function DocumentReview({ application }) {
                                         <h2 className="text-sm font-bold text-slate-900 font-['Plus_Jakarta_Sans',sans-serif]">
                                             Required Requirements &amp; Clearances
                                         </h2>
-                                        <p className="text-[11px] text-slate-500 font-medium">
+                                        <p className="text-[11px] text-slate-600 font-medium">
                                             All mandatory documents must be verified prior to roadworthiness inspection
                                         </p>
                                     </div>
@@ -384,7 +384,7 @@ export default function DocumentReview({ application }) {
                                             <h2 className="text-sm font-bold text-slate-900 font-['Plus_Jakarta_Sans',sans-serif]">
                                                 Additional Supporting Documents
                                             </h2>
-                                            <p className="text-[11px] text-slate-500 font-medium">
+                                            <p className="text-[11px] text-slate-600 font-medium">
                                                 Conditional files (Delivery Receipts, Special Authorizations)
                                             </p>
                                         </div>
@@ -473,7 +473,7 @@ export default function DocumentReview({ application }) {
                                             type="button"
                                             disabled={isProcessing}
                                             onClick={() => handleFinalAction('approve')}
-                                            className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#182B62] hover:bg-[#25449B] text-white py-2.5 text-xs sm:text-sm font-bold shadow-2xs transition-all active:scale-[0.98] disabled:opacity-50 cursor-pointer"
+                                            className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#182B62] hover:bg-[#25449B] text-white py-2.5 text-xs sm:text-sm font-bold shadow-sm transition-all active:scale-[0.98] disabled:opacity-50 cursor-pointer"
                                         >
                                             {isProcessing ? <Loader2 size={15} className="animate-spin" /> : <Send size={14} strokeWidth={2.2} />}
                                             <span>Proceed to Inspection</span>
@@ -494,7 +494,7 @@ export default function DocumentReview({ application }) {
                                             type="button"
                                             disabled={isProcessing}
                                             onClick={() => handleFinalAction('reject')}
-                                            className="flex w-full items-center justify-center gap-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white py-2.5 text-xs sm:text-sm font-bold shadow-2xs transition-all active:scale-[0.98] disabled:opacity-50 cursor-pointer"
+                                            className="flex w-full items-center justify-center gap-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white py-2.5 text-xs sm:text-sm font-bold shadow-sm transition-all active:scale-[0.98] disabled:opacity-50 cursor-pointer"
                                         >
                                             {isProcessing ? <Loader2 size={15} className="animate-spin" /> : <RefreshCw size={14} strokeWidth={2.2} />}
                                             <span>Return</span>
@@ -507,14 +507,14 @@ export default function DocumentReview({ application }) {
                                                 <Clock size={14} className="text-amber-500 shrink-0" />
                                                 <span>Review in Progress</span>
                                             </div>
-                                            <p className="text-[11.5px] leading-relaxed text-slate-500 font-medium">
+                                            <p className="text-[11.5px] leading-relaxed text-slate-600 font-medium">
                                                 Verify each uploaded requirement on the left. The Proceed to Inspection button will activate once all items are confirmed.
                                             </p>
                                         </div>
                                         <button
                                             type="button"
                                             disabled
-                                            className="flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-slate-100 py-2.5 text-xs font-bold text-slate-400 cursor-not-allowed"
+                                            className="flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-slate-100 py-2.5 text-xs font-bold text-slate-500 cursor-not-allowed"
                                         >
                                             <span>Review All Required Documents to Proceed</span>
                                         </button>
@@ -538,38 +538,38 @@ export default function DocumentReview({ application }) {
 
                             {/* Owner Summary */}
                             <div className="flex items-center gap-3 pb-3 border-b border-slate-100">
-                                <Avatar name={appData.operator} src={appData.operator_photo} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#182B62] text-xs font-bold text-white shadow-2xs" />
+                                <Avatar name={appData.operator} src={appData.operator_photo} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#182B62] text-xs font-bold text-white shadow-sm" />
                                 <div className="min-w-0 flex-1">
                                     <p className="truncate text-xs sm:text-sm font-bold text-slate-900">{appData.operator}</p>
-                                    <p className="truncate text-xs text-slate-500 font-medium">Tricycle Owner (Applicant)</p>
+                                    <p className="truncate text-xs text-slate-600 font-medium">Tricycle Owner (Applicant)</p>
                                 </div>
                             </div>
 
                             {/* Birthday, Contact & Location */}
                             <div className="mt-3 grid grid-cols-1 gap-2 text-xs">
                                 <div className="flex items-center justify-between text-slate-600">
-                                    <span className="flex items-center gap-1.5 text-slate-400 font-medium">
+                                    <span className="flex items-center gap-1.5 text-slate-500 font-medium">
                                         <CalendarDays size={13} className="shrink-0" />
                                         Birthday
                                     </span>
                                     <span className="font-bold text-slate-800">{appData.owner?.birthday || '—'}</span>
                                 </div>
                                 <div className="flex items-center justify-between text-slate-600">
-                                    <span className="flex items-center gap-1.5 text-slate-400 font-medium">
+                                    <span className="flex items-center gap-1.5 text-slate-500 font-medium">
                                         <Smartphone size={13} className="shrink-0" />
                                         Contact
                                     </span>
                                     <span className="font-bold text-slate-800 font-mono">{appData.contact || 'No phone provided'}</span>
                                 </div>
                                 <div className="flex items-center justify-between gap-3 text-slate-600">
-                                    <span className="flex items-center gap-1.5 text-slate-400 font-medium">
+                                    <span className="flex items-center gap-1.5 text-slate-500 font-medium">
                                         <Mail size={13} className="shrink-0" />
                                         Email
                                     </span>
                                     <span className="font-bold text-slate-800 break-all text-right">{appData.owner?.email || '—'}</span>
                                 </div>
                                 <div className="flex items-center justify-between text-slate-600">
-                                    <span className="flex items-center gap-1.5 text-slate-400 font-medium">
+                                    <span className="flex items-center gap-1.5 text-slate-500 font-medium">
                                         <MapPin size={13} className="shrink-0" />
                                         Barangay
                                     </span>
@@ -592,28 +592,28 @@ export default function DocumentReview({ application }) {
                                 ) : appData.tricycleDriver ? (
                                     <div className="mt-2 grid grid-cols-1 gap-1.5 text-xs">
                                         <div className="flex items-center justify-between text-slate-600">
-                                            <span className="font-medium text-slate-400">Driver Name</span>
+                                            <span className="font-medium text-slate-500">Driver Name</span>
                                             <span className="font-bold text-slate-800">{appData.tricycleDriver.full_name || '—'}</span>
                                         </div>
                                         <div className="flex items-center justify-between text-slate-600">
-                                            <span className="font-medium text-slate-400">Birthday</span>
+                                            <span className="font-medium text-slate-500">Birthday</span>
                                             <span className="font-bold text-slate-800">{appData.tricycleDriver.birthday || '—'}</span>
                                         </div>
                                         <div className="flex items-center justify-between text-slate-600">
-                                            <span className="font-medium text-slate-400">Mobile</span>
+                                            <span className="font-medium text-slate-500">Mobile</span>
                                             <span className="font-bold text-slate-800 font-mono">{appData.tricycleDriver.contact_number || '—'}</span>
                                         </div>
                                         <div className="flex items-center justify-between gap-3 text-slate-600">
-                                            <span className="font-medium text-slate-400">Email</span>
+                                            <span className="font-medium text-slate-500">Email</span>
                                             <span className="font-bold text-slate-800 break-all text-right">{appData.tricycleDriver.email || '—'}</span>
                                         </div>
                                         <div className="flex items-center justify-between text-slate-600">
-                                            <span className="font-medium text-slate-400">Barangay</span>
+                                            <span className="font-medium text-slate-500">Barangay</span>
                                             <span className="font-bold text-slate-800">{appData.tricycleDriver.barangay || '—'}</span>
                                         </div>
                                     </div>
                                 ) : (
-                                    <p className="mt-2 text-xs text-slate-500 font-medium">No separate driver registered.</p>
+                                    <p className="mt-2 text-xs text-slate-600 font-medium">No separate driver registered.</p>
                                 )}
                             </div>
                         </div>
@@ -629,7 +629,7 @@ export default function DocumentReview({ application }) {
                                         <h3 className="text-sm font-bold text-slate-900 font-['Plus_Jakarta_Sans',sans-serif]">
                                             Tricycle Unit Specifications
                                         </h3>
-                                        <p className="text-[11px] text-slate-500 font-medium">Official declared records</p>
+                                        <p className="text-[11px] text-slate-600 font-medium">Official declared records</p>
                                     </div>
                                 </div>
                             </div>
@@ -637,35 +637,35 @@ export default function DocumentReview({ application }) {
                             {/* Vehicle Specs */}
                             <div className="space-y-2.5 text-xs">
                                 <div className="flex items-center justify-between">
-                                    <span className="text-slate-500 font-medium">Plate Number</span>
+                                    <span className="text-slate-600 font-medium">Plate Number</span>
                                     <span className="font-mono font-bold text-slate-900 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded-md">
                                         {vehicleData.plate}
                                     </span>
                                 </div>
 
                                 <div className="flex items-center justify-between">
-                                    <span className="text-slate-500 font-medium">Make &amp; Model</span>
+                                    <span className="text-slate-600 font-medium">Make &amp; Model</span>
                                     <span className="font-bold text-slate-800 text-right truncate max-w-[170px]">
                                         {vehicleData.make}
                                     </span>
                                 </div>
 
                                 <div className="flex items-center justify-between">
-                                    <span className="text-slate-500 font-medium">Year Model</span>
+                                    <span className="text-slate-600 font-medium">Year Model</span>
                                     <span className="font-bold text-slate-800">
                                         {vehicleData.year_model}
                                     </span>
                                 </div>
 
                                 <div className="flex items-center justify-between">
-                                    <span className="text-slate-500 font-medium">Body Color</span>
+                                    <span className="text-slate-600 font-medium">Body Color</span>
                                     <span className="font-bold text-slate-800">
                                         {vehicleData.body_color}
                                     </span>
                                 </div>
 
                                 <div className="flex items-center justify-between">
-                                    <span className="text-slate-500 font-medium">Body Type</span>
+                                    <span className="text-slate-600 font-medium">Body Type</span>
                                     <span className="font-bold text-slate-800">
                                         {vehicleData.body_type}
                                     </span>
@@ -674,12 +674,12 @@ export default function DocumentReview({ application }) {
 
                             {/* LTO Official Numbers */}
                             <div className="mt-4 pt-3.5 border-t border-slate-100 space-y-2.5 text-xs">
-                                <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
+                                <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">
                                     LTO Official Documentation
                                 </div>
 
                                 <div className="flex items-center justify-between">
-                                    <span className="text-slate-500 font-medium">Engine Number</span>
+                                    <span className="text-slate-600 font-medium">Engine Number</span>
                                     <div className="flex items-center gap-1">
                                         <span className="font-mono text-slate-800 font-bold text-xs">
                                             {vehicleData.engine_number}
@@ -688,7 +688,7 @@ export default function DocumentReview({ application }) {
                                             type="button"
                                             onClick={() => handleCopy('engine', vehicleData.engine_number)}
                                             title="Copy Engine Number"
-                                            className="text-slate-400 hover:text-slate-700 transition-colors p-1 cursor-pointer"
+                                            className="text-slate-500 hover:text-slate-700 transition-colors p-1 cursor-pointer"
                                         >
                                             {copiedField === 'engine' ? <Check size={12} className="text-emerald-600" /> : <Copy size={12} />}
                                         </button>
@@ -696,7 +696,7 @@ export default function DocumentReview({ application }) {
                                 </div>
 
                                 <div className="flex items-center justify-between">
-                                    <span className="text-slate-500 font-medium">Chassis Number</span>
+                                    <span className="text-slate-600 font-medium">Chassis Number</span>
                                     <div className="flex items-center gap-1">
                                         <span className="font-mono text-slate-800 font-bold text-xs">
                                             {vehicleData.chassis_number}
@@ -705,7 +705,7 @@ export default function DocumentReview({ application }) {
                                             type="button"
                                             onClick={() => handleCopy('chassis', vehicleData.chassis_number)}
                                             title="Copy Chassis Number"
-                                            className="text-slate-400 hover:text-slate-700 transition-colors p-1 cursor-pointer"
+                                            className="text-slate-500 hover:text-slate-700 transition-colors p-1 cursor-pointer"
                                         >
                                             {copiedField === 'chassis' ? <Check size={12} className="text-emerald-600" /> : <Copy size={12} />}
                                         </button>
@@ -713,7 +713,7 @@ export default function DocumentReview({ application }) {
                                 </div>
 
                                 <div className="flex items-center justify-between">
-                                    <span className="text-slate-500 font-medium">LTO OR Number</span>
+                                    <span className="text-slate-600 font-medium">LTO OR Number</span>
                                     <div className="flex items-center gap-1">
                                         <span className="font-mono text-slate-800 font-bold text-xs">
                                             {vehicleData.or_number}
@@ -722,7 +722,7 @@ export default function DocumentReview({ application }) {
                                             type="button"
                                             onClick={() => handleCopy('or', vehicleData.or_number)}
                                             title="Copy OR Number"
-                                            className="text-slate-400 hover:text-slate-700 transition-colors p-1 cursor-pointer"
+                                            className="text-slate-500 hover:text-slate-700 transition-colors p-1 cursor-pointer"
                                         >
                                             {copiedField === 'or' ? <Check size={12} className="text-emerald-600" /> : <Copy size={12} />}
                                         </button>
@@ -730,7 +730,7 @@ export default function DocumentReview({ application }) {
                                 </div>
 
                                 <div className="flex items-center justify-between">
-                                    <span className="text-slate-500 font-medium">LTO CR Number</span>
+                                    <span className="text-slate-600 font-medium">LTO CR Number</span>
                                     <div className="flex items-center gap-1">
                                         <span className="font-mono text-slate-800 font-bold text-xs">
                                             {vehicleData.cr_number}
@@ -739,7 +739,7 @@ export default function DocumentReview({ application }) {
                                             type="button"
                                             onClick={() => handleCopy('cr', vehicleData.cr_number)}
                                             title="Copy CR Number"
-                                            className="text-slate-400 hover:text-slate-700 transition-colors p-1 cursor-pointer"
+                                            className="text-slate-500 hover:text-slate-700 transition-colors p-1 cursor-pointer"
                                         >
                                             {copiedField === 'cr' ? <Check size={12} className="text-emerald-600" /> : <Copy size={12} />}
                                         </button>
@@ -758,7 +758,7 @@ export default function DocumentReview({ application }) {
                 <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200/90 p-3 sm:p-4 shadow-xl">
                     <div className="flex items-center justify-between gap-3 max-w-lg mx-auto">
                         <div>
-                            <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Progress</p>
+                            <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Progress</p>
                             <p className="text-xs font-black text-slate-900 tabular-nums">
                                 {mandatoryApprovedCount} / {mandatoryRequirements.length} Verified
                             </p>
@@ -769,7 +769,7 @@ export default function DocumentReview({ application }) {
                                 type="button"
                                 disabled={isProcessing}
                                 onClick={() => handleFinalAction('approve')}
-                                className="flex-1 max-w-[240px] inline-flex items-center justify-center gap-1.5 rounded-xl bg-[#182B62] text-white py-2.5 px-3 text-xs font-bold shadow-2xs transition-all active:scale-[0.98] cursor-pointer"
+                                className="flex-1 max-w-[240px] inline-flex items-center justify-center gap-1.5 rounded-xl bg-[#182B62] text-white py-2.5 px-3 text-xs font-bold shadow-sm transition-all active:scale-[0.98] cursor-pointer"
                             >
                                 {isProcessing ? <Loader2 size={14} className="animate-spin" /> : <Send size={13} strokeWidth={2.2} />}
                                 <span>Proceed to Inspection</span>
@@ -779,13 +779,13 @@ export default function DocumentReview({ application }) {
                                 type="button"
                                 disabled={isProcessing}
                                 onClick={() => handleFinalAction('reject')}
-                                className="flex-1 max-w-[240px] inline-flex items-center justify-center gap-1.5 rounded-xl bg-rose-600 text-white py-2.5 px-3 text-xs font-bold shadow-2xs transition-all active:scale-[0.98] cursor-pointer"
+                                className="flex-1 max-w-[240px] inline-flex items-center justify-center gap-1.5 rounded-xl bg-rose-600 text-white py-2.5 px-3 text-xs font-bold shadow-sm transition-all active:scale-[0.98] cursor-pointer"
                             >
                                 {isProcessing ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={13} strokeWidth={2.2} />}
                                 <span>Return</span>
                             </button>
                         ) : (
-                            <span className="text-xs font-semibold text-slate-400 text-right">
+                            <span className="text-xs font-semibold text-slate-500 text-right">
                                 Verify all files to proceed
                             </span>
                         )}
@@ -817,10 +817,10 @@ function DocumentRowItem({
     return (
         <div className={`rounded-2xl border transition-all p-3.5 sm:p-4 ${
             isApproved
-                ? 'border-emerald-200/90 bg-emerald-50/25 shadow-2xs'
+                ? 'border-emerald-200/90 bg-emerald-50/25 shadow-sm'
                 : isRejected
-                ? 'border-rose-200 bg-rose-50/25 shadow-2xs'
-                : 'border-slate-200/90 bg-white hover:border-slate-300 shadow-2xs'
+                ? 'border-rose-200 bg-rose-50/25 shadow-sm'
+                : 'border-slate-200/90 bg-white hover:border-slate-300 shadow-sm'
         }`}>
             {/* Top Row: Icon + Details & File Link + Action Buttons */}
             <div className="flex items-start justify-between gap-3">
@@ -870,7 +870,7 @@ function DocumentRowItem({
                                     <span>{categoryDocs.length > 1 ? `View ${categoryDocs.length} files` : 'View uploaded file'}</span>
                                 </button>
                             ) : (
-                                <span className="text-[11px] font-medium text-slate-400">
+                                <span className="text-[11px] font-medium text-slate-500">
                                     No file uploaded yet
                                 </span>
                             )}
@@ -886,7 +886,7 @@ function DocumentRowItem({
                         title={isRejected ? 'Correction requested (Click to edit)' : 'Flag for correction'}
                         className={`inline-flex h-8 sm:h-9 items-center gap-1 rounded-xl px-2.5 sm:px-3 text-xs font-bold transition-all cursor-pointer ${
                             isRejected
-                                ? 'bg-rose-600 text-white shadow-2xs hover:bg-rose-700'
+                                ? 'bg-rose-600 text-white shadow-sm hover:bg-rose-700'
                                 : 'border border-slate-200 bg-white text-slate-600 hover:border-rose-300 hover:bg-rose-50 hover:text-rose-700'
                         }`}
                     >
@@ -900,7 +900,7 @@ function DocumentRowItem({
                         title={isApproved ? 'Approved (Click to clear)' : 'Approve document'}
                         className={`inline-flex h-8 sm:h-9 items-center gap-1 rounded-xl px-2.5 sm:px-3 text-xs font-bold transition-all cursor-pointer ${
                             isApproved
-                                ? 'bg-emerald-600 text-white shadow-2xs hover:bg-emerald-700'
+                                ? 'bg-emerald-600 text-white shadow-sm hover:bg-emerald-700'
                                 : 'border border-slate-200 bg-white text-slate-600 hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-700'
                         }`}
                     >
@@ -917,7 +917,7 @@ function DocumentRowItem({
                     onClick={onReject}
                     className={`flex w-full items-center justify-center gap-1.5 rounded-xl py-2 text-xs font-bold transition-all cursor-pointer active:scale-[0.98] ${
                         isRejected
-                            ? 'bg-rose-600 text-white shadow-2xs'
+                            ? 'bg-rose-600 text-white shadow-sm'
                             : 'border border-slate-200 bg-white text-slate-700 active:bg-slate-50'
                     }`}
                 >
@@ -930,7 +930,7 @@ function DocumentRowItem({
                     onClick={onApprove}
                     className={`flex w-full items-center justify-center gap-1.5 rounded-xl py-2 text-xs font-bold transition-all cursor-pointer active:scale-[0.98] ${
                         isApproved
-                            ? 'bg-emerald-600 text-white shadow-2xs'
+                            ? 'bg-emerald-600 text-white shadow-sm'
                             : 'border border-slate-200 bg-white text-slate-700 active:bg-slate-50'
                     }`}
                 >
@@ -961,7 +961,7 @@ function DocumentRowItem({
                                     <button
                                         type="button"
                                         onClick={onClear}
-                                        className="inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[11px] font-semibold text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition-colors cursor-pointer"
+                                        className="inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[11px] font-semibold text-slate-600 hover:bg-slate-100 hover:text-slate-700 transition-colors cursor-pointer"
                                         title="Clear correction"
                                     >
                                         Clear

@@ -11,7 +11,7 @@ import {
     Download
 } from 'lucide-react';
 
-const CARD_SHADOW = 'shadow-[0_1px_2px_0_rgba(15,23,42,0.04),0_8px_24px_-8px_rgba(15,23,42,0.10)]';
+const CARD_SHADOW = 'shadow-[0_1px_3px_0_rgba(15,23,42,0.07),0_10px_28px_-8px_rgba(15,23,42,0.14)]';
 
 export default function Index({
     logs = { data: [], current_page: 1, last_page: 1, total: 0, per_page: 15 },
@@ -259,7 +259,7 @@ export default function Index({
 
     const formatFieldValue = (val, key = '') => {
         if (val === null || val === undefined || val === '') {
-            return <span className="text-slate-400 italic">None</span>;
+            return <span className="text-slate-500 italic">None</span>;
         }
         if (typeof val === 'boolean') {
             return <span>{val ? 'Yes' : 'No'}</span>;
@@ -356,7 +356,7 @@ export default function Index({
                         <h1 className="text-2xl sm:text-[28px] font-black tracking-tight text-slate-900 leading-tight">
                             System Activity Logs
                         </h1>
-                        <p className="mt-1 text-xs sm:text-sm text-slate-500 max-w-2xl leading-relaxed">
+                        <p className="mt-1 text-xs sm:text-sm text-slate-600 max-w-2xl leading-relaxed">
                             Audit trail of administrative actions, inspections, violations, and portal activities in Nasugbu.
                         </p>
                     </div>
@@ -364,7 +364,7 @@ export default function Index({
                     <button
                         type="button"
                         onClick={() => setExportOpen(true)}
-                        className="inline-flex items-center gap-2 rounded-xl bg-[#182B62] hover:bg-[#25449B] px-4 py-2.5 text-xs font-bold text-white shadow-xs transition-all active:scale-[0.98] self-start sm:self-center shrink-0 cursor-pointer"
+                        className="inline-flex items-center gap-2 rounded-xl bg-[#182B62] hover:bg-[#25449B] px-4 py-2.5 text-xs font-bold text-white shadow-sm transition-all active:scale-[0.98] self-start sm:self-center shrink-0 cursor-pointer"
                         title="Export activity logs"
                     >
                         <Download size={15} strokeWidth={2.2} className="text-white" />
@@ -375,33 +375,33 @@ export default function Index({
                 {/* ══════════════════════════════════════════════════════════════
                     2. COMPACT OPERATIONAL KPI DECK (1 card per row on mobile < 640px)
                    ══════════════════════════════════════════════════════════════ */}
-                <div className="mb-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4 items-stretch print:hidden">
+                <div className="mb-6 grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4 items-stretch print:hidden">
                     {/* Card 1: Total Activities */}
-                    <div className={`flex flex-col justify-between rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-4 sm:p-5 lg:p-6 ${CARD_SHADOW} transition-all`}>
+                    <div className={`flex flex-col justify-between rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-3 sm:p-4 lg:px-5 lg:py-4 ${CARD_SHADOW} transition-all hover:border-slate-300 hover:shadow-[0_2px_6px_0_rgba(15,23,42,0.08),0_18px_36px_-12px_rgba(15,23,42,0.20)]`}>
                         <div>
-                            <div className="flex items-center justify-between border-b border-slate-100 pb-2 sm:pb-2.5">
-                                <span className="text-[10px] sm:text-[10.5px] font-bold uppercase tracking-wider text-slate-400">
+                            <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-2 sm:pb-2.5">
+                                <span className="text-[9.5px] sm:text-[10.5px] font-bold uppercase tracking-wide sm:tracking-wider leading-tight text-slate-500">
                                     Total Activities
                                 </span>
-                                <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-xl bg-indigo-50 border border-indigo-100 text-[#182B62]">
+                                <div className="flex h-7 w-7 shrink-0 sm:h-8 sm:w-8 items-center justify-center rounded-xl bg-indigo-50 border border-indigo-100 text-[#182B62]">
                                     <ScrollText size={15} strokeWidth={2.2} />
                                 </div>
                             </div>
-                            <div className="mt-2 sm:mt-2.5 flex items-baseline gap-1.5 sm:gap-2">
-                                <span className="text-xl sm:text-2xl lg:text-3xl font-black tracking-tight tabular-nums text-slate-900 leading-none">
+                            <div className="mt-2 sm:mt-2.5 flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5 sm:gap-2">
+                                <span className="text-2xl lg:text-3xl font-black tracking-tight tabular-nums text-slate-900 leading-none">
                                     {stats.total}
                                 </span>
-                                <span className="text-[9.5px] sm:text-[10.5px] font-extrabold uppercase tracking-wider text-slate-400">
+                                <span className="text-[9.5px] sm:text-[10.5px] font-extrabold uppercase tracking-wider text-slate-500">
                                     Logs
                                 </span>
                             </div>
-                            <p className="mt-1 text-[10px] sm:text-[11px] font-medium text-slate-500 line-clamp-1">
+                            <p className="mt-1 max-sm:hidden text-[10px] sm:text-[11px] font-medium text-slate-600 line-clamp-1">
                                 Recorded system-wide activity
                             </p>
                         </div>
 
-                        <div className="mt-3 rounded-xl bg-slate-50 border border-slate-100/90 px-2.5 py-1.5 sm:px-3 sm:py-2 flex items-center justify-between text-[10.5px] sm:text-xs">
-                            <span className="font-semibold text-slate-400 shrink-0">Scope:</span>
+                        <div className="mt-2.5 max-sm:hidden rounded-xl bg-slate-50 border border-slate-100/90 shadow-sm px-2.5 py-1.5 sm:px-3 flex items-center justify-between text-[10.5px] sm:text-xs">
+                            <span className="font-semibold text-slate-500 shrink-0">Scope:</span>
                             <span className="font-bold text-slate-800 shrink-0">
                                 All Portals
                             </span>
@@ -409,31 +409,31 @@ export default function Index({
                     </div>
 
                     {/* Card 2: Today's Activity */}
-                    <div className={`flex flex-col justify-between rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-4 sm:p-5 lg:p-6 ${CARD_SHADOW} transition-all`}>
+                    <div className={`flex flex-col justify-between rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-3 sm:p-4 lg:px-5 lg:py-4 ${CARD_SHADOW} transition-all hover:border-slate-300 hover:shadow-[0_2px_6px_0_rgba(15,23,42,0.08),0_18px_36px_-12px_rgba(15,23,42,0.20)]`}>
                         <div>
-                            <div className="flex items-center justify-between border-b border-slate-100 pb-2 sm:pb-2.5">
-                                <span className="text-[10px] sm:text-[10.5px] font-bold uppercase tracking-wider text-slate-400">
+                            <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-2 sm:pb-2.5">
+                                <span className="text-[9.5px] sm:text-[10.5px] font-bold uppercase tracking-wide sm:tracking-wider leading-tight text-slate-500">
                                     Today's Activity
                                 </span>
-                                <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-xl bg-blue-50 border border-blue-100 text-blue-600">
+                                <div className="flex h-7 w-7 shrink-0 sm:h-8 sm:w-8 items-center justify-center rounded-xl bg-blue-50 border border-blue-100 text-blue-600">
                                     <Clock size={15} strokeWidth={2.2} />
                                 </div>
                             </div>
-                            <div className="mt-2 sm:mt-2.5 flex items-baseline gap-1.5 sm:gap-2">
-                                <span className="text-xl sm:text-2xl lg:text-3xl font-black tracking-tight tabular-nums text-blue-600 leading-none">
+                            <div className="mt-2 sm:mt-2.5 flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5 sm:gap-2">
+                                <span className="text-2xl lg:text-3xl font-black tracking-tight tabular-nums text-blue-600 leading-none">
                                     {stats.today}
                                 </span>
-                                <span className="text-[9.5px] sm:text-[10.5px] font-extrabold uppercase tracking-wider text-slate-400">
+                                <span className="text-[9.5px] sm:text-[10.5px] font-extrabold uppercase tracking-wider text-slate-500">
                                     Today
                                 </span>
                             </div>
-                            <p className="mt-1 text-[10px] sm:text-[11px] font-medium text-slate-500 line-clamp-1">
+                            <p className="mt-1 max-sm:hidden text-[10px] sm:text-[11px] font-medium text-slate-600 line-clamp-1">
                                 Activities in the last 24 hours
                             </p>
                         </div>
 
-                        <div className="mt-3 rounded-xl bg-slate-50 border border-slate-100/90 px-2.5 py-1.5 sm:px-3 sm:py-2 flex items-center justify-between text-[10.5px] sm:text-xs">
-                            <span className="font-semibold text-slate-400 shrink-0">Window:</span>
+                        <div className="mt-2.5 max-sm:hidden rounded-xl bg-slate-50 border border-slate-100/90 shadow-sm px-2.5 py-1.5 sm:px-3 flex items-center justify-between text-[10.5px] sm:text-xs">
+                            <span className="font-semibold text-slate-500 shrink-0">Window:</span>
                             <span className="font-bold text-slate-800 shrink-0">
                                 Past 24 Hours
                             </span>
@@ -441,31 +441,31 @@ export default function Index({
                     </div>
 
                     {/* Card 3: Staff Actions */}
-                    <div className={`flex flex-col justify-between rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-4 sm:p-5 lg:p-6 ${CARD_SHADOW} transition-all`}>
+                    <div className={`flex flex-col justify-between rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-3 sm:p-4 lg:px-5 lg:py-4 ${CARD_SHADOW} transition-all hover:border-slate-300 hover:shadow-[0_2px_6px_0_rgba(15,23,42,0.08),0_18px_36px_-12px_rgba(15,23,42,0.20)]`}>
                         <div>
-                            <div className="flex items-center justify-between border-b border-slate-100 pb-2 sm:pb-2.5">
-                                <span className="text-[10px] sm:text-[10.5px] font-bold uppercase tracking-wider text-slate-400">
+                            <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-2 sm:pb-2.5">
+                                <span className="text-[9.5px] sm:text-[10.5px] font-bold uppercase tracking-wide sm:tracking-wider leading-tight text-slate-500">
                                     Staff Actions
                                 </span>
-                                <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-xl bg-emerald-50 border border-emerald-100 text-emerald-600">
+                                <div className="flex h-7 w-7 shrink-0 sm:h-8 sm:w-8 items-center justify-center rounded-xl bg-emerald-50 border border-emerald-100 text-emerald-600">
                                     <ShieldCheck size={15} strokeWidth={2.2} />
                                 </div>
                             </div>
-                            <div className="mt-2 sm:mt-2.5 flex items-baseline gap-1.5 sm:gap-2">
-                                <span className="text-xl sm:text-2xl lg:text-3xl font-black tracking-tight tabular-nums text-emerald-600 leading-none">
+                            <div className="mt-2 sm:mt-2.5 flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5 sm:gap-2">
+                                <span className="text-2xl lg:text-3xl font-black tracking-tight tabular-nums text-emerald-600 leading-none">
                                     {stats.staff}
                                 </span>
-                                <span className="text-[9.5px] sm:text-[10.5px] font-extrabold uppercase tracking-wider text-slate-400">
+                                <span className="text-[9.5px] sm:text-[10.5px] font-extrabold uppercase tracking-wider text-slate-500">
                                     Actions
                                 </span>
                             </div>
-                            <p className="mt-1 text-[10px] sm:text-[11px] font-medium text-slate-500 line-clamp-1">
+                            <p className="mt-1 max-sm:hidden text-[10px] sm:text-[11px] font-medium text-slate-600 line-clamp-1">
                                 TMO, BPLO, and Admin personnel
                             </p>
                         </div>
 
-                        <div className="mt-3 rounded-xl bg-slate-50 border border-slate-100/90 px-2.5 py-1.5 sm:px-3 sm:py-2 flex items-center justify-between text-[10.5px] sm:text-xs">
-                            <span className="font-semibold text-slate-400 shrink-0">Offices:</span>
+                        <div className="mt-2.5 max-sm:hidden rounded-xl bg-slate-50 border border-slate-100/90 shadow-sm px-2.5 py-1.5 sm:px-3 flex items-center justify-between text-[10.5px] sm:text-xs">
+                            <span className="font-semibold text-slate-500 shrink-0">Offices:</span>
                             <span className="font-bold text-slate-800 shrink-0">
                                 TMO &amp; BPLO
                             </span>
@@ -473,31 +473,31 @@ export default function Index({
                     </div>
 
                     {/* Card 4: Driver Actions */}
-                    <div className={`flex flex-col justify-between rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-4 sm:p-5 lg:p-6 ${CARD_SHADOW} transition-all`}>
+                    <div className={`flex flex-col justify-between rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-3 sm:p-4 lg:px-5 lg:py-4 ${CARD_SHADOW} transition-all hover:border-slate-300 hover:shadow-[0_2px_6px_0_rgba(15,23,42,0.08),0_18px_36px_-12px_rgba(15,23,42,0.20)]`}>
                         <div>
-                            <div className="flex items-center justify-between border-b border-slate-100 pb-2 sm:pb-2.5">
-                                <span className="text-[10px] sm:text-[10.5px] font-bold uppercase tracking-wider text-slate-400">
+                            <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-2 sm:pb-2.5">
+                                <span className="text-[9.5px] sm:text-[10.5px] font-bold uppercase tracking-wide sm:tracking-wider leading-tight text-slate-500">
                                     Driver Actions
                                 </span>
-                                <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-xl bg-sky-50 border border-sky-100 text-sky-600">
+                                <div className="flex h-7 w-7 shrink-0 sm:h-8 sm:w-8 items-center justify-center rounded-xl bg-sky-50 border border-sky-100 text-sky-600">
                                     <Users size={15} strokeWidth={2.2} />
                                 </div>
                             </div>
-                            <div className="mt-2 sm:mt-2.5 flex items-baseline gap-1.5 sm:gap-2">
-                                <span className="text-xl sm:text-2xl lg:text-3xl font-black tracking-tight tabular-nums text-sky-600 leading-none">
+                            <div className="mt-2 sm:mt-2.5 flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5 sm:gap-2">
+                                <span className="text-2xl lg:text-3xl font-black tracking-tight tabular-nums text-sky-600 leading-none">
                                     {stats.driver}
                                 </span>
-                                <span className="text-[9.5px] sm:text-[10.5px] font-extrabold uppercase tracking-wider text-slate-400">
+                                <span className="text-[9.5px] sm:text-[10.5px] font-extrabold uppercase tracking-wider text-slate-500">
                                     Actions
                                 </span>
                             </div>
-                            <p className="mt-1 text-[10px] sm:text-[11px] font-medium text-slate-500 line-clamp-1">
+                            <p className="mt-1 max-sm:hidden text-[10px] sm:text-[11px] font-medium text-slate-600 line-clamp-1">
                                 Driver portal transactions
                             </p>
                         </div>
 
-                        <div className="mt-3 rounded-xl bg-slate-50 border border-slate-100/90 px-2.5 py-1.5 sm:px-3 sm:py-2 flex items-center justify-between text-[10.5px] sm:text-xs">
-                            <span className="font-semibold text-slate-400 shrink-0">Portal:</span>
+                        <div className="mt-2.5 max-sm:hidden rounded-xl bg-slate-50 border border-slate-100/90 shadow-sm px-2.5 py-1.5 sm:px-3 flex items-center justify-between text-[10.5px] sm:text-xs">
+                            <span className="font-semibold text-slate-500 shrink-0">Portal:</span>
                             <span className="font-bold text-slate-800 shrink-0">
                                 Driver Web App
                             </span>
@@ -508,27 +508,27 @@ export default function Index({
                 {/* ══════════════════════════════════════════════════════════════
                     3. COMMAND & FILTER DECK
                    ══════════════════════════════════════════════════════════════ */}
-                <div className={`mb-6 rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-3.5 sm:p-4 ${CARD_SHADOW} print:hidden`}>
-                    <div className="flex flex-col lg:flex-row lg:items-center gap-3">
+                <div className={`mb-5 rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-3.5 sm:p-4 ${CARD_SHADOW} print:hidden`}>
+                    <div className="flex flex-col lg:flex-row lg:items-center gap-2.5">
                         {/* Primary Search Bar */}
                         <div className="relative flex-1 min-w-[220px]">
                             <Search
-                                size={16}
+                                size={14}
                                 strokeWidth={2.2}
-                                className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"
+                                className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500"
                             />
                             <input
                                 type="text"
                                 value={search}
                                 onChange={(e) => handleSearchChange(e.target.value)}
                                 placeholder="Search by name, reference number, action, or details…"
-                                className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50/50 pl-10 pr-9 text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 shadow-2xs transition-all focus:border-[#182B62] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#182B62]/10"
+                                className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50/70 pl-10 pr-9 text-xs sm:text-sm font-medium text-slate-900 placeholder:text-slate-500 transition-colors focus:border-[#182B62] focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#182B62]"
                             />
                             {search && (
                                 <button
                                     type="button"
                                     onClick={() => handleSearchChange('')}
-                                    className="absolute right-3 top-1/2 flex h-5 w-5 -translate-y-1/2 items-center justify-center rounded-full text-slate-400 hover:bg-slate-200 hover:text-slate-700 cursor-pointer"
+                                    className="absolute right-3 top-1/2 flex h-5 w-5 -translate-y-1/2 items-center justify-center rounded-full text-slate-500 hover:bg-slate-200 hover:text-slate-700 cursor-pointer"
                                 >
                                     <X size={12} strokeWidth={2.5} />
                                 </button>
@@ -536,13 +536,13 @@ export default function Index({
                         </div>
 
                         {/* Filter Controls Row */}
-                        <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2.5">
+                        <div className="grid grid-cols-2 sm:flex items-center gap-2">
                             {/* Module Dropdown */}
-                            <div className="col-span-1">
+                            <div className="col-span-1 sm:flex-1 lg:flex-none">
                                 <select
                                     value={module}
                                     onChange={handleModuleChange}
-                                    className="h-10 w-full sm:w-44 rounded-xl border border-slate-200 bg-white px-3 pr-8 text-xs font-semibold text-slate-700 shadow-2xs transition-colors focus:border-[#182B62] focus:outline-none focus:ring-2 focus:ring-[#182B62]/10 cursor-pointer truncate"
+                                    className="h-10 w-full lg:w-44 rounded-xl border border-slate-200 bg-slate-50/70 pl-3 pr-8 text-xs font-bold text-slate-700 transition-colors focus:border-[#182B62] focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#182B62] cursor-pointer truncate"
                                 >
                                     <option value="">All Sections</option>
                                     {availableModules.map((m) => (
@@ -554,11 +554,11 @@ export default function Index({
                             </div>
 
                             {/* Actor Role Dropdown */}
-                            <div className="col-span-1">
+                            <div className="col-span-1 sm:flex-1 lg:flex-none">
                                 <select
                                     value={role}
                                     onChange={handleRoleChange}
-                                    className="h-10 w-full sm:w-40 rounded-xl border border-slate-200 bg-white px-3 pr-8 text-xs font-semibold text-slate-700 shadow-2xs transition-colors focus:border-[#182B62] focus:outline-none focus:ring-2 focus:ring-[#182B62]/10 cursor-pointer truncate"
+                                    className="h-10 w-full lg:w-40 rounded-xl border border-slate-200 bg-slate-50/70 pl-3 pr-8 text-xs font-bold text-slate-700 transition-colors focus:border-[#182B62] focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#182B62] cursor-pointer truncate"
                                 >
                                     <option value="">All Roles</option>
                                     {availableRoles.map((r) => (
@@ -570,20 +570,20 @@ export default function Index({
                             </div>
 
                             {/* Date From & To */}
-                            <div className="col-span-2 sm:col-span-auto flex items-center gap-1.5">
+                            <div className="col-span-2 sm:col-span-auto sm:flex-[2] lg:flex-none flex items-center gap-1.5">
                                 <input
                                     type="date"
                                     value={from}
                                     onChange={(e) => handleDateChange(e.target.value, to)}
-                                    className="h-10 rounded-xl border border-slate-200 bg-white px-2.5 text-xs font-semibold text-slate-700 shadow-2xs focus:border-[#182B62] focus:outline-none"
+                                    className="h-10 min-w-0 flex-1 lg:flex-none rounded-xl border border-slate-200 bg-slate-50/70 px-2.5 text-xs font-bold text-slate-700 transition-colors focus:border-[#182B62] focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#182B62]"
                                     title="Date from"
                                 />
-                                <span className="text-slate-400 text-xs">to</span>
+                                <span className="text-slate-500 text-xs">to</span>
                                 <input
                                     type="date"
                                     value={to}
                                     onChange={(e) => handleDateChange(from, e.target.value)}
-                                    className="h-10 rounded-xl border border-slate-200 bg-white px-2.5 text-xs font-semibold text-slate-700 shadow-2xs focus:border-[#182B62] focus:outline-none"
+                                    className="h-10 min-w-0 flex-1 lg:flex-none rounded-xl border border-slate-200 bg-slate-50/70 px-2.5 text-xs font-bold text-slate-700 transition-colors focus:border-[#182B62] focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#182B62]"
                                     title="Date to"
                                 />
                             </div>
@@ -596,20 +596,20 @@ export default function Index({
                    ══════════════════════════════════════════════════════════════ */}
                 {logs.data.length === 0 ? (
                     <div className={`rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-12 text-center ${CARD_SHADOW}`}>
-                        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-400">
+                        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-500">
                             <ScrollText size={24} strokeWidth={1.8} />
                         </div>
                         <h3 className="mt-3.5 text-base font-bold text-slate-900">
                             No activities found
                         </h3>
-                        <p className="mx-auto mt-1 max-w-sm text-xs text-slate-500 leading-relaxed">
+                        <p className="mx-auto mt-1 max-w-sm text-xs text-slate-600 leading-relaxed">
                             No logs match your current search or date filters.
                         </p>
                         {isFiltering && (
                             <button
                                 type="button"
                                 onClick={handleReset}
-                                className="mt-4 inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-bold text-slate-800 shadow-2xs hover:bg-slate-50 cursor-pointer"
+                                className="mt-4 inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-bold text-slate-800 shadow-sm hover:bg-slate-50 cursor-pointer"
                             >
                                 <RotateCcw size={12} strokeWidth={2.2} />
                                 <span>Clear all filters</span>
@@ -619,11 +619,11 @@ export default function Index({
                 ) : (
                     <>
                         {/* Desktop & Tablet Data Table with Integrated Modern Footer (>= md) */}
-                        <div className={`hidden md:block overflow-hidden rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white ${CARD_SHADOW}`}>
-                            <div className="overflow-x-auto">
-                                <table className="w-full text-left border-collapse">
+                        <div className={`hidden lg:block overflow-hidden rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white ${CARD_SHADOW}`}>
+                            <div className="overflow-x-auto custom-scrollbar">
+                                <table className="w-full min-w-[900px] whitespace-nowrap text-left border-collapse">
                                     <thead>
-                                        <tr className="border-b border-slate-200 bg-slate-50/75">
+                                        <tr className="border-b border-slate-200/80 bg-slate-50/80">
                                             <th scope="col" className="py-3.5 pl-6 pr-3 text-[11px] font-bold uppercase tracking-wider text-slate-500">
                                                 Date &amp; Time
                                             </th>
@@ -652,13 +652,13 @@ export default function Index({
                                                     {/* Date & Time */}
                                                     <td className="py-3.5 pl-6 pr-3 whitespace-nowrap align-middle">
                                                         <div className="font-bold text-slate-900">{log.created_at}</div>
-                                                        <div className="text-[11px] text-slate-400 font-medium">{log.created_at_human}</div>
+                                                        <div className="text-[11px] text-slate-500 font-medium">{log.created_at_human}</div>
                                                     </td>
 
                                                     {/* User & Role */}
                                                     <td className="py-3.5 px-4 align-middle">
                                                         <div className="font-bold text-slate-900">{log.actor_name}</div>
-                                                        <div className="text-[11px] font-medium text-slate-500">
+                                                        <div className="text-[11px] font-medium text-slate-600">
                                                             {roleMeta.label}
                                                         </div>
                                                     </td>
@@ -668,7 +668,7 @@ export default function Index({
                                                         <div className="text-xs font-bold text-slate-900">
                                                             {formatActionLabel(log.action)}
                                                         </div>
-                                                        <div className="text-[11px] font-medium text-slate-500">
+                                                        <div className="text-[11px] font-medium text-slate-600">
                                                             {formatModuleLabel(log.module)}
                                                         </div>
                                                     </td>
@@ -680,13 +680,13 @@ export default function Index({
                                                                 ? (log.actor_email || (log.target_reference && log.target_reference.includes('@') ? log.target_reference : (log.actor_email || '—')))
                                                                 : (log.target_reference || '—')}
                                                         </span>
-                                                        <div className="text-[10.5px] text-slate-400">
+                                                        <div className="text-[10.5px] text-slate-500">
                                                             {log.target_type || null}
                                                         </div>
                                                     </td>
 
                                                     {/* Summary */}
-                                                    <td className="py-3.5 px-4 max-w-sm align-middle">
+                                                    <td className="py-3.5 px-4 min-w-[240px] max-w-sm whitespace-normal align-middle">
                                                         <p className="line-clamp-2 leading-relaxed text-slate-600 font-medium">
                                                             {log.description || '—'}
                                                         </p>
@@ -697,7 +697,7 @@ export default function Index({
                                                         <button
                                                             type="button"
                                                             onClick={() => setSelectedLog(log)}
-                                                            className="inline-flex h-8 w-8 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 shadow-2xs hover:border-slate-300 hover:bg-slate-50 hover:text-[#182B62] transition-all active:scale-[0.98] cursor-pointer"
+                                                            className="inline-flex h-8 w-8 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 shadow-sm hover:border-slate-300 hover:bg-slate-50 hover:text-[#182B62] transition-all active:scale-[0.98] cursor-pointer"
                                                             aria-label="View log details"
                                                             title="View log details"
                                                         >
@@ -714,7 +714,7 @@ export default function Index({
                             {/* Desktop Pagination Footer */}
                             {logs.total > 0 && (
                                 <div className="flex flex-col items-center justify-between gap-3 border-t border-slate-200/80 bg-slate-50/60 px-5 py-3.5 text-xs sm:flex-row print:hidden">
-                                    <p className="text-slate-500 font-medium">
+                                    <p className="text-slate-600 font-medium">
                                         Showing <span className="font-bold text-slate-800 tabular-nums">{(logs.current_page - 1) * logs.per_page + 1}</span>–
                                         <span className="font-bold text-slate-800 tabular-nums">{Math.min(logs.current_page * logs.per_page, logs.total)}</span> of{' '}
                                         <span className="font-bold text-slate-800 tabular-nums">{logs.total}</span> records
@@ -725,7 +725,7 @@ export default function Index({
                                             type="button"
                                             disabled={logs.current_page <= 1}
                                             onClick={() => handlePageChange(logs.current_page - 1)}
-                                            className="inline-flex h-8 items-center gap-1 rounded-xl border border-slate-200 bg-white px-2.5 sm:px-3 text-xs font-bold text-slate-700 shadow-2xs transition-colors hover:bg-slate-50 disabled:pointer-events-none disabled:opacity-40 cursor-pointer"
+                                            className="inline-flex h-8 items-center gap-1 rounded-xl border border-slate-200 bg-white px-2.5 sm:px-3 text-xs font-bold text-slate-700 shadow-sm transition-colors hover:bg-slate-50 disabled:pointer-events-none disabled:opacity-40 cursor-pointer"
                                         >
                                             <ChevronLeft size={13} strokeWidth={2.5} />
                                             <span>Prev</span>
@@ -745,14 +745,14 @@ export default function Index({
                                                     return (
                                                         <React.Fragment key={p}>
                                                             {hasGap && (
-                                                                <span className="px-1 text-xs text-slate-400 font-medium">…</span>
+                                                                <span className="px-1 text-xs text-slate-500 font-medium">…</span>
                                                             )}
                                                             <button
                                                                 type="button"
                                                                 onClick={() => handlePageChange(p)}
                                                                 className={`flex h-8 w-8 items-center justify-center rounded-xl text-xs font-bold transition-all cursor-pointer ${
                                                                     logs.current_page === p
-                                                                        ? 'bg-[#182B62] text-white shadow-2xs'
+                                                                        ? 'bg-[#182B62] text-white shadow-sm'
                                                                         : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
                                                                 }`}
                                                             >
@@ -767,7 +767,7 @@ export default function Index({
                                             type="button"
                                             disabled={logs.current_page >= logs.last_page}
                                             onClick={() => handlePageChange(logs.current_page + 1)}
-                                            className="inline-flex h-8 items-center gap-1 rounded-xl border border-slate-200 bg-white px-2.5 sm:px-3 text-xs font-bold text-slate-700 shadow-2xs transition-colors hover:bg-slate-50 disabled:pointer-events-none disabled:opacity-40 cursor-pointer"
+                                            className="inline-flex h-8 items-center gap-1 rounded-xl border border-slate-200 bg-white px-2.5 sm:px-3 text-xs font-bold text-slate-700 shadow-sm transition-colors hover:bg-slate-50 disabled:pointer-events-none disabled:opacity-40 cursor-pointer"
                                         >
                                             <span>Next</span>
                                             <ChevronRight size={13} strokeWidth={2.5} />
@@ -778,7 +778,7 @@ export default function Index({
                         </div>
 
                         {/* Dedicated Mobile Cards Deck (< md) */}
-                        <div className="flex flex-col gap-3 md:hidden">
+                        <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:hidden">
                             {logs.data.map((log) => {
                                 const roleMeta = getRoleBadge(log.actor_role);
                                 return (
@@ -790,20 +790,20 @@ export default function Index({
                                         <div className="flex items-start justify-between gap-2 border-b border-slate-100 pb-2.5">
                                             <div className="min-w-0">
                                                 <div className="font-bold text-slate-900 text-sm truncate">{log.actor_name}</div>
-                                                <div className="text-[11px] font-medium text-slate-500">
+                                                <div className="text-[11px] font-medium text-slate-600">
                                                     {roleMeta.label}
                                                 </div>
                                             </div>
                                             <div className="text-right shrink-0">
                                                 <div className="text-xs font-bold text-slate-900">{log.created_at}</div>
-                                                <div className="text-[10.5px] text-slate-400 font-medium">{log.created_at_human}</div>
+                                                <div className="text-[10.5px] text-slate-500 font-medium">{log.created_at_human}</div>
                                             </div>
                                         </div>
 
                                         {/* Action & Module */}
                                         <div className="flex items-center justify-between gap-2 text-xs">
                                             <div>
-                                                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Action</span>
+                                                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block">Action</span>
                                                 <span className="font-bold text-slate-900">{formatActionLabel(log.action)}</span>
                                             </div>
                                             <span className="rounded-lg bg-slate-100 px-2 py-0.5 text-[10.5px] font-semibold text-slate-700">
@@ -812,8 +812,8 @@ export default function Index({
                                         </div>
 
                                         {/* Record Reference */}
-                                        <div className="rounded-xl bg-slate-50 border border-slate-200/60 p-2.5 text-xs flex items-center justify-between gap-2">
-                                            <span className="text-[10.5px] font-bold uppercase tracking-wider text-slate-400 shrink-0">Reference</span>
+                                        <div className="rounded-xl bg-slate-50 border border-slate-200/60 shadow-sm p-2.5 text-xs flex items-center justify-between gap-2">
+                                            <span className="text-[10.5px] font-bold uppercase tracking-wider text-slate-500 shrink-0">Reference</span>
                                             <span className="font-mono font-bold text-slate-900 truncate">
                                                 {log.action?.startsWith('report.exported')
                                                     ? (log.actor_email || (log.target_reference && log.target_reference.includes('@') ? log.target_reference : (log.actor_email || '—')))
@@ -832,7 +832,7 @@ export default function Index({
                                         <button
                                             type="button"
                                             onClick={() => setSelectedLog(log)}
-                                            className="flex w-full items-center justify-center rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100/80 py-2 text-slate-600 hover:text-[#182B62] shadow-2xs transition-all active:scale-[0.98] cursor-pointer"
+                                            className="flex w-full items-center justify-center rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100/80 py-2 text-slate-600 hover:text-[#182B62] shadow-sm transition-all active:scale-[0.98] cursor-pointer"
                                             aria-label="View log details"
                                             title="View log details"
                                         >
@@ -844,11 +844,11 @@ export default function Index({
 
                             {/* Mobile Pagination Card */}
                             {logs.total > 0 && (
-                                <div className={`flex items-center justify-between rounded-2xl border border-slate-200/80 bg-white px-4 py-3 ${CARD_SHADOW} print:hidden`}>
-                                    <p className="text-xs text-slate-500 font-medium">
+                                <div className={`md:col-span-2 flex items-center justify-between rounded-2xl border border-slate-200/80 bg-white px-4 py-3 ${CARD_SHADOW} print:hidden`}>
+                                    <p className="text-xs text-slate-600 font-medium">
                                         Page <span className="font-bold text-slate-900 tabular-nums">{logs.current_page}</span> of{' '}
                                         <span className="font-bold text-slate-900 tabular-nums">{logs.last_page}</span>
-                                        <span className="ml-1 text-[11px] text-slate-400">({logs.total} logs)</span>
+                                        <span className="ml-1 text-[11px] text-slate-500">({logs.total} logs)</span>
                                     </p>
 
                                     <div className="flex items-center gap-1.5">
@@ -856,7 +856,7 @@ export default function Index({
                                             type="button"
                                             disabled={logs.current_page <= 1}
                                             onClick={() => handlePageChange(logs.current_page - 1)}
-                                            className="inline-flex h-8 items-center gap-1 rounded-xl border border-slate-200 bg-white px-2.5 text-xs font-bold text-slate-700 shadow-2xs disabled:pointer-events-none disabled:opacity-40 cursor-pointer"
+                                            className="inline-flex h-8 items-center gap-1 rounded-xl border border-slate-200 bg-white px-2.5 text-xs font-bold text-slate-700 shadow-sm disabled:pointer-events-none disabled:opacity-40 cursor-pointer"
                                         >
                                             <ChevronLeft size={13} strokeWidth={2.5} />
                                             <span>Prev</span>
@@ -865,7 +865,7 @@ export default function Index({
                                             type="button"
                                             disabled={logs.current_page >= logs.last_page}
                                             onClick={() => handlePageChange(logs.current_page + 1)}
-                                            className="inline-flex h-8 items-center gap-1 rounded-xl border border-slate-200 bg-white px-2.5 text-xs font-bold text-slate-700 shadow-2xs disabled:pointer-events-none disabled:opacity-40 cursor-pointer"
+                                            className="inline-flex h-8 items-center gap-1 rounded-xl border border-slate-200 bg-white px-2.5 text-xs font-bold text-slate-700 shadow-sm disabled:pointer-events-none disabled:opacity-40 cursor-pointer"
                                         >
                                             <span>Next</span>
                                             <ChevronRight size={13} strokeWidth={2.5} />
@@ -980,7 +980,7 @@ export default function Index({
                             <div className="space-y-4 text-xs text-slate-700 font-['Plus_Jakarta_Sans',sans-serif]">
                                 {/* Summary Callout */}
                                 <div className="rounded-2xl border border-slate-200/90 bg-slate-50/70 p-4">
-                                    <div className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                                    <div className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-600">
                                         <Activity size={13} className="text-slate-600" />
                                         <span>Activity Summary</span>
                                     </div>
@@ -991,18 +991,18 @@ export default function Index({
 
                                 {/* Core Info 4-Box Grid (2 columns x 2 rows) */}
                                 <div className="grid grid-cols-2 gap-3">
-                                    <div className="rounded-2xl border border-slate-200/80 bg-white p-3.5 shadow-2xs">
-                                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Performed By</span>
+                                    <div className="rounded-2xl border border-slate-200/80 bg-white p-3.5 shadow-sm">
+                                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Performed By</span>
                                         <div className="mt-1 font-bold text-slate-900 truncate" title={selectedLog.actor_name}>
                                             {selectedLog.actor_name}
                                         </div>
-                                        <div className="text-[11px] font-medium text-slate-500">
+                                        <div className="text-[11px] font-medium text-slate-600">
                                             {getRoleBadge(selectedLog.actor_role).label}
                                         </div>
                                     </div>
 
-                                    <div className="rounded-2xl border border-slate-200/80 bg-white p-3.5 shadow-2xs">
-                                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                                    <div className="rounded-2xl border border-slate-200/80 bg-white p-3.5 shadow-sm">
+                                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
                                             {selectedLog.action.startsWith('auth.')
                                                 ? 'User Account'
                                                 : selectedLog.action === 'report.exported_excel'
@@ -1022,7 +1022,7 @@ export default function Index({
                                                 ? (selectedLog.actor_email || (selectedLog.target_reference && selectedLog.target_reference.includes('@') ? selectedLog.target_reference : null) || selectedLog.actor_name || '—')
                                                 : (selectedLog.target_reference || '—')}
                                         </div>
-                                        <div className="text-[11px] font-medium text-slate-500">
+                                        <div className="text-[11px] font-medium text-slate-600">
                                             {selectedLog.action.startsWith('auth.')
                                                 ? 'Web Session'
                                                 : selectedLog.action === 'report.exported_excel'
@@ -1031,22 +1031,22 @@ export default function Index({
                                         </div>
                                     </div>
 
-                                    <div className="rounded-2xl border border-slate-200/80 bg-white p-3.5 shadow-2xs">
-                                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Action</span>
+                                    <div className="rounded-2xl border border-slate-200/80 bg-white p-3.5 shadow-sm">
+                                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Action</span>
                                         <div className="mt-1 font-bold text-slate-900 truncate" title={formatActionLabel(selectedLog.action)}>
                                             {formatActionLabel(selectedLog.action)}
                                         </div>
-                                        <div className="text-[11px] font-medium text-slate-500">
+                                        <div className="text-[11px] font-medium text-slate-600">
                                             {formatModuleLabel(selectedLog.module)}
                                         </div>
                                     </div>
 
-                                    <div className="rounded-2xl border border-slate-200/80 bg-white p-3.5 shadow-2xs">
-                                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Date &amp; Time</span>
+                                    <div className="rounded-2xl border border-slate-200/80 bg-white p-3.5 shadow-sm">
+                                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Date &amp; Time</span>
                                         <div className="mt-1 font-bold text-slate-900">
                                             {selectedLog.created_at}
                                         </div>
-                                        <div className="text-[11px] font-medium text-slate-500">
+                                        <div className="text-[11px] font-medium text-slate-600">
                                             {selectedLog.created_at_human}
                                         </div>
                                     </div>
@@ -1054,7 +1054,7 @@ export default function Index({
 
                                 {/* Intelligent State Details Section */}
                                 {hasStateData && (
-                                    <div className="overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-2xs">
+                                    <div className="overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-sm">
                                         {stateMode === 'update' && (
                                             <>
                                                 <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50/70 px-4 py-2.5">
@@ -1084,10 +1084,10 @@ export default function Index({
 
                                                                 {isChanged && (
                                                                     <div className="flex flex-wrap items-center gap-2 pt-0.5 text-xs">
-                                                                        <div className="inline-flex items-center rounded-xl border border-slate-200 bg-slate-50 px-2.5 py-1 text-slate-500 line-through">
+                                                                        <div className="inline-flex items-center rounded-xl border border-slate-200 bg-slate-50 px-2.5 py-1 text-slate-600 line-through">
                                                                             {formatFieldValue(oldVal, key)}
                                                                         </div>
-                                                                        <ArrowRight size={13} className="text-slate-400 shrink-0" />
+                                                                        <ArrowRight size={13} className="text-slate-500 shrink-0" />
                                                                         <div className="inline-flex items-center rounded-xl border border-emerald-200 bg-emerald-50/70 px-2.5 py-1 font-semibold text-emerald-900">
                                                                             {formatFieldValue(newVal, key)}
                                                                         </div>
@@ -1171,7 +1171,7 @@ export default function Index({
                                 )}
 
                                 {/* Technical Metadata Strip */}
-                                <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-slate-200/80 bg-slate-50/60 px-3 py-2 text-[11px] text-slate-500">
+                                <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-slate-200/80 bg-slate-50/60 px-3 py-2 text-[11px] text-slate-600">
                                     <span>IP Address: <strong className="font-mono text-slate-700">{selectedLog.ip_address || 'Internal Network'}</strong></span>
                                     <span>Audit ID: <strong className="font-mono text-slate-700">#{selectedLog.id}</strong></span>
                                 </div>

@@ -60,5 +60,14 @@ input[type="password"]::-ms-clear {
     .custom-scrollbar-dark::-webkit-scrollbar-thumb:hover {
         background-color: rgba(255, 255, 255, 0.4);
     }
+
+    /* Hidden scrollbar that still scrolls (swipe carousels) */
+    .scrollbar-none {
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+    }
+    .scrollbar-none::-webkit-scrollbar {
+        display: none;
+    }
 }
 

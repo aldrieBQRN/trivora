@@ -1,4 +1,4 @@
-export const CARD_SHADOW = 'shadow-[0_1px_2px_0_rgba(15,23,42,0.04),0_8px_24px_-8px_rgba(15,23,42,0.10)]';
+export const CARD_SHADOW = 'shadow-[0_1px_3px_0_rgba(15,23,42,0.07),0_10px_28px_-8px_rgba(15,23,42,0.14)]';
 
 const TONES = {
     primary: { from: 'from-tmo-primary/[0.10]', icon: 'text-tmo-primary' },

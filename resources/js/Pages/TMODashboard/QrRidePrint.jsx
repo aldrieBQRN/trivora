@@ -62,12 +62,12 @@ export default function QrRidePrint({ unit, qrRide }) {
                 <div className="mt-[6mm] w-full border-t border-slate-300 pt-[4mm]">
                     <div className={`grid ${unit.sticker_number ? 'grid-cols-2' : 'grid-cols-1'} gap-[4mm]`}>
                         <div>
-                            <p className="text-[7pt] font-bold uppercase tracking-widest text-slate-500">Unit Code</p>
+                            <p className="text-[7pt] font-bold uppercase tracking-widest text-slate-600">Unit Code</p>
                             <p className="font-mono text-[13pt] font-black text-slate-900">{unit.unit_code}</p>
                         </div>
                         {unit.sticker_number && (
                             <div>
-                                <p className="text-[7pt] font-bold uppercase tracking-widest text-slate-500">Sticker Number</p>
+                                <p className="text-[7pt] font-bold uppercase tracking-widest text-slate-600">Sticker Number</p>
                                 <p className="font-mono text-[13pt] font-black text-slate-900">{unit.sticker_number}</p>
                             </div>
                         )}

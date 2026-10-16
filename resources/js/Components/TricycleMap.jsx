@@ -110,7 +110,7 @@ const LegendMarkerPin = ({ color, isOffline = false }) => (
         viewBox="0 0 26 34"
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
-        className="shrink-0 drop-shadow-xs"
+        className="shrink-0 drop-shadow-sm"
         style={isOffline ? { opacity: 0.75 } : {}}
     >
         <path
@@ -146,13 +146,22 @@ export default function TricycleMap({
     // Listen to external selection from parent. `db_id` — the tricycle's primary key — is the
     // identity here (and the marker key/ref below) because `id` is only the display body/coding
     // number and can legitimately repeat across units; see DashboardController::index().
+    // Also re-runs once the map instance exists, so a selection made before the map finished
+    // mounting (e.g. `/tmo/live?unit=…`) still flies to the pin; the short delay lets markers mount
+    // so the popup can open.
     useEffect(() => {
         if (!selectedUnitId) return;
         const target = tricycles.find(t => t.db_id === selectedUnitId);
-        if (target) {
+        if (!target) return;
+        if (!mapRef) return;
+        // Marker already mounted (normal click from the list): focus immediately.
+        if (markerRefs.current[target.db_id]) {
             trackTricycle(target);
+            return;
         }
-    }, [selectedUnitId]);
+        const timer = setTimeout(() => trackTricycle(target), 250);
+        return () => clearTimeout(timer);
+    }, [selectedUnitId, mapRef]);
 
     // Fullscreen change listener & map invalidateSize trigger
     useEffect(() => {
@@ -281,7 +290,7 @@ export default function TricycleMap({
             ref={containerRef}
             className={`relative flex flex-col overflow-hidden bg-slate-900 border border-slate-200/90 shadow-sm ${
                 isFullscreen
-                    ? 'fixed inset-0 z-[99999] w-screen h-[100dvh] rounded-none md:flex-row'
+                    ? 'fixed inset-0 z-[99999] w-screen h-[100dvh] rounded-none md:flex-row [&_.leaflet-bottom]:mb-4 md:[&_.leaflet-bottom]:mb-0 md:[&_.leaflet-bottom.leaflet-right]:mr-4'
                     : 'h-full w-full rounded-2xl'
             }`}
         >
@@ -289,14 +298,14 @@ export default function TricycleMap({
                 {/* ══════════════════════════════════════════════════════════════
                     TOP CONTROLS: MAP THEME SELECTOR + FULL VIEW BUTTON
                    ══════════════════════════════════════════════════════════════ */}
-                <div className="absolute top-2 left-2 right-2 sm:top-3.5 sm:left-auto sm:right-3.5 z-[1000] pointer-events-none flex flex-wrap items-center justify-end gap-1.5 sm:gap-2">
+                <div className={`absolute top-2 left-2 right-2 sm:top-3.5 sm:left-auto sm:right-3.5 z-[1000] pointer-events-none flex flex-wrap items-center justify-end gap-1.5 sm:gap-2 ${isFullscreen && fullscreenPanel && showPanel ? 'md:!right-9' : ''}`}>
                     {/* Auto-focus Default Nasugbu View Button — icon-only on mobile so this row
                         doesn't overflow the map's width on narrow screens. */}
                     <button
                         type="button"
                         onClick={resetToNasugbuView}
                         title="Focus Default Nasugbu View"
-                        className="pointer-events-auto inline-flex items-center gap-1.5 rounded-xl bg-white px-2 sm:px-3 py-1.5 text-xs font-bold text-[#182B62] shadow-sm border border-slate-200 hover:bg-slate-50 transition-colors cursor-pointer"
+                        className="pointer-events-auto inline-flex items-center gap-1.5 rounded-xl bg-white px-2 sm:px-3 py-1.5 text-[12.5px] font-semibold text-[#182B62] shadow-sm border border-slate-200 hover:bg-slate-50 transition-colors cursor-pointer"
                     >
                         <Compass size={13} className="text-[#182B62]" />
                         <span className="hidden sm:inline">Nasugbu View</span>
@@ -306,10 +315,10 @@ export default function TricycleMap({
                         <button
                             type="button"
                             onClick={() => setMapType('roadmap')}
-                            className={`rounded-lg px-2 sm:px-2.5 py-1 text-xs font-bold transition-all ${
+                            className={`rounded-lg px-2 sm:px-2.5 py-1 text-[12.5px] font-semibold transition-all ${
                                 mapType === 'roadmap'
-                                    ? 'bg-[#182B62] text-white shadow-xs'
-                                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                                    ? 'bg-[#182B62] text-white shadow-sm'
+                                    : 'text-slate-700 hover:text-slate-950 hover:bg-slate-100'
                             }`}
                         >
                             Map
@@ -318,10 +327,10 @@ export default function TricycleMap({
                             type="button"
                             onClick={() => setMapType('satellite')}
                             title="Satellite"
-                            className={`rounded-lg px-2 sm:px-2.5 py-1 text-xs font-bold transition-all ${
+                            className={`rounded-lg px-2 sm:px-2.5 py-1 text-[12.5px] font-semibold transition-all ${
                                 mapType === 'satellite'
-                                    ? 'bg-[#182B62] text-white shadow-xs'
-                                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                                    ? 'bg-[#182B62] text-white shadow-sm'
+                                    : 'text-slate-700 hover:text-slate-950 hover:bg-slate-100'
                             }`}
                         >
                             <span className="sm:hidden">Sat</span>
@@ -330,10 +339,10 @@ export default function TricycleMap({
                         <button
                             type="button"
                             onClick={() => setMapType('carto')}
-                            className={`rounded-lg px-2 sm:px-2.5 py-1 text-xs font-bold transition-all ${
+                            className={`rounded-lg px-2 sm:px-2.5 py-1 text-[12.5px] font-semibold transition-all ${
                                 mapType === 'carto'
-                                    ? 'bg-[#182B62] text-white shadow-xs'
-                                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                                    ? 'bg-[#182B62] text-white shadow-sm'
+                                    : 'text-slate-700 hover:text-slate-950 hover:bg-slate-100'
                             }`}
                         >
                             CARTO
@@ -345,7 +354,7 @@ export default function TricycleMap({
                             type="button"
                             onClick={() => setShowPanel((v) => !v)}
                             title={showPanel ? 'Hide Units Panel' : 'Show Units Panel'}
-                            className={`pointer-events-auto inline-flex items-center gap-1.5 rounded-xl px-2 sm:px-3 py-1.5 text-xs font-bold shadow-sm border transition-colors ${
+                            className={`pointer-events-auto inline-flex items-center gap-1.5 rounded-xl px-2 sm:px-3 py-1.5 text-[12.5px] font-semibold shadow-sm border transition-colors ${
                                 showPanel
                                     ? 'bg-[#182B62] text-white border-[#182B62]'
                                     : 'bg-white text-[#182B62] border-slate-200 hover:bg-slate-50'
@@ -360,7 +369,7 @@ export default function TricycleMap({
                         type="button"
                         onClick={toggleFullscreen}
                         title={isFullscreen ? 'Exit Full View' : 'Full View'}
-                        className="pointer-events-auto inline-flex items-center gap-1.5 rounded-xl bg-white px-2 sm:px-3.5 py-1.5 text-xs font-bold text-[#182B62] shadow-sm border border-slate-200 hover:bg-slate-50 transition-colors"
+                        className="pointer-events-auto inline-flex items-center gap-1.5 rounded-xl bg-white px-2 sm:px-3.5 py-1.5 text-[12.5px] font-semibold text-[#182B62] shadow-sm border border-slate-200 hover:bg-slate-50 transition-colors"
                     >
                         {isFullscreen ? <Minimize2 size={13} className="text-[#182B62]" /> : <Maximize2 size={13} className="text-[#182B62]" />}
                         <span className="hidden sm:inline">{isFullscreen ? 'Exit Full View' : 'Full View'}</span>
@@ -409,24 +418,24 @@ export default function TricycleMap({
                                 }}
                             >
                                 <Popup className="trivora-popup" closeButton={false}>
-                                    <div style={{ padding: '8px', minWidth: '190px', fontFamily: "'Inter', sans-serif", color: '#182B62', fontSize: '12px', backgroundColor: '#FFFFFF', borderRadius: '8px', position: 'relative' }}>
+                                    <div style={{ padding: '8px', minWidth: '190px', fontFamily: 'inherit', color: '#182B62', fontSize: '13px', backgroundColor: '#FFFFFF', borderRadius: '8px', position: 'relative' }}>
 
                                         <button
                                             type="button"
                                             onClick={closeAndStopFollowing}
-                                            style={{ position: 'absolute', top: '4px', right: '4px', background: 'none', border: 'none', cursor: 'pointer', padding: '4px', color: '#94A3B8', fontSize: '18px', lineHeight: '1' }}
+                                            style={{ position: 'absolute', top: '4px', right: '4px', background: 'none', border: 'none', cursor: 'pointer', padding: '4px', color: '#475569', fontSize: '18px', lineHeight: '1' }}
                                         >
                                             ✕
                                         </button>
 
-                                        <div style={{ marginBottom: '8px', paddingBottom: '6px', borderBottom: '1px solid #F1F5F9', paddingRight: '16px' }}>
-                                            <span style={{ fontSize: '16px', fontWeight: '800', color: '#182B62', letterSpacing: '0.04em', display: 'block', marginBottom: '2px' }}>
+                                        <div style={{ marginBottom: '8px', paddingBottom: '6px', borderBottom: '1px solid #E2E8F0', paddingRight: '16px' }}>
+                                            <span style={{ fontSize: '17px', fontWeight: '700', color: '#182B62', letterSpacing: '0.02em', display: 'block', marginBottom: '2px' }}>
                                                 {trike.plate}
                                             </span>
-                                            <span style={{ fontSize: '10.5px', fontWeight: 'bold', color: '#64748B', display: 'block', marginBottom: '2px' }}>
+                                            <span style={{ fontSize: '12px', fontWeight: 500, color: '#475569', display: 'block', marginBottom: '2px' }}>
                                                 Coding #{trike.coding_scheme || trike.id}
                                             </span>
-                                            <span style={{ fontSize: '11px', fontWeight: '600', color: '#334155', display: 'block' }}>
+                                            <span style={{ fontSize: '13px', fontWeight: 600, color: '#0F172A', display: 'block' }}>
                                                 {trike.operator}
                                             </span>
                                         </div>
@@ -441,7 +450,7 @@ export default function TricycleMap({
                                                             backgroundColor: statusInfo.color,
                                                         }}></div>
                                                         <span style={{
-                                                            fontSize: '10px', fontWeight: 'bold', textTransform: 'uppercase',
+                                                            fontSize: '11.5px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em',
                                                             color: statusInfo.color,
                                                         }}>
                                                             {statusInfo.label}
@@ -450,7 +459,7 @@ export default function TricycleMap({
                                                 );
                                             })()}
 
-                                            <div style={{ fontSize: '9.5px', fontWeight: 600, color: '#94A3B8', paddingTop: '4px', borderTop: '1px dashed #F1F5F9' }}>
+                                            <div style={{ fontSize: '12px', fontWeight: 500, color: '#475569', paddingTop: '6px', borderTop: '1px solid #E2E8F0' }}>
                                                 {/* last_update_label: the same backend-formatted recorded_at the
                                                     Live Monitoring Units tab shows. Pages that don't send it
                                                     (Operator Live Tracking) keep their existing last_seen. */}
@@ -472,7 +481,7 @@ export default function TricycleMap({
                     doesn't dominate a shorter mobile map viewport; unchanged from the original at
                     sm+ breakpoints. */}
                 <div className="pointer-events-auto absolute bottom-2 left-2 sm:bottom-4 sm:left-4 z-[9999] min-w-[150px] sm:min-w-[200px] rounded-xl border border-slate-200 bg-white/95 p-2.5 sm:p-3.5 shadow-[0_4px_12px_rgba(15,23,42,0.08)] backdrop-blur-[6px]">
-                    <p className="mb-1.5 sm:mb-2 border-b border-slate-200 pb-1 sm:pb-1 text-[9px] sm:text-[10px] font-extrabold uppercase tracking-[0.06em] text-[#182B62]">
+                    <p className="mb-1.5 sm:mb-2 border-b border-slate-200 pb-1 sm:pb-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-900">
                         Status Legend
                     </p>
 
@@ -480,7 +489,7 @@ export default function TricycleMap({
                         {STATUS_LEGEND_ITEMS.map((item) => (
                             <div key={item.key} className="flex items-center gap-1.5 sm:gap-2">
                                 <LegendMarkerPin color={item.color} isOffline={item.isOffline} />
-                                <span className="text-[9px] sm:text-[10.5px] font-semibold text-slate-700 leading-tight">
+                                <span className="text-[11.5px] sm:text-[12.5px] font-medium text-slate-800 leading-tight">
                                     {item.label}
                                 </span>
                             </div>
@@ -492,7 +501,7 @@ export default function TricycleMap({
             {/* Phones (portrait): stacked under the map. md+ (tablets, landscape phones,
                 desktop): docked column on the right. */}
             {isFullscreen && fullscreenPanel && showPanel && (
-                <div className="flex flex-col shrink-0 min-h-0 bg-white border-t md:border-t-0 md:border-l border-slate-200 h-[45dvh] md:h-full w-full md:w-[320px] lg:w-[400px]">
+                <div className="relative z-[1001] -mt-4 flex flex-col shrink-0 min-h-0 overflow-hidden rounded-t-2xl bg-white shadow-[0_-4px_12px_-6px_rgba(15,23,42,0.18)] h-[45dvh] w-full md:mt-0 md:-ml-4 md:h-full md:w-[320px] md:rounded-tr-none md:rounded-l-2xl md:shadow-[-4px_0_12px_-6px_rgba(15,23,42,0.18)] lg:w-[400px]">
                     {fullscreenPanel}
                 </div>
             )}

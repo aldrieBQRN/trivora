@@ -2,13 +2,15 @@ import React, { useState, useMemo } from 'react';
 import { Link, usePage, router } from '@inertiajs/react';
 import NotificationBell from '@/Components/NotificationBell';
 import {
-    Bell, Menu, Settings, LogOut, Landmark,
-    ChevronDown, ChevronRight,
+    Bell, Menu, Settings, LogOut, MapPin,
+    ChevronDown, ChevronRight, PanelLeftClose, PanelLeftOpen,
     LayoutDashboard, FileText,
     FolderCheck, Users, X, BarChart3, ScrollText
 } from 'lucide-react';
 
 import Avatar from '@/Components/Avatar';
+import useSidebarCollapsed from '@/hooks/useSidebarCollapsed';
+import LogoutOverlay from '@/Components/LogoutOverlay';
 /* ─────────────────────────────────────────────────────────────────────────
    BPLO Panel shell — sidebar + header chrome shared by every BPLO page.
    Brand token: `#182B62` (Deep Royal Navy).
@@ -19,10 +21,9 @@ export default function BPLOLayout({ children, title, role = "BPLO Officer", bre
     const isAdmin = props?.auth?.user?.role === 'admin';
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [profileOpen, setProfileOpen] = useState(false);
+    const [collapsed, toggleCollapsed] = useSidebarCollapsed();
     // Signed-in account for the header menu (shared auth prop — never a hardcoded placeholder).
     const authUser = props?.auth?.user;
-    // Shown in the sidebar office card.
-    const todayLabel = new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
     const accountName = authUser?.name || role;
     const [isExiting,   setIsExiting]   = useState(false);
 
@@ -139,6 +140,8 @@ export default function BPLOLayout({ children, title, role = "BPLO Officer", bre
     }, [breadcrumbs, url, title]);
 
     const handleLogout = () => {
+        if (isExiting) return;
+        setProfileOpen(false);
         setIsExiting(true);
         setTimeout(() => {
             router.post('/logout', {}, {
@@ -149,42 +152,38 @@ export default function BPLOLayout({ children, title, role = "BPLO Officer", bre
                     window.location.href = '/login';
                 },
             });
-        }, 400);
+        }, 150);
     };
 
     return (
-        <div
-            className="flex h-screen overflow-hidden bg-slate-50/60 font-sans text-slate-800"
-            style={{ opacity: isExiting ? 0 : 1, transition: 'opacity .4s' }}
-        >
+        <div className="flex h-screen supports-[height:100dvh]:h-dvh overflow-hidden bg-[#F6F7FB] font-['Plus_Jakarta_Sans',sans-serif] text-slate-900">
+            <LogoutOverlay show={isExiting} />
+
             {/* Mobile overlay */}
             {sidebarOpen && (
                 <div
-                    className="fixed inset-0 z-40 bg-black/30 lg:hidden"
+                    className="fixed inset-0 z-40 bg-slate-950/40 backdrop-blur-sm lg:hidden"
                     onClick={() => setSidebarOpen(false)}
                 />
             )}
 
             {/* ══════ SIDEBAR ══════════════════════════════════════ */}
             <aside
-                className={`fixed inset-y-0 left-0 z-50 flex w-[260px] flex-col bg-[#182B62] transition-transform duration-300 print:hidden lg:static lg:translate-x-0 ${
+                className={`fixed inset-y-0 left-0 z-50 flex w-[260px] flex-col overflow-hidden bg-[#182B62] transition-[transform,width] duration-300 print:hidden lg:static lg:translate-x-0 ${collapsed ? 'lg:w-[76px]' : ''} ${
                     sidebarOpen ? 'translate-x-0' : '-translate-x-full'
                 }`}
             >
                 {/* Logo & Portal Branding Header */}
-                <div className="flex h-[72px] shrink-0 items-center justify-between px-4">
-                    <Link href="/bplo-dashboard" className="flex items-center gap-3 group">
-                        <div className="flex h-10 shrink-0 items-center justify-center rounded-xl bg-white px-2.5 py-1 shadow-xs ring-1 ring-white/10 transition-transform group-hover:scale-105">
-                            <img src="/images/logo.png" alt="Trivora" className="h-6 w-auto object-contain" />
+                <div className={`flex h-[72px] shrink-0 items-center justify-between px-4 border-b border-white/[0.08] ${collapsed ? 'lg:justify-center lg:px-0' : ''}`}>
+                    <Link href="/bplo-dashboard" className="group flex min-w-0 items-center gap-3.5" aria-label="Trivora BPLO Portal — Dashboard">
+                        {/* The logo image already carries the TRIVORA wordmark, so no duplicate text label */}
+                        <div className={`flex h-10 shrink-0 items-center justify-center rounded-xl bg-white px-2.5 py-1.5 shadow-sm transition-transform group-hover:scale-[1.03] lg:h-11 lg:px-3 ${collapsed ? 'lg:!h-10 lg:w-[52px] lg:!px-1.5' : ''}`}>
+                            <img src="/images/logo.png" alt="Trivora" className={`h-6 w-auto object-contain lg:h-7 ${collapsed ? 'lg:!h-auto lg:w-full' : ''}`} />
                         </div>
-                        <div className="flex flex-col justify-center">
-                            <span className="text-sm font-black tracking-wider text-white leading-tight">
-                                TRIVORA
-                            </span>
-                            <span className="text-[9.5px] font-bold uppercase tracking-[0.14em] text-white/60 leading-tight mt-0.5">
-                                BPLO Portal
-                            </span>
-                        </div>
+                        <span className={`flex shrink-0 flex-col justify-center leading-none ${collapsed ? 'lg:hidden' : ''}`}>
+                            <span className="text-[15px] font-black tracking-wide text-white">BPLO</span>
+                            <span className="mt-1 text-[9.5px] font-bold uppercase tracking-[0.16em] text-white/80">Portal</span>
+                        </span>
                     </Link>
                     <button
                         onClick={() => setSidebarOpen(false)}
@@ -195,12 +194,12 @@ export default function BPLOLayout({ children, title, role = "BPLO Officer", bre
                 </div>
 
                 {/* Nav Links */}
-                <nav className="flex flex-1 flex-col overflow-y-auto px-3.5 pb-3.5 pt-2 custom-scrollbar-dark">
+                <nav className={`flex flex-1 flex-col overflow-y-auto overflow-x-hidden px-3.5 pb-3.5 pt-2 custom-scrollbar-dark ${collapsed ? 'lg:px-3' : ''}`}>
                     <div className="flex-1">
                         {navigation.map((group, gi) => (
-                            <div key={gi} className="mb-7">
-                                <div className="mb-1.5 flex items-center gap-2.5 px-2.5">
-                                    <span className="text-[9px] font-bold uppercase tracking-[0.17em] text-white/50">
+                            <div key={gi} className={`mb-7 ${collapsed ? 'lg:mb-4' : ''}`}>
+                                <div className={`mb-1.5 flex items-center gap-2.5 px-2.5 ${collapsed ? 'lg:px-1.5 lg:py-2' : ''}`}>
+                                    <span className={`text-[10px] font-semibold uppercase tracking-[0.14em] text-white/65 ${collapsed ? 'lg:hidden' : ''}`}>
                                         {group.group}
                                     </span>
                                     <span className="h-px flex-1 bg-white/10" />
@@ -213,15 +212,17 @@ export default function BPLOLayout({ children, title, role = "BPLO Officer", bre
                                         <Link
                                             key={link.name}
                                             href={link.route}
-                                            className={`mb-1 flex items-center rounded-xl px-3.5 py-2.5 text-[13.5px] font-semibold transition-all duration-150 ${
+                                            title={collapsed ? link.name : undefined}
+                                            aria-label={link.name}
+                                            className={`mb-1 flex items-center rounded-xl px-3.5 py-2.5 text-[13.5px] font-medium transition-all duration-150 ${collapsed ? 'lg:justify-center lg:px-0' : ''} ${
                                                 isActive
-                                                    ? 'bg-white text-[#182B62] shadow-sm font-bold'
-                                                    : 'text-white/75 hover:bg-white/[0.09] hover:text-white'
+                                                    ? 'bg-white text-[#182B62] shadow-sm font-semibold'
+                                                    : 'text-white/90 hover:bg-white/10 hover:text-white'
                                             }`}
                                         >
                                             <div className="flex items-center gap-3 min-w-0">
                                                 <Icon size={17} strokeWidth={isActive ? 2.5 : 2} className="shrink-0" />
-                                                <span className="truncate">{link.name}</span>
+                                                <span className={`truncate ${collapsed ? 'lg:hidden' : ''}`}>{link.name}</span>
                                             </div>
                                         </Link>
                                     );
@@ -231,22 +232,15 @@ export default function BPLOLayout({ children, title, role = "BPLO Officer", bre
                     </div>
 
                     {/* Office Info Card — Sign Out lives in the header account menu */}
-                    <div className="shrink-0 border-t border-white/10 p-3">
-                        <div className="flex items-center gap-2.5 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2.5">
-                            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-white/10 text-white/70">
-                                <Landmark size={14} strokeWidth={2.2} />
-                            </div>
-                            <div className="flex min-w-0 flex-col">
-                                <span className="truncate text-xs font-bold leading-tight text-white">
-                                    BPLO · Nasugbu
-                                </span>
-                                <span className="truncate text-[10.5px] font-semibold leading-tight text-white/60">
-                                    Batangas
-                                </span>
-                                <span className="truncate text-[10px] font-medium leading-tight text-white/40">
-                                    {todayLabel}
-                                </span>
-                            </div>
+                    <div className={`shrink-0 border-t border-white/10 p-3 ${collapsed ? 'lg:hidden' : ''}`}>
+                        <div className="rounded-xl border border-white/10 bg-white/[0.05] px-3.5 py-3">
+                            <p className="text-[12.5px] font-bold leading-tight text-white">
+                                Business Permits &amp; Licensing Office
+                            </p>
+                            <p className="mt-1 flex min-w-0 items-center gap-1 text-[11.5px] font-medium leading-tight text-white/85">
+                                <MapPin size={12} strokeWidth={2.4} className="shrink-0 text-white/80" />
+                                <span className="truncate">Nasugbu, Batangas</span>
+                            </p>
                         </div>
                     </div>
                 </nav>
@@ -256,15 +250,25 @@ export default function BPLOLayout({ children, title, role = "BPLO Officer", bre
             <div className="flex min-w-0 flex-1 flex-col">
 
                 {/* Header */}
-                <header className="sticky top-0 z-30 flex h-16 shrink-0 items-center justify-between border-b border-slate-200/80 bg-white/95 backdrop-blur-md px-4 print:hidden sm:px-8 shadow-[0_1px_3px_0_rgba(15,23,42,0.03)]">
+                <header className="sticky top-0 z-30 flex h-16 shrink-0 items-center justify-between border-b border-slate-200/80 bg-white/90 backdrop-blur-md px-4 print:hidden sm:px-8 shadow-[0_1px_3px_0_rgba(15,23,42,0.03)]">
 
                     {/* Left: Mobile Toggle & Dynamic Breadcrumbs */}
                     <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 pr-4">
                         <button
-                            className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 text-slate-500 hover:border-slate-300 hover:text-slate-800 lg:hidden shrink-0"
+                            className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 text-slate-700 hover:border-slate-300 hover:text-slate-900 lg:hidden shrink-0"
                             onClick={() => setSidebarOpen(true)}
                         >
                             <Menu size={18} strokeWidth={2} />
+                        </button>
+
+                        <button
+                            type="button"
+                            onClick={toggleCollapsed}
+                            className="hidden h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-slate-200 text-slate-700 transition-colors hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900 lg:flex"
+                            aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+                            title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+                        >
+                            {collapsed ? <PanelLeftOpen size={18} strokeWidth={2} /> : <PanelLeftClose size={18} strokeWidth={2} />}
                         </button>
 
                         {/* Logo (mobile & tablet — replaces breadcrumbs) */}
@@ -273,18 +277,18 @@ export default function BPLOLayout({ children, title, role = "BPLO Officer", bre
                         </Link>
 
                         {/* Dynamic Breadcrumbs Trail */}
-                        <nav aria-label="Breadcrumb" className="hidden items-center gap-1.5 text-[12.5px] font-medium overflow-hidden lg:flex lg:gap-2">
+                        <nav aria-label="Breadcrumb" className="hidden items-center gap-1.5 text-[13px] font-medium overflow-hidden lg:flex lg:gap-2">
                             {computedBreadcrumbs.map((crumb, idx) => {
                                 const isLast = idx === computedBreadcrumbs.length - 1;
                                 return (
                                     <React.Fragment key={idx}>
                                         {idx > 0 && (
-                                            <ChevronRight size={13} className="text-slate-300 shrink-0" strokeWidth={2.2} />
+                                            <ChevronRight size={13} className="text-slate-400 shrink-0" strokeWidth={2.2} />
                                         )}
                                         {crumb.href && !isLast ? (
                                             <Link
                                                 href={crumb.href}
-                                                className="text-slate-500 hover:text-[#182B62] transition-colors shrink-0 font-medium"
+                                                className="text-slate-600 hover:text-[#182B62] transition-colors shrink-0 font-medium"
                                             >
                                                 {crumb.label}
                                             </Link>
@@ -293,7 +297,7 @@ export default function BPLOLayout({ children, title, role = "BPLO Officer", bre
                                                 className={`truncate ${
                                                     isLast
                                                         ? 'text-[#182B62] font-extrabold tracking-tight font-[\'Plus_Jakarta_Sans\',sans-serif]'
-                                                        : 'text-slate-500 font-medium'
+                                                        : 'text-slate-600 font-medium'
                                                 }`}
                                             >
                                                 {crumb.label}
@@ -317,29 +321,29 @@ export default function BPLOLayout({ children, title, role = "BPLO Officer", bre
                                 className="flex items-center gap-2.5 rounded-full py-1 pl-1 pr-3 hover:bg-slate-100/80 transition-all border border-transparent hover:border-slate-200/60"
                                 onClick={() => setProfileOpen(p => !p)}
                             >
-                                <Avatar name={accountName} src={authUser?.profile_photo_url} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#182B62] to-[#25449B] text-[11px] font-bold tracking-wide text-white shadow-xs" />
+                                <Avatar name={accountName} src={authUser?.profile_photo_url} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#182B62] to-[#25449B] text-[11px] font-bold tracking-wide text-white shadow-sm" />
 
                                 <div className="hidden text-left leading-tight md:block">
-                                    <p className="max-w-[160px] truncate text-[12.5px] font-bold text-slate-800 font-['Plus_Jakarta_Sans',sans-serif]">{accountName}</p>
-                                    <p className="text-[9.5px] font-bold uppercase tracking-wider text-slate-400">{role}</p>
+                                    <p className="max-w-[160px] truncate text-[12px] font-bold text-slate-800 font-['Plus_Jakarta_Sans',sans-serif]">{accountName}</p>
+                                    <p className="text-[10.5px] font-medium text-slate-600">{role}</p>
                                 </div>
 
                                 <ChevronDown
                                     size={13}
                                     strokeWidth={2.5}
-                                    className={`shrink-0 text-slate-400 transition-transform ${profileOpen ? 'rotate-180' : ''}`}
+                                    className={`shrink-0 text-slate-500 transition-transform ${profileOpen ? 'rotate-180' : ''}`}
                                 />
                             </button>
 
                             {profileOpen && (
-                                <div className="absolute right-0 top-[calc(100%+8px)] z-50 w-56 overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-lg">
+                                <div className="absolute right-0 top-[calc(100%+8px)] z-50 w-60 overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-[0_2px_4px_rgba(15,23,42,0.06),0_16px_40px_-12px_rgba(15,23,42,0.22)]">
                                     <div className="border-b border-slate-100 px-4 py-3">
-                                        <p className="text-[9px] font-bold uppercase tracking-wide text-slate-400">{role}</p>
-                                        <p className="truncate text-sm font-bold text-slate-900 font-['Plus_Jakarta_Sans',sans-serif]">{accountName}</p>
-                                        {authUser?.email && <p className="truncate text-[11px] text-slate-400">{authUser.email}</p>}
+                                        <p className="text-[10.5px] font-semibold uppercase tracking-wide text-slate-500">{role}</p>
+                                        <p className="truncate text-[13.5px] font-semibold text-slate-900 font-['Plus_Jakarta_Sans',sans-serif]">{accountName}</p>
+                                        {authUser?.email && <p className="truncate text-[11.5px] text-slate-600">{authUser.email}</p>}
                                     </div>
                                     <div className="p-1.5 font-['Plus_Jakarta_Sans',sans-serif]">
-                                        <Link href={route('profile.edit')} className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900">
+                                        <Link href={route('profile.edit')} className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium text-slate-700 hover:bg-slate-50 hover:text-slate-900">
                                             <Settings size={14} strokeWidth={1.8} />
                                             Account Settings
                                         </Link>
@@ -358,7 +362,7 @@ export default function BPLOLayout({ children, title, role = "BPLO Officer", bre
                 </header>
 
                 {/* Page content */}
-                <main className="flex-1 overflow-y-auto px-3.5 py-4 sm:px-6 sm:py-6 lg:px-8 lg:py-8 custom-scrollbar">
+                <main className="flex-1 overflow-y-auto overscroll-contain px-3.5 py-4 sm:px-6 sm:py-6 lg:px-8 lg:py-8 custom-scrollbar font-['Plus_Jakarta_Sans',sans-serif]">
                     <div className="mx-auto max-w-[1500px]">
                         {children}
                     </div>

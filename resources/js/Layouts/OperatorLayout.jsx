@@ -2,13 +2,15 @@ import React, { useState, useMemo } from 'react';
 import { Link, usePage, router } from '@inertiajs/react';
 import NotificationBell from '@/Components/NotificationBell';
 import {
-    Bell, Menu, Settings, LogOut, Smartphone, Download,
-    ChevronDown, ChevronRight,
+    Bell, Menu, Settings, LogOut, Smartphone, Download, CheckCircle2,
+    ChevronDown, ChevronRight, PanelLeftClose, PanelLeftOpen,
     LayoutDashboard, ShieldAlert,
     FileText, Bike, X
 } from 'lucide-react';
 
 import Avatar from '@/Components/Avatar';
+import useSidebarCollapsed from '@/hooks/useSidebarCollapsed';
+import LogoutOverlay from '@/Components/LogoutOverlay';
 /* ─────────────────────────────────────────────────────────────────────────
    Driver / Operator Panel shell — sidebar + header chrome matching TMO & BPLO.
    Brand token: `#182B62` (Deep Royal Navy).
@@ -28,6 +30,7 @@ export default function OperatorLayout({
 
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [profileOpen, setProfileOpen] = useState(false);
+    const [collapsed, toggleCollapsed] = useSidebarCollapsed();
     const [isExiting,   setIsExiting]   = useState(false);
 
     // ── Driver-specific Navigation ──
@@ -172,6 +175,8 @@ export default function OperatorLayout({
     }, [breadcrumbs, url, title]);
 
     const handleLogout = () => {
+        if (isExiting) return;
+        setProfileOpen(false);
         setIsExiting(true);
         setTimeout(() => {
             router.post('/logout', {}, {
@@ -182,42 +187,38 @@ export default function OperatorLayout({
                     window.location.href = '/login';
                 },
             });
-        }, 400);
+        }, 150);
     };
 
     return (
-        <div
-            className="flex h-screen overflow-hidden bg-slate-50/60 font-sans text-slate-800"
-            style={{ opacity: isExiting ? 0 : 1, transition: 'opacity .4s' }}
-        >
+        <div className="flex h-screen supports-[height:100dvh]:h-dvh overflow-hidden bg-[#F6F7FB] font-['Plus_Jakarta_Sans',sans-serif] text-slate-900">
+            <LogoutOverlay show={isExiting} />
+
             {/* Mobile overlay */}
             {sidebarOpen && (
                 <div
-                    className="fixed inset-0 z-40 bg-black/30 lg:hidden"
+                    className="fixed inset-0 z-40 bg-slate-950/40 backdrop-blur-sm lg:hidden"
                     onClick={() => setSidebarOpen(false)}
                 />
             )}
 
             {/* ══════ SIDEBAR ══════════════════════════════════════ */}
             <aside
-                className={`fixed inset-y-0 left-0 z-50 flex w-[260px] flex-col bg-[#182B62] transition-transform duration-300 print:hidden lg:static lg:translate-x-0 ${
+                className={`fixed inset-y-0 left-0 z-50 flex w-[260px] flex-col overflow-hidden bg-[#182B62] transition-[transform,width] duration-300 print:hidden lg:static lg:translate-x-0 ${collapsed ? 'lg:w-[76px]' : ''} ${
                     sidebarOpen ? 'translate-x-0' : '-translate-x-full'
                 }`}
             >
                 {/* Logo & Portal Branding Header */}
-                <div className="flex h-[72px] shrink-0 items-center justify-between px-4">
-                    <Link href="/operator/dashboard" className="flex items-center gap-3 group">
-                        <div className="flex h-10 shrink-0 items-center justify-center rounded-xl bg-white px-2.5 py-1 shadow-xs ring-1 ring-white/10 transition-transform group-hover:scale-105">
-                            <img src="/images/logo.png" alt="Trivora" className="h-6 w-auto object-contain" />
+                <div className={`flex h-[72px] shrink-0 items-center justify-between px-4 border-b border-white/[0.08] ${collapsed ? 'lg:justify-center lg:px-0' : ''}`}>
+                    <Link href="/operator/dashboard" className="group flex min-w-0 items-center gap-3.5" aria-label="Trivora Driver Portal — Dashboard">
+                        {/* The logo image already carries the TRIVORA wordmark, so no duplicate text label */}
+                        <div className={`flex h-10 shrink-0 items-center justify-center rounded-xl bg-white px-2.5 py-1.5 shadow-sm transition-transform group-hover:scale-[1.03] lg:h-11 lg:px-3 ${collapsed ? 'lg:!h-10 lg:w-[52px] lg:!px-1.5' : ''}`}>
+                            <img src="/images/logo.png" alt="Trivora" className={`h-6 w-auto object-contain lg:h-7 ${collapsed ? 'lg:!h-auto lg:w-full' : ''}`} />
                         </div>
-                        <div className="flex flex-col justify-center">
-                            <span className="text-sm font-black tracking-wider text-white leading-tight">
-                                TRIVORA
-                            </span>
-                            <span className="text-[9.5px] font-bold uppercase tracking-[0.14em] text-white/60 leading-tight mt-0.5">
-                                Driver Portal
-                            </span>
-                        </div>
+                        <span className={`flex shrink-0 flex-col justify-center leading-none ${collapsed ? 'lg:hidden' : ''}`}>
+                            <span className="text-[15px] font-black tracking-wide text-white">DRIVER</span>
+                            <span className="mt-1 text-[9.5px] font-bold uppercase tracking-[0.16em] text-white/80">Portal</span>
+                        </span>
                     </Link>
                     <button
                         onClick={() => setSidebarOpen(false)}
@@ -228,12 +229,12 @@ export default function OperatorLayout({
                 </div>
 
                 {/* Nav Links */}
-                <nav className="flex flex-1 flex-col overflow-y-auto px-3.5 pb-3.5 pt-2">
+                <nav className={`flex flex-1 flex-col overflow-y-auto overflow-x-hidden px-3.5 pb-3.5 pt-2 custom-scrollbar-dark ${collapsed ? 'lg:px-3' : ''}`}>
                     <div className="flex-1">
                         {navigation.map((group, gi) => (
-                            <div key={gi} className="mb-7">
-                                <div className="mb-1.5 flex items-center gap-2.5 px-2.5">
-                                    <span className="text-[9px] font-bold uppercase tracking-[0.17em] text-white/50">
+                            <div key={gi} className={`mb-7 ${collapsed ? 'lg:mb-4' : ''}`}>
+                                <div className={`mb-1.5 flex items-center gap-2.5 px-2.5 ${collapsed ? 'lg:px-1.5 lg:py-2' : ''}`}>
+                                    <span className={`text-[10px] font-semibold uppercase tracking-[0.14em] text-white/65 ${collapsed ? 'lg:hidden' : ''}`}>
                                         {group.group}
                                     </span>
                                     <span className="h-px flex-1 bg-white/10" />
@@ -246,15 +247,17 @@ export default function OperatorLayout({
                                         <Link
                                             key={link.name}
                                             href={link.path}
-                                            className={`mb-1 flex items-center rounded-xl px-3.5 py-2.5 text-[13.5px] font-semibold transition-all duration-150 ${
+                                            title={collapsed ? link.name : undefined}
+                                            aria-label={link.name}
+                                            className={`mb-1 flex items-center rounded-xl px-3.5 py-2.5 text-[13.5px] font-medium transition-all duration-150 ${collapsed ? 'lg:justify-center lg:px-0' : ''} ${
                                                 isActive
-                                                    ? 'bg-white text-[#182B62] shadow-xs font-bold'
-                                                    : 'text-white/75 hover:bg-white/[0.09] hover:text-white font-medium'
+                                                    ? 'bg-white text-[#182B62] shadow-sm font-semibold'
+                                                    : 'text-white/90 hover:bg-white/10 hover:text-white'
                                             }`}
                                         >
                                             <div className="flex items-center gap-3 min-w-0">
                                                 <Icon size={17} strokeWidth={isActive ? 2.5 : 2} className="shrink-0" />
-                                                <span className="truncate">{link.name}</span>
+                                                <span className={`truncate ${collapsed ? 'lg:hidden' : ''}`}>{link.name}</span>
                                             </div>
                                         </Link>
                                     );
@@ -266,38 +269,62 @@ export default function OperatorLayout({
                     {/* Download Driver App — Sign Out lives in the header account menu.
                         Link comes from DRIVER_APP_DOWNLOAD_URL; hidden until it is set. */}
                     {props?.driverAppUrl && (
-                        <div className="shrink-0 border-t border-white/10 p-3">
-                            <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-white/[0.10] via-white/[0.04] to-emerald-400/[0.08] p-3.5">
-                                {/* Soft glow accent */}
-                                <div className="pointer-events-none absolute -right-6 -top-6 h-20 w-20 rounded-full bg-emerald-400/20 blur-2xl" aria-hidden="true" />
-
+                        <div className={`shrink-0 border-t border-white/10 p-3 ${collapsed ? 'lg:hidden' : ''}`}>
+                            <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-white/[0.06] p-3.5">
+                                {/* App identity */}
                                 <div className="relative flex items-center gap-2.5">
-                                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white p-1.5 shadow-md ring-1 ring-white/20">
-                                        <img src="/images/logo.png" alt="" className="h-full w-full object-contain" />
+                                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-[#182B62]">
+                                        <Smartphone size={19} strokeWidth={2.2} />
                                     </div>
                                     <div className="min-w-0">
-                                        <p className="truncate text-[13px] font-extrabold leading-tight text-white">Trivora Driver</p>
-                                        <p className="mt-0.5 inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-300">
-                                            <Smartphone size={10} strokeWidth={2.4} />
-                                            Android · Free
-                                        </p>
+                                        <p className="truncate text-[13px] font-extrabold leading-tight text-white">Trivora Driver App</p>
+                                        <div className="mt-1 flex items-center gap-1.5">
+                                            <span className="rounded-md bg-white/15 px-1.5 py-px text-[9.5px] font-bold uppercase tracking-wide text-white">Android</span>
+                                            <span className="rounded-md bg-white/15 px-1.5 py-px text-[9.5px] font-bold uppercase tracking-wide text-white">Free</span>
+                                        </div>
                                     </div>
                                 </div>
 
-                                <p className="relative mt-2.5 text-[11px] leading-snug text-white/60">
-                                    Go online, accept rides and share your GPS location on the road.
-                                </p>
+                                {/* What the app is for */}
+                                <ul className="relative mt-3 space-y-1.5">
+                                    {['Go online & accept ride bookings', 'Share live GPS while on duty'].map((feature) => (
+                                        <li key={feature} className="flex items-start gap-1.5 text-[11.5px] font-medium leading-snug text-white">
+                                            <CheckCircle2 size={12} strokeWidth={2.4} className="mt-px shrink-0 text-emerald-300" />
+                                            <span>{feature}</span>
+                                        </li>
+                                    ))}
+                                </ul>
 
                                 <a
                                     href={props.driverAppUrl}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="relative mt-3 flex w-full items-center justify-center gap-1.5 rounded-xl bg-emerald-500 py-2 text-xs font-bold text-white transition-all hover:bg-emerald-400 active:scale-[0.98]"
+                                    className="relative mt-3.5 flex w-full items-center justify-center gap-1.5 rounded-xl bg-emerald-500 py-2.5 text-xs font-bold text-white transition-colors hover:bg-emerald-400 active:scale-[0.98]"
                                 >
                                     <Download size={14} strokeWidth={2.4} />
                                     Download APK
                                 </a>
+
+                                <p className="relative mt-2 text-center text-[10.5px] font-medium leading-snug text-white/90">
+                                    Allow installs from this source when your phone asks.
+                                </p>
                             </div>
+                        </div>
+                    )}
+
+                    {/* Collapsed sidebar (desktop): icon-only shortcut to the same APK link */}
+                    {props?.driverAppUrl && collapsed && (
+                        <div className="hidden shrink-0 justify-center border-t border-white/10 py-3 lg:flex">
+                            <a
+                                href={props.driverAppUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                title="Download Trivora Driver (Android)"
+                                aria-label="Download Trivora Driver (Android)"
+                                className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500 text-white transition-all hover:bg-emerald-400 active:scale-[0.98]"
+                            >
+                                <Download size={17} strokeWidth={2.4} />
+                            </a>
                         </div>
                     )}
                 </nav>
@@ -307,15 +334,25 @@ export default function OperatorLayout({
             <div className="flex min-w-0 flex-1 flex-col">
 
                 {/* Header */}
-                <header className="sticky top-0 z-30 flex h-16 shrink-0 items-center justify-between border-b border-slate-200/80 bg-white/95 backdrop-blur-md px-4 print:hidden sm:px-8 shadow-[0_1px_3px_0_rgba(15,23,42,0.03)]">
+                <header className="sticky top-0 z-30 flex h-16 shrink-0 items-center justify-between border-b border-slate-200/80 bg-white/90 backdrop-blur-md px-4 print:hidden sm:px-8 shadow-[0_1px_3px_0_rgba(15,23,42,0.03)]">
 
                     {/* Left: Mobile Toggle & Dynamic Breadcrumbs */}
                     <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 pr-4">
                         <button
-                            className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 text-slate-500 hover:border-slate-300 hover:text-slate-800 lg:hidden shrink-0 transition-colors"
+                            className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 text-slate-700 hover:border-slate-300 hover:text-slate-900 lg:hidden shrink-0 transition-colors"
                             onClick={() => setSidebarOpen(true)}
                         >
                             <Menu size={18} strokeWidth={2} />
+                        </button>
+
+                        <button
+                            type="button"
+                            onClick={toggleCollapsed}
+                            className="hidden h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-slate-200 text-slate-700 transition-colors hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900 lg:flex"
+                            aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+                            title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+                        >
+                            {collapsed ? <PanelLeftOpen size={18} strokeWidth={2} /> : <PanelLeftClose size={18} strokeWidth={2} />}
                         </button>
 
                         {/* Logo (mobile & tablet — replaces breadcrumbs) */}
@@ -324,18 +361,18 @@ export default function OperatorLayout({
                         </Link>
 
                         {/* Dynamic Breadcrumbs Trail */}
-                        <nav aria-label="Breadcrumb" className="hidden items-center gap-1.5 text-[12.5px] font-medium overflow-hidden lg:flex lg:gap-2">
+                        <nav aria-label="Breadcrumb" className="hidden items-center gap-1.5 text-[13px] font-medium overflow-hidden lg:flex lg:gap-2">
                             {computedBreadcrumbs.map((crumb, idx) => {
                                 const isLast = idx === computedBreadcrumbs.length - 1;
                                 return (
                                     <React.Fragment key={idx}>
                                         {idx > 0 && (
-                                            <ChevronRight size={13} className="text-slate-300 shrink-0" strokeWidth={2.2} />
+                                            <ChevronRight size={13} className="text-slate-400 shrink-0" strokeWidth={2.2} />
                                         )}
                                         {crumb.href && !isLast ? (
                                             <Link
                                                 href={crumb.href}
-                                                className="text-slate-500 hover:text-[#182B62] transition-colors shrink-0 font-medium"
+                                                className="text-slate-600 hover:text-[#182B62] transition-colors shrink-0 font-medium"
                                             >
                                                 {crumb.label}
                                             </Link>
@@ -344,7 +381,7 @@ export default function OperatorLayout({
                                                 className={`truncate ${
                                                     isLast
                                                         ? 'text-[#182B62] font-extrabold tracking-tight'
-                                                        : 'text-slate-500 font-medium'
+                                                        : 'text-slate-600 font-medium'
                                                 }`}
                                             >
                                                 {crumb.label}
@@ -368,31 +405,31 @@ export default function OperatorLayout({
                                 className="flex items-center gap-2.5 rounded-full py-1 pl-1 pr-3 hover:bg-slate-100/80 transition-all border border-transparent hover:border-slate-200/60"
                                 onClick={() => setProfileOpen(p => !p)}
                             >
-                                <Avatar name={displayName} src={user?.profile_photo_url} fallback="DR" className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#182B62] to-[#25449B] text-[11px] font-bold tracking-wide text-white shadow-xs" />
+                                <Avatar name={displayName} src={user?.profile_photo_url} fallback="DR" className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#182B62] to-[#25449B] text-[11px] font-bold tracking-wide text-white shadow-sm" />
 
                                 <div className="hidden text-left leading-tight md:block">
-                                    <p className="max-w-[160px] truncate text-[12.5px] font-bold text-slate-800">{displayName}</p>
-                                    <p className="text-[9.5px] font-bold uppercase tracking-wider text-slate-400">Tricycle Driver</p>
+                                    <p className="max-w-[160px] truncate text-[12px] font-bold text-slate-800">{displayName}</p>
+                                    <p className="text-[10.5px] font-medium text-slate-600">Tricycle Driver</p>
                                 </div>
 
                                 <ChevronDown
                                     size={13}
                                     strokeWidth={2.5}
-                                    className={`shrink-0 text-slate-400 transition-transform ${profileOpen ? 'rotate-180' : ''}`}
+                                    className={`shrink-0 text-slate-500 transition-transform ${profileOpen ? 'rotate-180' : ''}`}
                                 />
                             </button>
 
                             {profileOpen && (
-                                <div className="absolute right-0 top-[calc(100%+8px)] z-50 w-56 overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-lg">
+                                <div className="absolute right-0 top-[calc(100%+8px)] z-50 w-60 overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-[0_2px_4px_rgba(15,23,42,0.06),0_16px_40px_-12px_rgba(15,23,42,0.22)]">
                                     <div className="border-b border-slate-100 px-4 py-3">
-                                        <p className="text-[9px] font-bold uppercase tracking-wider text-slate-400">Driver Account</p>
-                                        <p className="truncate text-sm font-bold text-slate-900">{displayName}</p>
-                                        {user?.email && <p className="truncate text-[11px] text-slate-400 mt-0.5">{user.email}</p>}
+                                        <p className="text-[10.5px] font-semibold uppercase tracking-wide text-slate-500">Driver Account</p>
+                                        <p className="truncate text-[13.5px] font-semibold text-slate-900">{displayName}</p>
+                                        {user?.email && <p className="truncate text-[11.5px] text-slate-600 mt-0.5">{user.email}</p>}
                                     </div>
                                     <div className="p-1.5">
                                         <Link
                                             href="/profile"
-                                            className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors"
+                                            className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium text-slate-700 hover:bg-slate-50 hover:text-slate-900 transition-colors"
                                         >
                                             <Settings size={14} strokeWidth={1.8} />
                                             Account Settings
@@ -412,7 +449,7 @@ export default function OperatorLayout({
                 </header>
 
                 {/* Page content */}
-                <main className="flex-1 overflow-y-auto px-3.5 py-4 sm:px-6 sm:py-6 lg:px-8 lg:py-8 custom-scrollbar">
+                <main className="flex-1 overflow-y-auto overscroll-contain px-3.5 py-4 sm:px-6 sm:py-6 lg:px-8 lg:py-8 custom-scrollbar font-['Plus_Jakarta_Sans',sans-serif]">
                     <div className="mx-auto max-w-[1500px]">
                         {children}
                     </div>

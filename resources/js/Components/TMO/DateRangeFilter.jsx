@@ -69,7 +69,7 @@ export default function DateRangeFilter({ from, to, onChange }) {
             </select>
 
             <div className="flex items-center gap-1.5 w-full sm:w-auto">
-                <Calendar size={14} className="hidden shrink-0 text-slate-400 sm:block" />
+                <Calendar size={14} className="hidden shrink-0 text-slate-500 sm:block" />
                 <input
                     type="date"
                     value={from}
@@ -78,7 +78,7 @@ export default function DateRangeFilter({ from, to, onChange }) {
                     aria-label="From date"
                     className="h-10 flex-1 sm:w-32 sm:flex-none rounded-xl border border-slate-200 bg-slate-50/70 px-2.5 text-xs font-semibold text-slate-700 transition-colors focus:border-[#182B62] focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#182B62]"
                 />
-                <span className="shrink-0 text-xs font-bold text-slate-400 px-0.5">to</span>
+                <span className="shrink-0 text-xs font-bold text-slate-500 px-0.5">to</span>
                 <input
                     type="date"
                     value={to}

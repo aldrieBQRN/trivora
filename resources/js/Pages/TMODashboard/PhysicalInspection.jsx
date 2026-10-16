@@ -13,7 +13,7 @@ import { Textarea } from '@/Components/TMO';
 import { PHYSICAL_INSPECTION_ITEMS } from '@/data/physicalInspectionItems';
 
 import Avatar from '@/Components/Avatar';
-const CARD_SHADOW = 'shadow-[0_1px_2px_0_rgba(15,23,42,0.04),0_8px_24px_-8px_rgba(15,23,42,0.10)]';
+const CARD_SHADOW = 'shadow-[0_1px_3px_0_rgba(15,23,42,0.07),0_10px_28px_-8px_rgba(15,23,42,0.14)]';
 
 const QUICK_REJECTION_REASONS = [
     'Braking system defect or insufficient stopping distance',
@@ -61,7 +61,7 @@ export default function PhysicalInspection({ application }) {
     const handleApprove = () => {
         Swal.fire({
             title: 'Approve Inspection?',
-            html: `Mark <b>${appData.reference || appData.id}</b> as roadworthy and passed?<br/><span class="text-xs text-slate-500 mt-1 block">The physical roadworthiness inspection will be cleared and the application will be forwarded to BPLO.</span>`,
+            html: `Mark <b>${appData.reference || appData.id}</b> as roadworthy and passed?<br/><span class="text-xs text-slate-600 mt-1 block">The physical roadworthiness inspection will be cleared and the application will be forwarded to BPLO.</span>`,
             icon: 'question',
             showCancelButton: true,
             confirmButtonColor: '#182B62',
@@ -113,7 +113,7 @@ export default function PhysicalInspection({ application }) {
 
         Swal.fire({
             title: 'Confirm Rejection?',
-            html: `Flag <b>${appData.reference || appData.id}</b> for defect repairs?<br/><span class="text-xs text-slate-500 mt-1 block">The operator will be notified of the required fixes and scheduled for re-inspection.</span>`,
+            html: `Flag <b>${appData.reference || appData.id}</b> for defect repairs?<br/><span class="text-xs text-slate-600 mt-1 block">The operator will be notified of the required fixes and scheduled for re-inspection.</span>`,
             icon: 'warning',
             showCancelButton: true,
             confirmButtonColor: '#DC2626',
@@ -150,9 +150,9 @@ export default function PhysicalInspection({ application }) {
                 <div className="mb-4">
                     <Link
                         href="/tmo/physical"
-                        className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold text-slate-500 hover:text-slate-900 transition-colors group"
+                        className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold text-slate-600 hover:text-slate-900 transition-colors group"
                     >
-                        <ChevronLeft size={16} strokeWidth={2.5} className="text-slate-400 group-hover:text-slate-700 transition-colors" />
+                        <ChevronLeft size={16} strokeWidth={2.5} className="text-slate-500 group-hover:text-slate-700 transition-colors" />
                         <span>Back to Physical Inspection Queue</span>
                     </Link>
                 </div>
@@ -167,11 +167,11 @@ export default function PhysicalInspection({ application }) {
                                 <h1 className="text-2xl sm:text-[28px] font-black tracking-tight text-slate-900 leading-tight">
                                     {appData.reference || appData.id}
                                 </h1>
-                                <span className="text-xs sm:text-sm font-semibold text-slate-500">
+                                <span className="text-xs sm:text-sm font-semibold text-slate-600">
                                     · {appData.is_reinspection ? 'Re-inspection' : 'Roadworthiness Inspection'}
                                 </span>
                             </div>
-                            <p className="mt-1 text-xs sm:text-sm text-slate-500 font-medium">
+                            <p className="mt-1 text-xs sm:text-sm text-slate-600 font-medium">
                                 Applicant: <strong className="font-bold text-slate-900">{appData.operator}</strong>
                             </p>
                         </div>
@@ -188,7 +188,7 @@ export default function PhysicalInspection({ application }) {
 
                         {/* Re-inspection Notification Banner (if applicable) */}
                         {appData.is_reinspection && (
-                            <div className="rounded-2xl border border-amber-200 bg-amber-50/80 p-4 sm:p-5 shadow-2xs">
+                            <div className="rounded-2xl border border-amber-200 bg-amber-50/80 p-4 sm:p-5 shadow-sm">
                                 <div className="flex items-center gap-3 sm:gap-3.5">
                                     <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-500/15 text-amber-700 border border-amber-200">
                                         <RotateCcw size={18} strokeWidth={2.2} />
@@ -228,7 +228,7 @@ export default function PhysicalInspection({ application }) {
                                         <h2 className="text-sm font-bold text-slate-900">
                                             Roadworthiness Inspection Checklist
                                         </h2>
-                                        <p className="text-[11px] text-slate-500 font-medium">
+                                        <p className="text-[11px] text-slate-600 font-medium">
                                             Physical safety, mechanical parts, and passenger security requirements
                                         </p>
                                     </div>
@@ -242,7 +242,7 @@ export default function PhysicalInspection({ application }) {
                                 {/* Inspection Items Table */}
                                 <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white">
                                     <table className="w-full text-left text-xs border-collapse">
-                                        <thead className="hidden sm:table-header-group border-b border-slate-100 bg-slate-50/75 text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                                        <thead className="hidden sm:table-header-group border-b border-slate-100 bg-slate-50/75 text-[11px] font-bold uppercase tracking-wider text-slate-500">
                                             <tr>
                                                 <th scope="col" className="py-3 px-4 w-5/12">Component</th>
                                                 <th scope="col" className="py-3 px-4 w-7/12">Official Requirement</th>
@@ -281,7 +281,7 @@ export default function PhysicalInspection({ application }) {
                                 <div className={`border-t border-slate-100 pt-5 space-y-3 ${decisionMode !== 'reject' ? 'hidden lg:block' : ''}`}>
                                     <div className="hidden lg:flex items-center justify-between">
                                         <div>
-                                            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">
+                                            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500">
                                                 Inspection Finding
                                             </h3>
                                             <p className="text-xs text-slate-600 mt-0.5 font-medium">
@@ -306,7 +306,7 @@ export default function PhysicalInspection({ application }) {
                                                 type="button"
                                                 disabled={isProcessing}
                                                 onClick={handleApprove}
-                                                className="flex items-center justify-center gap-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white py-3 px-4 text-xs sm:text-sm font-bold shadow-2xs transition-all cursor-pointer disabled:opacity-50"
+                                                className="flex items-center justify-center gap-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white py-3 px-4 text-xs sm:text-sm font-bold shadow-sm transition-all cursor-pointer disabled:opacity-50"
                                             >
                                                 {isProcessing ? <Loader2 size={16} className="animate-spin" /> : <CheckCircle2 size={16} strokeWidth={2.2} />}
                                                 <span>Approve</span>
@@ -329,7 +329,7 @@ export default function PhysicalInspection({ application }) {
 
                                             {/* Quick preset chips */}
                                             <div>
-                                                <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">
+                                                <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-1.5">
                                                     Common Defects (Click to add)
                                                 </label>
                                                 <div className="flex flex-wrap gap-1.5">
@@ -387,7 +387,7 @@ export default function PhysicalInspection({ application }) {
                                                     type="button"
                                                     disabled={isProcessing}
                                                     onClick={handleConfirmReject}
-                                                    className="flex items-center gap-1.5 rounded-xl bg-rose-600 hover:bg-rose-700 active:bg-rose-800 text-white px-4 py-2 text-xs font-bold shadow-2xs transition-all cursor-pointer disabled:opacity-50"
+                                                    className="flex items-center gap-1.5 rounded-xl bg-rose-600 hover:bg-rose-700 active:bg-rose-800 text-white px-4 py-2 text-xs font-bold shadow-sm transition-all cursor-pointer disabled:opacity-50"
                                                 >
                                                     {isProcessing ? <Loader2 size={14} className="animate-spin" /> : <XCircle size={14} />}
                                                     <span>Reject</span>
@@ -419,37 +419,37 @@ export default function PhysicalInspection({ application }) {
 
                             {/* Owner Summary */}
                             <div className="flex items-center gap-3 pb-3 border-b border-slate-100">
-                                <Avatar name={appData.operator} src={appData.operator_photo} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#182B62] to-[#25449B] text-xs font-black text-white shadow-2xs" />
+                                <Avatar name={appData.operator} src={appData.operator_photo} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#182B62] to-[#25449B] text-xs font-black text-white shadow-sm" />
                                 <div className="min-w-0 flex-1">
                                     <p className="truncate text-xs sm:text-sm font-bold text-slate-900">{appData.operator || 'N/A'}</p>
-                                    <p className="truncate text-xs text-slate-500 font-medium">Tricycle Owner (Applicant)</p>
+                                    <p className="truncate text-xs text-slate-600 font-medium">Tricycle Owner (Applicant)</p>
                                 </div>
                             </div>
 
                             <div className="mt-3 grid grid-cols-1 gap-2 text-xs">
                                 <div className="flex items-center justify-between gap-3 text-slate-600">
-                                    <span className="flex shrink-0 items-center gap-1.5 text-slate-400 font-medium">
+                                    <span className="flex shrink-0 items-center gap-1.5 text-slate-500 font-medium">
                                         <CalendarDays size={13} className="shrink-0" />
                                         Birthday
                                     </span>
                                     <span className="font-bold text-slate-800 text-right break-words min-w-0">{appData.owner?.birthday || '—'}</span>
                                 </div>
                                 <div className="flex items-center justify-between gap-3 text-slate-600">
-                                    <span className="flex shrink-0 items-center gap-1.5 text-slate-400 font-medium">
+                                    <span className="flex shrink-0 items-center gap-1.5 text-slate-500 font-medium">
                                         <Smartphone size={13} className="shrink-0" />
                                         Contact
                                     </span>
                                     <span className="font-bold text-slate-800 text-right break-words min-w-0">{appData.contact || 'No phone provided'}</span>
                                 </div>
                                 <div className="flex items-center justify-between gap-3 text-slate-600">
-                                    <span className="flex shrink-0 items-center gap-1.5 text-slate-400 font-medium">
+                                    <span className="flex shrink-0 items-center gap-1.5 text-slate-500 font-medium">
                                         <Mail size={13} className="shrink-0" />
                                         Email
                                     </span>
                                     <span className="font-bold text-slate-800 break-all text-right">{appData.owner?.email || '—'}</span>
                                 </div>
                                 <div className="flex items-center justify-between gap-3 text-slate-600">
-                                    <span className="flex shrink-0 items-center gap-1.5 text-slate-400 font-medium">
+                                    <span className="flex shrink-0 items-center gap-1.5 text-slate-500 font-medium">
                                         <MapPin size={13} className="shrink-0" />
                                         Barangay
                                     </span>
@@ -472,28 +472,28 @@ export default function PhysicalInspection({ application }) {
                                 ) : appData.tricycleDriver ? (
                                     <div className="mt-2 grid grid-cols-1 gap-1.5 text-xs">
                                         <div className="flex items-center justify-between gap-3 text-slate-600">
-                                            <span className="shrink-0 font-medium text-slate-400">Driver Name</span>
+                                            <span className="shrink-0 font-medium text-slate-500">Driver Name</span>
                                             <span className="font-bold text-slate-800 text-right break-words min-w-0">{appData.tricycleDriver.full_name || '—'}</span>
                                         </div>
                                         <div className="flex items-center justify-between gap-3 text-slate-600">
-                                            <span className="shrink-0 font-medium text-slate-400">Birthday</span>
+                                            <span className="shrink-0 font-medium text-slate-500">Birthday</span>
                                             <span className="font-bold text-slate-800 text-right break-words min-w-0">{appData.tricycleDriver.birthday || '—'}</span>
                                         </div>
                                         <div className="flex items-center justify-between gap-3 text-slate-600">
-                                            <span className="shrink-0 font-medium text-slate-400">Mobile Number</span>
+                                            <span className="shrink-0 font-medium text-slate-500">Mobile Number</span>
                                             <span className="font-bold text-slate-800 text-right break-words min-w-0">{appData.tricycleDriver.contact_number || '—'}</span>
                                         </div>
                                         <div className="flex items-center justify-between gap-3 text-slate-600">
-                                            <span className="shrink-0 font-medium text-slate-400">Email</span>
+                                            <span className="shrink-0 font-medium text-slate-500">Email</span>
                                             <span className="font-bold text-slate-800 break-all text-right">{appData.tricycleDriver.email || '—'}</span>
                                         </div>
                                         <div className="flex items-center justify-between gap-3 text-slate-600">
-                                            <span className="shrink-0 font-medium text-slate-400">Barangay</span>
+                                            <span className="shrink-0 font-medium text-slate-500">Barangay</span>
                                             <span className="font-bold text-slate-800 text-right break-words min-w-0">{appData.tricycleDriver.barangay || '—'}</span>
                                         </div>
                                     </div>
                                 ) : (
-                                    <p className="mt-2 text-xs text-slate-500 font-medium">No designated driver recorded.</p>
+                                    <p className="mt-2 text-xs text-slate-600 font-medium">No designated driver recorded.</p>
                                 )}
                             </div>
                         </div>
@@ -507,47 +507,47 @@ export default function PhysicalInspection({ application }) {
                                     </div>
                                     <div>
                                         <h3 className="text-sm font-bold text-slate-900 leading-snug">Unit Registration</h3>
-                                        <p className="text-[11px] text-slate-500 font-medium">Declared Specifications</p>
+                                        <p className="text-[11px] text-slate-600 font-medium">Declared Specifications</p>
                                     </div>
                                 </div>
                             </div>
 
                             {/* Vehicle Specifications */}
                             <div className="space-y-2.5 text-xs">
-                                <div className="text-[10.5px] font-bold uppercase tracking-wider text-slate-400 mb-1">
+                                <div className="text-[10.5px] font-bold uppercase tracking-wider text-slate-500 mb-1">
                                     Vehicle Attributes
                                 </div>
 
                                 <div className="flex items-center justify-between gap-3">
-                                    <span className="shrink-0 text-slate-500 font-medium">LTO Plate Number</span>
+                                    <span className="shrink-0 text-slate-600 font-medium">LTO Plate Number</span>
                                     <span className="font-mono font-bold text-slate-900 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded-md">
                                         {vehicleData.plate}
                                     </span>
                                 </div>
 
                                 <div className="flex items-center justify-between gap-3">
-                                    <span className="shrink-0 text-slate-500 font-medium">Make &amp; Model</span>
+                                    <span className="shrink-0 text-slate-600 font-medium">Make &amp; Model</span>
                                     <span className="font-bold text-slate-800 text-right truncate max-w-[170px]">
                                         {vehicleData.make}
                                     </span>
                                 </div>
 
                                 <div className="flex items-center justify-between gap-3">
-                                    <span className="shrink-0 text-slate-500 font-medium">Year Model</span>
+                                    <span className="shrink-0 text-slate-600 font-medium">Year Model</span>
                                     <span className="font-bold text-slate-800 text-right min-w-0 break-words">
                                         {vehicleData.year_model}
                                     </span>
                                 </div>
 
                                 <div className="flex items-center justify-between gap-3">
-                                    <span className="shrink-0 text-slate-500 font-medium">Body Color</span>
+                                    <span className="shrink-0 text-slate-600 font-medium">Body Color</span>
                                     <span className="font-bold text-slate-800 text-right min-w-0 break-words">
                                         {vehicleData.body_color}
                                     </span>
                                 </div>
 
                                 <div className="flex items-center justify-between gap-3">
-                                    <span className="shrink-0 text-slate-500 font-medium">Body Type</span>
+                                    <span className="shrink-0 text-slate-600 font-medium">Body Type</span>
                                     <span className="font-bold text-slate-800 text-right min-w-0 break-words">
                                         {vehicleData.body_type}
                                     </span>
@@ -556,12 +556,12 @@ export default function PhysicalInspection({ application }) {
 
                             {/* LTO Official Numbers with one-click copy buttons */}
                             <div className="mt-4 pt-3.5 border-t border-slate-100 space-y-2.5 text-xs">
-                                <div className="text-[10.5px] font-bold uppercase tracking-wider text-slate-400 mb-1">
+                                <div className="text-[10.5px] font-bold uppercase tracking-wider text-slate-500 mb-1">
                                     LTO Official Identifiers
                                 </div>
 
                                 <div className="flex items-center justify-between gap-3">
-                                    <span className="shrink-0 text-slate-500 font-medium">Engine Number</span>
+                                    <span className="shrink-0 text-slate-600 font-medium">Engine Number</span>
                                     <div className="flex min-w-0 items-center gap-1">
                                         <span className="font-mono text-slate-800 font-bold text-xs break-all text-right">
                                             {vehicleData.engine_number}
@@ -570,7 +570,7 @@ export default function PhysicalInspection({ application }) {
                                             type="button"
                                             onClick={() => handleCopy('engine', vehicleData.engine_number)}
                                             title="Copy Engine Number"
-                                            className="text-slate-400 hover:text-slate-700 transition-colors p-1 cursor-pointer"
+                                            className="text-slate-500 hover:text-slate-700 transition-colors p-1 cursor-pointer"
                                         >
                                             {copiedField === 'engine' ? <Check size={12} className="text-emerald-600" /> : <Copy size={12} />}
                                         </button>
@@ -578,7 +578,7 @@ export default function PhysicalInspection({ application }) {
                                 </div>
 
                                 <div className="flex items-center justify-between gap-3">
-                                    <span className="shrink-0 text-slate-500 font-medium">Chassis Number</span>
+                                    <span className="shrink-0 text-slate-600 font-medium">Chassis Number</span>
                                     <div className="flex min-w-0 items-center gap-1">
                                         <span className="font-mono text-slate-800 font-bold text-xs break-all text-right">
                                             {vehicleData.chassis_number}
@@ -587,7 +587,7 @@ export default function PhysicalInspection({ application }) {
                                             type="button"
                                             onClick={() => handleCopy('chassis', vehicleData.chassis_number)}
                                             title="Copy Chassis Number"
-                                            className="text-slate-400 hover:text-slate-700 transition-colors p-1 cursor-pointer"
+                                            className="text-slate-500 hover:text-slate-700 transition-colors p-1 cursor-pointer"
                                         >
                                             {copiedField === 'chassis' ? <Check size={12} className="text-emerald-600" /> : <Copy size={12} />}
                                         </button>
@@ -595,7 +595,7 @@ export default function PhysicalInspection({ application }) {
                                 </div>
 
                                 <div className="flex items-center justify-between gap-3">
-                                    <span className="shrink-0 text-slate-500 font-medium">LTO OR Number</span>
+                                    <span className="shrink-0 text-slate-600 font-medium">LTO OR Number</span>
                                     <div className="flex min-w-0 items-center gap-1">
                                         <span className="font-mono text-slate-800 font-bold text-xs break-all text-right">
                                             {vehicleData.or_number}
@@ -604,7 +604,7 @@ export default function PhysicalInspection({ application }) {
                                             type="button"
                                             onClick={() => handleCopy('or', vehicleData.or_number)}
                                             title="Copy OR Number"
-                                            className="text-slate-400 hover:text-slate-700 transition-colors p-1 cursor-pointer"
+                                            className="text-slate-500 hover:text-slate-700 transition-colors p-1 cursor-pointer"
                                         >
                                             {copiedField === 'or' ? <Check size={12} className="text-emerald-600" /> : <Copy size={12} />}
                                         </button>
@@ -612,7 +612,7 @@ export default function PhysicalInspection({ application }) {
                                 </div>
 
                                 <div className="flex items-center justify-between gap-3">
-                                    <span className="shrink-0 text-slate-500 font-medium">LTO CR Number</span>
+                                    <span className="shrink-0 text-slate-600 font-medium">LTO CR Number</span>
                                     <div className="flex min-w-0 items-center gap-1">
                                         <span className="font-mono text-slate-800 font-bold text-xs break-all text-right">
                                             {vehicleData.cr_number}
@@ -621,7 +621,7 @@ export default function PhysicalInspection({ application }) {
                                             type="button"
                                             onClick={() => handleCopy('cr', vehicleData.cr_number)}
                                             title="Copy CR Number"
-                                            className="text-slate-400 hover:text-slate-700 transition-colors p-1 cursor-pointer"
+                                            className="text-slate-500 hover:text-slate-700 transition-colors p-1 cursor-pointer"
                                         >
                                             {copiedField === 'cr' ? <Check size={12} className="text-emerald-600" /> : <Copy size={12} />}
                                         </button>
@@ -640,7 +640,7 @@ export default function PhysicalInspection({ application }) {
                 <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200/90 p-3 sm:p-4 shadow-xl">
                     <div className="flex items-center justify-between gap-3 max-w-lg mx-auto">
                         <div>
-                            <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Finding</p>
+                            <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Finding</p>
                             <p className="text-xs font-black text-slate-900">
                                 {decisionMode === 'reject' ? 'Repair Notes' : 'Ready to Decide'}
                             </p>
@@ -661,7 +661,7 @@ export default function PhysicalInspection({ application }) {
                                     type="button"
                                     disabled={isProcessing}
                                     onClick={handleApprove}
-                                    className="flex-1 inline-flex items-center justify-center gap-1 rounded-xl bg-emerald-600 text-white py-2.5 px-3 text-xs font-bold shadow-2xs transition-all active:scale-[0.98] cursor-pointer"
+                                    className="flex-1 inline-flex items-center justify-center gap-1 rounded-xl bg-emerald-600 text-white py-2.5 px-3 text-xs font-bold shadow-sm transition-all active:scale-[0.98] cursor-pointer"
                                 >
                                     {isProcessing ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle2 size={14} />}
                                     <span>Approve</span>
@@ -681,7 +681,7 @@ export default function PhysicalInspection({ application }) {
                                     type="button"
                                     disabled={isProcessing}
                                     onClick={handleConfirmReject}
-                                    className="flex-1 inline-flex items-center justify-center gap-1 rounded-xl bg-rose-600 text-white py-2.5 px-3 text-xs font-bold shadow-2xs transition-all active:scale-[0.98] cursor-pointer"
+                                    className="flex-1 inline-flex items-center justify-center gap-1 rounded-xl bg-rose-600 text-white py-2.5 px-3 text-xs font-bold shadow-sm transition-all active:scale-[0.98] cursor-pointer"
                                 >
                                     {isProcessing ? <Loader2 size={14} className="animate-spin" /> : <XCircle size={14} />}
                                     <span>Reject</span>

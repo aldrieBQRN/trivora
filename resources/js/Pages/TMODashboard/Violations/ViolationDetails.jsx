@@ -36,7 +36,7 @@ const LEAFLET_POPUP_CSS = `
 
 // Shared soft, layered shadow token — same elevation language used across the redesigned TMO
 // pages/shared components, so this page reads as one consistent product.
-const CARD_SHADOW = 'shadow-[0_1px_2px_0_rgba(15,23,42,0.04),0_8px_24px_-8px_rgba(15,23,42,0.10)]';
+const CARD_SHADOW = 'shadow-[0_1px_3px_0_rgba(15,23,42,0.07),0_10px_28px_-8px_rgba(15,23,42,0.14)]';
 
 function getInitials(name) {
     if (!name || name === 'N/A') return 'DR';
@@ -222,9 +222,9 @@ export default function ViolationDetails({ violationId = 'VIO-26-0001', initialR
             <div className="mb-4 flex items-center print:hidden border-b border-slate-200/80 pb-4">
                 <Link
                     href="/violations"
-                    className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold text-slate-500 hover:text-slate-900 transition-colors group font-['Plus_Jakarta_Sans',sans-serif]"
+                    className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold text-slate-600 hover:text-slate-900 transition-colors group font-['Plus_Jakarta_Sans',sans-serif]"
                 >
-                    <ChevronLeft size={16} strokeWidth={2.5} className="text-slate-400 group-hover:text-slate-700 transition-colors" />
+                    <ChevronLeft size={16} strokeWidth={2.5} className="text-slate-500 group-hover:text-slate-700 transition-colors" />
                     <span>Back to Violation Records</span>
                 </Link>
             </div>
@@ -242,13 +242,13 @@ export default function ViolationDetails({ violationId = 'VIO-26-0001', initialR
                             {record.plate_no || 'NO PLATE'}
                         </span>
                     </div>
-                    <p className="mt-1 text-xs sm:text-sm text-slate-500 font-medium font-['Plus_Jakarta_Sans',sans-serif]">
+                    <p className="mt-1 text-xs sm:text-sm text-slate-600 font-medium font-['Plus_Jakarta_Sans',sans-serif]">
                         Recorded in Nasugbu on {record.date} at {record.time}
                     </p>
                 </div>
 
-                <div className="flex items-center gap-2 self-start sm:self-center shrink-0 rounded-2xl border border-slate-200/80 bg-white px-4 py-2.5 shadow-2xs font-['Plus_Jakarta_Sans',sans-serif]">
-                    <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Penalty &amp; Offense:</span>
+                <div className="flex items-center gap-2 self-start sm:self-center shrink-0 rounded-2xl border border-slate-200/80 bg-white px-4 py-2.5 shadow-sm font-['Plus_Jakarta_Sans',sans-serif]">
+                    <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Penalty &amp; Offense:</span>
                     <span className="text-base sm:text-lg font-black text-slate-900 font-['Plus_Jakarta_Sans',sans-serif] tabular-nums">
                         {record.penalty_display || (record.fine ? `₱${Number(record.fine).toFixed(2)}` : 'N/A')}
                     </span>
@@ -258,90 +258,90 @@ export default function ViolationDetails({ violationId = 'VIO-26-0001', initialR
             {/* ══════════════════════════════════════════════════════════════
                 3. FOUR COMPACT OVERVIEW CARDS (1 per row on mobile)
                ══════════════════════════════════════════════════════════════ */}
-            <div className="mb-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4 items-stretch">
+            <div className="mb-6 grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4 items-stretch">
                 {/* Metric 1: Violation */}
-                <div className={`flex flex-col justify-between rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-4 sm:p-5 ${CARD_SHADOW}`}>
+                <div className={`flex flex-col justify-between rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-3 sm:p-5 ${CARD_SHADOW}`}>
                     <div>
-                        <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-                            <span className="text-[10px] sm:text-[10.5px] font-bold uppercase tracking-wider text-slate-400 font-['Plus_Jakarta_Sans',sans-serif]">
+                        <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-2">
+                            <span className="text-[9.5px] sm:text-[10.5px] font-bold uppercase tracking-wide sm:tracking-wider leading-tight text-slate-500 font-['Plus_Jakarta_Sans',sans-serif]">
                                 Citation Category
                             </span>
-                            <div className="flex h-7 w-7 items-center justify-center rounded-xl bg-amber-50 text-amber-600 border border-amber-100">
+                            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-xl bg-amber-50 text-amber-600 border border-amber-100">
                                 <ShieldAlert size={14} />
                             </div>
                         </div>
-                        <p className="mt-2 text-base sm:text-lg font-black text-slate-900 truncate font-['Plus_Jakarta_Sans',sans-serif]">
+                        <p className="mt-2 text-[13.5px] sm:text-lg leading-snug font-black text-slate-900 max-sm:line-clamp-2 max-sm:break-words sm:truncate font-['Plus_Jakarta_Sans',sans-serif]">
                             {record.type}
                         </p>
                     </div>
-                    <div className="mt-3 rounded-xl bg-slate-50 border border-slate-100/90 px-2.5 py-1.5 flex items-center justify-between text-xs">
-                        <span className="text-slate-500 font-medium text-[11px] font-['Plus_Jakarta_Sans',sans-serif]">Source:</span>
+                    <div className="mt-2.5 rounded-xl bg-slate-50 border border-slate-100/90 shadow-sm px-2.5 py-1.5 flex flex-col items-start gap-0.5 sm:flex-row sm:items-center sm:justify-between sm:gap-2 text-xs">
+                        <span className="text-slate-600 font-medium text-[11px] font-['Plus_Jakarta_Sans',sans-serif]">Source:</span>
                         <span className="font-bold text-slate-800 text-[11px] font-['Plus_Jakarta_Sans',sans-serif]">{record.source}</span>
                     </div>
                 </div>
 
                 {/* Metric 2: Color Coding Scheme */}
-                <div className={`flex flex-col justify-between rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-4 sm:p-5 ${CARD_SHADOW}`}>
+                <div className={`flex flex-col justify-between rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-3 sm:p-5 ${CARD_SHADOW}`}>
                     <div>
-                        <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-                            <span className="text-[10px] sm:text-[10.5px] font-bold uppercase tracking-wider text-slate-400 font-['Plus_Jakarta_Sans',sans-serif]">
+                        <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-2">
+                            <span className="text-[9.5px] sm:text-[10.5px] font-bold uppercase tracking-wide sm:tracking-wider leading-tight text-slate-500 font-['Plus_Jakarta_Sans',sans-serif]">
                                 Color Coding Scheme
                             </span>
                             <span
-                                className="h-4 w-4 rounded-full ring-2 ring-white shadow-xs"
+                                className="h-4 w-4 shrink-0 rounded-full ring-2 ring-white shadow-sm"
                                 style={{ backgroundColor: record.color_hex || '#EF4444' }}
                             />
                         </div>
-                        <p className="mt-2 text-base sm:text-lg font-black text-slate-900 truncate font-['Plus_Jakarta_Sans',sans-serif]">
+                        <p className="mt-2 text-[13.5px] sm:text-lg leading-snug font-black text-slate-900 max-sm:line-clamp-2 max-sm:break-words sm:truncate font-['Plus_Jakarta_Sans',sans-serif]">
                             {record.color_scheme || 'Standard Scheme'}
                         </p>
                     </div>
-                    <div className="mt-3 rounded-xl bg-slate-50 border border-slate-100/90 px-2.5 py-1.5 flex items-center justify-between text-xs">
-                        <span className="text-slate-500 font-medium text-[11px] font-['Plus_Jakarta_Sans',sans-serif]">Sticker:</span>
+                    <div className="mt-2.5 rounded-xl bg-slate-50 border border-slate-100/90 shadow-sm px-2.5 py-1.5 flex flex-col items-start gap-0.5 sm:flex-row sm:items-center sm:justify-between sm:gap-2 text-xs">
+                        <span className="text-slate-600 font-medium text-[11px] font-['Plus_Jakarta_Sans',sans-serif]">Sticker:</span>
                         <span className="font-bold font-mono text-slate-800 text-xs">#{record.coding_scheme_number || 'N/A'}</span>
                     </div>
                 </div>
 
                 {/* Metric 3: Detection Location */}
-                <div className={`flex flex-col justify-between rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-4 sm:p-5 ${CARD_SHADOW}`}>
+                <div className={`flex flex-col justify-between rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-3 sm:p-5 ${CARD_SHADOW}`}>
                     <div>
-                        <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-                            <span className="text-[10px] sm:text-[10.5px] font-bold uppercase tracking-wider text-slate-400 font-['Plus_Jakarta_Sans',sans-serif]">
+                        <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-2">
+                            <span className="text-[9.5px] sm:text-[10.5px] font-bold uppercase tracking-wide sm:tracking-wider leading-tight text-slate-500 font-['Plus_Jakarta_Sans',sans-serif]">
                                 Location of Infraction
                             </span>
-                            <div className="flex h-7 w-7 items-center justify-center rounded-xl bg-indigo-50 text-[#182B62] border border-indigo-100">
+                            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-xl bg-indigo-50 text-[#182B62] border border-indigo-100">
                                 <MapPin size={14} />
                             </div>
                         </div>
-                        <p className="mt-2 text-base sm:text-lg font-black text-slate-900 truncate font-['Plus_Jakarta_Sans',sans-serif]" title={record.location_desc || record.toda || undefined}>
+                        <p className="mt-2 text-[13.5px] sm:text-lg leading-snug font-black text-slate-900 max-sm:line-clamp-2 max-sm:break-words sm:truncate font-['Plus_Jakarta_Sans',sans-serif]" title={record.location_desc || record.toda || undefined}>
                             Nasugbu, Batangas
                         </p>
                     </div>
-                    <div className="mt-3 rounded-xl bg-slate-50 border border-slate-100/90 px-2.5 py-1.5 flex items-center justify-between text-xs font-mono">
-                        <span className="text-slate-500 font-medium text-[11px] font-['Plus_Jakarta_Sans',sans-serif]">Coordinates:</span>
-                        <span className="font-bold text-slate-800 text-[11px] truncate">
+                    <div className="mt-2.5 rounded-xl bg-slate-50 border border-slate-100/90 shadow-sm px-2.5 py-1.5 flex flex-col items-start gap-0.5 sm:flex-row sm:items-center sm:justify-between sm:gap-2 text-xs font-mono">
+                        <span className="text-slate-600 font-medium text-[11px] font-['Plus_Jakarta_Sans',sans-serif]">Coordinates:</span>
+                        <span className="font-bold text-slate-800 text-[11px] max-w-full truncate max-sm:whitespace-normal max-sm:break-words">
                             {record.lat && record.lng ? `${Number(record.lat).toFixed(4)}° N, ${Number(record.lng).toFixed(4)}° E` : 'Logged Zone'}
                         </span>
                     </div>
                 </div>
 
                 {/* Metric 4: Settlement Status */}
-                <div className={`flex flex-col justify-between rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-4 sm:p-5 ${CARD_SHADOW}`}>
+                <div className={`flex flex-col justify-between rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-3 sm:p-5 ${CARD_SHADOW}`}>
                     <div>
-                        <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-                            <span className="text-[10px] sm:text-[10.5px] font-bold uppercase tracking-wider text-slate-400 font-['Plus_Jakarta_Sans',sans-serif]">
+                        <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-2">
+                            <span className="text-[9.5px] sm:text-[10.5px] font-bold uppercase tracking-wide sm:tracking-wider leading-tight text-slate-500 font-['Plus_Jakarta_Sans',sans-serif]">
                                 Payment Clearance
                             </span>
-                            <div className={`flex h-7 w-7 items-center justify-center rounded-xl border ${isSettled ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-amber-50 text-amber-700 border-amber-100'}`}>
+                            <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-xl border ${isSettled ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-amber-50 text-amber-700 border-amber-100'}`}>
                                 {isSettled ? <CheckCircle2 size={14} /> : <Clock size={14} />}
                             </div>
                         </div>
-                        <p className={`mt-2 text-base sm:text-lg font-black truncate font-['Plus_Jakarta_Sans',sans-serif] ${isSettled ? 'text-emerald-700' : 'text-amber-700'}`}>
+                        <p className={`mt-2 text-[13.5px] sm:text-lg leading-snug font-black max-sm:line-clamp-2 max-sm:break-words sm:truncate font-['Plus_Jakarta_Sans',sans-serif] ${isSettled ? 'text-emerald-700' : 'text-amber-700'}`}>
                             {isSettled ? 'Cleared & Settled' : 'Awaiting Payment'}
                         </p>
                     </div>
-                    <div className="mt-3 rounded-xl bg-slate-50 border border-slate-100/90 px-2.5 py-1.5 flex items-center justify-between text-xs">
-                        <span className="text-slate-500 font-medium text-[11px] font-['Plus_Jakarta_Sans',sans-serif]">Status:</span>
+                    <div className="mt-2.5 rounded-xl bg-slate-50 border border-slate-100/90 shadow-sm px-2.5 py-1.5 flex flex-col items-start gap-0.5 sm:flex-row sm:items-center sm:justify-between sm:gap-2 text-xs">
+                        <span className="text-slate-600 font-medium text-[11px] font-['Plus_Jakarta_Sans',sans-serif]">Status:</span>
                         <span className={`font-bold text-[11px] font-['Plus_Jakarta_Sans',sans-serif] ${isSettled ? 'text-emerald-700' : 'text-amber-700'}`}>
                             {isSettled ? (record.paid_at || 'Paid') : 'Due at Cashier'}
                         </span>
@@ -367,7 +367,7 @@ export default function ViolationDetails({ violationId = 'VIO-26-0001', initialR
                                 </h2>
                             </div>
                             {record.lat != null && record.lng != null && (
-                                <span className="text-[11px] font-bold text-slate-400 font-mono">
+                                <span className="text-[11px] font-bold text-slate-500 font-mono">
                                     {Number(record.lat).toFixed(5)}° N, {Number(record.lng).toFixed(5)}° E
                                 </span>
                             )}
@@ -394,7 +394,7 @@ export default function ViolationDetails({ violationId = 'VIO-26-0001', initialR
                                                 <p className="m-0 text-xs font-bold text-slate-900 font-['Plus_Jakarta_Sans',sans-serif]">
                                                     {record.id}
                                                 </p>
-                                                <p className="m-0 text-[10px] font-semibold text-slate-500">
+                                                <p className="m-0 text-[10px] font-semibold text-slate-600">
                                                     {record.type} · {record.time}
                                                 </p>
                                             </div>
@@ -412,8 +412,8 @@ export default function ViolationDetails({ violationId = 'VIO-26-0001', initialR
                             </div>
                         ) : (
                             <div className="relative z-[1] flex h-[280px] sm:h-[320px] md:h-[340px] w-full flex-col items-center justify-center gap-2 bg-slate-50 text-center">
-                                <MapPin className="text-slate-300" size={28} />
-                                <p className="text-xs font-semibold text-slate-500 font-['Plus_Jakarta_Sans',sans-serif]">
+                                <MapPin className="text-slate-400" size={28} />
+                                <p className="text-xs font-semibold text-slate-600 font-['Plus_Jakarta_Sans',sans-serif]">
                                     No GPS location recorded for this violation
                                 </p>
                             </div>
@@ -421,7 +421,7 @@ export default function ViolationDetails({ violationId = 'VIO-26-0001', initialR
 
                         {/* Officer Citation Notes */}
                         <div className="shrink-0 border-t border-slate-100 bg-slate-50/70 p-4 sm:p-5">
-                            <p className="text-[10px] sm:text-[10.5px] font-bold uppercase tracking-wider text-slate-400 font-['Plus_Jakarta_Sans',sans-serif]">
+                            <p className="text-[10px] sm:text-[10.5px] font-bold uppercase tracking-wider text-slate-500 font-['Plus_Jakarta_Sans',sans-serif]">
                                 Officer Citation Notes
                             </p>
                             <p className="mt-1 text-xs sm:text-sm font-medium text-slate-700 leading-relaxed font-['Plus_Jakarta_Sans',sans-serif]">
@@ -432,9 +432,9 @@ export default function ViolationDetails({ violationId = 'VIO-26-0001', initialR
 
                     {/* Municipal Ordinance Enforcement Card */}
                     <div className={`rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-4 sm:p-5 ${CARD_SHADOW}`}>
-                        <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                            <div className="flex items-center gap-2">
-                                <div className={`flex h-8 w-8 items-center justify-center rounded-xl border ${
+                        <div className="flex flex-col gap-2.5 border-b border-slate-100 pb-3 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+                            <div className="flex min-w-0 items-center gap-2">
+                                <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border ${
                                     record.enforcement_status === 'action_required'
                                         ? 'bg-rose-50 text-rose-600 border-rose-100'
                                         : record.enforcement_status === 'completed'
@@ -445,22 +445,22 @@ export default function ViolationDetails({ violationId = 'VIO-26-0001', initialR
                                 }`}>
                                     <Gavel size={16} strokeWidth={2.2} />
                                 </div>
-                                <div>
+                                <div className="min-w-0">
                                     <h3 className="text-sm font-bold text-slate-900 font-['Plus_Jakarta_Sans',sans-serif]">
                                         Ordinance Enforcement
                                     </h3>
-                                    <span className="text-[11px] text-slate-400 font-medium">
+                                    <span className="block text-[11px] leading-snug text-slate-500 font-medium">
                                         {record.offense_label || '1st Offense'} · {record.sanctions_summary || 'Fine penalty'}
                                     </span>
                                 </div>
                             </div>
-                            <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-bold border font-['Plus_Jakarta_Sans',sans-serif] ${
+                            <span className={`inline-flex shrink-0 items-center gap-1 self-start rounded-full px-2.5 py-0.5 text-xs font-bold border sm:self-auto font-['Plus_Jakarta_Sans',sans-serif] ${
                                 record.enforcement_status === 'action_required'
-                                    ? 'border-rose-300 bg-rose-50 text-rose-700 shadow-2xs'
+                                    ? 'border-rose-300 bg-rose-50 text-rose-700 shadow-sm'
                                     : record.enforcement_status === 'completed'
-                                    ? 'border-emerald-200/90 bg-emerald-50 text-emerald-700 shadow-2xs'
+                                    ? 'border-emerald-200/90 bg-emerald-50 text-emerald-700 shadow-sm'
                                     : record.enforcement_status === 'pending_confirmation'
-                                    ? 'border-amber-200/90 bg-amber-50 text-amber-800 shadow-2xs'
+                                    ? 'border-amber-200/90 bg-amber-50 text-amber-800 shadow-sm'
                                     : 'border-slate-200 bg-slate-50 text-slate-600'
                             }`}>
                                 {record.enforcement_status === 'action_required' && <span className="h-1.5 w-1.5 rounded-full bg-rose-500 animate-pulse" />}
@@ -473,9 +473,9 @@ export default function ViolationDetails({ violationId = 'VIO-26-0001', initialR
                         <div className="mt-4">
                             {/* State A: Action Completed */}
                             {record.enforcement_status === 'completed' && (
-                                <div className="rounded-xl border border-emerald-200/80 bg-emerald-50/70 p-3.5 text-xs font-['Plus_Jakarta_Sans',sans-serif]">
-                                    <div className="flex items-center gap-1.5 font-bold text-emerald-900">
-                                        <CheckCircle2 size={14} className="text-emerald-600" />
+                                <div className="rounded-xl border border-emerald-200/80 bg-emerald-50/70 p-3 sm:p-3.5 text-xs font-['Plus_Jakarta_Sans',sans-serif]">
+                                    <div className="flex items-start gap-1.5 leading-snug font-bold text-emerald-900">
+                                        <CheckCircle2 size={14} className="mt-px shrink-0 text-emerald-600" />
                                         <span>Enforcement Action Completed</span>
                                     </div>
                                     <div className="mt-2 space-y-1.5 text-emerald-800">
@@ -501,36 +501,36 @@ export default function ViolationDetails({ violationId = 'VIO-26-0001', initialR
 
                             {/* State B: Third Offense Action Required */}
                             {record.enforcement_status === 'action_required' && record.offense_number === 3 && (
-                                <div className="rounded-xl border border-rose-200 bg-rose-50/80 p-3.5 text-xs font-['Plus_Jakarta_Sans',sans-serif]">
-                                    <div className="flex items-center gap-1.5 font-bold text-rose-900">
-                                        <AlertTriangle size={15} className="text-rose-600" />
+                                <div className="rounded-xl border border-rose-200 bg-rose-50/80 p-3 sm:p-3.5 text-xs font-['Plus_Jakarta_Sans',sans-serif]">
+                                    <div className="flex items-start gap-1.5 leading-snug font-bold text-rose-900">
+                                        <AlertTriangle size={15} className="shrink-0 text-rose-600" />
                                         <span>3rd Offense Mandatory Enforcement Required</span>
                                     </div>
                                     <p className="mt-1 text-rose-800 leading-relaxed font-medium">
                                         Under municipal ordinance, a 3rd confirmed color-coding violation requires official impoundment and franchise suspension:
                                     </p>
                                     <div className="mt-2.5 rounded-lg bg-white/80 border border-rose-200/80 p-2.5 space-y-1 text-[11.5px] text-slate-800">
-                                        <div className="flex items-center gap-1.5 font-bold text-rose-900">
+                                        <div className="flex items-start gap-1.5 leading-snug font-bold text-rose-900">
                                             <span>1. ₱2,500 Fine Penalty</span>
                                         </div>
-                                        <div className="flex items-center gap-1.5 font-bold text-rose-900">
+                                        <div className="flex items-start gap-1.5 leading-snug font-bold text-rose-900">
                                             <span>2. Physical Tricycle Impoundment</span>
                                         </div>
-                                        <div className="flex items-center gap-1.5 font-bold text-rose-900">
+                                        <div className="flex items-start gap-1.5 leading-snug font-bold text-rose-900">
                                             <span>3. Franchise Suspension (Assigned driver forced Offline)</span>
                                         </div>
                                     </div>
 
                                     {isAppealed ? (
-                                        <p className="mt-3 flex items-center gap-1.5 border-t border-rose-200/70 pt-2.5 font-bold text-amber-800">
-                                            <Scale size={13} /> Driver appeal pending. Decide appeal before confirming enforcement.
+                                        <p className="mt-3 flex items-start gap-1.5 border-t border-rose-200/70 pt-2.5 leading-snug font-bold text-amber-800">
+                                            <Scale size={13} className="mt-px shrink-0" /> Driver appeal pending. Decide appeal before confirming enforcement.
                                         </p>
                                     ) : (
                                         <button
                                             type="button"
                                             onClick={handleConfirmEnforcement}
                                             disabled={isSubmitting}
-                                            className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-xl bg-rose-600 hover:bg-rose-700 py-2.5 text-xs font-bold text-white shadow-2xs transition-all active:scale-[0.98] disabled:opacity-50 font-['Plus_Jakarta_Sans',sans-serif]"
+                                            className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-xl bg-rose-600 hover:bg-rose-700 py-2.5 text-xs font-bold text-white shadow-sm transition-all active:scale-[0.98] disabled:opacity-50 font-['Plus_Jakarta_Sans',sans-serif]"
                                         >
                                             <Gavel size={14} strokeWidth={2.2} />
                                             <span>Confirm Impoundment &amp; Suspension</span>
@@ -541,36 +541,36 @@ export default function ViolationDetails({ violationId = 'VIO-26-0001', initialR
 
                             {/* State C: Fourth Offense Action Required */}
                             {record.enforcement_status === 'action_required' && record.offense_number >= 4 && (
-                                <div className="rounded-xl border border-rose-300 bg-rose-50/90 p-3.5 text-xs font-['Plus_Jakarta_Sans',sans-serif]">
-                                    <div className="flex items-center gap-1.5 font-bold text-rose-950">
-                                        <AlertTriangle size={15} className="text-rose-600" />
+                                <div className="rounded-xl border border-rose-300 bg-rose-50/90 p-3 sm:p-3.5 text-xs font-['Plus_Jakarta_Sans',sans-serif]">
+                                    <div className="flex items-start gap-1.5 leading-snug font-bold text-rose-950">
+                                        <AlertTriangle size={15} className="shrink-0 text-rose-600" />
                                         <span>{record.offense_label || '4th Offense'} Franchise Cancellation Required</span>
                                     </div>
                                     <p className="mt-1 text-rose-800 leading-relaxed font-medium">
                                         Under municipal ordinance, this citation incurs immediate franchise cancellation:
                                     </p>
                                     <div className="mt-2.5 rounded-lg bg-white/80 border border-rose-200/80 p-2.5 space-y-1 text-[11.5px] text-slate-800">
-                                        <div className="flex items-center gap-1.5 font-bold text-rose-900">
+                                        <div className="flex items-start gap-1.5 leading-snug font-bold text-rose-900">
                                             <span>1. Franchise Status transition to 'Revoked' (Terminal)</span>
                                         </div>
-                                        <div className="flex items-center gap-1.5 font-bold text-rose-900">
+                                        <div className="flex items-start gap-1.5 leading-snug font-bold text-rose-900">
                                             <span>2. Drivers forced permanently Offline</span>
                                         </div>
-                                        <div className="flex items-center gap-1.5 font-bold text-slate-600">
+                                        <div className="flex items-start gap-1.5 leading-snug font-bold text-slate-600">
                                             <span>3. No fine amount assessed under 4th offense ordinance policy</span>
                                         </div>
                                     </div>
 
                                     {isAppealed ? (
-                                        <p className="mt-3 flex items-center gap-1.5 border-t border-rose-200/70 pt-2.5 font-bold text-amber-800">
-                                            <Scale size={13} /> Driver appeal pending. Decide appeal before confirming revocation.
+                                        <p className="mt-3 flex items-start gap-1.5 border-t border-rose-200/70 pt-2.5 leading-snug font-bold text-amber-800">
+                                            <Scale size={13} className="mt-px shrink-0" /> Driver appeal pending. Decide appeal before confirming revocation.
                                         </p>
                                     ) : (
                                         <button
                                             type="button"
                                             onClick={handleConfirmEnforcement}
                                             disabled={isSubmitting}
-                                            className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-xl bg-rose-700 hover:bg-rose-800 py-2.5 text-xs font-bold text-white shadow-2xs transition-all active:scale-[0.98] disabled:opacity-50 font-['Plus_Jakarta_Sans',sans-serif]"
+                                            className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-xl bg-rose-700 hover:bg-rose-800 py-2.5 text-xs font-bold text-white shadow-sm transition-all active:scale-[0.98] disabled:opacity-50 font-['Plus_Jakarta_Sans',sans-serif]"
                                         >
                                             <Gavel size={14} strokeWidth={2.2} />
                                             <span>Confirm Franchise Revocation</span>
@@ -581,9 +581,9 @@ export default function ViolationDetails({ violationId = 'VIO-26-0001', initialR
 
                             {/* State D: Pending Confirmation (Appeal under review) */}
                             {record.enforcement_status === 'pending_confirmation' && (
-                                <div className="rounded-xl border border-amber-200/80 bg-amber-50/70 p-3.5 text-xs font-['Plus_Jakarta_Sans',sans-serif]">
-                                    <div className="flex items-center gap-1.5 font-bold text-amber-900">
-                                        <Clock size={14} className="text-amber-600" />
+                                <div className="rounded-xl border border-amber-200/80 bg-amber-50/70 p-3 sm:p-3.5 text-xs font-['Plus_Jakarta_Sans',sans-serif]">
+                                    <div className="flex items-start gap-1.5 leading-snug font-bold text-amber-900">
+                                        <Clock size={14} className="mt-px shrink-0 text-amber-600" />
                                         <span>Enforcement Pending Appeal Determination</span>
                                     </div>
                                     <p className="mt-1 text-amber-800 leading-relaxed font-medium">
@@ -594,13 +594,13 @@ export default function ViolationDetails({ violationId = 'VIO-26-0001', initialR
 
                             {/* State E: No Action Required (Offenses 1 & 2 or dismissed) */}
                             {record.enforcement_status === 'no_action_required' && (
-                                <div className="rounded-xl border border-slate-200/80 bg-slate-50/70 p-3.5 text-xs font-['Plus_Jakarta_Sans',sans-serif]">
+                                <div className="rounded-xl border border-slate-200/80 bg-slate-50/70 p-3 sm:p-3.5 text-xs font-['Plus_Jakarta_Sans',sans-serif]">
                                     <p className="font-semibold text-slate-800">
                                         {record.offense_number === 1 && '1st Offense · ₱500 Municipal Fine Penalty'}
                                         {record.offense_number === 2 && '2nd Offense · ₱1,000 Municipal Fine Penalty'}
                                         {record.offense_number > 2 && 'Citation Exonerated or Dismissed'}
                                     </p>
-                                    <p className="mt-1 text-slate-500 leading-relaxed">
+                                    <p className="mt-1 text-slate-600 leading-relaxed">
                                         Administrative sanctions (tricycle impoundment and franchise suspension) take effect upon the 3rd confirmed offense under municipal ordinance.
                                     </p>
                                 </div>
@@ -640,7 +640,7 @@ export default function ViolationDetails({ violationId = 'VIO-26-0001', initialR
                                 <span className="font-mono text-base font-black text-slate-900">
                                     {record.plate_no}
                                 </span>
-                                <p className="text-xs text-slate-500 mt-0.5 font-medium font-['Plus_Jakarta_Sans',sans-serif]">
+                                <p className="text-xs text-slate-600 mt-0.5 font-medium font-['Plus_Jakarta_Sans',sans-serif]">
                                     {record.make_model}
                                 </p>
                             </div>
@@ -652,7 +652,7 @@ export default function ViolationDetails({ violationId = 'VIO-26-0001', initialR
                         {/* Sticker Number & Coding Scheme */}
                         <div className="mt-4 rounded-xl border border-slate-100 bg-slate-50/70 p-3">
                             <div className="flex items-center justify-between text-xs">
-                                <span className="text-slate-400 font-medium font-['Plus_Jakarta_Sans',sans-serif]">Sticker Number</span>
+                                <span className="text-slate-500 font-medium font-['Plus_Jakarta_Sans',sans-serif]">Sticker Number</span>
                                 <span className="font-mono font-bold text-slate-900">
                                     #{record.coding_scheme_number || 'N/A'}
                                 </span>
@@ -660,14 +660,14 @@ export default function ViolationDetails({ violationId = 'VIO-26-0001', initialR
 
                             {record.color_scheme && (
                                 <div className="mt-2 flex items-center justify-between text-xs border-t border-slate-200/60 pt-2 font-['Plus_Jakarta_Sans',sans-serif]">
-                                    <span className="text-slate-400 font-medium">Color Coding</span>
+                                    <span className="text-slate-500 font-medium">Color Coding</span>
                                     <div className="flex items-center gap-1.5 font-bold text-slate-800">
                                         <span
                                             className="h-2 w-2 rounded-full ring-1 ring-black/10 shrink-0"
                                             style={{ backgroundColor: record.color_hex || '#EF4444' }}
                                         />
                                         <span>{record.color_scheme}</span>
-                                        <span className="text-slate-400 font-normal">· {record.restricted_day} restricted</span>
+                                        <span className="text-slate-500 font-normal">· {record.restricted_day} restricted</span>
                                     </div>
                                 </div>
                             )}
@@ -678,11 +678,11 @@ export default function ViolationDetails({ violationId = 'VIO-26-0001', initialR
                             <div className="space-y-3.5">
                                 {/* Tricycle Owner */}
                                 <div>
-                                    <p className="text-[10px] sm:text-[10.5px] font-bold uppercase tracking-wider text-slate-400 mb-2 font-['Plus_Jakarta_Sans',sans-serif]">
+                                    <p className="text-[10px] sm:text-[10.5px] font-bold uppercase tracking-wider text-slate-500 mb-2 font-['Plus_Jakarta_Sans',sans-serif]">
                                         Tricycle Owner
                                     </p>
                                     <div className="flex items-center gap-3">
-                                        <Avatar name={record.owner_name || record.operator} src={record.operator_photo} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#182B62] text-xs font-black text-white shadow-2xs font-['Plus_Jakarta_Sans',sans-serif]" />
+                                        <Avatar name={record.owner_name || record.operator} src={record.operator_photo} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#182B62] text-xs font-black text-white shadow-sm font-['Plus_Jakarta_Sans',sans-serif]" />
                                         <div className="min-w-0 flex-1">
                                             <p className="truncate text-xs sm:text-sm font-bold text-slate-900 font-['Plus_Jakarta_Sans',sans-serif]">
                                                 {record.owner_name || record.operator}
@@ -690,13 +690,13 @@ export default function ViolationDetails({ violationId = 'VIO-26-0001', initialR
                                             {record.operator_contact ? (
                                                 <a
                                                     href={`tel:${record.operator_contact}`}
-                                                    className="mt-0.5 inline-flex items-center gap-1 text-xs text-slate-500 hover:text-slate-800 font-mono font-medium"
+                                                    className="mt-0.5 inline-flex items-center gap-1 text-xs text-slate-600 hover:text-slate-800 font-mono font-medium"
                                                 >
-                                                    <Phone size={11} className="text-slate-400" />
+                                                    <Phone size={11} className="text-slate-500" />
                                                     <span>{record.operator_contact}</span>
                                                 </a>
                                             ) : (
-                                                <span className="text-xs text-slate-400 font-medium">No contact provided</span>
+                                                <span className="text-xs text-slate-500 font-medium">No contact provided</span>
                                             )}
                                         </div>
                                     </div>
@@ -704,11 +704,11 @@ export default function ViolationDetails({ violationId = 'VIO-26-0001', initialR
 
                                 {/* Tricycle Driver */}
                                 <div className="border-t border-slate-100 pt-3">
-                                    <p className="text-[10px] sm:text-[10.5px] font-bold uppercase tracking-wider text-slate-400 mb-2 font-['Plus_Jakarta_Sans',sans-serif]">
+                                    <p className="text-[10px] sm:text-[10.5px] font-bold uppercase tracking-wider text-slate-500 mb-2 font-['Plus_Jakarta_Sans',sans-serif]">
                                         Designated Driver
                                     </p>
                                     <div className="flex items-center gap-3">
-                                        <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-xs font-bold shadow-2xs ${record.owner_is_driver ? 'bg-slate-100 text-slate-600 border border-slate-200' : 'bg-[#182B62] text-white'}`}>
+                                        <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-xs font-bold shadow-sm ${record.owner_is_driver ? 'bg-slate-100 text-slate-600 border border-slate-200' : 'bg-[#182B62] text-white'}`}>
                                             {record.owner_is_driver ? <User size={15} strokeWidth={2.2} /> : getInitials(record.driver_name)}
                                         </div>
                                         <div className="min-w-0 flex-1">
@@ -717,7 +717,7 @@ export default function ViolationDetails({ violationId = 'VIO-26-0001', initialR
                                                     ? (record.owner_name || record.operator)
                                                     : (record.driver_name || 'No separate driver on record')}
                                             </p>
-                                            <span className="mt-0.5 inline-flex items-center gap-1 text-[11px] font-semibold text-slate-500 font-['Plus_Jakarta_Sans',sans-serif]">
+                                            <span className="mt-0.5 inline-flex items-center gap-1 text-[11px] font-semibold text-slate-600 font-['Plus_Jakarta_Sans',sans-serif]">
                                                 {record.owner_is_driver
                                                     ? 'Owner personally drives this unit'
                                                     : 'Assigned Driver'}
@@ -749,7 +749,7 @@ export default function ViolationDetails({ violationId = 'VIO-26-0001', initialR
                             {record.offense_number >= 4 ? (
                                 <div className="rounded-xl border border-slate-200/80 bg-slate-50/70 p-3.5 text-xs font-['Plus_Jakarta_Sans',sans-serif]">
                                     <p className="font-bold text-slate-800">Franchise Cancellation Case</p>
-                                    <p className="mt-1 text-slate-500 leading-relaxed">
+                                    <p className="mt-1 text-slate-600 leading-relaxed">
                                         Under the municipal traffic ordinance, 4th offense sanctions are immediate franchise revocation rather than monetary fine collection.
                                     </p>
                                 </div>
@@ -781,7 +781,7 @@ export default function ViolationDetails({ violationId = 'VIO-26-0001', initialR
                                             type="button"
                                             onClick={handleConfirmPayment}
                                             disabled={isSubmitting}
-                                            className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-xl bg-[#182B62] hover:bg-[#25449B] py-2.5 text-xs font-bold text-white shadow-2xs transition-all active:scale-[0.98] disabled:opacity-50 font-['Plus_Jakarta_Sans',sans-serif]"
+                                            className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-xl bg-[#182B62] hover:bg-[#25449B] py-2.5 text-xs font-bold text-white shadow-sm transition-all active:scale-[0.98] disabled:opacity-50 font-['Plus_Jakarta_Sans',sans-serif]"
                                         >
                                             <Wallet size={14} strokeWidth={2.2} />
                                             <span>Confirm Official Payment</span>
@@ -822,7 +822,7 @@ export default function ViolationDetails({ violationId = 'VIO-26-0001', initialR
                     </div>
 
                     <div className="p-4 sm:p-5">
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 text-xs text-slate-500 mb-3 font-['Plus_Jakarta_Sans',sans-serif]">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 text-xs text-slate-600 mb-3 font-['Plus_Jakarta_Sans',sans-serif]">
                             <span>Submitted by: <strong className="text-slate-800">{appeal.driver_name}</strong></span>
                             <span>{appeal.submitted_at}</span>
                         </div>
@@ -835,17 +835,17 @@ export default function ViolationDetails({ violationId = 'VIO-26-0001', initialR
 
                             {appeal.evidence_url ? (
                                 <div>
-                                    <p className="text-xs font-bold text-slate-500 mb-2 font-['Plus_Jakarta_Sans',sans-serif]">Attached Photo Evidence:</p>
+                                    <p className="text-xs font-bold text-slate-600 mb-2 font-['Plus_Jakarta_Sans',sans-serif]">Attached Photo Evidence:</p>
                                     <a href={appeal.evidence_url} target="_blank" rel="noopener noreferrer" className="block group">
                                         <img
                                             src={appeal.evidence_url}
                                             alt="Appeal evidence"
-                                            className="max-h-56 w-full rounded-xl border border-slate-200 object-cover shadow-2xs transition-transform group-hover:scale-[1.01]"
+                                            className="max-h-56 w-full rounded-xl border border-slate-200 object-cover shadow-sm transition-transform group-hover:scale-[1.01]"
                                         />
                                     </a>
                                 </div>
                             ) : (
-                                <div className="flex items-center gap-1.5 rounded-xl border border-dashed border-slate-200 px-3.5 py-4 text-xs text-slate-400 h-full font-['Plus_Jakarta_Sans',sans-serif]">
+                                <div className="flex items-center gap-1.5 rounded-xl border border-dashed border-slate-200 px-3.5 py-4 text-xs text-slate-500 h-full font-['Plus_Jakarta_Sans',sans-serif]">
                                     <ImageOff size={13} />
                                     <span>No supporting image was attached with this appeal.</span>
                                 </div>
@@ -859,7 +859,7 @@ export default function ViolationDetails({ violationId = 'VIO-26-0001', initialR
                                     type="button"
                                     onClick={handleApprove}
                                     disabled={isSubmitting}
-                                    className="w-full sm:flex-1 inline-flex items-center justify-center gap-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white py-2.5 text-xs font-bold shadow-2xs transition-all active:scale-[0.98] disabled:opacity-50 font-['Plus_Jakarta_Sans',sans-serif]"
+                                    className="w-full sm:flex-1 inline-flex items-center justify-center gap-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white py-2.5 text-xs font-bold shadow-sm transition-all active:scale-[0.98] disabled:opacity-50 font-['Plus_Jakarta_Sans',sans-serif]"
                                 >
                                     <ThumbsUp size={14} strokeWidth={2.2} />
                                     <span>Approve Appeal</span>
@@ -869,7 +869,7 @@ export default function ViolationDetails({ violationId = 'VIO-26-0001', initialR
                                     type="button"
                                     onClick={handleReject}
                                     disabled={isSubmitting}
-                                    className="w-full sm:flex-1 inline-flex items-center justify-center gap-1.5 rounded-xl border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-700 py-2.5 text-xs font-bold shadow-2xs transition-all active:scale-[0.98] disabled:opacity-50 font-['Plus_Jakarta_Sans',sans-serif]"
+                                    className="w-full sm:flex-1 inline-flex items-center justify-center gap-1.5 rounded-xl border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-700 py-2.5 text-xs font-bold shadow-sm transition-all active:scale-[0.98] disabled:opacity-50 font-['Plus_Jakarta_Sans',sans-serif]"
                                 >
                                     <ThumbsDown size={14} strokeWidth={2.2} />
                                     <span>Reject Appeal</span>
@@ -881,7 +881,7 @@ export default function ViolationDetails({ violationId = 'VIO-26-0001', initialR
                                     Reviewed by: {appeal.reviewer_name || 'TMO Review Officer'} on {appeal.reviewed_at}
                                 </p>
                                 {appeal.review_notes && (
-                                    <p className="mt-1 text-slate-500 italic">"{appeal.review_notes}"</p>
+                                    <p className="mt-1 text-slate-600 italic">"{appeal.review_notes}"</p>
                                 )}
                             </div>
                         )}

@@ -11,7 +11,7 @@ import {
 import { Modal } from '@/Components/TMO';
 
 import Avatar from '@/Components/Avatar';
-const CARD_SHADOW = 'shadow-[0_1px_2px_0_rgba(15,23,42,0.04),0_8px_24px_-8px_rgba(15,23,42,0.10)]';
+const CARD_SHADOW = 'shadow-[0_1px_3px_0_rgba(15,23,42,0.07),0_10px_28px_-8px_rgba(15,23,42,0.14)]';
 const ITEMS_PER_PAGE = 10;
 
 const STATUS_OPTIONS = [
@@ -27,7 +27,7 @@ function StatusPill({ user, onToggleStatus }) {
             type="button"
             onClick={() => onToggleStatus(user)}
             title={user.is_current_user ? 'You cannot deactivate your own account' : 'Click to toggle status'}
-            className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-bold shadow-2xs transition-all cursor-pointer ${
+            className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-bold shadow-sm transition-all cursor-pointer ${
                 isActive
                     ? 'border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100/80'
                     : 'border border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100/80'
@@ -317,7 +317,7 @@ export default function StaffManagement({
                         <h1 className="text-2xl sm:text-[28px] font-black tracking-tight text-slate-900 leading-tight">
                             Staff Management
                         </h1>
-                        <p className="mt-1 text-xs sm:text-sm text-slate-500 max-w-2xl leading-relaxed">
+                        <p className="mt-1 text-xs sm:text-sm text-slate-600 max-w-2xl leading-relaxed">
                             Manage municipal Traffic Management Office staff, inspectors, and access permissions.
                         </p>
                     </div>
@@ -325,7 +325,7 @@ export default function StaffManagement({
                     <button
                         type="button"
                         onClick={handleOpenAdd}
-                        className="inline-flex items-center gap-2 rounded-xl bg-[#182B62] hover:bg-[#25449B] px-4 py-2.5 text-xs font-bold text-white shadow-xs transition-all active:scale-[0.98] self-start sm:self-center shrink-0 cursor-pointer"
+                        className="inline-flex items-center gap-2 rounded-xl bg-[#182B62] hover:bg-[#25449B] px-4 py-2.5 text-xs font-bold text-white shadow-sm transition-all active:scale-[0.98] self-start sm:self-center shrink-0 cursor-pointer"
                     >
                         <UserPlus size={15} strokeWidth={2.2} />
                         <span>Add Staff</span>
@@ -335,33 +335,33 @@ export default function StaffManagement({
                 {/* ══════════════════════════════════════════════════════════════
                     2. COMPACT OPERATIONAL KPI DECK (1 card per row on mobile)
                    ══════════════════════════════════════════════════════════════ */}
-                <div className="mb-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4 items-stretch">
+                <div className="mb-6 grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4 items-stretch">
                     {/* Card 1: Total Staff */}
-                    <div className={`flex flex-col justify-between rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-4 sm:p-5 lg:p-6 ${CARD_SHADOW} transition-all hover:border-slate-300 hover:shadow-[0_4px_6px_-1px_rgba(15,23,42,0.06),0_12px_28px_-8px_rgba(15,23,42,0.14)]`}>
+                    <div className={`flex flex-col justify-between rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-3 sm:p-4 lg:px-5 lg:py-4 ${CARD_SHADOW} transition-all hover:border-slate-300 hover:shadow-[0_2px_6px_0_rgba(15,23,42,0.08),0_18px_36px_-12px_rgba(15,23,42,0.20)]`}>
                         <div>
-                            <div className="flex items-center justify-between border-b border-slate-100 pb-2 sm:pb-2.5">
-                                <span className="font-['Plus_Jakarta_Sans',sans-serif] text-[10px] sm:text-[10.5px] font-bold uppercase tracking-wider text-slate-400">
+                            <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-2 sm:pb-2.5">
+                                <span className="font-['Plus_Jakarta_Sans',sans-serif] text-[9.5px] sm:text-[10.5px] font-bold uppercase tracking-wide sm:tracking-wider leading-tight text-slate-500">
                                     Total Staff
                                 </span>
-                                <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-xl bg-indigo-50 border border-indigo-100 text-[#182B62]">
+                                <div className="flex h-7 w-7 shrink-0 sm:h-8 sm:w-8 items-center justify-center rounded-xl bg-indigo-50 border border-indigo-100 text-[#182B62]">
                                     <Users size={15} strokeWidth={2.2} />
                                 </div>
                             </div>
-                            <div className="mt-2 sm:mt-2.5 flex items-baseline gap-1.5 sm:gap-2">
-                                <span className="font-['Plus_Jakarta_Sans',sans-serif] text-xl sm:text-2xl lg:text-3xl font-black tracking-tight tabular-nums text-slate-900 leading-none">
+                            <div className="mt-2 sm:mt-2.5 flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5 sm:gap-2">
+                                <span className="font-['Plus_Jakarta_Sans',sans-serif] text-2xl lg:text-3xl font-black tracking-tight tabular-nums text-slate-900 leading-none">
                                     {stats.total}
                                 </span>
-                                <span className="font-['Plus_Jakarta_Sans',sans-serif] text-[9.5px] sm:text-[10.5px] font-extrabold uppercase tracking-wider text-slate-400">
+                                <span className="font-['Plus_Jakarta_Sans',sans-serif] text-[9.5px] sm:text-[10.5px] font-extrabold uppercase tracking-wider text-slate-500">
                                     {stats.total === 1 ? 'Officer' : 'Personnel'}
                                 </span>
                             </div>
-                            <p className="mt-1 text-[10px] sm:text-[11px] font-medium text-slate-500 font-['Plus_Jakarta_Sans',sans-serif] line-clamp-1">
+                            <p className="mt-1 max-sm:hidden text-[10px] sm:text-[11px] font-medium text-slate-600 font-['Plus_Jakarta_Sans',sans-serif] line-clamp-1">
                                 Authorized municipal TMO staff
                             </p>
                         </div>
 
-                        <div className="mt-3 rounded-xl bg-slate-50 border border-slate-100/90 px-2.5 py-1.5 sm:p-2.5 flex items-center justify-between text-[10.5px] sm:text-xs">
-                            <span className="font-['Plus_Jakarta_Sans',sans-serif] font-semibold text-slate-400 shrink-0">Roster:</span>
+                        <div className="mt-2.5 max-sm:hidden rounded-xl bg-slate-50 border border-slate-100/90 shadow-sm px-2.5 py-1.5 flex items-center justify-between text-[10.5px] sm:text-xs">
+                            <span className="font-['Plus_Jakarta_Sans',sans-serif] font-semibold text-slate-500 shrink-0">Roster:</span>
                             <span className="font-['Plus_Jakarta_Sans',sans-serif] font-bold text-slate-800 shrink-0">
                                 All Officers
                             </span>
@@ -369,31 +369,31 @@ export default function StaffManagement({
                     </div>
 
                     {/* Card 2: Active Officers */}
-                    <div className={`flex flex-col justify-between rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-4 sm:p-5 lg:p-6 ${CARD_SHADOW} transition-all hover:border-slate-300 hover:shadow-[0_4px_6px_-1px_rgba(15,23,42,0.06),0_12px_28px_-8px_rgba(15,23,42,0.14)]`}>
+                    <div className={`flex flex-col justify-between rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-3 sm:p-4 lg:px-5 lg:py-4 ${CARD_SHADOW} transition-all hover:border-slate-300 hover:shadow-[0_2px_6px_0_rgba(15,23,42,0.08),0_18px_36px_-12px_rgba(15,23,42,0.20)]`}>
                         <div>
-                            <div className="flex items-center justify-between border-b border-slate-100 pb-2 sm:pb-2.5">
-                                <span className="font-['Plus_Jakarta_Sans',sans-serif] text-[10px] sm:text-[10.5px] font-bold uppercase tracking-wider text-slate-400">
+                            <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-2 sm:pb-2.5">
+                                <span className="font-['Plus_Jakarta_Sans',sans-serif] text-[9.5px] sm:text-[10.5px] font-bold uppercase tracking-wide sm:tracking-wider leading-tight text-slate-500">
                                     Active Officers
                                 </span>
-                                <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-xl bg-emerald-50 border border-emerald-100 text-emerald-600">
+                                <div className="flex h-7 w-7 shrink-0 sm:h-8 sm:w-8 items-center justify-center rounded-xl bg-emerald-50 border border-emerald-100 text-emerald-600">
                                     <CheckCircle2 size={15} strokeWidth={2.2} />
                                 </div>
                             </div>
-                            <div className="mt-2 sm:mt-2.5 flex items-baseline gap-1.5 sm:gap-2">
-                                <span className="font-['Plus_Jakarta_Sans',sans-serif] text-xl sm:text-2xl lg:text-3xl font-black tracking-tight tabular-nums text-emerald-600 leading-none">
+                            <div className="mt-2 sm:mt-2.5 flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5 sm:gap-2">
+                                <span className="font-['Plus_Jakarta_Sans',sans-serif] text-2xl lg:text-3xl font-black tracking-tight tabular-nums text-emerald-600 leading-none">
                                     {stats.active}
                                 </span>
-                                <span className="font-['Plus_Jakarta_Sans',sans-serif] text-[9.5px] sm:text-[10.5px] font-extrabold uppercase tracking-wider text-slate-400">
+                                <span className="font-['Plus_Jakarta_Sans',sans-serif] text-[9.5px] sm:text-[10.5px] font-extrabold uppercase tracking-wider text-slate-500">
                                     {stats.active === 1 ? 'Active' : 'Active'}
                                 </span>
                             </div>
-                            <p className="mt-1 text-[10px] sm:text-[11px] font-medium text-slate-500 font-['Plus_Jakarta_Sans',sans-serif] line-clamp-1">
+                            <p className="mt-1 max-sm:hidden text-[10px] sm:text-[11px] font-medium text-slate-600 font-['Plus_Jakarta_Sans',sans-serif] line-clamp-1">
                                 Personnel with sign-in access
                             </p>
                         </div>
 
-                        <div className="mt-3 rounded-xl bg-slate-50 border border-slate-100/90 px-2.5 py-1.5 sm:p-2.5 flex items-center justify-between text-[10.5px] sm:text-xs">
-                            <span className="font-['Plus_Jakarta_Sans',sans-serif] font-semibold text-slate-400 shrink-0">Access:</span>
+                        <div className="mt-2.5 max-sm:hidden rounded-xl bg-slate-50 border border-slate-100/90 shadow-sm px-2.5 py-1.5 flex items-center justify-between text-[10.5px] sm:text-xs">
+                            <span className="font-['Plus_Jakarta_Sans',sans-serif] font-semibold text-slate-500 shrink-0">Access:</span>
                             <span className="font-['Plus_Jakarta_Sans',sans-serif] font-bold text-emerald-700 shrink-0">
                                 Can Sign In
                             </span>
@@ -401,33 +401,33 @@ export default function StaffManagement({
                     </div>
 
                     {/* Card 3: Inactive Accounts */}
-                    <div className={`flex flex-col justify-between rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-4 sm:p-5 lg:p-6 ${CARD_SHADOW} transition-all hover:border-slate-300 hover:shadow-[0_4px_6px_-1px_rgba(15,23,42,0.06),0_12px_28px_-8px_rgba(15,23,42,0.14)]`}>
+                    <div className={`flex flex-col justify-between rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-3 sm:p-4 lg:px-5 lg:py-4 ${CARD_SHADOW} transition-all hover:border-slate-300 hover:shadow-[0_2px_6px_0_rgba(15,23,42,0.08),0_18px_36px_-12px_rgba(15,23,42,0.20)]`}>
                         <div>
-                            <div className="flex items-center justify-between border-b border-slate-100 pb-2 sm:pb-2.5">
-                                <span className="font-['Plus_Jakarta_Sans',sans-serif] text-[10px] sm:text-[10.5px] font-bold uppercase tracking-wider text-slate-400">
+                            <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-2 sm:pb-2.5">
+                                <span className="font-['Plus_Jakarta_Sans',sans-serif] text-[9.5px] sm:text-[10.5px] font-bold uppercase tracking-wide sm:tracking-wider leading-tight text-slate-500">
                                     Inactive Accounts
                                 </span>
-                                <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-xl bg-rose-50 border border-rose-100 text-rose-600">
+                                <div className="flex h-7 w-7 shrink-0 sm:h-8 sm:w-8 items-center justify-center rounded-xl bg-rose-50 border border-rose-100 text-rose-600">
                                     <XCircle size={15} strokeWidth={2.2} />
                                 </div>
                             </div>
-                            <div className="mt-2 sm:mt-2.5 flex items-baseline gap-1.5 sm:gap-2">
-                                <span className={`font-['Plus_Jakarta_Sans',sans-serif] text-xl sm:text-2xl lg:text-3xl font-black tracking-tight tabular-nums leading-none ${
+                            <div className="mt-2 sm:mt-2.5 flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5 sm:gap-2">
+                                <span className={`font-['Plus_Jakarta_Sans',sans-serif] text-2xl lg:text-3xl font-black tracking-tight tabular-nums leading-none ${
                                     stats.inactive > 0 ? 'text-rose-600' : 'text-slate-900'
                                 }`}>
                                     {stats.inactive}
                                 </span>
-                                <span className="font-['Plus_Jakarta_Sans',sans-serif] text-[9.5px] sm:text-[10.5px] font-extrabold uppercase tracking-wider text-slate-400">
+                                <span className="font-['Plus_Jakarta_Sans',sans-serif] text-[9.5px] sm:text-[10.5px] font-extrabold uppercase tracking-wider text-slate-500">
                                     {stats.inactive === 1 ? 'Disabled' : 'Disabled'}
                                 </span>
                             </div>
-                            <p className="mt-1 text-[10px] sm:text-[11px] font-medium text-slate-500 font-['Plus_Jakarta_Sans',sans-serif] line-clamp-1">
+                            <p className="mt-1 max-sm:hidden text-[10px] sm:text-[11px] font-medium text-slate-600 font-['Plus_Jakarta_Sans',sans-serif] line-clamp-1">
                                 Suspended or revoked access
                             </p>
                         </div>
 
-                        <div className="mt-3 rounded-xl bg-slate-50 border border-slate-100/90 px-2.5 py-1.5 sm:p-2.5 flex items-center justify-between text-[10.5px] sm:text-xs">
-                            <span className="font-['Plus_Jakarta_Sans',sans-serif] font-semibold text-slate-400 shrink-0">Access:</span>
+                        <div className="mt-2.5 max-sm:hidden rounded-xl bg-slate-50 border border-slate-100/90 shadow-sm px-2.5 py-1.5 flex items-center justify-between text-[10.5px] sm:text-xs">
+                            <span className="font-['Plus_Jakarta_Sans',sans-serif] font-semibold text-slate-500 shrink-0">Access:</span>
                             <span className={`font-['Plus_Jakarta_Sans',sans-serif] font-bold shrink-0 ${
                                 stats.inactive > 0 ? 'text-rose-700' : 'text-slate-600'
                             }`}>
@@ -437,31 +437,31 @@ export default function StaffManagement({
                     </div>
 
                     {/* Card 4: New This Month */}
-                    <div className={`flex flex-col justify-between rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-4 sm:p-5 lg:p-6 ${CARD_SHADOW} transition-all hover:border-slate-300 hover:shadow-[0_4px_6px_-1px_rgba(15,23,42,0.06),0_12px_28px_-8px_rgba(15,23,42,0.14)]`}>
+                    <div className={`flex flex-col justify-between rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-3 sm:p-4 lg:px-5 lg:py-4 ${CARD_SHADOW} transition-all hover:border-slate-300 hover:shadow-[0_2px_6px_0_rgba(15,23,42,0.08),0_18px_36px_-12px_rgba(15,23,42,0.20)]`}>
                         <div>
-                            <div className="flex items-center justify-between border-b border-slate-100 pb-2 sm:pb-2.5">
-                                <span className="font-['Plus_Jakarta_Sans',sans-serif] text-[10px] sm:text-[10.5px] font-bold uppercase tracking-wider text-slate-400">
+                            <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-2 sm:pb-2.5">
+                                <span className="font-['Plus_Jakarta_Sans',sans-serif] text-[9.5px] sm:text-[10.5px] font-bold uppercase tracking-wide sm:tracking-wider leading-tight text-slate-500">
                                     New This Month
                                 </span>
-                                <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-xl bg-indigo-50 border border-indigo-100 text-[#182B62]">
+                                <div className="flex h-7 w-7 shrink-0 sm:h-8 sm:w-8 items-center justify-center rounded-xl bg-indigo-50 border border-indigo-100 text-[#182B62]">
                                     <Clock size={15} strokeWidth={2.2} />
                                 </div>
                             </div>
-                            <div className="mt-2 sm:mt-2.5 flex items-baseline gap-1.5 sm:gap-2">
-                                <span className="font-['Plus_Jakarta_Sans',sans-serif] text-xl sm:text-2xl lg:text-3xl font-black tracking-tight tabular-nums text-slate-900 leading-none">
+                            <div className="mt-2 sm:mt-2.5 flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5 sm:gap-2">
+                                <span className="font-['Plus_Jakarta_Sans',sans-serif] text-2xl lg:text-3xl font-black tracking-tight tabular-nums text-slate-900 leading-none">
                                     {stats.new_this_month}
                                 </span>
-                                <span className="font-['Plus_Jakarta_Sans',sans-serif] text-[9.5px] sm:text-[10.5px] font-extrabold uppercase tracking-wider text-slate-400">
+                                <span className="font-['Plus_Jakarta_Sans',sans-serif] text-[9.5px] sm:text-[10.5px] font-extrabold uppercase tracking-wider text-slate-500">
                                     {stats.new_this_month === 1 ? 'Account' : 'Accounts'}
                                 </span>
                             </div>
-                            <p className="mt-1 text-[10px] sm:text-[11px] font-medium text-slate-500 font-['Plus_Jakarta_Sans',sans-serif] line-clamp-1">
+                            <p className="mt-1 max-sm:hidden text-[10px] sm:text-[11px] font-medium text-slate-600 font-['Plus_Jakarta_Sans',sans-serif] line-clamp-1">
                                 Joined municipal roster recently
                             </p>
                         </div>
 
-                        <div className="mt-3 rounded-xl bg-slate-50 border border-slate-100/90 px-2.5 py-1.5 sm:p-2.5 flex items-center justify-between text-[10.5px] sm:text-xs">
-                            <span className="font-['Plus_Jakarta_Sans',sans-serif] font-semibold text-slate-400 shrink-0">Onboarding:</span>
+                        <div className="mt-2.5 max-sm:hidden rounded-xl bg-slate-50 border border-slate-100/90 shadow-sm px-2.5 py-1.5 flex items-center justify-between text-[10.5px] sm:text-xs">
+                            <span className="font-['Plus_Jakarta_Sans',sans-serif] font-semibold text-slate-500 shrink-0">Onboarding:</span>
                             <span className="font-['Plus_Jakarta_Sans',sans-serif] font-bold text-slate-800 shrink-0">
                                 Joined Recently
                             </span>
@@ -478,20 +478,20 @@ export default function StaffManagement({
                             <Search
                                 size={14}
                                 strokeWidth={2.2}
-                                className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"
+                                className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500"
                             />
                             <input
                                 type="text"
                                 value={search}
                                 onChange={e => handleSearch(e.target.value)}
                                 placeholder="Search by staff name, employee ID, or email…"
-                                className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50/70 pl-10 pr-9 text-xs sm:text-sm font-medium text-slate-900 placeholder:text-slate-400 transition-colors focus:border-[#182B62] focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#182B62]"
+                                className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50/70 pl-10 pr-9 text-xs sm:text-sm font-medium text-slate-900 placeholder:text-slate-500 transition-colors focus:border-[#182B62] focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#182B62]"
                             />
                             {search && (
                                 <button
                                     type="button"
                                     onClick={() => handleSearch('')}
-                                    className="absolute right-3 top-1/2 flex h-5 w-5 -translate-y-1/2 items-center justify-center rounded-full text-slate-400 hover:bg-slate-200 hover:text-slate-700 cursor-pointer"
+                                    className="absolute right-3 top-1/2 flex h-5 w-5 -translate-y-1/2 items-center justify-center rounded-full text-slate-500 hover:bg-slate-200 hover:text-slate-700 cursor-pointer"
                                 >
                                     <X size={12} strokeWidth={2.5} />
                                 </button>
@@ -503,7 +503,7 @@ export default function StaffManagement({
                                 value={filter}
                                 onChange={e => handleFilter(e.target.value)}
                                 aria-label="Filter staff by account status"
-                                className="h-10 w-full sm:w-auto sm:min-w-[140px] rounded-xl border border-slate-200 bg-slate-50/70 pl-3 pr-8 text-xs font-bold text-slate-700 transition-colors focus:border-[#182B62] focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#182B62] cursor-pointer"
+                                className="h-10 w-full sm:w-auto sm:flex-1 lg:flex-none sm:min-w-[140px] rounded-xl border border-slate-200 bg-slate-50/70 pl-3 pr-8 text-xs font-bold text-slate-700 transition-colors focus:border-[#182B62] focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#182B62] cursor-pointer"
                             >
                                 {STATUS_OPTIONS.map(opt => (
                                     <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -518,13 +518,13 @@ export default function StaffManagement({
                    ══════════════════════════════════════════════════════════════ */}
                 {users.length === 0 ? (
                     <div className={`rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-10 sm:p-14 text-center ${CARD_SHADOW}`}>
-                        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-400 border border-slate-200/70">
+                        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-500 border border-slate-200/70">
                             <Users size={22} strokeWidth={1.8} />
                         </div>
                         <h3 className="mt-3.5 text-base font-bold text-slate-900">
                             No staff accounts found
                         </h3>
-                        <p className="mx-auto mt-1 max-w-sm text-xs text-slate-500 leading-relaxed">
+                        <p className="mx-auto mt-1 max-w-sm text-xs text-slate-600 leading-relaxed">
                             {isFiltering
                                 ? 'No accounts match your search query or filter selection.'
                                 : 'No staff personnel have been registered in the system yet.'}
@@ -533,7 +533,7 @@ export default function StaffManagement({
                             <button
                                 type="button"
                                 onClick={handleClearAll}
-                                className="mt-4 inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-1.5 text-xs font-bold text-slate-800 shadow-2xs hover:bg-slate-50 transition-colors cursor-pointer"
+                                className="mt-4 inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-1.5 text-xs font-bold text-slate-800 shadow-sm hover:bg-slate-50 transition-colors cursor-pointer"
                             >
                                 <RotateCcw size={12} strokeWidth={2.2} />
                                 <span>Clear filter</span>
@@ -543,30 +543,30 @@ export default function StaffManagement({
                 ) : (
                     <>
                         {/* ── DESKTOP & TABLET TABLE (>= 768px) ── */}
-                        <div className={`hidden md:block overflow-hidden rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white ${CARD_SHADOW}`}>
+                        <div className={`hidden lg:block overflow-hidden rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white ${CARD_SHADOW}`}>
                             <div className="overflow-x-auto custom-scrollbar">
-                                <table className="w-full min-w-[760px] text-left border-collapse">
+                                <table className="w-full min-w-[900px] whitespace-nowrap text-left border-collapse">
                                     <thead>
                                         <tr className="border-b border-slate-100 bg-slate-50/75">
-                                            <th scope="col" className="py-3 pl-5 pr-3 text-[10.5px] font-bold uppercase tracking-wider text-slate-400">
+                                            <th scope="col" className="py-3 pl-5 pr-3 text-[10.5px] font-bold uppercase tracking-wider text-slate-500">
                                                 Staff Member
                                             </th>
-                                            <th scope="col" className="py-3 px-4 text-[10.5px] font-bold uppercase tracking-wider text-slate-400">
+                                            <th scope="col" className="py-3 px-4 text-[10.5px] font-bold uppercase tracking-wider text-slate-500">
                                                 Position &amp; ID
                                             </th>
-                                            <th scope="col" className="py-3 px-4 text-[10.5px] font-bold uppercase tracking-wider text-slate-400">
+                                            <th scope="col" className="py-3 px-4 text-[10.5px] font-bold uppercase tracking-wider text-slate-500">
                                                 Contact Info
                                             </th>
-                                            <th scope="col" className="py-3 px-4 text-[10.5px] font-bold uppercase tracking-wider text-slate-400">
+                                            <th scope="col" className="py-3 px-4 text-[10.5px] font-bold uppercase tracking-wider text-slate-500">
                                                 Birthday
                                             </th>
-                                            <th scope="col" className="py-3 px-4 text-[10.5px] font-bold uppercase tracking-wider text-slate-400">
+                                            <th scope="col" className="py-3 px-4 text-[10.5px] font-bold uppercase tracking-wider text-slate-500">
                                                 Status
                                             </th>
-                                            <th scope="col" className="py-3 px-4 text-[10.5px] font-bold uppercase tracking-wider text-slate-400">
+                                            <th scope="col" className="py-3 px-4 text-[10.5px] font-bold uppercase tracking-wider text-slate-500">
                                                 Date Joined
                                             </th>
-                                            <th scope="col" className="py-3 pl-3 pr-6 text-right text-[10.5px] font-bold uppercase tracking-wider text-slate-400">
+                                            <th scope="col" className="py-3 pl-3 pr-6 text-right text-[10.5px] font-bold uppercase tracking-wider text-slate-500">
                                                 Actions
                                             </th>
                                         </tr>
@@ -588,7 +588,7 @@ export default function StaffManagement({
 
                             {/* Integrated Table Footer */}
                             <div className="flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-slate-100 bg-slate-50/50 px-5 py-3.5">
-                                <p className="text-xs text-slate-500 font-medium">
+                                <p className="text-xs text-slate-600 font-medium">
                                     Showing <span className="font-bold text-slate-900 tabular-nums">{users.length > 0 ? startIndex + 1 : 0}</span> to{' '}
                                     <span className="font-bold text-slate-900 tabular-nums">{endIndex}</span> of{' '}
                                     <span className="font-bold text-slate-900 tabular-nums">{users.length}</span> staff accounts
@@ -599,7 +599,7 @@ export default function StaffManagement({
                                         type="button"
                                         disabled={activePage <= 1}
                                         onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                                        className="inline-flex h-8 items-center gap-1 rounded-xl border border-slate-200 bg-white px-2.5 text-xs font-bold text-slate-700 shadow-2xs transition-colors hover:bg-slate-50 disabled:pointer-events-none disabled:opacity-40 cursor-pointer"
+                                        className="inline-flex h-8 items-center gap-1 rounded-xl border border-slate-200 bg-white px-2.5 text-xs font-bold text-slate-700 shadow-sm transition-colors hover:bg-slate-50 disabled:pointer-events-none disabled:opacity-40 cursor-pointer"
                                     >
                                         <ChevronLeft size={13} strokeWidth={2.5} />
                                         <span>Prev</span>
@@ -619,14 +619,14 @@ export default function StaffManagement({
                                                 return (
                                                     <React.Fragment key={p}>
                                                         {hasGap && (
-                                                            <span className="px-1 text-xs text-slate-400 font-medium">…</span>
+                                                            <span className="px-1 text-xs text-slate-500 font-medium">…</span>
                                                         )}
                                                         <button
                                                             type="button"
                                                             onClick={() => setCurrentPage(p)}
                                                             className={`flex h-8 w-8 items-center justify-center rounded-xl text-xs font-bold transition-all cursor-pointer ${
                                                                 activePage === p
-                                                                    ? 'bg-[#182B62] text-white shadow-2xs'
+                                                                    ? 'bg-[#182B62] text-white shadow-sm'
                                                                     : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
                                                             }`}
                                                         >
@@ -641,7 +641,7 @@ export default function StaffManagement({
                                         type="button"
                                         disabled={activePage >= totalPages}
                                         onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                                        className="inline-flex h-8 items-center gap-1 rounded-xl border border-slate-200 bg-white px-2.5 text-xs font-bold text-slate-700 shadow-2xs transition-colors hover:bg-slate-50 disabled:pointer-events-none disabled:opacity-40 cursor-pointer"
+                                        className="inline-flex h-8 items-center gap-1 rounded-xl border border-slate-200 bg-white px-2.5 text-xs font-bold text-slate-700 shadow-sm transition-colors hover:bg-slate-50 disabled:pointer-events-none disabled:opacity-40 cursor-pointer"
                                     >
                                         <span>Next</span>
                                         <ChevronRight size={13} strokeWidth={2.5} />
@@ -651,7 +651,7 @@ export default function StaffManagement({
                         </div>
 
                         {/* ── MOBILE PURPOSE-BUILT CARDS (< 768px) ── */}
-                        <div className="flex flex-col gap-3 md:hidden">
+                        <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:hidden">
                             {paginatedUsers.map(u => (
                                 <MobileStaffCard
                                     key={u.id}
@@ -663,8 +663,8 @@ export default function StaffManagement({
                                 />
                             ))}
 
-                            <div className={`flex items-center justify-between rounded-2xl border border-slate-200/80 bg-white px-4 py-3 ${CARD_SHADOW}`}>
-                                <p className="text-xs text-slate-500 font-medium">
+                            <div className={`md:col-span-2 flex items-center justify-between rounded-2xl border border-slate-200/80 bg-white px-4 py-3 ${CARD_SHADOW}`}>
+                                <p className="text-xs text-slate-600 font-medium">
                                     Page <span className="font-bold text-slate-900 tabular-nums">{activePage}</span> of{' '}
                                     <span className="font-bold text-slate-900 tabular-nums">{totalPages}</span>
                                 </p>
@@ -674,7 +674,7 @@ export default function StaffManagement({
                                         type="button"
                                         disabled={activePage <= 1}
                                         onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                                        className="inline-flex h-8 items-center gap-1 rounded-xl border border-slate-200 bg-white px-2.5 text-xs font-bold text-slate-700 shadow-2xs disabled:pointer-events-none disabled:opacity-40 cursor-pointer"
+                                        className="inline-flex h-8 items-center gap-1 rounded-xl border border-slate-200 bg-white px-2.5 text-xs font-bold text-slate-700 shadow-sm disabled:pointer-events-none disabled:opacity-40 cursor-pointer"
                                     >
                                         <ChevronLeft size={13} strokeWidth={2.5} />
                                         <span>Prev</span>
@@ -683,7 +683,7 @@ export default function StaffManagement({
                                         type="button"
                                         disabled={activePage >= totalPages}
                                         onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                                        className="inline-flex h-8 items-center gap-1 rounded-xl border border-slate-200 bg-white px-2.5 text-xs font-bold text-slate-700 shadow-2xs disabled:pointer-events-none disabled:opacity-40 cursor-pointer"
+                                        className="inline-flex h-8 items-center gap-1 rounded-xl border border-slate-200 bg-white px-2.5 text-xs font-bold text-slate-700 shadow-sm disabled:pointer-events-none disabled:opacity-40 cursor-pointer"
                                     >
                                         <span>Next</span>
                                         <ChevronRight size={13} strokeWidth={2.5} />
@@ -717,7 +717,7 @@ export default function StaffManagement({
                             type="button"
                             disabled={addForm.processing}
                             onClick={handleAddSubmit}
-                            className="inline-flex items-center gap-1.5 rounded-xl bg-[#182B62] hover:bg-[#25449B] text-white px-5 py-2 text-xs font-bold shadow-2xs transition-all active:scale-[0.98] cursor-pointer disabled:opacity-50"
+                            className="inline-flex items-center gap-1.5 rounded-xl bg-[#182B62] hover:bg-[#25449B] text-white px-5 py-2 text-xs font-bold shadow-sm transition-all active:scale-[0.98] cursor-pointer disabled:opacity-50"
                         >
                             {addForm.processing ? <Loader2 size={14} className="animate-spin" /> : <UserPlus size={14} />}
                             <span>Create</span>
@@ -736,7 +736,7 @@ export default function StaffManagement({
                             value={addForm.data.name}
                             onChange={(e) => addForm.setData('name', e.target.value)}
                             placeholder="e.g. Inspector Ricardo Santos"
-                            className={`w-full rounded-xl border bg-slate-50/50 px-3.5 py-2 text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:bg-white focus:outline-none focus:ring-2 transition-all ${
+                            className={`w-full rounded-xl border bg-slate-50/50 px-3.5 py-2 text-xs sm:text-sm text-slate-900 placeholder:text-slate-500 focus:bg-white focus:outline-none focus:ring-2 transition-all ${
                                 addForm.errors.name ? 'border-rose-300 focus:border-rose-500 focus:ring-rose-200' : 'border-slate-200 focus:border-[#182B62] focus:ring-[#182B62]/10'
                             }`}
                             required
@@ -746,7 +746,7 @@ export default function StaffManagement({
                                 <AlertCircle size={12} /> {addForm.errors.name}
                             </p>
                         ) : (
-                            <p className="mt-1 text-[11px] text-slate-400">Employee ID will be generated automatically upon account creation.</p>
+                            <p className="mt-1 text-[11px] text-slate-500">Employee ID will be generated automatically upon account creation.</p>
                         )}
                     </div>
 
@@ -760,7 +760,7 @@ export default function StaffManagement({
                             value={addForm.data.position}
                             onChange={(e) => addForm.setData('position', e.target.value)}
                             placeholder="e.g. TMO Inspector"
-                            className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3.5 py-2 text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:bg-white focus:outline-none focus:border-[#182B62] focus:ring-2 focus:ring-[#182B62]/10 transition-all"
+                            className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3.5 py-2 text-xs sm:text-sm text-slate-900 placeholder:text-slate-500 focus:bg-white focus:outline-none focus:border-[#182B62] focus:ring-2 focus:ring-[#182B62]/10 transition-all"
                         />
                         {addForm.errors.position && (
                             <p className="mt-1 flex items-center gap-1 text-[11px] font-semibold text-rose-600">
@@ -779,7 +779,7 @@ export default function StaffManagement({
                             value={addForm.data.contact_number}
                             onChange={(e) => addForm.setData('contact_number', e.target.value)}
                             placeholder="e.g. 0917 123 4567"
-                            className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3.5 py-2 text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:bg-white focus:outline-none focus:border-[#182B62] focus:ring-2 focus:ring-[#182B62]/10 transition-all"
+                            className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3.5 py-2 text-xs sm:text-sm text-slate-900 placeholder:text-slate-500 focus:bg-white focus:outline-none focus:border-[#182B62] focus:ring-2 focus:ring-[#182B62]/10 transition-all"
                         />
                         {addForm.errors.contact_number && (
                             <p className="mt-1 flex items-center gap-1 text-[11px] font-semibold text-rose-600">
@@ -817,7 +817,7 @@ export default function StaffManagement({
                             value={addForm.data.email}
                             onChange={(e) => addForm.setData('email', e.target.value)}
                             placeholder="e.g. tmo.rsantos@trivora.gov.ph"
-                            className={`w-full rounded-xl border bg-slate-50/50 px-3.5 py-2 text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:bg-white focus:outline-none focus:ring-2 transition-all ${
+                            className={`w-full rounded-xl border bg-slate-50/50 px-3.5 py-2 text-xs sm:text-sm text-slate-900 placeholder:text-slate-500 focus:bg-white focus:outline-none focus:ring-2 transition-all ${
                                 addForm.errors.email ? 'border-rose-300 focus:border-rose-500 focus:ring-rose-200' : 'border-slate-200 focus:border-[#182B62] focus:ring-[#182B62]/10'
                             }`}
                             required
@@ -839,7 +839,7 @@ export default function StaffManagement({
                             value={addForm.data.address}
                             onChange={(e) => addForm.setData('address', e.target.value)}
                             placeholder="e.g. Barangay Poblacion 1, Nasugbu, Batangas"
-                            className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3.5 py-2 text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:bg-white focus:outline-none focus:border-[#182B62] focus:ring-2 focus:ring-[#182B62]/10 transition-all"
+                            className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3.5 py-2 text-xs sm:text-sm text-slate-900 placeholder:text-slate-500 focus:bg-white focus:outline-none focus:border-[#182B62] focus:ring-2 focus:ring-[#182B62]/10 transition-all"
                         />
                         {addForm.errors.address && (
                             <p className="mt-1 flex items-center gap-1 text-[11px] font-semibold text-rose-600">
@@ -893,7 +893,7 @@ export default function StaffManagement({
                             type="button"
                             disabled={editForm.processing}
                             onClick={handleEditSubmit}
-                            className="inline-flex items-center gap-1.5 rounded-xl bg-[#182B62] hover:bg-[#25449B] text-white px-5 py-2 text-xs font-bold shadow-2xs transition-all active:scale-[0.98] cursor-pointer disabled:opacity-50"
+                            className="inline-flex items-center gap-1.5 rounded-xl bg-[#182B62] hover:bg-[#25449B] text-white px-5 py-2 text-xs font-bold shadow-sm transition-all active:scale-[0.98] cursor-pointer disabled:opacity-50"
                         >
                             {editForm.processing ? <Loader2 size={14} className="animate-spin" /> : <Edit2 size={14} />}
                             <span>Save</span>
@@ -906,14 +906,14 @@ export default function StaffManagement({
                         {/* Employee ID (Read-only banner) */}
                         <div className="sm:col-span-2 rounded-xl border border-slate-200/80 bg-slate-50/70 p-3 flex items-center justify-between">
                             <div>
-                                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
+                                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block">
                                     Official Employee ID
                                 </span>
                                 <span className="font-mono text-sm font-bold text-slate-900">
                                     {editingUser.employee_id || '— not yet assigned —'}
                                 </span>
                             </div>
-                            <span className="text-[10.5px] font-semibold text-slate-400 bg-white border border-slate-200 px-2 py-0.5 rounded-md">
+                            <span className="text-[10.5px] font-semibold text-slate-500 bg-white border border-slate-200 px-2 py-0.5 rounded-md">
                                 System Identifier
                             </span>
                         </div>
@@ -1039,14 +1039,14 @@ export default function StaffManagement({
                         {/* Password (Optional on Edit) */}
                         <div className="sm:col-span-2">
                             <label className="block text-xs font-bold text-slate-900 mb-1">
-                                Update Password <span className="text-slate-400 font-normal">(Leave blank to keep unchanged)</span>
+                                Update Password <span className="text-slate-500 font-normal">(Leave blank to keep unchanged)</span>
                             </label>
                             <input
                                 type="password"
                                 value={editForm.data.password}
                                 onChange={(e) => editForm.setData('password', e.target.value)}
                                 placeholder="Enter new password if updating"
-                                className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3.5 py-2 text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:bg-white focus:outline-none focus:border-[#182B62] focus:ring-2 focus:ring-[#182B62]/10 transition-all"
+                                className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3.5 py-2 text-xs sm:text-sm text-slate-900 placeholder:text-slate-500 focus:bg-white focus:outline-none focus:border-[#182B62] focus:ring-2 focus:ring-[#182B62]/10 transition-all"
                             />
                             {editForm.errors.password && (
                                 <p className="mt-1 flex items-center gap-1 text-[11px] font-semibold text-rose-600">
@@ -1087,7 +1087,7 @@ function DesktopStaffRow({ user, onEdit, onToggleStatus, onDelete, onResend }) {
             {/* Column 1: Staff Member */}
             <td className="py-4 pl-5 pr-3 align-middle">
                 <div className="flex items-center gap-2.5">
-                    <Avatar name={user.name} src={user.profile_photo_url} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#182B62] to-[#25449B] text-xs font-black text-white shadow-2xs" />
+                    <Avatar name={user.name} src={user.profile_photo_url} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#182B62] to-[#25449B] text-xs font-black text-white shadow-sm" />
                     <div className="min-w-0">
                         <div className="flex items-center gap-1.5">
                             <p className="truncate text-xs sm:text-sm font-bold text-slate-900">
@@ -1099,7 +1099,7 @@ function DesktopStaffRow({ user, onEdit, onToggleStatus, onDelete, onResend }) {
                                 </span>
                             )}
                         </div>
-                        <p className="mt-0.5 truncate text-[11px] text-slate-500 font-medium">
+                        <p className="mt-0.5 truncate text-[11px] text-slate-600 font-medium">
                             {user.email}
                         </p>
                     </div>
@@ -1114,7 +1114,7 @@ function DesktopStaffRow({ user, onEdit, onToggleStatus, onDelete, onResend }) {
                         {user.position || user.role_label || 'TMO Personnel'}
                     </span>
                     {user.employee_id ? (
-                        <span className="font-mono text-[10.5px] text-slate-500 font-semibold">
+                        <span className="font-mono text-[10.5px] text-slate-600 font-semibold">
                             ID: {user.employee_id}
                         </span>
                     ) : (
@@ -1128,13 +1128,13 @@ function DesktopStaffRow({ user, onEdit, onToggleStatus, onDelete, onResend }) {
                 <div className="flex flex-col">
                     {user.contact_number ? (
                         <a href={`tel:${user.contact_number}`} className="flex items-center gap-1 text-xs font-bold text-slate-800 hover:text-[#182B62] transition-colors">
-                            <Phone size={10} className="text-slate-400 shrink-0" />
+                            <Phone size={10} className="text-slate-500 shrink-0" />
                             {user.contact_number}
                         </a>
                     ) : (
-                        <span className="text-xs text-slate-400 font-medium">No contact number</span>
+                        <span className="text-xs text-slate-500 font-medium">No contact number</span>
                     )}
-                    <span className="mt-0.5 truncate text-[11px] text-slate-500 font-medium max-w-[170px]">
+                    <span className="mt-0.5 truncate text-[11px] text-slate-600 font-medium max-w-[170px]">
                         {user.address || 'No address on file'}
                     </span>
                 </div>
@@ -1145,7 +1145,7 @@ function DesktopStaffRow({ user, onEdit, onToggleStatus, onDelete, onResend }) {
                 {user.birthday_label ? (
                     <span className="text-xs font-bold text-slate-800 tabular-nums">{user.birthday_label}</span>
                 ) : (
-                    <span className="text-xs text-slate-400 font-medium">Not on file</span>
+                    <span className="text-xs text-slate-500 font-medium">Not on file</span>
                 )}
             </td>
 
@@ -1161,7 +1161,7 @@ function DesktopStaffRow({ user, onEdit, onToggleStatus, onDelete, onResend }) {
             <td className="py-4 px-4 align-middle">
                 <div className="flex flex-col">
                     <span className="text-xs font-bold text-slate-800 tabular-nums">{user.created_at}</span>
-                    <span className="mt-0.5 text-[11px] text-slate-400 font-medium">{user.created_ago}</span>
+                    <span className="mt-0.5 text-[11px] text-slate-500 font-medium">{user.created_ago}</span>
                 </div>
             </td>
 
@@ -1173,7 +1173,7 @@ function DesktopStaffRow({ user, onEdit, onToggleStatus, onDelete, onResend }) {
                             type="button"
                             onClick={() => onResend(user)}
                             title="Resend sign-in credentials"
-                            className="flex h-8 w-8 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 hover:bg-slate-100 hover:text-slate-900 shadow-2xs transition-colors cursor-pointer"
+                            className="flex h-8 w-8 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 hover:bg-slate-100 hover:text-slate-900 shadow-sm transition-colors cursor-pointer"
                         >
                             <Send size={13} strokeWidth={2.2} />
                         </button>
@@ -1182,7 +1182,7 @@ function DesktopStaffRow({ user, onEdit, onToggleStatus, onDelete, onResend }) {
                         type="button"
                         onClick={() => onEdit(user)}
                         title="Edit staff account"
-                        className="flex h-8 w-8 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 hover:bg-slate-100 hover:text-slate-900 shadow-2xs transition-colors cursor-pointer"
+                        className="flex h-8 w-8 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 hover:bg-slate-100 hover:text-slate-900 shadow-sm transition-colors cursor-pointer"
                     >
                         <Edit2 size={13} strokeWidth={2.2} />
                     </button>
@@ -1191,7 +1191,7 @@ function DesktopStaffRow({ user, onEdit, onToggleStatus, onDelete, onResend }) {
                         onClick={() => onDelete(user)}
                         disabled={user.is_current_user}
                         title={user.is_current_user ? 'You cannot delete your own account' : 'Delete staff account'}
-                        className="flex h-8 w-8 items-center justify-center rounded-xl border border-rose-200 bg-white text-rose-600 hover:bg-rose-50 hover:text-rose-700 shadow-2xs transition-colors cursor-pointer disabled:pointer-events-none disabled:opacity-30"
+                        className="flex h-8 w-8 items-center justify-center rounded-xl border border-rose-200 bg-white text-rose-600 hover:bg-rose-50 hover:text-rose-700 shadow-sm transition-colors cursor-pointer disabled:pointer-events-none disabled:opacity-30"
                     >
                         <Trash2 size={13} strokeWidth={2.2} />
                     </button>
@@ -1208,7 +1208,7 @@ function MobileStaffCard({ user, onEdit, onToggleStatus, onDelete, onResend }) {
             {/* Top Row: Staff & Status */}
             <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-2.5">
                 <div className="flex items-center gap-2.5 min-w-0">
-                    <Avatar name={user.name} src={user.profile_photo_url} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#182B62] to-[#25449B] text-[11px] font-black text-white shadow-2xs" />
+                    <Avatar name={user.name} src={user.profile_photo_url} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#182B62] to-[#25449B] text-[11px] font-black text-white shadow-sm" />
                     <div className="min-w-0">
                         <div className="flex items-center gap-1.5">
                             <p className="truncate text-xs font-bold text-slate-900">{user.name}</p>
@@ -1218,7 +1218,7 @@ function MobileStaffCard({ user, onEdit, onToggleStatus, onDelete, onResend }) {
                                 </span>
                             )}
                         </div>
-                        <p className="mt-0.5 truncate text-[11px] text-slate-500 font-medium">{user.email}</p>
+                        <p className="mt-0.5 truncate text-[11px] text-slate-600 font-medium">{user.email}</p>
                     </div>
                 </div>
                 <div className="flex flex-col items-end">
@@ -1243,27 +1243,27 @@ function MobileStaffCard({ user, onEdit, onToggleStatus, onDelete, onResend }) {
             {/* Contact & Birthday */}
             <div className="mt-2.5 flex flex-col gap-1 text-xs text-slate-600 bg-slate-50 border border-slate-100 rounded-xl p-2.5">
                 <div className="flex items-center justify-between">
-                    <span className="text-slate-400 font-medium text-[11px]">Contact:</span>
+                    <span className="text-slate-500 font-medium text-[11px]">Contact:</span>
                     <span className="font-bold text-slate-800">{user.contact_number || 'No contact number'}</span>
                 </div>
                 {user.address && (
                     <div className="flex items-center justify-between">
-                        <span className="text-slate-400 font-medium text-[11px]">Address:</span>
+                        <span className="text-slate-500 font-medium text-[11px]">Address:</span>
                         <span className="font-medium text-slate-700 truncate max-w-[190px]">{user.address}</span>
                     </div>
                 )}
                 {user.birthday_label && (
                     <div className="flex items-center justify-between">
-                        <span className="text-slate-400 font-medium text-[11px]">Birthday:</span>
+                        <span className="text-slate-500 font-medium text-[11px]">Birthday:</span>
                         <span className="font-bold text-slate-800">{user.birthday_label}</span>
                     </div>
                 )}
             </div>
 
             {/* Joined Row */}
-            <div className="mt-2.5 flex items-center justify-between gap-2 text-xs text-slate-500 font-medium">
+            <div className="mt-2.5 flex items-center justify-between gap-2 text-xs text-slate-600 font-medium">
                 <span>Joined {user.created_at}</span>
-                <span className="text-[11px] text-slate-400">{user.created_ago}</span>
+                <span className="text-[11px] text-slate-500">{user.created_ago}</span>
             </div>
 
             {/* Action Buttons */}
@@ -1272,7 +1272,7 @@ function MobileStaffCard({ user, onEdit, onToggleStatus, onDelete, onResend }) {
                     <button
                         type="button"
                         onClick={() => onResend(user)}
-                        className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 py-2 text-xs font-bold text-slate-700 shadow-2xs transition-all active:scale-[0.98] cursor-pointer"
+                        className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 py-2 text-xs font-bold text-slate-700 shadow-sm transition-all active:scale-[0.98] cursor-pointer"
                     >
                         <Send size={13} strokeWidth={2.2} />
                         <span>Resend</span>
@@ -1281,7 +1281,7 @@ function MobileStaffCard({ user, onEdit, onToggleStatus, onDelete, onResend }) {
                 <button
                     type="button"
                     onClick={() => onEdit(user)}
-                    className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 py-2 text-xs font-bold text-slate-700 shadow-2xs transition-all active:scale-[0.98] cursor-pointer"
+                    className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 py-2 text-xs font-bold text-slate-700 shadow-sm transition-all active:scale-[0.98] cursor-pointer"
                 >
                     <Edit2 size={13} strokeWidth={2.2} />
                     <span>Edit</span>
@@ -1290,7 +1290,7 @@ function MobileStaffCard({ user, onEdit, onToggleStatus, onDelete, onResend }) {
                     type="button"
                     onClick={() => onDelete(user)}
                     disabled={user.is_current_user}
-                    className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-rose-200 bg-rose-50 hover:bg-rose-100 py-2 text-xs font-bold text-rose-700 shadow-2xs transition-all active:scale-[0.98] disabled:opacity-40 disabled:pointer-events-none cursor-pointer"
+                    className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-rose-200 bg-rose-50 hover:bg-rose-100 py-2 text-xs font-bold text-rose-700 shadow-sm transition-all active:scale-[0.98] disabled:opacity-40 disabled:pointer-events-none cursor-pointer"
                 >
                     <Trash2 size={13} strokeWidth={2.2} />
                     <span>Delete</span>

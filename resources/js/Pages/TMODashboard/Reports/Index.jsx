@@ -9,7 +9,7 @@ import ViolationsTab from './ViolationsTab';
 import ApplicationsTab from './ApplicationsTab';
 import FleetTab from './FleetTab';
 
-const CARD_SHADOW = 'shadow-[0_1px_2px_0_rgba(15,23,42,0.04),0_8px_24px_-8px_rgba(15,23,42,0.10)]';
+const CARD_SHADOW = 'shadow-[0_1px_3px_0_rgba(15,23,42,0.07),0_10px_28px_-8px_rgba(15,23,42,0.14)]';
 
 const TABS = [
     { value: 'violations',   label: 'Violations & Compliance',   icon: ShieldAlert },
@@ -87,7 +87,7 @@ export default function ReportsIndex({ tab, from, to, filters, reportData }) {
                     <h1 className="font-['Plus_Jakarta_Sans',sans-serif] text-2xl sm:text-[28px] font-black tracking-tight text-slate-900 leading-tight">
                         Reports &amp; Analytics
                     </h1>
-                    <p className="mt-1 text-xs sm:text-sm text-slate-500 max-w-2xl leading-relaxed font-['Plus_Jakarta_Sans',sans-serif]">
+                    <p className="mt-1 text-xs sm:text-sm text-slate-600 max-w-2xl leading-relaxed font-['Plus_Jakarta_Sans',sans-serif]">
                         Official municipal intelligence, color coding enforcement trends, and tricycle franchise records in Nasugbu.
                     </p>
                 </div>
@@ -95,7 +95,7 @@ export default function ReportsIndex({ tab, from, to, filters, reportData }) {
                     <button
                         type="button"
                         onClick={() => setExportOpen(true)}
-                        className="inline-flex items-center gap-2 rounded-xl bg-[#182B62] hover:bg-[#25449B] px-4 py-2.5 text-xs font-bold text-white shadow-xs transition-all active:scale-[0.98] cursor-pointer"
+                        className="inline-flex items-center gap-2 rounded-xl bg-[#182B62] hover:bg-[#25449B] px-4 py-2.5 text-xs font-bold text-white shadow-sm transition-all active:scale-[0.98] cursor-pointer"
                     >
                         <Download size={15} strokeWidth={2.2} className="text-white" />
                         <span>Export</span>
@@ -118,7 +118,7 @@ export default function ReportsIndex({ tab, from, to, filters, reportData }) {
                             aria-current={active ? 'page' : undefined}
                             className={`flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs sm:text-sm font-bold transition-all shrink-0 font-['Plus_Jakarta_Sans',sans-serif] ${
                                 active
-                                    ? 'bg-[#182B62] text-white shadow-2xs'
+                                    ? 'bg-[#182B62] text-white shadow-sm'
                                     : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
                             }`}
                         >

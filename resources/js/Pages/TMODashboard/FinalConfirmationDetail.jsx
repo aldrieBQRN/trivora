@@ -11,7 +11,7 @@ import {
 import { Textarea, Label } from '@/Components/TMO';
 
 import Avatar from '@/Components/Avatar';
-const CARD_SHADOW = 'shadow-[0_1px_2px_0_rgba(15,23,42,0.04),0_8px_24px_-8px_rgba(15,23,42,0.10)]';
+const CARD_SHADOW = 'shadow-[0_1px_3px_0_rgba(15,23,42,0.07),0_10px_28px_-8px_rgba(15,23,42,0.14)]';
 
 // Reflects only what the backend has actually received (Tricycle::gpsStatus())
 function GpsStatusBadge({ status, lastSeenAt }) {
@@ -188,9 +188,9 @@ export default function FinalConfirmationDetail({ application }) {
                 <div className="mb-4">
                     <Link
                         href="/tmo/final-confirmation"
-                        className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold text-slate-500 hover:text-slate-900 transition-colors group"
+                        className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold text-slate-600 hover:text-slate-900 transition-colors group"
                     >
-                        <ChevronLeft size={16} strokeWidth={2.5} className="text-slate-400 group-hover:text-slate-700 transition-colors" />
+                        <ChevronLeft size={16} strokeWidth={2.5} className="text-slate-500 group-hover:text-slate-700 transition-colors" />
                         <span>Back to Final Confirmation Queue</span>
                     </Link>
                 </div>
@@ -205,23 +205,23 @@ export default function FinalConfirmationDetail({ application }) {
                                 <h1 className="text-2xl sm:text-[28px] font-black tracking-tight text-slate-900 leading-tight">
                                     {application.reference}
                                 </h1>
-                                <span className="text-xs sm:text-sm font-semibold text-slate-500">
+                                <span className="text-xs sm:text-sm font-semibold text-slate-600">
                                     · Final Confirmation &amp; GPS Setup
                                 </span>
                             </div>
-                            <p className="mt-1 text-xs sm:text-sm text-slate-500 font-medium">
+                            <p className="mt-1 text-xs sm:text-sm text-slate-600 font-medium">
                                 Applicant: <strong className="font-bold text-slate-900">{application.owner?.full_name || application.operator_name}</strong>
                             </p>
                         </div>
 
                         <div>
                             {isAlreadyCompleted ? (
-                                <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700 shadow-2xs">
+                                <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700 shadow-sm">
                                     <CheckCircle2 size={13} strokeWidth={2.5} />
                                     <span>Completed / Active</span>
                                 </span>
                             ) : (
-                                <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-bold text-amber-800 shadow-2xs">
+                                <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-bold text-amber-800 shadow-sm">
                                     <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" />
                                     <span>Awaiting Confirmation</span>
                                 </span>
@@ -249,7 +249,7 @@ export default function FinalConfirmationDetail({ application }) {
                                         <h2 className="text-sm font-bold text-slate-900">
                                             Clearances &amp; Receipts
                                         </h2>
-                                        <p className="text-[11px] text-slate-500 font-medium">
+                                        <p className="text-[11px] text-slate-600 font-medium">
                                             Prerequisite clearances verified prior to final activation
                                         </p>
                                     </div>
@@ -270,7 +270,7 @@ export default function FinalConfirmationDetail({ application }) {
                                         </div>
                                         <div className="mt-1 flex items-center gap-1.5 text-xs font-bold text-emerald-800">
                                             <span
-                                                className="h-2.5 w-2.5 rounded-full shrink-0 shadow-xs"
+                                                className="h-2.5 w-2.5 rounded-full shrink-0 shadow-sm"
                                                 style={{ backgroundColor: application.color_hex || '#3B82F6' }}
                                             />
                                             <span>{application.color_scheme} Scheme</span>
@@ -289,19 +289,19 @@ export default function FinalConfirmationDetail({ application }) {
                                 {/* Step Progress Summary */}
                                 <div className="rounded-2xl border border-slate-100 bg-slate-50/50 p-3.5 space-y-2 text-xs">
                                     <div className="flex items-center justify-between">
-                                        <span className="font-medium text-slate-500">1. Document Review</span>
+                                        <span className="font-medium text-slate-600">1. Document Review</span>
                                         <span className="font-bold text-emerald-700 flex items-center gap-1">
                                             <Check size={12} strokeWidth={2.5} /> Passed
                                         </span>
                                     </div>
                                     <div className="flex items-center justify-between">
-                                        <span className="font-medium text-slate-500">2. Physical Roadworthiness</span>
+                                        <span className="font-medium text-slate-600">2. Physical Roadworthiness</span>
                                         <span className="font-bold text-emerald-700 flex items-center gap-1">
                                             <Check size={12} strokeWidth={2.5} /> Passed
                                         </span>
                                     </div>
                                     <div className="flex items-center justify-between">
-                                        <span className="font-medium text-slate-500">3. BPLO Sticker Release</span>
+                                        <span className="font-medium text-slate-600">3. BPLO Sticker Release</span>
                                         <span className="font-bold text-emerald-700 flex items-center gap-1">
                                             <Check size={12} strokeWidth={2.5} /> Released
                                         </span>
@@ -321,7 +321,7 @@ export default function FinalConfirmationDetail({ application }) {
                                         <h2 className="text-sm font-bold text-slate-900">
                                             TMO Final Verification
                                         </h2>
-                                        <p className="text-[11px] text-slate-500 font-medium">
+                                        <p className="text-[11px] text-slate-600 font-medium">
                                             Confirm presented clearances and assign GPS tracking
                                         </p>
                                     </div>
@@ -367,7 +367,7 @@ export default function FinalConfirmationDetail({ application }) {
 
                                 {/* GPS Tracking Method Selection */}
                                 <div className="pt-2 border-t border-slate-100">
-                                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-2.5">
+                                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2.5">
                                         Select GPS Tracking Method
                                     </label>
 
@@ -451,7 +451,7 @@ export default function FinalConfirmationDetail({ application }) {
                                                     <p className="text-[11px] text-slate-600 font-medium">
                                                         Driver login mobile: <strong className="font-mono text-slate-800">{application.contact_number}</strong>
                                                     </p>
-                                                    <p className="text-[10.5px] text-slate-500">
+                                                    <p className="text-[10.5px] text-slate-600">
                                                         Driver account activates automatically once this final confirmation is completed.
                                                     </p>
                                                 </div>
@@ -476,14 +476,14 @@ export default function FinalConfirmationDetail({ application }) {
                                     </div>
                                 )}
 
-                                {/* Desktop Action Button (Single Word) */}
-                                <div className="pt-2 border-t border-slate-100">
+                                {/* Desktop Action Button — below lg the sticky bottom bar carries Confirm instead */}
+                                <div className={`pt-2 border-t border-slate-100 ${!isAlreadyCompleted ? 'hidden lg:block' : ''}`}>
                                     {!isAlreadyCompleted ? (
                                         <button
                                             type="button"
                                             disabled={!canSubmit || processing}
                                             onClick={handleSubmit}
-                                            className="w-full flex items-center justify-center gap-2 rounded-xl bg-[#182B62] hover:bg-[#25449B] active:bg-[#122048] text-white py-3 px-4 text-xs sm:text-sm font-bold shadow-2xs transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                                            className="w-full flex items-center justify-center gap-2 rounded-xl bg-[#182B62] hover:bg-[#25449B] active:bg-[#122048] text-white py-3 px-4 text-xs sm:text-sm font-bold shadow-sm transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                                         >
                                             {processing ? (
                                                 <Loader2 size={16} className="animate-spin" />
@@ -530,32 +530,32 @@ export default function FinalConfirmationDetail({ application }) {
 
                             {/* Owner Summary */}
                             <div className="flex items-center gap-3 pb-3 border-b border-slate-100">
-                                <Avatar name={application.owner?.full_name || application.operator_name} src={application.operator_photo} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#182B62] to-[#25449B] text-xs font-black text-white shadow-2xs" />
+                                <Avatar name={application.owner?.full_name || application.operator_name} src={application.operator_photo} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#182B62] to-[#25449B] text-xs font-black text-white shadow-sm" />
                                 <div className="min-w-0 flex-1">
                                     <p className="truncate text-xs sm:text-sm font-bold text-slate-900">
                                         {application.owner?.full_name || application.operator_name}
                                     </p>
-                                    <p className="truncate text-xs text-slate-500 font-medium">Tricycle Owner (Applicant)</p>
+                                    <p className="truncate text-xs text-slate-600 font-medium">Tricycle Owner (Applicant)</p>
                                 </div>
                             </div>
 
                             <div className="mt-3 grid grid-cols-1 gap-2 text-xs">
                                 <div className="flex items-center justify-between text-slate-600">
-                                    <span className="flex items-center gap-1.5 text-slate-400 font-medium">
+                                    <span className="flex items-center gap-1.5 text-slate-500 font-medium">
                                         <CalendarDays size={13} className="shrink-0" />
                                         Birthday
                                     </span>
                                     <span className="font-bold text-slate-800">{application.owner?.birthday || '—'}</span>
                                 </div>
                                 <div className="flex items-center justify-between text-slate-600">
-                                    <span className="flex items-center gap-1.5 text-slate-400 font-medium">
+                                    <span className="flex items-center gap-1.5 text-slate-500 font-medium">
                                         <Phone size={13} className="shrink-0" />
                                         Contact
                                     </span>
                                     <span className="font-bold text-slate-800">{application.owner?.contact_number || application.contact_number || '—'}</span>
                                 </div>
                                 <div className="flex items-center justify-between text-slate-600">
-                                    <span className="flex items-center gap-1.5 text-slate-400 font-medium">
+                                    <span className="flex items-center gap-1.5 text-slate-500 font-medium">
                                         <MapPin size={13} className="shrink-0" />
                                         Barangay
                                     </span>
@@ -578,24 +578,24 @@ export default function FinalConfirmationDetail({ application }) {
                                 ) : application.tricycleDriver ? (
                                     <div className="mt-2 grid grid-cols-1 gap-1.5 text-xs">
                                         <div className="flex items-center justify-between text-slate-600">
-                                            <span className="font-medium text-slate-400">Driver Name</span>
+                                            <span className="font-medium text-slate-500">Driver Name</span>
                                             <span className="font-bold text-slate-800">{application.tricycleDriver.full_name || '—'}</span>
                                         </div>
                                         <div className="flex items-center justify-between text-slate-600">
-                                            <span className="font-medium text-slate-400">Mobile</span>
+                                            <span className="font-medium text-slate-500">Mobile</span>
                                             <span className="font-bold text-slate-800">{application.tricycleDriver.contact_number || '—'}</span>
                                         </div>
                                         <div className="flex items-center justify-between gap-3 text-slate-600">
-                                            <span className="font-medium text-slate-400">Email</span>
+                                            <span className="font-medium text-slate-500">Email</span>
                                             <span className="font-bold text-slate-800 break-all text-right">{application.tricycleDriver.email || '—'}</span>
                                         </div>
                                         <div className="flex items-center justify-between text-slate-600">
-                                            <span className="font-medium text-slate-400">Barangay</span>
+                                            <span className="font-medium text-slate-500">Barangay</span>
                                             <span className="font-bold text-slate-800">{application.tricycleDriver.barangay || '—'}</span>
                                         </div>
                                     </div>
                                 ) : (
-                                    <p className="mt-2 text-xs text-slate-500 font-medium">No designated driver recorded.</p>
+                                    <p className="mt-2 text-xs text-slate-600 font-medium">No designated driver recorded.</p>
                                 )}
                             </div>
                         </div>
@@ -609,47 +609,47 @@ export default function FinalConfirmationDetail({ application }) {
                                     </div>
                                     <div>
                                         <h3 className="text-sm font-bold text-slate-900 leading-snug">Unit Registration</h3>
-                                        <p className="text-[11px] text-slate-500 font-medium">Declared Specifications</p>
+                                        <p className="text-[11px] text-slate-600 font-medium">Declared Specifications</p>
                                     </div>
                                 </div>
                             </div>
 
                             {/* Vehicle Specifications */}
                             <div className="space-y-2.5 text-xs">
-                                <div className="text-[10.5px] font-bold uppercase tracking-wider text-slate-400 mb-1">
+                                <div className="text-[10.5px] font-bold uppercase tracking-wider text-slate-500 mb-1">
                                     Vehicle Attributes
                                 </div>
 
                                 <div className="flex items-center justify-between">
-                                    <span className="text-slate-500 font-medium">LTO Plate Number</span>
+                                    <span className="text-slate-600 font-medium">LTO Plate Number</span>
                                     <span className="font-mono font-bold text-slate-900 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded-md">
                                         {vehicleData.plate}
                                     </span>
                                 </div>
 
                                 <div className="flex items-center justify-between">
-                                    <span className="text-slate-500 font-medium">Make &amp; Model</span>
+                                    <span className="text-slate-600 font-medium">Make &amp; Model</span>
                                     <span className="font-bold text-slate-800 text-right truncate max-w-[170px]">
                                         {vehicleData.make}
                                     </span>
                                 </div>
 
                                 <div className="flex items-center justify-between">
-                                    <span className="text-slate-500 font-medium">Year Model</span>
+                                    <span className="text-slate-600 font-medium">Year Model</span>
                                     <span className="font-bold text-slate-800">
                                         {vehicleData.year_model}
                                     </span>
                                 </div>
 
                                 <div className="flex items-center justify-between">
-                                    <span className="text-slate-500 font-medium">Body Color</span>
+                                    <span className="text-slate-600 font-medium">Body Color</span>
                                     <span className="font-bold text-slate-800">
                                         {vehicleData.body_color}
                                     </span>
                                 </div>
 
                                 <div className="flex items-center justify-between">
-                                    <span className="text-slate-500 font-medium">Body Type</span>
+                                    <span className="text-slate-600 font-medium">Body Type</span>
                                     <span className="font-bold text-slate-800">
                                         {vehicleData.body_type}
                                     </span>
@@ -658,12 +658,12 @@ export default function FinalConfirmationDetail({ application }) {
 
                             {/* LTO Official Numbers with one-click copy buttons */}
                             <div className="mt-4 pt-3.5 border-t border-slate-100 space-y-2.5 text-xs">
-                                <div className="text-[10.5px] font-bold uppercase tracking-wider text-slate-400 mb-1">
+                                <div className="text-[10.5px] font-bold uppercase tracking-wider text-slate-500 mb-1">
                                     LTO Official Identifiers
                                 </div>
 
                                 <div className="flex items-center justify-between">
-                                    <span className="text-slate-500 font-medium">Engine Number</span>
+                                    <span className="text-slate-600 font-medium">Engine Number</span>
                                     <div className="flex items-center gap-1">
                                         <span className="font-mono text-slate-800 font-bold text-xs">
                                             {vehicleData.engine_number}
@@ -672,7 +672,7 @@ export default function FinalConfirmationDetail({ application }) {
                                             type="button"
                                             onClick={() => handleCopy('engine', vehicleData.engine_number)}
                                             title="Copy Engine Number"
-                                            className="text-slate-400 hover:text-slate-700 transition-colors p-1 cursor-pointer"
+                                            className="text-slate-500 hover:text-slate-700 transition-colors p-1 cursor-pointer"
                                         >
                                             {copiedField === 'engine' ? <Check size={12} className="text-emerald-600" /> : <Copy size={12} />}
                                         </button>
@@ -680,7 +680,7 @@ export default function FinalConfirmationDetail({ application }) {
                                 </div>
 
                                 <div className="flex items-center justify-between">
-                                    <span className="text-slate-500 font-medium">Chassis Number</span>
+                                    <span className="text-slate-600 font-medium">Chassis Number</span>
                                     <div className="flex items-center gap-1">
                                         <span className="font-mono text-slate-800 font-bold text-xs">
                                             {vehicleData.chassis_number}
@@ -689,7 +689,7 @@ export default function FinalConfirmationDetail({ application }) {
                                             type="button"
                                             onClick={() => handleCopy('chassis', vehicleData.chassis_number)}
                                             title="Copy Chassis Number"
-                                            className="text-slate-400 hover:text-slate-700 transition-colors p-1 cursor-pointer"
+                                            className="text-slate-500 hover:text-slate-700 transition-colors p-1 cursor-pointer"
                                         >
                                             {copiedField === 'chassis' ? <Check size={12} className="text-emerald-600" /> : <Copy size={12} />}
                                         </button>
@@ -697,7 +697,7 @@ export default function FinalConfirmationDetail({ application }) {
                                 </div>
 
                                 <div className="flex items-center justify-between">
-                                    <span className="text-slate-500 font-medium">LTO OR Number</span>
+                                    <span className="text-slate-600 font-medium">LTO OR Number</span>
                                     <div className="flex items-center gap-1">
                                         <span className="font-mono text-slate-800 font-bold text-xs">
                                             {vehicleData.or_number}
@@ -706,7 +706,7 @@ export default function FinalConfirmationDetail({ application }) {
                                             type="button"
                                             onClick={() => handleCopy('or', vehicleData.or_number)}
                                             title="Copy OR Number"
-                                            className="text-slate-400 hover:text-slate-700 transition-colors p-1 cursor-pointer"
+                                            className="text-slate-500 hover:text-slate-700 transition-colors p-1 cursor-pointer"
                                         >
                                             {copiedField === 'or' ? <Check size={12} className="text-emerald-600" /> : <Copy size={12} />}
                                         </button>
@@ -714,7 +714,7 @@ export default function FinalConfirmationDetail({ application }) {
                                 </div>
 
                                 <div className="flex items-center justify-between">
-                                    <span className="text-slate-500 font-medium">LTO CR Number</span>
+                                    <span className="text-slate-600 font-medium">LTO CR Number</span>
                                     <div className="flex items-center gap-1">
                                         <span className="font-mono text-slate-800 font-bold text-xs">
                                             {vehicleData.cr_number}
@@ -723,7 +723,7 @@ export default function FinalConfirmationDetail({ application }) {
                                             type="button"
                                             onClick={() => handleCopy('cr', vehicleData.cr_number)}
                                             title="Copy CR Number"
-                                            className="text-slate-400 hover:text-slate-700 transition-colors p-1 cursor-pointer"
+                                            className="text-slate-500 hover:text-slate-700 transition-colors p-1 cursor-pointer"
                                         >
                                             {copiedField === 'cr' ? <Check size={12} className="text-emerald-600" /> : <Copy size={12} />}
                                         </button>
@@ -743,7 +743,7 @@ export default function FinalConfirmationDetail({ application }) {
                     <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200/90 p-3 sm:p-4 shadow-xl">
                         <div className="flex items-center justify-between gap-3 max-w-lg mx-auto">
                             <div>
-                                <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Action</p>
+                                <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Action</p>
                                 <p className="text-xs font-black text-slate-900">
                                     {canSubmit ? 'Ready to Activate' : 'Checklist Pending'}
                                 </p>
@@ -753,7 +753,7 @@ export default function FinalConfirmationDetail({ application }) {
                                 type="button"
                                 disabled={!canSubmit || processing}
                                 onClick={handleSubmit}
-                                className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-[#182B62] hover:bg-[#25449B] text-white py-2.5 px-5 text-xs font-bold shadow-2xs transition-all active:scale-[0.98] cursor-pointer disabled:opacity-50"
+                                className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-[#182B62] hover:bg-[#25449B] text-white py-2.5 px-5 text-xs font-bold shadow-sm transition-all active:scale-[0.98] cursor-pointer disabled:opacity-50"
                             >
                                 {processing ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle2 size={14} />}
                                 <span>Confirm</span>
@@ -775,7 +775,7 @@ function CheckItem({ checked, disabled, onClick, children }) {
                 disabled ? 'cursor-default opacity-70' : 'cursor-pointer'
             } ${checked ? 'border-emerald-300 bg-emerald-50/70' : 'border-slate-200 bg-slate-50/50 hover:border-slate-300'}`}
         >
-            <div className={`mt-0.5 shrink-0 ${checked ? 'text-emerald-600' : 'text-slate-400'}`}>
+            <div className={`mt-0.5 shrink-0 ${checked ? 'text-emerald-600' : 'text-slate-500'}`}>
                 {checked ? <CheckSquare size={18} strokeWidth={2.5} /> : <Square size={18} strokeWidth={2} />}
             </div>
             <div className="text-xs font-medium leading-relaxed text-slate-800">{children}</div>
@@ -788,7 +788,7 @@ function MethodCard({ icon: Icon, iconTone, title, badge, badgeTone, description
         <div
             onClick={disabled ? undefined : onClick}
             className={`rounded-2xl border-2 p-4 transition-all ${disabled ? 'cursor-default opacity-70' : 'cursor-pointer'} ${
-                selected ? 'border-[#182B62] bg-slate-50/80 shadow-2xs' : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50/40'
+                selected ? 'border-[#182B62] bg-slate-50/80 shadow-sm' : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50/40'
             }`}
         >
             <div className={`mb-3 flex h-9 w-9 items-center justify-center rounded-xl ${iconTone}`}>
@@ -798,7 +798,7 @@ function MethodCard({ icon: Icon, iconTone, title, badge, badgeTone, description
             <span className={`mt-1 mb-2 inline-block rounded-md px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${badgeTone}`}>
                 {badge}
             </span>
-            <p className="text-[11px] font-medium leading-relaxed text-slate-500">{description}</p>
+            <p className="text-[11px] font-medium leading-relaxed text-slate-600">{description}</p>
         </div>
     );
 }

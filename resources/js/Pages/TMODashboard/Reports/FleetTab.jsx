@@ -48,14 +48,14 @@ export default function FleetTab({ from, to, data }) {
         <div className="font-['Plus_Jakarta_Sans',sans-serif]">
             {/* Context Header */}
             <div className="mb-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-1 border-b border-slate-100 pb-2.5">
-                <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Franchise Fleet Registry Analytics</p>
-                <p className="text-xs font-semibold text-slate-500 font-mono">
+                <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Franchise Fleet Registry Analytics</p>
+                <p className="text-xs font-semibold text-slate-600 font-mono">
                     {hasDateFilter ? `Registered: ${from} – ${to}` : 'Live Municipal Registry · All Units'}
                 </p>
             </div>
 
             {/* 4 Overview KPI Cards: 1 per row on mobile, 2 on tablet, 4 on desktop */}
-            <div className="mb-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4 items-stretch">
+            <div className="mb-6 grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4 items-stretch">
                 <KpiTile
                     label="Registered Units"
                     value={data.kpis.total}
@@ -77,7 +77,7 @@ export default function FleetTab({ from, to, data }) {
                     action={<GranularityToggle value={granularity} onChange={setGranularity} />}
                 >
                     {chartData.length === 0 ? (
-                        <p className="text-xs text-slate-400 py-4 text-center">No registrations recorded in this period.</p>
+                        <p className="text-xs text-slate-500 py-4 text-center">No registrations recorded in this period.</p>
                     ) : (
                         <ResponsiveContainer width="100%" height={240}>
                             <BarChart data={chartData}>
@@ -128,18 +128,18 @@ export default function FleetTab({ from, to, data }) {
 
                 <ReportCard icon={Clock} title="Franchise Renewals Due Soon" subtitle="Franchises expiring within next 90 days">
                     {expiring.length === 0 ? (
-                        <p className="text-xs text-slate-400 py-4 text-center">No franchises due for renewal in the next 90 days.</p>
+                        <p className="text-xs text-slate-500 py-4 text-center">No franchises due for renewal in the next 90 days.</p>
                     ) : (
-                        <div className="flex flex-col sm:flex-row sm:items-center gap-4 rounded-xl bg-slate-50 border border-slate-100 p-4">
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-4 rounded-xl bg-slate-50 border border-slate-100 shadow-sm p-4">
                             <div>
                                 <p className="text-2xl sm:text-3xl font-black tabular-nums text-slate-900 leading-none">{expiring.length}</p>
-                                <p className="mt-1 text-[11px] font-semibold text-slate-500">
+                                <p className="mt-1 text-[11px] font-semibold text-slate-600">
                                     franchise{expiring.length === 1 ? '' : 's'} expiring soon
                                 </p>
                             </div>
                             <div className="hidden sm:block h-10 w-px shrink-0 bg-slate-200" />
                             <div className="min-w-0 border-t border-slate-200 sm:border-t-0 pt-3 sm:pt-0">
-                                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Nearest Expiry</p>
+                                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Nearest Expiry</p>
                                 <p className="truncate text-sm font-black text-slate-900 font-mono mt-0.5">{nearestExpiring.franchise_number}</p>
                                 <p className="text-xs text-slate-600 font-medium mt-0.5">
                                     {nearestExpiring.operator} · <strong className="text-amber-700">{nearestExpiring.days_left} day{nearestExpiring.days_left === 1 ? '' : 's'} remaining</strong>
@@ -164,7 +164,7 @@ export default function FleetTab({ from, to, data }) {
                                 <h3 className="text-sm font-bold text-slate-900 font-['Plus_Jakarta_Sans',sans-serif]">
                                     Franchises Due for Renewal
                                 </h3>
-                                <p className="text-[11px] text-slate-500 font-medium">
+                                <p className="text-[11px] text-slate-600 font-medium">
                                     Units expiring within 90 days requiring renewal inspection and permit validation
                                 </p>
                             </div>
@@ -175,10 +175,10 @@ export default function FleetTab({ from, to, data }) {
                     </div>
 
                     {/* Desktop Table View (>= 768px) */}
-                    <div className="hidden md:block overflow-x-auto custom-scrollbar">
-                        <table className="w-full min-w-[700px] text-left border-collapse">
+                    <div className="hidden lg:block overflow-x-auto custom-scrollbar">
+                        <table className="w-full min-w-[900px] whitespace-nowrap text-left border-collapse">
                             <thead>
-                                <tr className="border-b border-slate-200/80 bg-slate-50/80 text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                                <tr className="border-b border-slate-200/80 bg-slate-50/80 text-[11px] font-bold uppercase tracking-wider text-slate-500">
                                     <th className="py-3 pl-5 pr-3">Franchise No.</th>
                                     <th className="py-3 px-3">Tricycle Operator</th>
                                     <th className="py-3 px-3">Plate No.</th>
@@ -191,7 +191,7 @@ export default function FleetTab({ from, to, data }) {
                                 {paginatedExpiring.map((e, idx) => (
                                     <tr key={`${e.franchise_number}-${idx}`} className="hover:bg-slate-50/70 transition-colors">
                                         <td className="py-3.5 pl-5 pr-3 align-middle">
-                                            <span className="font-mono text-xs font-black text-slate-900 bg-slate-100 border border-slate-200/90 px-2 py-0.5 rounded-md shadow-2xs">
+                                            <span className="font-mono text-xs font-black text-slate-900 bg-slate-100 border border-slate-200/90 px-2 py-0.5 rounded-md shadow-sm">
                                                 {e.franchise_number}
                                             </span>
                                         </td>
@@ -219,7 +219,7 @@ export default function FleetTab({ from, to, data }) {
                                         <td className="py-3.5 pr-5 pl-3 text-right align-middle">
                                             <Link
                                                 href={e.tricycle_id ? `/tmo/tricycle/${e.tricycle_id}` : '/tmo/registry'}
-                                                className="inline-flex items-center gap-1 rounded-xl bg-[#182B62] hover:bg-[#25449B] px-3 py-1.5 text-[11px] font-bold text-white shadow-2xs transition-all active:scale-[0.98]"
+                                                className="inline-flex items-center gap-1 rounded-xl bg-[#182B62] hover:bg-[#25449B] px-3 py-1.5 text-[11px] font-bold text-white shadow-sm transition-all active:scale-[0.98]"
                                             >
                                                 <span>View Unit</span>
                                                 <ArrowUpRight size={11} strokeWidth={2.5} />
@@ -232,9 +232,9 @@ export default function FleetTab({ from, to, data }) {
                     </div>
 
                     {/* Mobile Card Deck (< 768px) */}
-                    <div className="md:hidden divide-y divide-slate-100 p-3 sm:p-4 space-y-3">
+                    <div className="grid grid-cols-1 gap-3 p-3 sm:p-4 md:grid-cols-2 lg:hidden">
                         {paginatedExpiring.map((e, idx) => (
-                            <div key={`${e.franchise_number}-mob-${idx}`} className="rounded-xl border border-slate-200/90 bg-white p-3.5 shadow-2xs">
+                            <div key={`${e.franchise_number}-mob-${idx}`} className="rounded-xl border border-slate-200/90 bg-white p-3.5 shadow-sm">
                                 <div className="flex items-center justify-between border-b border-slate-100 pb-2">
                                     <span className="font-mono text-xs font-black text-slate-900 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded-md">
                                         {e.franchise_number}
@@ -252,10 +252,10 @@ export default function FleetTab({ from, to, data }) {
                                 <div className="mt-2.5 flex items-center justify-between text-xs">
                                     <div>
                                         <p className="font-bold text-slate-900">{e.operator}</p>
-                                        <span className="font-mono text-[11px] font-bold text-slate-500">Plate: {e.plate}</span>
+                                        <span className="font-mono text-[11px] font-bold text-slate-600">Plate: {e.plate}</span>
                                     </div>
                                     <div className="text-right">
-                                        <span className="text-[11px] font-medium text-slate-500">Expires</span>
+                                        <span className="text-[11px] font-medium text-slate-600">Expires</span>
                                         <p className="text-xs font-bold text-slate-800">{e.expiry_date}</p>
                                     </div>
                                 </div>
@@ -263,7 +263,7 @@ export default function FleetTab({ from, to, data }) {
                                 <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-end">
                                     <Link
                                         href={e.tricycle_id ? `/tmo/tricycle/${e.tricycle_id}` : '/tmo/registry'}
-                                        className="inline-flex items-center gap-1 rounded-lg bg-[#182B62] px-3 py-1.5 text-[11px] font-bold text-white shadow-2xs"
+                                        className="inline-flex items-center gap-1 rounded-lg bg-[#182B62] px-3 py-1.5 text-[11px] font-bold text-white shadow-sm"
                                     >
                                         <span>View Unit</span>
                                         <ArrowUpRight size={11} strokeWidth={2.5} />
@@ -276,14 +276,14 @@ export default function FleetTab({ from, to, data }) {
                     {/* Pagination */}
                     {totalRenewalPages > 1 && (
                         <div className="flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-slate-100 bg-slate-50/60 px-4 py-3">
-                            <p className="text-xs text-slate-500">
+                            <p className="text-xs text-slate-600">
                                 Showing <strong className="text-slate-900">{renewalStart + 1}–{Math.min(renewalStart + pageSize, expiring.length)}</strong> of <strong className="text-slate-900">{expiring.length}</strong>
                             </p>
                             <div className="flex items-center gap-1.5">
                                 <button
                                     onClick={() => setRenewalPage((p) => Math.max(1, p - 1))}
                                     disabled={renewalPage === 1}
-                                    className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-bold text-slate-700 shadow-2xs disabled:opacity-40"
+                                    className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-bold text-slate-700 shadow-sm disabled:opacity-40"
                                 >
                                     <ChevronLeft size={13} />
                                     <span>Prev</span>
@@ -292,7 +292,7 @@ export default function FleetTab({ from, to, data }) {
                                 <button
                                     onClick={() => setRenewalPage((p) => Math.min(totalRenewalPages, p + 1))}
                                     disabled={renewalPage === totalRenewalPages}
-                                    className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-bold text-slate-700 shadow-2xs disabled:opacity-40"
+                                    className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-bold text-slate-700 shadow-sm disabled:opacity-40"
                                 >
                                     <span>Next</span>
                                     <ChevronRight size={13} />

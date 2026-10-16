@@ -21,7 +21,7 @@ import {
 
 // Shared soft, layered shadow token — same elevation language used across the redesigned TMO
 // and Operator panels, so this page reads as one consistent product rather than a different template.
-const CARD_SHADOW = 'shadow-[0_1px_2px_0_rgba(15,23,42,0.04),0_8px_24px_-8px_rgba(15,23,42,0.10)]';
+const CARD_SHADOW = 'shadow-[0_1px_3px_0_rgba(15,23,42,0.07),0_10px_28px_-8px_rgba(15,23,42,0.14)]';
 
 // Mirrors the exact phase keys emitted by MTOPController::index() — must stay in sync.
 // Finalized workflow: Requirements -> Physical Inspection -> BPLO Release: Sticker & Plate
@@ -55,7 +55,7 @@ function Pipeline({ phase, status }) {
         <div className="mt-4 flex flex-wrap items-center gap-2">
             {PIPELINE_STEPS.map((step, index) => {
                 const Icon = step.icon;
-                let toneClass = 'text-slate-400';
+                let toneClass = 'text-slate-500';
                 let isFilled = false;
 
                 if (index < currentIndex) {
@@ -122,14 +122,14 @@ export default function MTOPTracker({ applications = [], auth }) {
                         <h1 className="font-['Plus_Jakarta_Sans',sans-serif] text-2xl sm:text-[28px] font-black tracking-tight text-slate-900 leading-tight">
                             Application Tracker
                         </h1>
-                        <p className="mt-1 text-xs sm:text-sm text-slate-500 max-w-2xl leading-relaxed">
+                        <p className="mt-1 text-xs sm:text-sm text-slate-600 max-w-2xl leading-relaxed">
                             Monitor and manage your municipal tricycle franchise applications and compliance status.
                         </p>
                     </div>
                     <div className="flex items-center gap-2.5">
                         <Link
                             href={route('operator.mtop.create')}
-                            className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-xl bg-[#182B62] px-3.5 text-xs font-bold text-white shadow-2xs hover:bg-[#25449B] transition-colors font-['Plus_Jakarta_Sans',sans-serif]"
+                            className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-xl bg-[#182B62] px-3.5 text-xs font-bold text-white shadow-sm hover:bg-[#25449B] transition-colors font-['Plus_Jakarta_Sans',sans-serif]"
                         >
                             <Plus size={14} strokeWidth={2.5} />
                             <span>New Unit Registration</span>
@@ -140,95 +140,95 @@ export default function MTOPTracker({ applications = [], auth }) {
                 {/* ══════════════════════════════════════════════════════════════
                     2. COMPACT OPERATIONAL KPI DECK
                    ══════════════════════════════════════════════════════════════ */}
-                <div className="mb-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4 items-stretch">
+                <div className="mb-6 grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4 items-stretch">
                     {/* ─ Card 1: Total Applications ─ */}
-                    <div className={`flex flex-col justify-between rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-4 sm:p-5 lg:p-6 ${CARD_SHADOW} transition-all hover:border-slate-300 hover:shadow-[0_4px_6px_-1px_rgba(15,23,42,0.06),0_12px_28px_-8px_rgba(15,23,42,0.14)]`}>
+                    <div className={`flex flex-col justify-between rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-3 sm:p-4 lg:px-5 lg:py-4 ${CARD_SHADOW} transition-all hover:border-slate-300 hover:shadow-[0_2px_6px_0_rgba(15,23,42,0.08),0_18px_36px_-12px_rgba(15,23,42,0.20)]`}>
                         <div>
-                            <div className="flex items-center justify-between border-b border-slate-100 pb-2 sm:pb-2.5">
-                                <span className="font-['Plus_Jakarta_Sans',sans-serif] text-[10px] sm:text-[10.5px] font-bold uppercase tracking-wider text-slate-400">
+                            <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-2 sm:pb-2.5">
+                                <span className="font-['Plus_Jakarta_Sans',sans-serif] text-[9.5px] sm:text-[10.5px] font-bold uppercase tracking-wide sm:tracking-wider leading-tight text-slate-500">
                                     Total Filings
                                 </span>
-                                <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-xl bg-indigo-50 border border-indigo-100 text-[#182B62]">
+                                <div className="flex h-7 w-7 shrink-0 sm:h-8 sm:w-8 items-center justify-center rounded-xl bg-indigo-50 border border-indigo-100 text-[#182B62]">
                                     <FileText size={15} strokeWidth={2.2} />
                                 </div>
                             </div>
-                            <div className="mt-2 sm:mt-2.5 flex items-baseline gap-1.5 sm:gap-2">
-                                <span className="font-['Plus_Jakarta_Sans',sans-serif] text-xl sm:text-2xl lg:text-3xl font-black tracking-tight tabular-nums text-slate-900 leading-none">
+                            <div className="mt-2 sm:mt-2.5 flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5 sm:gap-2">
+                                <span className="font-['Plus_Jakarta_Sans',sans-serif] text-2xl lg:text-3xl font-black tracking-tight tabular-nums text-slate-900 leading-none">
                                     {filterCounts.all}
                                 </span>
-                                <span className="font-['Plus_Jakarta_Sans',sans-serif] text-[9.5px] sm:text-[10.5px] font-extrabold uppercase tracking-wider text-slate-400">
+                                <span className="font-['Plus_Jakarta_Sans',sans-serif] text-[9.5px] sm:text-[10.5px] font-extrabold uppercase tracking-wider text-slate-500">
                                     Filings
                                 </span>
                             </div>
-                            <p className="mt-1 text-[10px] sm:text-[11px] font-medium text-slate-500 font-['Plus_Jakarta_Sans',sans-serif] line-clamp-1">
+                            <p className="mt-1 max-sm:hidden text-[10px] sm:text-[11px] font-medium text-slate-600 font-['Plus_Jakarta_Sans',sans-serif] line-clamp-1">
                                 Applications registered in municipal system
                             </p>
                         </div>
 
-                        <div className="mt-3 rounded-xl bg-slate-50 border border-slate-100/90 px-2.5 py-1.5 sm:p-2.5 flex items-center justify-between text-[10.5px] sm:text-xs">
-                            <span className="font-['Plus_Jakarta_Sans',sans-serif] font-semibold text-slate-500 truncate">Records:</span>
+                        <div className="mt-2.5 max-sm:hidden rounded-xl bg-slate-50 border border-slate-100/90 shadow-sm px-2.5 py-1.5 flex items-center justify-between text-[10.5px] sm:text-xs">
+                            <span className="font-['Plus_Jakarta_Sans',sans-serif] font-semibold text-slate-600 truncate">Records:</span>
                             <span className="font-['Plus_Jakarta_Sans',sans-serif] font-bold text-slate-900 tabular-nums shrink-0">{filterCounts.all} Tracked</span>
                         </div>
                     </div>
 
                     {/* ─ Card 2: Under Evaluation ─ */}
-                    <div className={`flex flex-col justify-between rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-4 sm:p-5 lg:p-6 ${CARD_SHADOW} transition-all hover:border-slate-300 hover:shadow-[0_4px_6px_-1px_rgba(15,23,42,0.06),0_12px_28px_-8px_rgba(15,23,42,0.14)]`}>
+                    <div className={`flex flex-col justify-between rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-3 sm:p-4 lg:px-5 lg:py-4 ${CARD_SHADOW} transition-all hover:border-slate-300 hover:shadow-[0_2px_6px_0_rgba(15,23,42,0.08),0_18px_36px_-12px_rgba(15,23,42,0.20)]`}>
                         <div>
-                            <div className="flex items-center justify-between border-b border-slate-100 pb-2 sm:pb-2.5">
-                                <span className="font-['Plus_Jakarta_Sans',sans-serif] text-[10px] sm:text-[10.5px] font-bold uppercase tracking-wider text-slate-400">
+                            <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-2 sm:pb-2.5">
+                                <span className="font-['Plus_Jakarta_Sans',sans-serif] text-[9.5px] sm:text-[10.5px] font-bold uppercase tracking-wide sm:tracking-wider leading-tight text-slate-500">
                                     Under Evaluation
                                 </span>
-                                <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-xl bg-blue-50 border border-blue-100 text-[#182B62]">
+                                <div className="flex h-7 w-7 shrink-0 sm:h-8 sm:w-8 items-center justify-center rounded-xl bg-blue-50 border border-blue-100 text-[#182B62]">
                                     <Clock size={15} strokeWidth={2.2} />
                                 </div>
                             </div>
-                            <div className="mt-2 sm:mt-2.5 flex items-baseline gap-1.5 sm:gap-2">
-                                <span className="font-['Plus_Jakarta_Sans',sans-serif] text-xl sm:text-2xl lg:text-3xl font-black tracking-tight tabular-nums text-[#182B62] leading-none">
+                            <div className="mt-2 sm:mt-2.5 flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5 sm:gap-2">
+                                <span className="font-['Plus_Jakarta_Sans',sans-serif] text-2xl lg:text-3xl font-black tracking-tight tabular-nums text-[#182B62] leading-none">
                                     {filterCounts['in-progress']}
                                 </span>
-                                <span className="font-['Plus_Jakarta_Sans',sans-serif] text-[9.5px] sm:text-[10.5px] font-extrabold uppercase tracking-wider text-slate-400">
+                                <span className="font-['Plus_Jakarta_Sans',sans-serif] text-[9.5px] sm:text-[10.5px] font-extrabold uppercase tracking-wider text-slate-500">
                                     In Review
                                 </span>
                             </div>
-                            <p className="mt-1 text-[10px] sm:text-[11px] font-medium text-slate-500 font-['Plus_Jakarta_Sans',sans-serif] line-clamp-1">
+                            <p className="mt-1 max-sm:hidden text-[10px] sm:text-[11px] font-medium text-slate-600 font-['Plus_Jakarta_Sans',sans-serif] line-clamp-1">
                                 Moving through municipal review pipeline
                             </p>
                         </div>
 
-                        <div className="mt-3 rounded-xl bg-slate-50 border border-slate-100/90 px-2.5 py-1.5 sm:p-2.5 flex items-center justify-between text-[10.5px] sm:text-xs">
-                            <span className="font-['Plus_Jakarta_Sans',sans-serif] font-semibold text-slate-500 truncate">Pipeline:</span>
+                        <div className="mt-2.5 max-sm:hidden rounded-xl bg-slate-50 border border-slate-100/90 shadow-sm px-2.5 py-1.5 flex items-center justify-between text-[10.5px] sm:text-xs">
+                            <span className="font-['Plus_Jakarta_Sans',sans-serif] font-semibold text-slate-600 truncate">Pipeline:</span>
                             <span className="font-['Plus_Jakarta_Sans',sans-serif] font-bold text-slate-800 tabular-nums shrink-0">{filterCounts['in-progress']} In Progress</span>
                         </div>
                     </div>
 
                     {/* ─ Card 3: Action Required ─ */}
-                    <div className={`flex flex-col justify-between rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-4 sm:p-5 lg:p-6 ${CARD_SHADOW} transition-all hover:border-slate-300 hover:shadow-[0_4px_6px_-1px_rgba(15,23,42,0.06),0_12px_28px_-8px_rgba(15,23,42,0.14)]`}>
+                    <div className={`flex flex-col justify-between rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-3 sm:p-4 lg:px-5 lg:py-4 ${CARD_SHADOW} transition-all hover:border-slate-300 hover:shadow-[0_2px_6px_0_rgba(15,23,42,0.08),0_18px_36px_-12px_rgba(15,23,42,0.20)]`}>
                         <div>
-                            <div className="flex items-center justify-between border-b border-slate-100 pb-2 sm:pb-2.5">
-                                <span className="font-['Plus_Jakarta_Sans',sans-serif] text-[10px] sm:text-[10.5px] font-bold uppercase tracking-wider text-slate-400">
+                            <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-2 sm:pb-2.5">
+                                <span className="font-['Plus_Jakarta_Sans',sans-serif] text-[9.5px] sm:text-[10.5px] font-bold uppercase tracking-wide sm:tracking-wider leading-tight text-slate-500">
                                     Action Required
                                 </span>
-                                <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-xl bg-amber-50 border border-amber-100 text-amber-600">
+                                <div className="flex h-7 w-7 shrink-0 sm:h-8 sm:w-8 items-center justify-center rounded-xl bg-amber-50 border border-amber-100 text-amber-600">
                                     <AlertCircle size={15} strokeWidth={2.2} />
                                 </div>
                             </div>
-                            <div className="mt-2 sm:mt-2.5 flex items-baseline gap-1.5 sm:gap-2">
-                                <span className={`font-['Plus_Jakarta_Sans',sans-serif] text-xl sm:text-2xl lg:text-3xl font-black tracking-tight tabular-nums leading-none ${
+                            <div className="mt-2 sm:mt-2.5 flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5 sm:gap-2">
+                                <span className={`font-['Plus_Jakarta_Sans',sans-serif] text-2xl lg:text-3xl font-black tracking-tight tabular-nums leading-none ${
                                     (filterCounts['action-req'] + filterCounts.expired) > 0 ? 'text-amber-600' : 'text-slate-900'
                                 }`}>
                                     {filterCounts['action-req'] + filterCounts.expired}
                                 </span>
-                                <span className="font-['Plus_Jakarta_Sans',sans-serif] text-[9.5px] sm:text-[10.5px] font-extrabold uppercase tracking-wider text-slate-400">
+                                <span className="font-['Plus_Jakarta_Sans',sans-serif] text-[9.5px] sm:text-[10.5px] font-extrabold uppercase tracking-wider text-slate-500">
                                     Attention
                                 </span>
                             </div>
-                            <p className="mt-1 text-[10px] sm:text-[11px] font-medium text-slate-500 font-['Plus_Jakarta_Sans',sans-serif] line-clamp-1">
+                            <p className="mt-1 max-sm:hidden text-[10px] sm:text-[11px] font-medium text-slate-600 font-['Plus_Jakarta_Sans',sans-serif] line-clamp-1">
                                 Awaiting driver correction or action
                             </p>
                         </div>
 
-                        <div className="mt-3 rounded-xl bg-slate-50 border border-slate-100/90 px-2.5 py-1.5 sm:p-2.5 flex items-center justify-between text-[10.5px] sm:text-xs">
-                            <span className="font-['Plus_Jakarta_Sans',sans-serif] font-semibold text-slate-500 truncate">Attention:</span>
+                        <div className="mt-2.5 max-sm:hidden rounded-xl bg-slate-50 border border-slate-100/90 shadow-sm px-2.5 py-1.5 flex items-center justify-between text-[10.5px] sm:text-xs">
+                            <span className="font-['Plus_Jakarta_Sans',sans-serif] font-semibold text-slate-600 truncate">Attention:</span>
                             <span className={`font-['Plus_Jakarta_Sans',sans-serif] font-bold tabular-nums shrink-0 ${(filterCounts['action-req'] + filterCounts.expired) > 0 ? 'text-amber-700' : 'text-slate-800'}`}>
                                 {filterCounts['action-req']} Fixes · {filterCounts.expired} Expired
                             </span>
@@ -236,31 +236,31 @@ export default function MTOPTracker({ applications = [], auth }) {
                     </div>
 
                     {/* ─ Card 4: Approved & Active ─ */}
-                    <div className={`flex flex-col justify-between rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-4 sm:p-5 lg:p-6 ${CARD_SHADOW} transition-all hover:border-slate-300 hover:shadow-[0_4px_6px_-1px_rgba(15,23,42,0.06),0_12px_28px_-8px_rgba(15,23,42,0.14)]`}>
+                    <div className={`flex flex-col justify-between rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-3 sm:p-4 lg:px-5 lg:py-4 ${CARD_SHADOW} transition-all hover:border-slate-300 hover:shadow-[0_2px_6px_0_rgba(15,23,42,0.08),0_18px_36px_-12px_rgba(15,23,42,0.20)]`}>
                         <div>
-                            <div className="flex items-center justify-between border-b border-slate-100 pb-2 sm:pb-2.5">
-                                <span className="font-['Plus_Jakarta_Sans',sans-serif] text-[10px] sm:text-[10.5px] font-bold uppercase tracking-wider text-slate-400">
+                            <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-2 sm:pb-2.5">
+                                <span className="font-['Plus_Jakarta_Sans',sans-serif] text-[9.5px] sm:text-[10.5px] font-bold uppercase tracking-wide sm:tracking-wider leading-tight text-slate-500">
                                     Approved & Active
                                 </span>
-                                <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-xl bg-emerald-50 border border-emerald-100 text-emerald-600">
+                                <div className="flex h-7 w-7 shrink-0 sm:h-8 sm:w-8 items-center justify-center rounded-xl bg-emerald-50 border border-emerald-100 text-emerald-600">
                                     <ShieldCheck size={15} strokeWidth={2.2} />
                                 </div>
                             </div>
-                            <div className="mt-2 sm:mt-2.5 flex items-baseline gap-1.5 sm:gap-2">
-                                <span className="font-['Plus_Jakarta_Sans',sans-serif] text-xl sm:text-2xl lg:text-3xl font-black tracking-tight tabular-nums text-emerald-600 leading-none">
+                            <div className="mt-2 sm:mt-2.5 flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5 sm:gap-2">
+                                <span className="font-['Plus_Jakarta_Sans',sans-serif] text-2xl lg:text-3xl font-black tracking-tight tabular-nums text-emerald-600 leading-none">
                                     {filterCounts.completed}
                                 </span>
-                                <span className="font-['Plus_Jakarta_Sans',sans-serif] text-[9.5px] sm:text-[10.5px] font-extrabold uppercase tracking-wider text-slate-400">
+                                <span className="font-['Plus_Jakarta_Sans',sans-serif] text-[9.5px] sm:text-[10.5px] font-extrabold uppercase tracking-wider text-slate-500">
                                     Completed
                                 </span>
                             </div>
-                            <p className="mt-1 text-[10px] sm:text-[11px] font-medium text-slate-500 font-['Plus_Jakarta_Sans',sans-serif] line-clamp-1">
+                            <p className="mt-1 max-sm:hidden text-[10px] sm:text-[11px] font-medium text-slate-600 font-['Plus_Jakarta_Sans',sans-serif] line-clamp-1">
                                 Franchises officially issued and active
                             </p>
                         </div>
 
-                        <div className="mt-3 rounded-xl bg-slate-50 border border-slate-100/90 px-2.5 py-1.5 sm:p-2.5 flex items-center justify-between text-[10.5px] sm:text-xs">
-                            <span className="font-['Plus_Jakarta_Sans',sans-serif] font-semibold text-slate-500 truncate">Issuance:</span>
+                        <div className="mt-2.5 max-sm:hidden rounded-xl bg-slate-50 border border-slate-100/90 shadow-sm px-2.5 py-1.5 flex items-center justify-between text-[10.5px] sm:text-xs">
+                            <span className="font-['Plus_Jakarta_Sans',sans-serif] font-semibold text-slate-600 truncate">Issuance:</span>
                             <span className="font-['Plus_Jakarta_Sans',sans-serif] font-bold text-slate-900 tabular-nums shrink-0">
                                 {filterCounts.all > 0 ? Math.round((filterCounts.completed / filterCounts.all) * 100) : 0}% of Filings
                             </span>
@@ -278,20 +278,20 @@ export default function MTOPTracker({ applications = [], auth }) {
                             <Search
                                 size={14}
                                 strokeWidth={2.2}
-                                className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"
+                                className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500"
                             />
                             <input
                                 type="text"
                                 value={query}
                                 onChange={(e) => setQuery(e.target.value)}
                                 placeholder="Search by Tracking ID, plate number, or unit model..."
-                                className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50/70 pl-10 pr-9 text-xs sm:text-sm font-medium text-slate-900 placeholder:text-slate-400 transition-colors focus:border-[#182B62] focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#182B62]"
+                                className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50/70 pl-10 pr-9 text-xs sm:text-sm font-medium text-slate-900 placeholder:text-slate-500 transition-colors focus:border-[#182B62] focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#182B62]"
                             />
                             {query && (
                                 <button
                                     type="button"
                                     onClick={() => setQuery('')}
-                                    className="absolute right-3 top-1/2 flex h-5 w-5 -translate-y-1/2 items-center justify-center rounded-full text-slate-400 hover:bg-slate-200 hover:text-slate-700"
+                                    className="absolute right-3 top-1/2 flex h-5 w-5 -translate-y-1/2 items-center justify-center rounded-full text-slate-500 hover:bg-slate-200 hover:text-slate-700"
                                 >
                                     <X size={12} strokeWidth={2.5} />
                                 </button>
@@ -304,7 +304,7 @@ export default function MTOPTracker({ applications = [], auth }) {
                                 value={statusFilter}
                                 onChange={(e) => setStatusFilter(e.target.value)}
                                 aria-label="Filter by status"
-                                className="h-10 w-full sm:w-auto sm:min-w-[170px] rounded-xl border border-slate-200 bg-slate-50/70 pl-3 pr-8 text-xs font-bold text-slate-700 transition-colors focus:border-[#182B62] focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#182B62] cursor-pointer"
+                                className="h-10 w-full sm:w-auto sm:flex-1 lg:flex-none sm:min-w-[170px] rounded-xl border border-slate-200 bg-slate-50/70 pl-3 pr-8 text-xs font-bold text-slate-700 transition-colors focus:border-[#182B62] focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#182B62] cursor-pointer"
                             >
                                 <option value="all">All Statuses ({filterCounts.all})</option>
                                 <option value="in-progress">In Progress ({filterCounts['in-progress']})</option>
@@ -323,7 +323,7 @@ export default function MTOPTracker({ applications = [], auth }) {
                             ? 'border-red-200 bg-red-50/60'
                             : isYellowCard
                                 ? 'border-amber-200 bg-amber-50/60'
-                                : 'border-slate-200/70 bg-white';
+                                : 'border-slate-200/80 bg-white';
                         const iconTone = isRedCard
                             ? 'bg-gradient-to-br from-red-500/[0.14] to-red-500/[0.02] text-red-600'
                             : isYellowCard
@@ -352,10 +352,10 @@ export default function MTOPTracker({ applications = [], auth }) {
                             <Link
                                 key={app.id}
                                 href={route('operator.mtop.details', { id: app.id })}
-                                className={`group flex min-h-[165px] sm:min-h-[185px] flex-col justify-between gap-5 rounded-2xl sm:rounded-3xl border p-6 sm:p-7 lg:p-8 transition-all hover:border-slate-300 hover:shadow-[0_4px_6px_-1px_rgba(15,23,42,0.06),0_12px_28px_-8px_rgba(15,23,42,0.14)] sm:flex-row sm:items-center sm:justify-between ${cardTone} ${CARD_SHADOW}`}
+                                className={`group flex min-h-[165px] sm:min-h-[185px] flex-col justify-between gap-5 rounded-2xl sm:rounded-3xl border p-6 sm:p-7 lg:p-8 transition-all hover:border-slate-300 hover:shadow-[0_2px_6px_0_rgba(15,23,42,0.08),0_18px_36px_-12px_rgba(15,23,42,0.20)] sm:flex-row sm:items-center sm:justify-between ${cardTone} ${CARD_SHADOW}`}
                             >
                                 <div className="flex flex-1 items-start gap-4 sm:gap-6">
-                                    <div className={`flex h-14 w-14 sm:h-16 sm:w-16 shrink-0 items-center justify-center rounded-2xl shadow-2xs ${iconTone}`}>
+                                    <div className={`flex h-14 w-14 sm:h-16 sm:w-16 shrink-0 items-center justify-center rounded-2xl shadow-sm ${iconTone}`}>
                                         <FileText size={26} strokeWidth={2.2} />
                                     </div>
 
@@ -363,7 +363,7 @@ export default function MTOPTracker({ applications = [], auth }) {
                                         <h3 className="font-['Plus_Jakarta_Sans',sans-serif] text-base sm:text-lg font-bold text-slate-900 leading-tight">
                                             {app.type}: {app.unit}
                                         </h3>
-                                        <div className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1 text-xs font-semibold uppercase tracking-wide text-slate-400">
+                                        <div className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1 text-xs font-semibold uppercase tracking-wide text-slate-500">
                                             <span>Tracking ID <span className="font-mono font-bold text-slate-600">{app.id}</span></span>
                                             <span>Submitted <span className="font-bold text-slate-600">{app.date}</span></span>
                                             {app.last_updated && (
@@ -377,7 +377,7 @@ export default function MTOPTracker({ applications = [], auth }) {
                                             </div>
                                         )}
 
-                                        <p className={`mt-2.5 text-xs sm:text-[13px] leading-relaxed ${isRedCard ? 'font-semibold text-red-700' : isYellowCard ? 'font-semibold text-amber-800' : app.status === 'action-req' ? 'font-semibold text-amber-700' : 'text-slate-500'}`}>
+                                        <p className={`mt-2.5 text-xs sm:text-[13px] leading-relaxed ${isRedCard ? 'font-semibold text-red-700' : isYellowCard ? 'font-semibold text-amber-800' : app.status === 'action-req' ? 'font-semibold text-amber-700' : 'text-slate-600'}`}>
                                             {app.message}
                                         </p>
                                     </div>
@@ -385,7 +385,7 @@ export default function MTOPTracker({ applications = [], auth }) {
 
                                 <div className="flex shrink-0 flex-row items-center justify-between gap-3 sm:min-w-[190px] sm:flex-col sm:items-end sm:justify-center sm:gap-4">
                                     <StatusBadge variant={badgeVariant} icon={BadgeIcon}>{badgeLabel}</StatusBadge>
-                                    <span className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-slate-400 group-hover:text-[#182B62] transition-colors">
+                                    <span className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-slate-500 group-hover:text-[#182B62] transition-colors">
                                         Track Status <ChevronRight size={14} strokeWidth={2.5} />
                                     </span>
                                 </div>

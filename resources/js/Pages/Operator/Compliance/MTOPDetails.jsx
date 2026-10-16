@@ -15,23 +15,23 @@ import { PHYSICAL_INSPECTION_ITEMS } from '@/data/physicalInspectionItems';
 
 // Shared soft, layered shadow token — same elevation language used across the redesigned TMO
 // and Operator panels, so this page reads as one consistent product rather than a different template.
-const CARD_SHADOW = 'shadow-[0_1px_2px_0_rgba(15,23,42,0.04),0_8px_24px_-8px_rgba(15,23,42,0.10)]';
+const CARD_SHADOW = 'shadow-[0_1px_3px_0_rgba(15,23,42,0.07),0_10px_28px_-8px_rgba(15,23,42,0.14)]';
 
 const DOC_STATUS_CLASSES = {
     approved: 'text-emerald-700 bg-emerald-50',
     pending: 'text-amber-700 bg-amber-50',
     rejected: 'text-red-700 bg-red-50',
-    na: 'text-slate-500 bg-slate-50',
+    na: 'text-slate-600 bg-slate-50',
 };
 
 const BRAND_ICON_CHIP = 'bg-gradient-to-br from-[#182B62]/[0.10] to-[#182B62]/[0.02] text-[#182B62]';
 
 function Card({ icon: Icon, title, headerTone, children, className = '' }) {
     return (
-        <div className={`overflow-hidden rounded-2xl border border-slate-200/70 bg-white ${CARD_SHADOW} ${className}`}>
+        <div className={`overflow-hidden rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white ${CARD_SHADOW} ${className}`}>
             <div className="flex items-center gap-3 border-b border-slate-100 bg-slate-50/60 px-5 py-4">
                 {Icon && (
-                    <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${headerTone || 'bg-slate-100 text-slate-400'}`}>
+                    <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${headerTone || 'bg-slate-100 text-slate-500'}`}>
                         <Icon size={16} />
                     </div>
                 )}
@@ -45,7 +45,7 @@ function Card({ icon: Icon, title, headerTone, children, className = '' }) {
 const FullChecklistRow = ({ item, isPhys }) => (
     <div className={`flex items-start justify-between gap-3 rounded-xl border p-4 transition-colors ${item.status === 'rejected' ? 'border-red-200 bg-red-50/60' : 'border-slate-200 bg-white hover:bg-slate-50/60'}`}>
         <div className="flex min-w-0 items-start gap-3">
-            <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${item.status === 'rejected' ? 'bg-gradient-to-br from-red-500/[0.14] to-red-500/[0.02] text-red-600' : 'bg-slate-100 text-slate-400'}`}>
+            <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${item.status === 'rejected' ? 'bg-gradient-to-br from-red-500/[0.14] to-red-500/[0.02] text-red-600' : 'bg-slate-100 text-slate-500'}`}>
                 {item.status === 'rejected' ? <XCircle size={16} /> : isPhys ? <Wrench size={15} /> : <FileText size={16} />}
             </div>
             <div className="min-w-0">
@@ -114,7 +114,7 @@ const SettlementCard = ({ payment }) => (
         <div className="divide-y divide-dashed divide-slate-200">
             <PayRow label="Payment Method">
                 <span className="flex items-center gap-1.5">
-                    {payment.method.includes('Cash') ? <Wallet size={14} className="text-slate-400" /> : <CreditCard size={14} className="text-slate-400" />}
+                    {payment.method.includes('Cash') ? <Wallet size={14} className="text-slate-500" /> : <CreditCard size={14} className="text-slate-500" />}
                     {payment.method}
                 </span>
             </PayRow>
@@ -128,7 +128,7 @@ const SettlementCard = ({ payment }) => (
 function PayRow({ label, children }) {
     return (
         <div className="flex items-center justify-between gap-4 py-3 first:pt-0 last:pb-0">
-            <span className="text-[10px] font-bold uppercase tracking-wide text-slate-400">{label}</span>
+            <span className="text-[10px] font-bold uppercase tracking-wide text-slate-500">{label}</span>
             <span className="text-sm font-semibold text-slate-900">{children}</span>
         </div>
     );
@@ -153,7 +153,7 @@ const BPLOCard = ({ bplo, stickerNumber, fullWidth = false }) => {
                     </div>
                     {bplo.colorCoding && (
                         <div className="flex flex-col items-end gap-1">
-                            <span className="text-[10px] font-semibold uppercase text-slate-400">Color Coding Scheme</span>
+                            <span className="text-[10px] font-semibold uppercase text-slate-500">Color Coding Scheme</span>
                             <span
                                 className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-bold"
                                 style={{ backgroundColor: `${bplo.colorCoding.colorHex}15`, color: bplo.colorCoding.colorHex }}
@@ -167,18 +167,18 @@ const BPLOCard = ({ bplo, stickerNumber, fullWidth = false }) => {
 
                 <div className={fullWidth ? 'grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3' : 'space-y-5'}>
                     <div className="flex items-start gap-3">
-                        <Calendar size={16} className="mt-0.5 shrink-0 text-slate-400" />
+                        <Calendar size={16} className="mt-0.5 shrink-0 text-slate-500" />
                         <div>
-                            <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Validity Period</p>
+                            <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Validity Period</p>
                             <p className="mt-0.5 text-[13px] font-medium text-slate-900">{bplo.issueDate} &mdash; {bplo.expiryDate}</p>
                         </div>
                     </div>
 
                     {bplo.colorCoding && (
                         <div className="flex items-start gap-3">
-                            <AlertTriangle size={16} className="mt-0.5 shrink-0 text-slate-400" />
+                            <AlertTriangle size={16} className="mt-0.5 shrink-0 text-slate-500" />
                             <div>
-                                <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Restricted Travel Day</p>
+                                <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Restricted Travel Day</p>
                                 <p className="mt-0.5 text-[13px] font-semibold text-slate-900">No Travel on <span className="underline">{restrictDaysStr}s</span></p>
                             </div>
                         </div>
@@ -188,7 +188,7 @@ const BPLOCard = ({ bplo, stickerNumber, fullWidth = false }) => {
                         <div className="flex items-start gap-3">
                             <ShieldCheck size={16} className="mt-0.5 shrink-0 text-[#182B62]" />
                             <div>
-                                <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Franchise Number</p>
+                                <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Franchise Number</p>
                                 <p className="mt-0.5 font-mono text-sm font-bold text-[#182B62]">{stickerNumber}</p>
                             </div>
                         </div>
@@ -205,11 +205,11 @@ const BPLOCard = ({ bplo, stickerNumber, fullWidth = false }) => {
 const CodingSchemeEmptyState = () => (
     <Card icon={Stamp} title="Sticker Number & Color Coding" headerTone={BRAND_ICON_CHIP}>
         <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-slate-300 bg-slate-50/60 px-5 py-9 text-center">
-            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-slate-100 text-slate-400">
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-slate-100 text-slate-500">
                 <Stamp size={20} />
             </div>
             <p className="mt-3 text-sm font-bold text-slate-800">Not yet assigned</p>
-            <p className="mt-1 max-w-sm text-xs leading-relaxed text-slate-500">
+            <p className="mt-1 max-w-sm text-xs leading-relaxed text-slate-600">
                 No Sticker Number has been assigned to this application yet.
                 Your assigned color scheme, Sticker Number, and restricted travel days will
                 appear here once BPLO issues them.
@@ -237,7 +237,7 @@ function StatusHero({ tone, icon: Icon, eyebrow, title, children, action }) {
         <div className={`mb-6 rounded-2xl border ${t.border} ${t.bg} p-5 sm:p-6 ${CARD_SHADOW}`}>
             <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                 <div className="flex gap-4">
-                    <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${t.iconBg} ${t.iconColor} shadow-2xs`}>
+                    <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${t.iconBg} ${t.iconColor} shadow-sm`}>
                         <Icon size={22} />
                     </div>
                     <div className="min-w-0">
@@ -290,12 +290,12 @@ function HorizontalTracker({ steps, phaseIdx, stepDates = {} }) {
                                 <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-2 bg-white transition-colors ${
                                     state === 'done' ? 'border-emerald-600 text-emerald-600' :
                                     state === 'current' ? 'border-[#182B62] text-[#182B62] ring-4 ring-[#182B62]/15' :
-                                    'border-slate-200 text-slate-400'
+                                    'border-slate-200 text-slate-500'
                                 }`}>
                                     {state === 'done' ? <Check size={14} strokeWidth={3} /> : <Icon size={12} />}
                                 </div>
                                 <span
-                                    className={`hidden text-center text-[10px] font-semibold leading-tight sm:block ${state === 'waiting' ? 'text-slate-400' : 'text-slate-900'}`}
+                                    className={`hidden text-center text-[10px] font-semibold leading-tight sm:block ${state === 'waiting' ? 'text-slate-500' : 'text-slate-900'}`}
                                     style={{ maxWidth: 78 }}
                                 >
                                     {step.title}
@@ -318,7 +318,7 @@ function HorizontalTracker({ steps, phaseIdx, stepDates = {} }) {
                     );
                 })}
             </div>
-            <p className="mt-2.5 text-[11px] font-semibold text-slate-500 sm:hidden">
+            <p className="mt-2.5 text-[11px] font-semibold text-slate-600 sm:hidden">
                 {isComplete ? 'All steps completed' : `Step ${phaseIdx + 1} of ${steps.length} • ${current?.title}`}
             </p>
         </div>
@@ -372,8 +372,8 @@ export default function MTOPDetails({ application }) {
                     </div>
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                         <div>
-                            <h1 className="text-2xl font-black tracking-tight text-slate-900 sm:text-3xl">{app.type} Application</h1>
-                            <p className="mt-1 text-sm font-medium text-slate-500">
+                            <h1 className="text-2xl sm:text-[28px] font-black tracking-tight text-slate-900 leading-tight">{app.type} Application</h1>
+                            <p className="mt-1 text-sm font-medium text-slate-600">
                                 Submitted on {app.date}
                                 {app.last_updated && <> &bull; Status updated {app.last_updated}</>}
                             </p>
@@ -423,7 +423,7 @@ export default function MTOPDetails({ application }) {
                             The physical inspection was not approved and reinspection is required. Please address the issues listed below and confirm when the vehicle is ready for reinspection.
                         </p>
                         {app.rejection_reason && (
-                            <div className="mt-3.5 rounded-xl border border-red-200 bg-white/90 p-3.5 text-xs text-red-950 font-medium shadow-2xs">
+                            <div className="mt-3.5 rounded-xl border border-red-200 bg-white/90 p-3.5 text-xs text-red-950 font-medium shadow-sm">
                                 <span className="font-bold text-red-900 block mb-1 text-[11px] uppercase tracking-wider">
                                     Reason for Reinspection:
                                 </span>
@@ -518,28 +518,28 @@ export default function MTOPDetails({ application }) {
                             ) : app.tricycleDriver ? (
                                 <div className="mt-2 grid grid-cols-2 gap-2 text-xs sm:grid-cols-4">
                                     <div>
-                                        <span className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">Name</span>
+                                        <span className="block text-[10px] font-bold uppercase tracking-wider text-slate-500">Name</span>
                                         <span className="font-semibold text-slate-800">{app.tricycleDriver.full_name || '—'}</span>
                                     </div>
                                     <div>
-                                        <span className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">Birthday</span>
+                                        <span className="block text-[10px] font-bold uppercase tracking-wider text-slate-500">Birthday</span>
                                         <span className="font-semibold text-slate-800">{app.tricycleDriver.birthday || '—'}</span>
                                     </div>
                                     <div>
-                                        <span className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">Mobile</span>
+                                        <span className="block text-[10px] font-bold uppercase tracking-wider text-slate-500">Mobile</span>
                                         <span className="font-semibold text-slate-800">{app.tricycleDriver.contact_number || '—'}</span>
                                     </div>
                                     <div>
-                                        <span className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">Email</span>
+                                        <span className="block text-[10px] font-bold uppercase tracking-wider text-slate-500">Email</span>
                                         <span className="font-semibold text-slate-800 break-all">{app.tricycleDriver.email || '—'}</span>
                                     </div>
                                     <div>
-                                        <span className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">Barangay</span>
+                                        <span className="block text-[10px] font-bold uppercase tracking-wider text-slate-500">Barangay</span>
                                         <span className="font-semibold text-slate-800">{app.tricycleDriver.barangay || '—'}</span>
                                     </div>
                                 </div>
                             ) : (
-                                <p className="mt-2 text-xs text-slate-500">No separate driver provided.</p>
+                                <p className="mt-2 text-xs text-slate-600">No separate driver provided.</p>
                             )}
                         </div>
                     </Card>
@@ -620,10 +620,10 @@ export default function MTOPDetails({ application }) {
                             )}
 
                             <div className="mb-3 flex items-center justify-between">
-                                <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
+                                <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
                                     Inspection Reference Checklist
                                 </span>
-                                <span className="text-[11px] font-semibold text-slate-500">
+                                <span className="text-[11px] font-semibold text-slate-600">
                                     {PHYSICAL_INSPECTION_ITEMS.length} Items Reviewed by TMO
                                 </span>
                             </div>
@@ -636,14 +636,14 @@ export default function MTOPDetails({ application }) {
                             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                                 {PHYSICAL_INSPECTION_ITEMS.map((item, idx) => (
                                     <div key={item.id} className="flex items-start gap-3 rounded-xl border border-slate-200 bg-white p-4 transition-colors hover:bg-slate-50/60">
-                                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-400">
+                                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-500">
                                             <Wrench size={15} />
                                         </div>
                                         <div className="min-w-0">
                                             <p className="text-[13px] font-bold leading-snug text-slate-900">
                                                 {idx + 1}. {item.label}
                                             </p>
-                                            <p className="mt-1 text-[11.5px] leading-snug text-slate-500">
+                                            <p className="mt-1 text-[11.5px] leading-snug text-slate-600">
                                                 {item.requirement}
                                             </p>
                                         </div>
@@ -699,7 +699,7 @@ export default function MTOPDetails({ application }) {
 function InfoItem({ label, value }) {
     return (
         <div>
-            <span className="block text-[10px] font-bold uppercase tracking-wide text-slate-400">{label}</span>
+            <span className="block text-[10px] font-bold uppercase tracking-wide text-slate-500">{label}</span>
             <span className="mt-1 block text-sm font-semibold text-slate-900">{value}</span>
         </div>
     );

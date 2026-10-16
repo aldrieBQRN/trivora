@@ -699,7 +699,6 @@ class DashboardController extends Controller
                 'fine_amount_formatted' => '₱' . number_format($v->fine_amount ?: 500, 2),
                 'detection_method'      => $v->detectionLabel(),
                 'location'              => 'J.P. Laurel St. cor. F. Alix St., Nasugbu',
-                'or_receipt'            => $v->fine_paid_at ? ('OR-TMO-' . str_pad($v->id, 6, '0', STR_PAD_LEFT)) : ($isSettled ? ('OR-TMO-' . str_pad($v->id, 6, '0', STR_PAD_LEFT)) : null),
                 'paid_at'               => $v->fine_paid_at ? $v->fine_paid_at->format('M d, Y') : ($isSettled ? 'Jan 20, 2026' : null),
             ];
         });

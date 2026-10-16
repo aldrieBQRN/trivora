@@ -27,7 +27,7 @@ import {
 
 // Shared soft, layered shadow token — same elevation language used across the redesigned TMO
 // and Operator panels, so this page reads as one consistent product rather than a different template.
-const CARD_SHADOW = 'shadow-[0_1px_2px_0_rgba(15,23,42,0.04),0_8px_24px_-8px_rgba(15,23,42,0.10)]';
+const CARD_SHADOW = 'shadow-[0_1px_3px_0_rgba(15,23,42,0.07),0_10px_28px_-8px_rgba(15,23,42,0.14)]';
 
 export default function MTOPWizard({ applicationType = 'new', tricycleUnit = null, owner = null }) {
     const { auth } = usePage().props;
@@ -189,7 +189,7 @@ export default function MTOPWizard({ applicationType = 'new', tricycleUnit = nul
             <Head title={`${isRenewal ? "Franchise Renewal" : "New Unit Registration"} | TRIVORA`} />
 
             <style dangerouslySetInnerHTML={{ __html: REGISTRATION_CSS }} />
-            <div className="pa-embed mx-auto max-w-[1100px] pb-10">
+            <div className="pa-embed pb-10">
 
                 {step < 3 && (
                     <>
@@ -199,10 +199,10 @@ export default function MTOPWizard({ applicationType = 'new', tricycleUnit = nul
                             </div>
                             <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                                 <div>
-                                    <h1 className="text-2xl font-black tracking-tight text-slate-900 sm:text-3xl">
+                                    <h1 className="text-2xl sm:text-[28px] font-black tracking-tight text-slate-900 leading-tight">
                                         {isRenewal ? 'Franchise Renewal Application' : 'New Unit Registration'}
                                     </h1>
-                                    <p className="mt-1 text-sm font-medium text-slate-500">
+                                    <p className="mt-1 text-sm font-medium text-slate-600">
                                         {isRenewal
                                             ? `Submit your application to renew the municipal MTOP franchise certificate for unit ${data.plate_number ? `(${data.plate_number})` : ''}.`
                                             : 'Complete the steps below to submit your application for a new tricycle unit.'}
@@ -504,12 +504,12 @@ export default function MTOPWizard({ applicationType = 'new', tricycleUnit = nul
 
                 {/* ── STEP 3: SUCCESS SUBMISSION ── */}
                 {step === 3 && (
-                    <div className={`rounded-2xl border border-slate-200/70 bg-white px-6 py-16 text-center sm:px-10 ${CARD_SHADOW}`}>
+                    <div className={`rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white px-6 py-16 text-center sm:px-10 ${CARD_SHADOW}`}>
                         <div className="mx-auto mb-8 flex h-20 w-20 items-center justify-center rounded-full border-2 border-emerald-200 bg-emerald-50 text-emerald-600">
                             <CheckCircle2 size={44} strokeWidth={2.5} />
                         </div>
                         <h1 className="mb-4 text-3xl font-bold tracking-tight text-slate-900">Application Submitted</h1>
-                        <p className="mx-auto mb-10 max-w-lg text-[15px] leading-relaxed text-slate-500">
+                        <p className="mx-auto mb-10 max-w-lg text-[15px] leading-relaxed text-slate-600">
                             Your application has been submitted and is now pending TMO Requirements Review.
                             You can monitor the progress of your application through the Driver Portal.
                         </p>
@@ -524,11 +524,11 @@ export default function MTOPWizard({ applicationType = 'new', tricycleUnit = nul
                                 <Info size={17} className="text-[#182B62]" /> What happens next?
                             </h4>
                             <ul className="flex flex-col gap-3">
-                                <li className="flex gap-3 text-sm leading-relaxed text-slate-500">
+                                <li className="flex gap-3 text-sm leading-relaxed text-slate-600">
                                     <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[#182B62]" />
                                     <span><strong className="text-slate-900">Document Verification:</strong> TMO staff will review your uploads within 24-48 hours.</span>
                                 </li>
-                                <li className="flex gap-3 text-sm leading-relaxed text-slate-500">
+                                <li className="flex gap-3 text-sm leading-relaxed text-slate-600">
                                     <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[#182B62]" />
                                     <span><strong className="text-slate-900">Physical Inspection:</strong> Once approved, you'll be instructed to bring your tricycle in for a roadworthiness check — track your status anytime in the Application Tracker below.</span>
                                 </li>

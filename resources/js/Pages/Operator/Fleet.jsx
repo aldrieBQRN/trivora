@@ -20,7 +20,7 @@ import {
 
 // Shared soft, layered shadow token — same elevation language used across TMODashboard, so this
 // panel reads as one consistent product rather than a different template.
-const CARD_SHADOW = 'shadow-[0_1px_2px_0_rgba(15,23,42,0.04),0_8px_24px_-8px_rgba(15,23,42,0.10)]';
+const CARD_SHADOW = 'shadow-[0_1px_3px_0_rgba(15,23,42,0.07),0_10px_28px_-8px_rgba(15,23,42,0.14)]';
 
 // Registered units only — vehicleStatus is derived server-side from the driver's actual
 // application/franchise relationship (see routes/web.php operator.fleet), including 'expired'
@@ -49,7 +49,7 @@ const PENDING_STAGE_META = {
 /** Tracking connectivity derived only from real location pings — never fabricated. */
 function getTrackingStatus(tricycle) {
     const isIot = tricycle.activeTrackingMode === 'iot_device';
-    if (!tricycle.lastSignal) return { label: isIot ? 'Offline' : 'Inactive', dot: 'bg-slate-300', text: 'text-slate-400' };
+    if (!tricycle.lastSignal) return { label: isIot ? 'Offline' : 'Inactive', dot: 'bg-slate-300', text: 'text-slate-500' };
     if (tricycle.lastSignal.isRecent) return { label: isIot ? 'Online' : 'Active', dot: 'bg-emerald-500', text: 'text-emerald-700' };
     return { label: 'No Recent Update', dot: 'bg-amber-500', text: 'text-amber-700' };
 }
@@ -132,7 +132,7 @@ export default function MyTricycles({ tricycles = [], auth }) {
                         <h1 className="font-['Plus_Jakarta_Sans',sans-serif] text-2xl sm:text-[28px] font-black tracking-tight text-slate-900 leading-tight">
                             My Tricycles
                         </h1>
-                        <p className="mt-1 text-xs sm:text-sm text-slate-500 max-w-2xl leading-relaxed">
+                        <p className="mt-1 text-xs sm:text-sm text-slate-600 max-w-2xl leading-relaxed">
                             {registered.length > 0
                                 ? `${registered.length} registered unit${registered.length !== 1 ? 's' : ''} • Franchise specs & live tracking connectivity`
                                 : 'Registered tricycle units linked to your approved franchise applications.'}
@@ -141,7 +141,7 @@ export default function MyTricycles({ tricycles = [], auth }) {
                     <div className="flex flex-wrap items-center gap-2.5">
                         <Link
                             href={route('operator.mtop.create')}
-                            className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-xl bg-[#182B62] px-3.5 text-xs font-bold text-white shadow-2xs hover:bg-[#25449B] transition-colors font-['Plus_Jakarta_Sans',sans-serif]"
+                            className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-xl bg-[#182B62] px-3.5 text-xs font-bold text-white shadow-sm hover:bg-[#25449B] transition-colors font-['Plus_Jakarta_Sans',sans-serif]"
                         >
                             <span>Register New Unit</span>
                         </Link>
@@ -151,123 +151,123 @@ export default function MyTricycles({ tricycles = [], auth }) {
                 {/* ══════════════════════════════════════════════════════════════
                     2. COMPACT OPERATIONAL KPI DECK
                    ══════════════════════════════════════════════════════════════ */}
-                <div className="mb-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4 items-stretch">
+                <div className="mb-6 grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4 items-stretch">
                     {/* ─ Card 1: Total Fleet ─ */}
-                    <div className={`flex flex-col justify-between rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-4 sm:p-5 lg:p-6 ${CARD_SHADOW} transition-all hover:border-slate-300 hover:shadow-[0_4px_6px_-1px_rgba(15,23,42,0.06),0_12px_28px_-8px_rgba(15,23,42,0.14)]`}>
+                    <div className={`flex flex-col justify-between rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-3 sm:p-4 lg:px-5 lg:py-4 ${CARD_SHADOW} transition-all hover:border-slate-300 hover:shadow-[0_2px_6px_0_rgba(15,23,42,0.08),0_18px_36px_-12px_rgba(15,23,42,0.20)]`}>
                         <div>
-                            <div className="flex items-center justify-between border-b border-slate-100 pb-2 sm:pb-2.5">
-                                <span className="font-['Plus_Jakarta_Sans',sans-serif] text-[10px] sm:text-[10.5px] font-bold uppercase tracking-wider text-slate-400">
+                            <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-2 sm:pb-2.5">
+                                <span className="font-['Plus_Jakarta_Sans',sans-serif] text-[9.5px] sm:text-[10.5px] font-bold uppercase tracking-wide sm:tracking-wider leading-tight text-slate-500">
                                     Total Fleet
                                 </span>
-                                <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-xl bg-indigo-50 border border-indigo-100 text-[#182B62]">
+                                <div className="flex h-7 w-7 shrink-0 sm:h-8 sm:w-8 items-center justify-center rounded-xl bg-indigo-50 border border-indigo-100 text-[#182B62]">
                                     <Bike size={15} strokeWidth={2.2} />
                                 </div>
                             </div>
-                            <div className="mt-2 sm:mt-2.5 flex items-baseline gap-1.5 sm:gap-2">
-                                <span className="font-['Plus_Jakarta_Sans',sans-serif] text-xl sm:text-2xl lg:text-3xl font-black tracking-tight tabular-nums text-slate-900 leading-none">
+                            <div className="mt-2 sm:mt-2.5 flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5 sm:gap-2">
+                                <span className="font-['Plus_Jakarta_Sans',sans-serif] text-2xl lg:text-3xl font-black tracking-tight tabular-nums text-slate-900 leading-none">
                                     {totalCount}
                                 </span>
-                                <span className="font-['Plus_Jakarta_Sans',sans-serif] text-[9.5px] sm:text-[10.5px] font-extrabold uppercase tracking-wider text-slate-400">
+                                <span className="font-['Plus_Jakarta_Sans',sans-serif] text-[9.5px] sm:text-[10.5px] font-extrabold uppercase tracking-wider text-slate-500">
                                     Units
                                 </span>
                             </div>
-                            <p className="mt-1 text-[10px] sm:text-[11px] font-medium text-slate-500 font-['Plus_Jakarta_Sans',sans-serif] line-clamp-1">
+                            <p className="mt-1 max-sm:hidden text-[10px] sm:text-[11px] font-medium text-slate-600 font-['Plus_Jakarta_Sans',sans-serif] line-clamp-1">
                                 Tricycle units linked to account
                             </p>
                         </div>
 
-                        <div className="mt-3 rounded-xl bg-slate-50 border border-slate-100/90 px-2.5 py-1.5 sm:p-2.5 flex items-center justify-between text-[10.5px] sm:text-xs">
-                            <span className="font-['Plus_Jakarta_Sans',sans-serif] font-semibold text-slate-500 truncate">Registered:</span>
+                        <div className="mt-2.5 max-sm:hidden rounded-xl bg-slate-50 border border-slate-100/90 shadow-sm px-2.5 py-1.5 flex items-center justify-between text-[10.5px] sm:text-xs">
+                            <span className="font-['Plus_Jakarta_Sans',sans-serif] font-semibold text-slate-600 truncate">Registered:</span>
                             <span className="font-['Plus_Jakarta_Sans',sans-serif] font-bold text-slate-900 tabular-nums shrink-0">{registered.length} of {totalCount}</span>
                         </div>
                     </div>
 
                     {/* ─ Card 2: Active Franchises ─ */}
-                    <div className={`flex flex-col justify-between rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-4 sm:p-5 lg:p-6 ${CARD_SHADOW} transition-all hover:border-slate-300 hover:shadow-[0_4px_6px_-1px_rgba(15,23,42,0.06),0_12px_28px_-8px_rgba(15,23,42,0.14)]`}>
+                    <div className={`flex flex-col justify-between rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-3 sm:p-4 lg:px-5 lg:py-4 ${CARD_SHADOW} transition-all hover:border-slate-300 hover:shadow-[0_2px_6px_0_rgba(15,23,42,0.08),0_18px_36px_-12px_rgba(15,23,42,0.20)]`}>
                         <div>
-                            <div className="flex items-center justify-between border-b border-slate-100 pb-2 sm:pb-2.5">
-                                <span className="font-['Plus_Jakarta_Sans',sans-serif] text-[10px] sm:text-[10.5px] font-bold uppercase tracking-wider text-slate-400">
+                            <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-2 sm:pb-2.5">
+                                <span className="font-['Plus_Jakarta_Sans',sans-serif] text-[9.5px] sm:text-[10.5px] font-bold uppercase tracking-wide sm:tracking-wider leading-tight text-slate-500">
                                     Active Franchises
                                 </span>
-                                <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-xl bg-emerald-50 border border-emerald-100 text-emerald-600">
+                                <div className="flex h-7 w-7 shrink-0 sm:h-8 sm:w-8 items-center justify-center rounded-xl bg-emerald-50 border border-emerald-100 text-emerald-600">
                                     <ShieldCheck size={15} strokeWidth={2.2} />
                                 </div>
                             </div>
-                            <div className="mt-2 sm:mt-2.5 flex items-baseline gap-1.5 sm:gap-2">
-                                <span className="font-['Plus_Jakarta_Sans',sans-serif] text-xl sm:text-2xl lg:text-3xl font-black tracking-tight tabular-nums text-emerald-600 leading-none">
+                            <div className="mt-2 sm:mt-2.5 flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5 sm:gap-2">
+                                <span className="font-['Plus_Jakarta_Sans',sans-serif] text-2xl lg:text-3xl font-black tracking-tight tabular-nums text-emerald-600 leading-none">
                                     {activeCount}
                                 </span>
-                                <span className="font-['Plus_Jakarta_Sans',sans-serif] text-[9.5px] sm:text-[10.5px] font-extrabold uppercase tracking-wider text-slate-400">
+                                <span className="font-['Plus_Jakarta_Sans',sans-serif] text-[9.5px] sm:text-[10.5px] font-extrabold uppercase tracking-wider text-slate-500">
                                     Valid
                                 </span>
                             </div>
-                            <p className="mt-1 text-[10px] sm:text-[11px] font-medium text-slate-500 font-['Plus_Jakarta_Sans',sans-serif] line-clamp-1">
+                            <p className="mt-1 max-sm:hidden text-[10px] sm:text-[11px] font-medium text-slate-600 font-['Plus_Jakarta_Sans',sans-serif] line-clamp-1">
                                 Permits currently in good standing
                             </p>
                         </div>
 
-                        <div className="mt-3 rounded-xl bg-slate-50 border border-slate-100/90 px-2.5 py-1.5 sm:p-2.5 flex items-center justify-between text-[10.5px] sm:text-xs">
-                            <span className="font-['Plus_Jakarta_Sans',sans-serif] font-semibold text-slate-500 truncate">Standing:</span>
+                        <div className="mt-2.5 max-sm:hidden rounded-xl bg-slate-50 border border-slate-100/90 shadow-sm px-2.5 py-1.5 flex items-center justify-between text-[10.5px] sm:text-xs">
+                            <span className="font-['Plus_Jakarta_Sans',sans-serif] font-semibold text-slate-600 truncate">Standing:</span>
                             <span className="font-['Plus_Jakarta_Sans',sans-serif] font-bold text-slate-900 tabular-nums shrink-0">{activePct}% Valid</span>
                         </div>
                     </div>
 
                     {/* ─ Card 3: In-Flight Units ─ */}
-                    <div className={`flex flex-col justify-between rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-4 sm:p-5 lg:p-6 ${CARD_SHADOW} transition-all hover:border-slate-300 hover:shadow-[0_4px_6px_-1px_rgba(15,23,42,0.06),0_12px_28px_-8px_rgba(15,23,42,0.14)]`}>
+                    <div className={`flex flex-col justify-between rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-3 sm:p-4 lg:px-5 lg:py-4 ${CARD_SHADOW} transition-all hover:border-slate-300 hover:shadow-[0_2px_6px_0_rgba(15,23,42,0.08),0_18px_36px_-12px_rgba(15,23,42,0.20)]`}>
                         <div>
-                            <div className="flex items-center justify-between border-b border-slate-100 pb-2 sm:pb-2.5">
-                                <span className="font-['Plus_Jakarta_Sans',sans-serif] text-[10px] sm:text-[10.5px] font-bold uppercase tracking-wider text-slate-400">
+                            <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-2 sm:pb-2.5">
+                                <span className="font-['Plus_Jakarta_Sans',sans-serif] text-[9.5px] sm:text-[10.5px] font-bold uppercase tracking-wide sm:tracking-wider leading-tight text-slate-500">
                                     In-Flight Units
                                 </span>
-                                <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-xl bg-amber-50 border border-amber-100 text-amber-600">
+                                <div className="flex h-7 w-7 shrink-0 sm:h-8 sm:w-8 items-center justify-center rounded-xl bg-amber-50 border border-amber-100 text-amber-600">
                                     <Clock size={15} strokeWidth={2.2} />
                                 </div>
                             </div>
-                            <div className="mt-2 sm:mt-2.5 flex items-baseline gap-1.5 sm:gap-2">
-                                <span className="font-['Plus_Jakarta_Sans',sans-serif] text-xl sm:text-2xl lg:text-3xl font-black tracking-tight tabular-nums text-amber-600 leading-none">
+                            <div className="mt-2 sm:mt-2.5 flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5 sm:gap-2">
+                                <span className="font-['Plus_Jakarta_Sans',sans-serif] text-2xl lg:text-3xl font-black tracking-tight tabular-nums text-amber-600 leading-none">
                                     {pendingCount}
                                 </span>
-                                <span className="font-['Plus_Jakarta_Sans',sans-serif] text-[9.5px] sm:text-[10.5px] font-extrabold uppercase tracking-wider text-slate-400">
+                                <span className="font-['Plus_Jakarta_Sans',sans-serif] text-[9.5px] sm:text-[10.5px] font-extrabold uppercase tracking-wider text-slate-500">
                                     Pending
                                 </span>
                             </div>
-                            <p className="mt-1 text-[10px] sm:text-[11px] font-medium text-slate-500 font-['Plus_Jakarta_Sans',sans-serif] line-clamp-1">
+                            <p className="mt-1 max-sm:hidden text-[10px] sm:text-[11px] font-medium text-slate-600 font-['Plus_Jakarta_Sans',sans-serif] line-clamp-1">
                                 Applications moving through pipeline
                             </p>
                         </div>
 
-                        <div className="mt-3 rounded-xl bg-slate-50 border border-slate-100/90 px-2.5 py-1.5 sm:p-2.5 flex items-center justify-between text-[10.5px] sm:text-xs">
-                            <span className="font-['Plus_Jakarta_Sans',sans-serif] font-semibold text-slate-500 truncate">Queue:</span>
+                        <div className="mt-2.5 max-sm:hidden rounded-xl bg-slate-50 border border-slate-100/90 shadow-sm px-2.5 py-1.5 flex items-center justify-between text-[10.5px] sm:text-xs">
+                            <span className="font-['Plus_Jakarta_Sans',sans-serif] font-semibold text-slate-600 truncate">Queue:</span>
                             <span className="font-['Plus_Jakarta_Sans',sans-serif] font-bold text-slate-800 tabular-nums shrink-0">{pendingCount} Processing</span>
                         </div>
                     </div>
 
                     {/* ─ Card 4: GPS Telemetry ─ */}
-                    <div className={`flex flex-col justify-between rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-4 sm:p-5 lg:p-6 ${CARD_SHADOW} transition-all hover:border-slate-300 hover:shadow-[0_4px_6px_-1px_rgba(15,23,42,0.06),0_12px_28px_-8px_rgba(15,23,42,0.14)]`}>
+                    <div className={`flex flex-col justify-between rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-3 sm:p-4 lg:px-5 lg:py-4 ${CARD_SHADOW} transition-all hover:border-slate-300 hover:shadow-[0_2px_6px_0_rgba(15,23,42,0.08),0_18px_36px_-12px_rgba(15,23,42,0.20)]`}>
                         <div>
-                            <div className="flex items-center justify-between border-b border-slate-100 pb-2 sm:pb-2.5">
-                                <span className="font-['Plus_Jakarta_Sans',sans-serif] text-[10px] sm:text-[10.5px] font-bold uppercase tracking-wider text-slate-400">
+                            <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-2 sm:pb-2.5">
+                                <span className="font-['Plus_Jakarta_Sans',sans-serif] text-[9.5px] sm:text-[10.5px] font-bold uppercase tracking-wide sm:tracking-wider leading-tight text-slate-500">
                                     GPS Telemetry
                                 </span>
-                                <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-xl bg-blue-50 border border-blue-100 text-[#182B62]">
+                                <div className="flex h-7 w-7 shrink-0 sm:h-8 sm:w-8 items-center justify-center rounded-xl bg-blue-50 border border-blue-100 text-[#182B62]">
                                     <Satellite size={15} strokeWidth={2.2} />
                                 </div>
                             </div>
-                            <div className="mt-2 sm:mt-2.5 flex items-baseline gap-1.5 sm:gap-2">
-                                <span className="font-['Plus_Jakarta_Sans',sans-serif] text-xl sm:text-2xl lg:text-3xl font-black tracking-tight tabular-nums text-slate-900 leading-none">
+                            <div className="mt-2 sm:mt-2.5 flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5 sm:gap-2">
+                                <span className="font-['Plus_Jakarta_Sans',sans-serif] text-2xl lg:text-3xl font-black tracking-tight tabular-nums text-slate-900 leading-none">
                                     {onlineCount}
                                 </span>
-                                <span className="font-['Plus_Jakarta_Sans',sans-serif] text-[9.5px] sm:text-[10.5px] font-extrabold uppercase tracking-wider text-slate-400">
+                                <span className="font-['Plus_Jakarta_Sans',sans-serif] text-[9.5px] sm:text-[10.5px] font-extrabold uppercase tracking-wider text-slate-500">
                                     Online
                                 </span>
                             </div>
-                            <p className="mt-1 text-[10px] sm:text-[11px] font-medium text-slate-500 font-['Plus_Jakarta_Sans',sans-serif] line-clamp-1">
+                            <p className="mt-1 max-sm:hidden text-[10px] sm:text-[11px] font-medium text-slate-600 font-['Plus_Jakarta_Sans',sans-serif] line-clamp-1">
                                 Reporting live location telemetry
                             </p>
                         </div>
 
-                        <div className="mt-3 rounded-xl bg-slate-50 border border-slate-100/90 px-2.5 py-1.5 sm:p-2.5 flex items-center justify-between text-[10.5px] sm:text-xs">
-                            <span className="font-['Plus_Jakarta_Sans',sans-serif] font-semibold text-slate-500 truncate">Signal:</span>
+                        <div className="mt-2.5 max-sm:hidden rounded-xl bg-slate-50 border border-slate-100/90 shadow-sm px-2.5 py-1.5 flex items-center justify-between text-[10.5px] sm:text-xs">
+                            <span className="font-['Plus_Jakarta_Sans',sans-serif] font-semibold text-slate-600 truncate">Signal:</span>
                             <span className="font-['Plus_Jakarta_Sans',sans-serif] font-bold text-slate-800 tabular-nums shrink-0">{onlineCount} of {registered.length} Live</span>
                         </div>
                     </div>
@@ -283,20 +283,20 @@ export default function MyTricycles({ tricycles = [], auth }) {
                             <Search
                                 size={14}
                                 strokeWidth={2.2}
-                                className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"
+                                className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500"
                             />
                             <input
                                 type="text"
                                 value={query}
                                 onChange={(e) => setQuery(e.target.value)}
                                 placeholder="Search by plate number, unit ID, make/model, or driver..."
-                                className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50/70 pl-10 pr-9 text-xs sm:text-sm font-medium text-slate-900 placeholder:text-slate-400 transition-colors focus:border-[#182B62] focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#182B62]"
+                                className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50/70 pl-10 pr-9 text-xs sm:text-sm font-medium text-slate-900 placeholder:text-slate-500 transition-colors focus:border-[#182B62] focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#182B62]"
                             />
                             {query && (
                                 <button
                                     type="button"
                                     onClick={() => setQuery('')}
-                                    className="absolute right-3 top-1/2 flex h-5 w-5 -translate-y-1/2 items-center justify-center rounded-full text-slate-400 hover:bg-slate-200 hover:text-slate-700"
+                                    className="absolute right-3 top-1/2 flex h-5 w-5 -translate-y-1/2 items-center justify-center rounded-full text-slate-500 hover:bg-slate-200 hover:text-slate-700"
                                 >
                                     <X size={12} strokeWidth={2.5} />
                                 </button>
@@ -309,7 +309,7 @@ export default function MyTricycles({ tricycles = [], auth }) {
                                 value={fleetFilter}
                                 onChange={(e) => setFleetFilter(e.target.value)}
                                 aria-label="Filter by unit status"
-                                className="h-10 w-full sm:w-auto sm:min-w-[170px] rounded-xl border border-slate-200 bg-slate-50/70 pl-3 pr-8 text-xs font-bold text-slate-700 transition-colors focus:border-[#182B62] focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#182B62] cursor-pointer"
+                                className="h-10 w-full sm:w-auto sm:flex-1 lg:flex-none sm:min-w-[170px] rounded-xl border border-slate-200 bg-slate-50/70 pl-3 pr-8 text-xs font-bold text-slate-700 transition-colors focus:border-[#182B62] focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#182B62] cursor-pointer"
                             >
                                 <option value="all">All Units ({totalCount})</option>
                                 <option value="registered">Registered ({registered.length})</option>
@@ -332,7 +332,7 @@ export default function MyTricycles({ tricycles = [], auth }) {
                             action={
                                 <Link
                                     href={route('operator.mtop')}
-                                    className="inline-flex items-center justify-center rounded-xl bg-[#182B62] px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-[#25449B] transition-colors"
+                                    className="inline-flex items-center justify-center rounded-xl bg-[#182B62] px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-[#25449B] transition-colors"
                                 >
                                     View Permit Status
                                 </Link>
@@ -349,7 +349,7 @@ export default function MyTricycles({ tricycles = [], auth }) {
                                 <button
                                     type="button"
                                     onClick={() => { setQuery(''); setFleetFilter('all'); }}
-                                    className="inline-flex items-center justify-center rounded-xl bg-[#182B62] px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-[#25449B] transition-colors"
+                                    className="inline-flex items-center justify-center rounded-xl bg-[#182B62] px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-[#25449B] transition-colors"
                                 >
                                     Clear Filters
                                 </button>
@@ -370,7 +370,7 @@ export default function MyTricycles({ tricycles = [], auth }) {
                         <p className="mb-1 text-[11px] font-bold uppercase tracking-wide text-amber-600">
                             Pending Application — Not Yet Registered ({filteredPending.length})
                         </p>
-                        <p className="mb-4 max-w-3xl text-[12.5px] leading-relaxed text-slate-500">
+                        <p className="mb-4 max-w-3xl text-[12.5px] leading-relaxed text-slate-600">
                             These units have applications still in progress — document review, physical inspection,
                             BPLO release, final confirmation, resubmission, or reinspection. They only become
                             registered tricycles once TMO completes Final Confirmation for the application.
@@ -404,7 +404,7 @@ function TricycleSection({ tricycle, index, pending = false }) {
 
     return (
         <section>
-            <p className="mb-3 text-[11px] font-bold uppercase tracking-wide text-slate-400">
+            <p className="mb-3 text-[11px] font-bold uppercase tracking-wide text-slate-500">
                 Tricycle {index + 1}
             </p>
 
@@ -416,8 +416,8 @@ function TricycleSection({ tricycle, index, pending = false }) {
                         </div>
                         <div>
                             <h2 className="text-xl font-bold leading-tight text-slate-900">{tricycle.plateNo}</h2>
-                            <p className="mt-1 text-sm text-slate-500">{tricycle.id} &bull; {tricycle.makeModel}</p>
-                            <p className={`mt-0.5 text-[11.5px] font-semibold ${tricycle.franchiseExpired ? 'text-red-600' : 'text-slate-400'}`}>
+                            <p className="mt-1 text-sm text-slate-600">{tricycle.id} &bull; {tricycle.makeModel}</p>
+                            <p className={`mt-0.5 text-[11.5px] font-semibold ${tricycle.franchiseExpired ? 'text-red-600' : 'text-slate-500'}`}>
                                 {metaLine}
                             </p>
                         </div>
@@ -437,7 +437,7 @@ function TricycleSection({ tricycle, index, pending = false }) {
 
                                     <TrackingCard tricycle={tricycle} status={tracking} />
 
-                                    <p className="mt-3 flex items-start gap-1.5 text-[11px] leading-relaxed text-slate-400">
+                                    <p className="mt-3 flex items-start gap-1.5 text-[11px] leading-relaxed text-slate-500">
                                         <Info size={13} className="mt-0.5 shrink-0" />
                                         {tricycle.activeTrackingMode === 'iot_device'
                                             ? 'IoT GPS is optional — this unit can switch to Mobile GPS through the Driver app at any time.'
@@ -452,7 +452,7 @@ function TricycleSection({ tricycle, index, pending = false }) {
                                         label="Tricycle Driver"
                                         value={
                                             tricycle.ownerIsDriver
-                                                ? <span className="text-slate-500">Same as Tricycle Owner</span>
+                                                ? <span className="text-slate-600">Same as Tricycle Owner</span>
                                                 : (tricycle.tricycleDriver?.full_name
                                                     ? <span className="truncate">{tricycle.tricycleDriver.full_name}</span>
                                                     : 'Not provided')
@@ -474,7 +474,7 @@ function TricycleSection({ tricycle, index, pending = false }) {
                                 <div className="border-t border-slate-100 pt-5">
                                     <Link
                                         href={route('operator.tracking', { unit: tricycle.db_id })}
-                                        className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#182B62] px-4 py-3 text-xs font-bold text-white shadow-xs hover:bg-[#25449B] transition-colors"
+                                        className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#182B62] px-4 py-3 text-xs font-bold text-white shadow-sm hover:bg-[#25449B] transition-colors"
                                     >
                                         <Navigation2 size={15} />
                                         Open Live GPS Tracking
@@ -487,7 +487,7 @@ function TricycleSection({ tricycle, index, pending = false }) {
                                     <h3 className="mb-3 text-sm font-bold text-slate-900">Tracking</h3>
                                     <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/70 p-5 text-center">
                                         <p className="text-[13px] font-semibold text-slate-600">Not available yet</p>
-                                        <p className="mt-1.5 text-[11px] leading-relaxed text-slate-400">
+                                        <p className="mt-1.5 text-[11px] leading-relaxed text-slate-500">
                                             Live tracking, color coding, and franchise details become available once TMO completes Final Confirmation for this unit.
                                         </p>
                                     </div>
@@ -499,7 +499,7 @@ function TricycleSection({ tricycle, index, pending = false }) {
                                         label="Tricycle Driver"
                                         value={
                                             tricycle.ownerIsDriver
-                                                ? <span className="text-slate-500">Same as Tricycle Owner</span>
+                                                ? <span className="text-slate-600">Same as Tricycle Owner</span>
                                                 : (tricycle.tricycleDriver?.full_name
                                                     ? <span className="truncate">{tricycle.tricycleDriver.full_name}</span>
                                                     : 'Not provided')
@@ -514,11 +514,11 @@ function TricycleSection({ tricycle, index, pending = false }) {
                     <div className="lg:order-1">
                         <div className="mb-4">
                             <h3 className="text-sm font-bold text-slate-900">Vehicle Specifications</h3>
-                            <p className="mt-0.5 text-[11px] text-slate-400">Registered details from this unit's Tricycle Registration record.</p>
+                            <p className="mt-0.5 text-[11px] text-slate-500">Registered details from this unit's Tricycle Registration record.</p>
                         </div>
                         <div className="space-y-4">
                             <div className="rounded-xl bg-slate-50 p-5">
-                                <h4 className="mb-1 text-[11px] font-bold uppercase tracking-wide text-slate-500">Vehicle Information</h4>
+                                <h4 className="mb-1 text-[11px] font-bold uppercase tracking-wide text-slate-600">Vehicle Information</h4>
                                 <div className="divide-y divide-slate-200">
                                     <SpecRow label="LTO Plate Number" value={tricycle.plateNo} />
                                     <SpecRow label="Make &amp; Model" value={tricycle.makeModel} />
@@ -528,7 +528,7 @@ function TricycleSection({ tricycle, index, pending = false }) {
                                 </div>
                             </div>
                             <div className="rounded-xl bg-slate-50 p-5">
-                                <h4 className="mb-1 text-[11px] font-bold uppercase tracking-wide text-slate-500">Registration Information</h4>
+                                <h4 className="mb-1 text-[11px] font-bold uppercase tracking-wide text-slate-600">Registration Information</h4>
                                 <div className="divide-y divide-slate-200">
                                     <SpecRow label="Engine Number" value={tricycle.engineNumber} />
                                     <SpecRow label="Chassis Number" value={tricycle.chassisNumber} />
@@ -574,13 +574,13 @@ function TrackingCard({ tricycle, status }) {
 
             <div className="mt-4 grid grid-cols-1 gap-3 border-t border-dashed border-black/5 pt-4 sm:grid-cols-2">
                 <div>
-                    <p className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wide text-slate-400"><MapPin size={11} /> Last Location</p>
+                    <p className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wide text-slate-500"><MapPin size={11} /> Last Location</p>
                     <p className="mt-1 text-[13px] font-semibold text-slate-900">
                         {signal ? `${signal.latitude.toFixed(5)}, ${signal.longitude.toFixed(5)}` : 'Not available yet'}
                     </p>
                 </div>
                 <div>
-                    <p className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wide text-slate-400"><Clock size={11} /> Last Updated</p>
+                    <p className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wide text-slate-500"><Clock size={11} /> Last Updated</p>
                     <p className="mt-1 text-[13px] font-semibold text-slate-900">{signal ? signal.at : 'Never'}</p>
                 </div>
             </div>
@@ -591,11 +591,11 @@ function TrackingCard({ tricycle, status }) {
 function SpecRow({ label, value }) {
     return (
         <div className="flex items-center justify-between gap-3 py-2.5 first:pt-0 last:pb-0">
-            <span className="text-[11px] font-semibold text-slate-500">{label}</span>
+            <span className="text-[11px] font-semibold text-slate-600">{label}</span>
             {value ? (
                 <span className="text-right text-[13px] font-semibold text-slate-900">{value}</span>
             ) : (
-                <span className="text-right text-[13px] italic text-slate-400">Not provided</span>
+                <span className="text-right text-[13px] italic text-slate-500">Not provided</span>
             )}
         </div>
     );
@@ -610,12 +610,12 @@ const TILE_TONES = {
 
 function InfoTile({ icon: Icon, label, value, tone = 'default' }) {
     return (
-        <div className="flex items-center gap-3.5 rounded-xl border border-slate-200/70 bg-white p-4 transition-colors hover:bg-slate-50/60">
+        <div className="flex items-center gap-3.5 rounded-xl border border-slate-200/80 bg-white p-4 transition-colors hover:bg-slate-50/60">
             <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-lg ${TILE_TONES[tone] || TILE_TONES.default}`}>
                 <Icon size={19} strokeWidth={2} />
             </div>
             <div className="min-w-0">
-                <p className="text-[10px] font-bold uppercase tracking-wide text-slate-500">{label}</p>
+                <p className="text-[10px] font-bold uppercase tracking-wide text-slate-600">{label}</p>
                 <p className="mt-1 flex items-center gap-2 text-[13.5px] font-semibold text-slate-900">{value}</p>
             </div>
         </div>

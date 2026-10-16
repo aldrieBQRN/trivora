@@ -12,7 +12,7 @@ import OperatorLayout from '@/Layouts/OperatorLayout';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 
 // Same soft, layered card shadow used across the TMO/BPLO panel pages.
-const CARD_SHADOW = 'shadow-[0_1px_2px_0_rgba(15,23,42,0.04),0_8px_24px_-8px_rgba(15,23,42,0.10)]';
+const CARD_SHADOW = 'shadow-[0_1px_3px_0_rgba(15,23,42,0.07),0_10px_28px_-8px_rgba(15,23,42,0.14)]';
 
 /**
  * Account Settings — the signed-in user's own record (ProfileController::edit), inside their
@@ -40,7 +40,7 @@ export default function Edit({ account }) {
                     <h1 className="text-2xl sm:text-[28px] font-extrabold tracking-tight text-slate-900 leading-tight">
                         Account Settings
                     </h1>
-                    <p className="mt-1 text-xs sm:text-sm text-slate-500 leading-relaxed">
+                    <p className="mt-1 text-xs sm:text-sm text-slate-600 leading-relaxed">
                         View your account information and keep your password secure.
                     </p>
                 </div>
@@ -88,7 +88,7 @@ function ProfileHero({ account }) {
                     </div>
                     <div className="min-w-0 sm:pb-1">
                         <h2 className="truncate text-lg sm:text-xl font-extrabold text-slate-900">{account.name}</h2>
-                        <p className="truncate text-xs sm:text-sm text-slate-500">{account.email}</p>
+                        <p className="truncate text-xs sm:text-sm text-slate-600">{account.email}</p>
                     </div>
                 </div>
 
@@ -254,7 +254,7 @@ function ProfilePhotoModal({ show, onClose, account }) {
     };
 
     const btnSecondary = 'inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-700 transition-colors hover:bg-slate-50 disabled:opacity-50 cursor-pointer';
-    const btnPrimary = 'inline-flex items-center gap-1.5 rounded-xl bg-[#182B62] px-5 py-2 text-xs font-bold text-white shadow-2xs transition-all hover:bg-[#25449B] active:scale-[0.98] disabled:opacity-50 cursor-pointer';
+    const btnPrimary = 'inline-flex items-center gap-1.5 rounded-xl bg-[#182B62] px-5 py-2 text-xs font-bold text-white shadow-sm transition-all hover:bg-[#25449B] active:scale-[0.98] disabled:opacity-50 cursor-pointer';
 
     const footer = {
         menu: null,
@@ -284,7 +284,7 @@ function ProfilePhotoModal({ show, onClose, account }) {
                     type="button"
                     disabled={busy}
                     onClick={remove}
-                    className="inline-flex items-center gap-1.5 rounded-xl bg-rose-600 px-5 py-2 text-xs font-bold text-white shadow-2xs transition-all hover:bg-rose-700 active:scale-[0.98] disabled:opacity-50 cursor-pointer"
+                    className="inline-flex items-center gap-1.5 rounded-xl bg-rose-600 px-5 py-2 text-xs font-bold text-white shadow-sm transition-all hover:bg-rose-700 active:scale-[0.98] disabled:opacity-50 cursor-pointer"
                 >
                     {busy ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
                     {busy ? 'Removing…' : 'Remove Photo'}
@@ -368,7 +368,7 @@ function PhotoOption({ icon: Icon, title, subtitle, onClick, danger = false }) {
             </span>
             <span className="min-w-0">
                 <span className={`block text-[13px] font-bold ${danger ? 'text-rose-700' : 'text-slate-900'}`}>{title}</span>
-                <span className="block text-[11.5px] text-slate-500">{subtitle}</span>
+                <span className="block text-[11.5px] text-slate-600">{subtitle}</span>
             </span>
         </button>
     );
@@ -399,7 +399,7 @@ function ProfileDetails({ account }) {
                 title="Profile Information"
                 description="Your personal and account details on record."
                 badge={(
-                    <span className="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-slate-50 px-2 py-0.5 text-[10.5px] font-bold text-slate-500">
+                    <span className="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-slate-50 px-2 py-0.5 text-[10.5px] font-bold text-slate-600">
                         <Lock size={10} /> Read-only
                     </span>
                 )}
@@ -408,12 +408,12 @@ function ProfileDetails({ account }) {
             <dl className="grid flex-1 grid-cols-1 content-start gap-x-6 gap-y-1 px-5 py-4 sm:grid-cols-2 sm:px-6">
                 {rows.map(({ icon: Icon, label, value, wide, mono }) => (
                     <div key={label} className={`flex items-start gap-3 rounded-xl px-1 py-3 ${wide ? 'sm:col-span-2' : ''}`}>
-                        <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-slate-200/80 bg-slate-50 text-slate-500">
+                        <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-slate-200/80 bg-slate-50 text-slate-600">
                             <Icon size={14} strokeWidth={2.2} />
                         </span>
                         <div className="min-w-0">
-                            <dt className="text-[10.5px] font-bold uppercase tracking-wider text-slate-400">{label}</dt>
-                            <dd className={`mt-0.5 break-words text-[13.5px] font-semibold ${value ? 'text-slate-900' : 'text-slate-400 font-medium'} ${mono && value ? 'font-mono' : ''}`}>
+                            <dt className="text-[10.5px] font-bold uppercase tracking-wider text-slate-500">{label}</dt>
+                            <dd className={`mt-0.5 break-words text-[13.5px] font-semibold ${value ? 'text-slate-900' : 'text-slate-500 font-medium'} ${mono && value ? 'font-mono' : ''}`}>
                                 {value || 'Not provided'}
                             </dd>
                         </div>
@@ -422,8 +422,8 @@ function ProfileDetails({ account }) {
             </dl>
 
             <div className="flex items-start gap-2.5 border-t border-slate-100 bg-slate-50/80 px-5 py-3.5 sm:px-6">
-                <Info size={14} className="mt-0.5 shrink-0 text-slate-400" />
-                <p className="text-[12px] leading-relaxed text-slate-500">
+                <Info size={14} className="mt-0.5 shrink-0 text-slate-500" />
+                <p className="text-[12px] leading-relaxed text-slate-600">
                     {isDriver
                         ? 'These details come from your franchise registration. To correct them, please visit the Traffic Management Office (TMO).'
                         : 'Profile details are maintained by your office administrator through Staff Management. Contact them if anything needs to be updated.'}
@@ -500,10 +500,10 @@ function PasswordCard() {
 
                 <ul className="flex flex-wrap gap-x-4 gap-y-1.5 pt-1">
                     {checks.map((c) => (
-                        <li key={c.label} className={`flex items-center gap-1.5 text-[11.5px] font-medium ${c.ok ? 'text-emerald-700' : 'text-slate-500'}`}>
+                        <li key={c.label} className={`flex items-center gap-1.5 text-[11.5px] font-medium ${c.ok ? 'text-emerald-700' : 'text-slate-600'}`}>
                             {c.ok
                                 ? <CheckCircle2 size={13} className="shrink-0 text-emerald-600" />
-                                : <Circle size={13} className="shrink-0 text-slate-300" />}
+                                : <Circle size={13} className="shrink-0 text-slate-400" />}
                             {c.label}
                         </li>
                     ))}
@@ -514,7 +514,7 @@ function PasswordCard() {
                 <button
                     type="submit"
                     disabled={!canSubmit}
-                    className="inline-flex items-center gap-2 rounded-xl bg-[#182B62] px-5 py-2.5 text-xs font-bold text-white shadow-xs transition-all hover:bg-[#25449B] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer"
+                    className="inline-flex items-center gap-2 rounded-xl bg-[#182B62] px-5 py-2.5 text-xs font-bold text-white shadow-sm transition-all hover:bg-[#25449B] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer"
                 >
                     {processing ? <Loader2 size={14} className="animate-spin" /> : <Lock size={14} />}
                     {processing ? 'Updating…' : 'Update Password'}
@@ -537,7 +537,7 @@ function PasswordField({ id, label, value, error, autoComplete, onChange }) {
                     value={value}
                     autoComplete={autoComplete}
                     onChange={(e) => onChange(e.target.value)}
-                    className={`h-11 w-full rounded-xl border bg-slate-50/50 px-3.5 pr-11 text-sm text-slate-900 placeholder:text-slate-400 transition-all focus:bg-white focus:outline-none focus:ring-2 ${
+                    className={`h-11 w-full rounded-xl border bg-slate-50/50 px-3.5 pr-11 text-sm text-slate-900 placeholder:text-slate-500 transition-all focus:bg-white focus:outline-none focus:ring-2 ${
                         error ? 'border-rose-300 focus:border-rose-500 focus:ring-rose-200' : 'border-slate-200 focus:border-[#182B62] focus:ring-[#182B62]/10'
                     }`}
                 />
@@ -545,7 +545,7 @@ function PasswordField({ id, label, value, error, autoComplete, onChange }) {
                     type="button"
                     onClick={() => setVisible((v) => !v)}
                     aria-label={visible ? `Hide ${label.toLowerCase()}` : `Show ${label.toLowerCase()}`}
-                    className="absolute right-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-700 cursor-pointer"
+                    className="absolute right-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-700 cursor-pointer"
                 >
                     {visible ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
@@ -566,7 +566,7 @@ function CardHeader({ icon: Icon, title, description, badge }) {
                 </div>
                 <div>
                     <h2 className="text-sm sm:text-[15px] font-bold text-slate-900">{title}</h2>
-                    <p className="text-[12px] text-slate-500">{description}</p>
+                    <p className="text-[12px] text-slate-600">{description}</p>
                 </div>
             </div>
             {badge}

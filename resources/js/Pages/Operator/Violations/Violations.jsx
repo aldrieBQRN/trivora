@@ -21,7 +21,7 @@ const PAGE_SIZE = 10;
 
 // Shared soft, layered shadow token — same elevation language used across TMODashboard, so this
 // panel reads as one consistent product rather than a different template.
-const CARD_SHADOW = 'shadow-[0_1px_2px_0_rgba(15,23,42,0.04),0_8px_24px_-8px_rgba(15,23,42,0.10)]';
+const CARD_SHADOW = 'shadow-[0_1px_3px_0_rgba(15,23,42,0.07),0_10px_28px_-8px_rgba(15,23,42,0.14)]';
 
 export default function Violations({ violations = [], auth }) {
     const [query, setQuery] = useState('');
@@ -95,40 +95,40 @@ export default function Violations({ violations = [], auth }) {
                     <h1 className="font-['Plus_Jakarta_Sans',sans-serif] text-2xl sm:text-[28px] font-black tracking-tight text-slate-900 leading-tight">
                         Active Violations
                     </h1>
-                    <p className="mt-1 text-xs sm:text-sm text-slate-500 max-w-2xl leading-relaxed">
+                    <p className="mt-1 text-xs sm:text-sm text-slate-600 max-w-2xl leading-relaxed">
                         Review traffic citations, track pending appeals, and view municipal payment settlement receipts.
                     </p>
                 </div>
             </div>
 
             {/* 2. COMPACT OPERATIONAL KPI DECK */}
-            <div className="mb-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4 items-stretch">
+            <div className="mb-6 grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4 items-stretch">
                 {/* Card 1: Total Unsettled Fines */}
-                <div className={`flex flex-col justify-between rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-4 sm:p-5 lg:p-6 ${CARD_SHADOW} transition-all hover:border-slate-300 hover:shadow-[0_4px_6px_-1px_rgba(15,23,42,0.06),0_12px_28px_-8px_rgba(15,23,42,0.14)]`}>
+                <div className={`flex flex-col justify-between rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-3 sm:p-4 lg:px-5 lg:py-4 ${CARD_SHADOW} transition-all hover:border-slate-300 hover:shadow-[0_2px_6px_0_rgba(15,23,42,0.08),0_18px_36px_-12px_rgba(15,23,42,0.20)]`}>
                     <div>
-                        <div className="flex items-center justify-between border-b border-slate-100 pb-2 sm:pb-2.5">
-                            <span className="font-['Plus_Jakarta_Sans',sans-serif] text-[10px] sm:text-[10.5px] font-bold uppercase tracking-wider text-slate-400">
+                        <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-2 sm:pb-2.5">
+                            <span className="font-['Plus_Jakarta_Sans',sans-serif] text-[9.5px] sm:text-[10.5px] font-bold uppercase tracking-wide sm:tracking-wider leading-tight text-slate-500">
                                 Unsettled Fines
                             </span>
-                            <div className={`flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-xl border ${unsettledFines > 0 ? 'bg-red-50 border-red-100 text-red-600' : 'bg-emerald-50 border-emerald-100 text-emerald-600'}`}>
+                            <div className={`flex h-7 w-7 shrink-0 sm:h-8 sm:w-8 items-center justify-center rounded-xl border ${unsettledFines > 0 ? 'bg-red-50 border-red-100 text-red-600' : 'bg-emerald-50 border-emerald-100 text-emerald-600'}`}>
                                 <ShieldAlert size={15} strokeWidth={2.2} />
                             </div>
                         </div>
-                        <div className="mt-2 sm:mt-2.5 flex items-baseline gap-1.5 sm:gap-2">
-                            <span className={`font-['Plus_Jakarta_Sans',sans-serif] text-xl sm:text-2xl lg:text-3xl font-black tracking-tight tabular-nums leading-none ${unsettledFines > 0 ? 'text-red-600' : 'text-emerald-600'}`}>
+                        <div className="mt-2 sm:mt-2.5 flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5 sm:gap-2">
+                            <span className={`font-['Plus_Jakarta_Sans',sans-serif] text-2xl lg:text-3xl font-black tracking-tight tabular-nums leading-none ${unsettledFines > 0 ? 'text-red-600' : 'text-emerald-600'}`}>
                                 ₱{unsettledFines.toLocaleString('en-US', { minimumFractionDigits: 0 })}
                             </span>
-                            <span className="font-['Plus_Jakarta_Sans',sans-serif] text-[9.5px] sm:text-[10.5px] font-extrabold uppercase tracking-wider text-slate-400">
+                            <span className="font-['Plus_Jakarta_Sans',sans-serif] text-[9.5px] sm:text-[10.5px] font-extrabold uppercase tracking-wider text-slate-500">
                                 {unpaidCount} Due
                             </span>
                         </div>
-                        <p className="mt-1 text-[10px] sm:text-[11px] font-medium text-slate-500 font-['Plus_Jakarta_Sans',sans-serif] line-clamp-1">
+                        <p className="mt-1 max-sm:hidden text-[10px] sm:text-[11px] font-medium text-slate-600 font-['Plus_Jakarta_Sans',sans-serif] line-clamp-1">
                             {unsettledFines > 0 ? 'Pending municipal settlement' : 'All citation fines fully settled'}
                         </p>
                     </div>
 
-                    <div className="mt-3 rounded-xl bg-slate-50 border border-slate-100/90 px-2.5 py-1.5 sm:p-2.5 flex items-center justify-between text-[10.5px] sm:text-xs">
-                        <span className="font-['Plus_Jakarta_Sans',sans-serif] font-semibold text-slate-500 truncate">Status:</span>
+                    <div className="mt-2.5 max-sm:hidden rounded-xl bg-slate-50 border border-slate-100/90 shadow-sm px-2.5 py-1.5 flex items-center justify-between text-[10.5px] sm:text-xs">
+                        <span className="font-['Plus_Jakarta_Sans',sans-serif] font-semibold text-slate-600 truncate">Status:</span>
                         <span className={`font-['Plus_Jakarta_Sans',sans-serif] font-bold tabular-nums shrink-0 ${unpaidCount > 0 ? 'text-red-700' : 'text-emerald-700'}`}>
                             {unpaidCount > 0 ? `${unpaidCount} Action Needed` : 'All Settled'}
                         </span>
@@ -136,31 +136,31 @@ export default function Violations({ violations = [], auth }) {
                 </div>
 
                 {/* Card 2: Active Violations */}
-                <div className={`flex flex-col justify-between rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-4 sm:p-5 lg:p-6 ${CARD_SHADOW} transition-all hover:border-slate-300 hover:shadow-[0_4px_6px_-1px_rgba(15,23,42,0.06),0_12px_28px_-8px_rgba(15,23,42,0.14)]`}>
+                <div className={`flex flex-col justify-between rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-3 sm:p-4 lg:px-5 lg:py-4 ${CARD_SHADOW} transition-all hover:border-slate-300 hover:shadow-[0_2px_6px_0_rgba(15,23,42,0.08),0_18px_36px_-12px_rgba(15,23,42,0.20)]`}>
                     <div>
-                        <div className="flex items-center justify-between border-b border-slate-100 pb-2 sm:pb-2.5">
-                            <span className="font-['Plus_Jakarta_Sans',sans-serif] text-[10px] sm:text-[10.5px] font-bold uppercase tracking-wider text-slate-400">
+                        <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-2 sm:pb-2.5">
+                            <span className="font-['Plus_Jakarta_Sans',sans-serif] text-[9.5px] sm:text-[10.5px] font-bold uppercase tracking-wide sm:tracking-wider leading-tight text-slate-500">
                                 Recorded Citations
                             </span>
-                            <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-xl bg-amber-50 border border-amber-100 text-amber-600">
+                            <div className="flex h-7 w-7 shrink-0 sm:h-8 sm:w-8 items-center justify-center rounded-xl bg-amber-50 border border-amber-100 text-amber-600">
                                 <AlertCircle size={15} strokeWidth={2.2} />
                             </div>
                         </div>
-                        <div className="mt-2 sm:mt-2.5 flex items-baseline gap-1.5 sm:gap-2">
-                            <span className="font-['Plus_Jakarta_Sans',sans-serif] text-xl sm:text-2xl lg:text-3xl font-black tracking-tight tabular-nums text-slate-900 leading-none">
+                        <div className="mt-2 sm:mt-2.5 flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5 sm:gap-2">
+                            <span className="font-['Plus_Jakarta_Sans',sans-serif] text-2xl lg:text-3xl font-black tracking-tight tabular-nums text-slate-900 leading-none">
                                 {totalCitations}
                             </span>
-                            <span className="font-['Plus_Jakarta_Sans',sans-serif] text-[9.5px] sm:text-[10.5px] font-extrabold uppercase tracking-wider text-slate-400">
+                            <span className="font-['Plus_Jakarta_Sans',sans-serif] text-[9.5px] sm:text-[10.5px] font-extrabold uppercase tracking-wider text-slate-500">
                                 Citations
                             </span>
                         </div>
-                        <p className="mt-1 text-[10px] sm:text-[11px] font-medium text-slate-500 font-['Plus_Jakarta_Sans',sans-serif] line-clamp-1">
+                        <p className="mt-1 max-sm:hidden text-[10px] sm:text-[11px] font-medium text-slate-600 font-['Plus_Jakarta_Sans',sans-serif] line-clamp-1">
                             Recorded municipal citations
                         </p>
                     </div>
 
-                    <div className="mt-3 rounded-xl bg-slate-50 border border-slate-100/90 px-2.5 py-1.5 sm:p-2.5 flex items-center justify-between text-[10.5px] sm:text-xs">
-                        <span className="font-['Plus_Jakarta_Sans',sans-serif] font-semibold text-slate-500 truncate">Settlement:</span>
+                    <div className="mt-2.5 max-sm:hidden rounded-xl bg-slate-50 border border-slate-100/90 shadow-sm px-2.5 py-1.5 flex items-center justify-between text-[10.5px] sm:text-xs">
+                        <span className="font-['Plus_Jakarta_Sans',sans-serif] font-semibold text-slate-600 truncate">Settlement:</span>
                         <span className="font-['Plus_Jakarta_Sans',sans-serif] font-bold text-slate-800 tabular-nums shrink-0">
                             {paidCount} Paid · {unpaidCount} Unpaid
                         </span>
@@ -168,31 +168,31 @@ export default function Violations({ violations = [], auth }) {
                 </div>
 
                 {/* Card 3: Flagged Units */}
-                <div className={`flex flex-col justify-between rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-4 sm:p-5 lg:p-6 ${CARD_SHADOW} transition-all hover:border-slate-300 hover:shadow-[0_4px_6px_-1px_rgba(15,23,42,0.06),0_12px_28px_-8px_rgba(15,23,42,0.14)]`}>
+                <div className={`flex flex-col justify-between rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-3 sm:p-4 lg:px-5 lg:py-4 ${CARD_SHADOW} transition-all hover:border-slate-300 hover:shadow-[0_2px_6px_0_rgba(15,23,42,0.08),0_18px_36px_-12px_rgba(15,23,42,0.20)]`}>
                     <div>
-                        <div className="flex items-center justify-between border-b border-slate-100 pb-2 sm:pb-2.5">
-                            <span className="font-['Plus_Jakarta_Sans',sans-serif] text-[10px] sm:text-[10.5px] font-bold uppercase tracking-wider text-slate-400">
+                        <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-2 sm:pb-2.5">
+                            <span className="font-['Plus_Jakarta_Sans',sans-serif] text-[9.5px] sm:text-[10.5px] font-bold uppercase tracking-wide sm:tracking-wider leading-tight text-slate-500">
                                 Flagged Units
                             </span>
-                            <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-xl bg-indigo-50 border border-indigo-100 text-[#182B62]">
+                            <div className="flex h-7 w-7 shrink-0 sm:h-8 sm:w-8 items-center justify-center rounded-xl bg-indigo-50 border border-indigo-100 text-[#182B62]">
                                 <Bike size={15} strokeWidth={2.2} />
                             </div>
                         </div>
-                        <div className="mt-2 sm:mt-2.5 flex items-baseline gap-1.5 sm:gap-2">
-                            <span className="font-['Plus_Jakarta_Sans',sans-serif] text-xl sm:text-2xl lg:text-3xl font-black tracking-tight tabular-nums text-slate-900 leading-none">
+                        <div className="mt-2 sm:mt-2.5 flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5 sm:gap-2">
+                            <span className="font-['Plus_Jakarta_Sans',sans-serif] text-2xl lg:text-3xl font-black tracking-tight tabular-nums text-slate-900 leading-none">
                                 {uniqueUnits}
                             </span>
-                            <span className="font-['Plus_Jakarta_Sans',sans-serif] text-[9.5px] sm:text-[10.5px] font-extrabold uppercase tracking-wider text-slate-400">
+                            <span className="font-['Plus_Jakarta_Sans',sans-serif] text-[9.5px] sm:text-[10.5px] font-extrabold uppercase tracking-wider text-slate-500">
                                 Tricycles
                             </span>
                         </div>
-                        <p className="mt-1 text-[10px] sm:text-[11px] font-medium text-slate-500 font-['Plus_Jakarta_Sans',sans-serif] line-clamp-1">
+                        <p className="mt-1 max-sm:hidden text-[10px] sm:text-[11px] font-medium text-slate-600 font-['Plus_Jakarta_Sans',sans-serif] line-clamp-1">
                             Units with active citations
                         </p>
                     </div>
 
-                    <div className="mt-3 rounded-xl bg-slate-50 border border-slate-100/90 px-2.5 py-1.5 sm:p-2.5 flex items-center justify-between text-[10.5px] sm:text-xs">
-                        <span className="font-['Plus_Jakarta_Sans',sans-serif] font-semibold text-slate-500 truncate">Fleet:</span>
+                    <div className="mt-2.5 max-sm:hidden rounded-xl bg-slate-50 border border-slate-100/90 shadow-sm px-2.5 py-1.5 flex items-center justify-between text-[10.5px] sm:text-xs">
+                        <span className="font-['Plus_Jakarta_Sans',sans-serif] font-semibold text-slate-600 truncate">Fleet:</span>
                         <span className="font-['Plus_Jakarta_Sans',sans-serif] font-bold text-slate-800 tabular-nums shrink-0">
                             {uniqueUnits} Flagged Unit{uniqueUnits !== 1 ? 's' : ''}
                         </span>
@@ -200,33 +200,33 @@ export default function Violations({ violations = [], auth }) {
                 </div>
 
                 {/* Card 4: Contested Appeals */}
-                <div className={`flex flex-col justify-between rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-4 sm:p-5 lg:p-6 ${CARD_SHADOW} transition-all hover:border-slate-300 hover:shadow-[0_4px_6px_-1px_rgba(15,23,42,0.06),0_12px_28px_-8px_rgba(15,23,42,0.14)]`}>
+                <div className={`flex flex-col justify-between rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-3 sm:p-4 lg:px-5 lg:py-4 ${CARD_SHADOW} transition-all hover:border-slate-300 hover:shadow-[0_2px_6px_0_rgba(15,23,42,0.08),0_18px_36px_-12px_rgba(15,23,42,0.20)]`}>
                     <div>
-                        <div className="flex items-center justify-between border-b border-slate-100 pb-2 sm:pb-2.5">
-                            <span className="font-['Plus_Jakarta_Sans',sans-serif] text-[10px] sm:text-[10.5px] font-bold uppercase tracking-wider text-slate-400">
+                        <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-2 sm:pb-2.5">
+                            <span className="font-['Plus_Jakarta_Sans',sans-serif] text-[9.5px] sm:text-[10.5px] font-bold uppercase tracking-wide sm:tracking-wider leading-tight text-slate-500">
                                 Contested Appeals
                             </span>
-                            <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-xl bg-blue-50 border border-blue-100 text-[#182B62]">
+                            <div className="flex h-7 w-7 shrink-0 sm:h-8 sm:w-8 items-center justify-center rounded-xl bg-blue-50 border border-blue-100 text-[#182B62]">
                                 <Scale size={15} strokeWidth={2.2} />
                             </div>
                         </div>
-                        <div className="mt-2 sm:mt-2.5 flex items-baseline gap-1.5 sm:gap-2">
-                            <span className={`font-['Plus_Jakarta_Sans',sans-serif] text-xl sm:text-2xl lg:text-3xl font-black tracking-tight tabular-nums leading-none ${
+                        <div className="mt-2 sm:mt-2.5 flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5 sm:gap-2">
+                            <span className={`font-['Plus_Jakarta_Sans',sans-serif] text-2xl lg:text-3xl font-black tracking-tight tabular-nums leading-none ${
                                 appealsCount > 0 ? 'text-[#182B62]' : 'text-slate-900'
                             }`}>
                                 {appealsCount}
                             </span>
-                            <span className="font-['Plus_Jakarta_Sans',sans-serif] text-[9.5px] sm:text-[10.5px] font-extrabold uppercase tracking-wider text-slate-400">
+                            <span className="font-['Plus_Jakarta_Sans',sans-serif] text-[9.5px] sm:text-[10.5px] font-extrabold uppercase tracking-wider text-slate-500">
                                 {appealsCount === 1 ? 'Appeal' : 'Appeals'}
                             </span>
                         </div>
-                        <p className="mt-1 text-[10px] sm:text-[11px] font-medium text-slate-500 font-['Plus_Jakarta_Sans',sans-serif] line-clamp-1">
+                        <p className="mt-1 max-sm:hidden text-[10px] sm:text-[11px] font-medium text-slate-600 font-['Plus_Jakarta_Sans',sans-serif] line-clamp-1">
                             {appealsCount > 0 ? 'Driver appeals under TMO review' : 'No appeals currently filed'}
                         </p>
                     </div>
 
-                    <div className="mt-3 rounded-xl bg-slate-50 border border-slate-100/90 px-2.5 py-1.5 sm:p-2.5 flex items-center justify-between text-[10.5px] sm:text-xs">
-                        <span className="font-['Plus_Jakarta_Sans',sans-serif] font-semibold text-slate-500 truncate">Review:</span>
+                    <div className="mt-2.5 max-sm:hidden rounded-xl bg-slate-50 border border-slate-100/90 shadow-sm px-2.5 py-1.5 flex items-center justify-between text-[10.5px] sm:text-xs">
+                        <span className="font-['Plus_Jakarta_Sans',sans-serif] font-semibold text-slate-600 truncate">Review:</span>
                         <span className={`font-['Plus_Jakarta_Sans',sans-serif] font-bold tabular-nums shrink-0 ${appealsCount > 0 ? 'text-[#182B62]' : 'text-slate-800'}`}>
                             {appealsCount > 0 ? `${appealsCount} In Review` : 'None Filed'}
                         </span>
@@ -242,20 +242,20 @@ export default function Violations({ violations = [], auth }) {
                         <Search
                             size={14}
                             strokeWidth={2.2}
-                            className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"
+                            className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500"
                         />
                         <input
                             type="text"
                             value={query}
                             onChange={(e) => { setQuery(e.target.value); setCurrentPage(1); }}
                             placeholder="Search by ticket ID, unit, or location..."
-                            className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50/70 pl-10 pr-9 text-xs sm:text-sm font-medium text-slate-900 placeholder:text-slate-400 transition-colors focus:border-[#182B62] focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#182B62]"
+                            className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50/70 pl-10 pr-9 text-xs sm:text-sm font-medium text-slate-900 placeholder:text-slate-500 transition-colors focus:border-[#182B62] focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#182B62]"
                         />
                         {query && (
                             <button
                                 type="button"
                                 onClick={() => { setQuery(''); setCurrentPage(1); }}
-                                className="absolute right-3 top-1/2 flex h-5 w-5 -translate-y-1/2 items-center justify-center rounded-full text-slate-400 hover:bg-slate-200 hover:text-slate-700"
+                                className="absolute right-3 top-1/2 flex h-5 w-5 -translate-y-1/2 items-center justify-center rounded-full text-slate-500 hover:bg-slate-200 hover:text-slate-700"
                             >
                                 <X size={12} strokeWidth={2.5} />
                             </button>
@@ -263,12 +263,12 @@ export default function Violations({ violations = [], auth }) {
                     </div>
 
                     {/* Filter Controls Row */}
-                    <div className="grid grid-cols-1 sm:flex sm:items-center gap-2">
+                    <div className="grid grid-cols-2 sm:flex sm:items-center gap-2">
                         <select
                             value={statusFilter}
                             onChange={(e) => { setStatusFilter(e.target.value); setCurrentPage(1); }}
                             aria-label="Filter by status"
-                            className="h-10 w-full sm:w-auto sm:min-w-[140px] rounded-xl border border-slate-200 bg-slate-50/70 pl-3 pr-8 text-xs font-bold text-slate-700 transition-colors focus:border-[#182B62] focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#182B62] cursor-pointer"
+                            className="h-10 w-full sm:w-auto sm:flex-1 lg:flex-none sm:min-w-[140px] rounded-xl border border-slate-200 bg-slate-50/70 pl-3 pr-8 text-xs font-bold text-slate-700 transition-colors focus:border-[#182B62] focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#182B62] cursor-pointer"
                         >
                             <option value="all">All Citations ({totalCitations})</option>
                             <option value="unpaid">Unpaid ({unpaidCount})</option>
@@ -281,7 +281,7 @@ export default function Violations({ violations = [], auth }) {
                             value={detectionFilter}
                             onChange={(e) => { setDetectionFilter(e.target.value); setCurrentPage(1); }}
                             aria-label="Filter by detection method"
-                            className="h-10 w-full sm:w-auto sm:min-w-[150px] rounded-xl border border-slate-200 bg-slate-50/70 pl-3 pr-8 text-xs font-bold text-slate-700 transition-colors focus:border-[#182B62] focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#182B62] cursor-pointer"
+                            className="h-10 w-full sm:w-auto sm:flex-1 lg:flex-none sm:min-w-[150px] rounded-xl border border-slate-200 bg-slate-50/70 pl-3 pr-8 text-xs font-bold text-slate-700 transition-colors focus:border-[#182B62] focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#182B62] cursor-pointer"
                         >
                             <option value="all">All Sources ({totalCitations})</option>
                             <option value="mobile_gps">Mobile GPS ({detectionCounts.mobile_gps})</option>
@@ -293,14 +293,14 @@ export default function Violations({ violations = [], auth }) {
 
             {/* 4. DATA DISPLAY */}
             {filtered.length === 0 ? (
-                <div className={`rounded-2xl border border-slate-200/70 bg-white p-12 text-center ${CARD_SHADOW}`}>
+                <div className={`rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-12 text-center ${CARD_SHADOW}`}>
                     <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-emerald-500/[0.12] to-emerald-500/[0.02] text-emerald-600">
                         <ShieldAlert size={24} strokeWidth={1.8} />
                     </div>
                     <h3 className="mt-3.5 text-base font-bold text-slate-900">
                         {isFiltering ? 'No results found' : 'No Active Violations'}
                     </h3>
-                    <p className="mx-auto mt-1 max-w-sm text-xs leading-relaxed text-slate-500">
+                    <p className="mx-auto mt-1 max-w-sm text-xs leading-relaxed text-slate-600">
                         {isFiltering
                             ? 'No violations match your search or filters.'
                             : 'Your tricycles currently have no active color coding offenses. Keep up the good work!'}
@@ -319,17 +319,17 @@ export default function Violations({ violations = [], auth }) {
             ) : (
                 <>
                     {/* Desktop table */}
-                    <div className={`hidden overflow-hidden rounded-2xl border border-slate-200/70 bg-white ${CARD_SHADOW} md:block`}>
-                        <div className="overflow-x-auto">
-                            <table className="w-full border-collapse text-left">
+                    <div className={`hidden overflow-hidden rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white ${CARD_SHADOW} lg:block`}>
+                        <div className="overflow-x-auto custom-scrollbar">
+                            <table className="w-full min-w-[900px] whitespace-nowrap border-collapse text-left">
                                 <thead>
                                     <tr className="border-b border-slate-200 bg-slate-50/75">
-                                        <th scope="col" className="py-3 pl-5 pr-3 text-[11px] font-bold uppercase tracking-wider text-slate-500">Offense Details</th>
-                                        <th scope="col" className="px-4 py-3 text-[11px] font-bold uppercase tracking-wider text-slate-500">Tricycle Unit</th>
-                                        <th scope="col" className="px-4 py-3 text-[11px] font-bold uppercase tracking-wider text-slate-500">Detection Info</th>
-                                        <th scope="col" className="px-4 py-3 text-[11px] font-bold uppercase tracking-wider text-slate-500">Fine Amount</th>
-                                        <th scope="col" className="px-4 py-3 text-[11px] font-bold uppercase tracking-wider text-slate-500">Status</th>
-                                        <th scope="col" className="py-3 pl-3 pr-5 text-right text-[11px] font-bold uppercase tracking-wider text-slate-500">Action</th>
+                                        <th scope="col" className="py-3 pl-5 pr-3 text-[11px] font-bold uppercase tracking-wider text-slate-600">Offense Details</th>
+                                        <th scope="col" className="px-4 py-3 text-[11px] font-bold uppercase tracking-wider text-slate-600">Tricycle Unit</th>
+                                        <th scope="col" className="px-4 py-3 text-[11px] font-bold uppercase tracking-wider text-slate-600">Detection Info</th>
+                                        <th scope="col" className="px-4 py-3 text-[11px] font-bold uppercase tracking-wider text-slate-600">Fine Amount</th>
+                                        <th scope="col" className="px-4 py-3 text-[11px] font-bold uppercase tracking-wider text-slate-600">Status</th>
+                                        <th scope="col" className="py-3 pl-3 pr-5 text-right text-[11px] font-bold uppercase tracking-wider text-slate-600">Action</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-100 text-sm">
@@ -344,21 +344,21 @@ export default function Violations({ violations = [], auth }) {
                     </div>
 
                     {/* Mobile cards */}
-                    <div className="flex flex-col gap-2.5 md:hidden">
+                    <div className="grid grid-cols-1 gap-2.5 md:grid-cols-2 lg:hidden">
                         {paginated.map((v) => (
                             <MobileViolationCard key={v.id} v={v} />
                         ))}
 
-                        <div className={`mt-2 flex items-center justify-between rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white px-4 py-3.5 ${CARD_SHADOW}`}>
-                            <p className="text-xs text-slate-500">
+                        <div className={`md:col-span-2 mt-2 flex items-center justify-between rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white px-4 py-3.5 ${CARD_SHADOW}`}>
+                            <p className="text-xs text-slate-600">
                                 <span className="font-bold text-slate-800">{activePage}</span> of {totalPages}
-                                <span className="ml-1 text-[11px] text-slate-400">({filtered.length} violations)</span>
+                                <span className="ml-1 text-[11px] text-slate-500">({filtered.length} violations)</span>
                             </p>
                             <div className="flex items-center gap-1.5">
-                                <button type="button" disabled={activePage <= 1} onClick={() => setCurrentPage(p => Math.max(1, p - 1))} className="inline-flex h-8 items-center gap-1 rounded-xl border border-slate-200 bg-white px-2.5 text-xs font-semibold text-slate-700 shadow-xs disabled:pointer-events-none disabled:opacity-40">
+                                <button type="button" disabled={activePage <= 1} onClick={() => setCurrentPage(p => Math.max(1, p - 1))} className="inline-flex h-8 items-center gap-1 rounded-xl border border-slate-200 bg-white px-2.5 text-xs font-semibold text-slate-700 shadow-sm disabled:pointer-events-none disabled:opacity-40">
                                     <ChevronLeft size={13} strokeWidth={2.5} /><span>Prev</span>
                                 </button>
-                                <button type="button" disabled={activePage >= totalPages} onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} className="inline-flex h-8 items-center gap-1 rounded-xl border border-slate-200 bg-white px-2.5 text-xs font-semibold text-slate-700 shadow-xs disabled:pointer-events-none disabled:opacity-40">
+                                <button type="button" disabled={activePage >= totalPages} onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} className="inline-flex h-8 items-center gap-1 rounded-xl border border-slate-200 bg-white px-2.5 text-xs font-semibold text-slate-700 shadow-sm disabled:pointer-events-none disabled:opacity-40">
                                     <span>Next</span><ChevronRight size={13} strokeWidth={2.5} />
                                 </button>
                             </div>
@@ -374,14 +374,14 @@ export default function Violations({ violations = [], auth }) {
 function PaginationFooter({ activePage, totalPages, totalItems, onPageChange, noun }) {
     return (
         <div className="flex items-center justify-between border-t border-slate-200/80 bg-slate-50/60 px-5 py-3.5">
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-slate-600">
                 Page <span className="font-bold text-slate-800 tabular-nums">{activePage}</span> of{' '}
                 <span className="font-bold text-slate-800 tabular-nums">{totalPages}</span>
                 <span className="mx-2 text-slate-300">&middot;</span>
                 <span className="font-semibold text-slate-700 tabular-nums">{totalItems}</span> {noun}
             </p>
             <div className="flex items-center gap-1.5">
-                <button type="button" disabled={activePage <= 1} onClick={() => onPageChange(p => Math.max(1, p - 1))} className="inline-flex h-8 items-center gap-1 rounded-xl border border-slate-200 bg-white px-2.5 text-xs font-semibold text-slate-700 shadow-xs transition-colors hover:bg-slate-50 disabled:pointer-events-none disabled:opacity-40">
+                <button type="button" disabled={activePage <= 1} onClick={() => onPageChange(p => Math.max(1, p - 1))} className="inline-flex h-8 items-center gap-1 rounded-xl border border-slate-200 bg-white px-2.5 text-xs font-semibold text-slate-700 shadow-sm transition-colors hover:bg-slate-50 disabled:pointer-events-none disabled:opacity-40">
                     <ChevronLeft size={13} strokeWidth={2.5} /><span>Prev</span>
                 </button>
                 <div className="flex items-center gap-1">
@@ -392,12 +392,12 @@ function PaginationFooter({ activePage, totalPages, totalItems, onPageChange, no
                             const hasGap = prev && p - prev > 1;
                             return (
                                 <React.Fragment key={p}>
-                                    {hasGap && <span className="px-0.5 text-xs text-slate-400">&hellip;</span>}
+                                    {hasGap && <span className="px-0.5 text-xs text-slate-500">&hellip;</span>}
                                     <button
                                         type="button"
                                         onClick={() => onPageChange(p)}
                                         className={`flex h-8 w-8 items-center justify-center rounded-xl text-xs font-bold transition-all ${
-                                            activePage === p ? 'bg-[#182B62] text-white shadow-xs' : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
+                                            activePage === p ? 'bg-[#182B62] text-white shadow-sm' : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
                                         }`}
                                     >
                                         {p}
@@ -406,7 +406,7 @@ function PaginationFooter({ activePage, totalPages, totalItems, onPageChange, no
                             );
                         })}
                 </div>
-                <button type="button" disabled={activePage >= totalPages} onClick={() => onPageChange(p => Math.min(totalPages, p + 1))} className="inline-flex h-8 items-center gap-1 rounded-xl border border-slate-200 bg-white px-2.5 text-xs font-semibold text-slate-700 shadow-xs transition-colors hover:bg-slate-50 disabled:pointer-events-none disabled:opacity-40">
+                <button type="button" disabled={activePage >= totalPages} onClick={() => onPageChange(p => Math.min(totalPages, p + 1))} className="inline-flex h-8 items-center gap-1 rounded-xl border border-slate-200 bg-white px-2.5 text-xs font-semibold text-slate-700 shadow-sm transition-colors hover:bg-slate-50 disabled:pointer-events-none disabled:opacity-40">
                     <span>Next</span><ChevronRight size={13} strokeWidth={2.5} />
                 </button>
             </div>
@@ -432,7 +432,7 @@ const STATUS_PILL = {
 function StatusPill({ status }) {
     const s = STATUS_PILL[status] || STATUS_PILL.unpaid;
     return (
-        <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold shadow-2xs ${s.className}`}>
+        <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold shadow-sm ${s.className}`}>
             {s.label}
         </span>
     );
@@ -448,21 +448,21 @@ function DesktopViolationRow({ v }) {
                     <p className="text-[13px] font-bold text-slate-900">{v.type}</p>
                     <DetectionTag label={v.detection_label} />
                 </div>
-                <p className="font-mono text-[11px] text-slate-400">{v.id}</p>
+                <p className="font-mono text-[11px] text-slate-500">{v.id}</p>
             </td>
             <td className="px-4 py-3.5 align-middle">
                 <p className="text-[13px] font-bold text-slate-900">Unit #{v.unit}</p>
                 <div className="mt-0.5 flex items-center gap-1.5">
                     <span className="inline-block h-2 w-2 shrink-0 rounded-full" style={{ background: v.colorHex }} />
-                    <span className="text-[11px] font-medium text-slate-500">{v.colorCode} Coding</span>
+                    <span className="text-[11px] font-medium text-slate-600">{v.colorCode} Coding</span>
                 </div>
             </td>
             <td className="px-4 py-3.5 align-middle">
                 <p className="flex items-center gap-1.5 text-xs font-medium text-slate-700">
-                    <MapPin size={12} className="shrink-0 text-slate-400" />
+                    <MapPin size={12} className="shrink-0 text-slate-500" />
                     <span className="whitespace-normal break-words leading-relaxed">{v.location}</span>
                 </p>
-                <p className="mt-0.5 flex items-center gap-1 pl-[18px] text-[11px] text-slate-400">
+                <p className="mt-0.5 flex items-center gap-1 pl-[18px] text-[11px] text-slate-500">
                     <Clock size={11} /> {v.date} &bull; {v.time}
                 </p>
             </td>
@@ -480,7 +480,7 @@ function DesktopViolationRow({ v }) {
             <td className="py-3.5 pl-3 pr-5 text-right align-middle">
                 <Link
                     href={route('operator.violations.ticket', { id: v.db_id })}
-                    className="inline-flex items-center gap-1.5 rounded-xl bg-[#182B62] px-3.5 py-1.5 text-xs font-bold text-white shadow-xs transition-all hover:bg-[#25449B] active:scale-[0.98]"
+                    className="inline-flex items-center gap-1.5 rounded-xl bg-[#182B62] px-3.5 py-1.5 text-xs font-bold text-white shadow-sm transition-all hover:bg-[#25449B] active:scale-[0.98]"
                 >
                     <span>View Details</span>
                     <ChevronRight size={13} strokeWidth={2.5} className="text-white/70" />
@@ -509,7 +509,7 @@ function MobileViolationCard({ v }) {
                     <span className={`text-sm font-black tabular-nums ${isPaid ? 'text-emerald-600' : 'text-red-600'}`}>
                         ₱{v.fine.toFixed(2)}
                     </span>
-                    <p className="text-[9px] font-bold uppercase tracking-wider text-slate-400">
+                    <p className="text-[9px] font-bold uppercase tracking-wider text-slate-500">
                         {isPaid ? 'Settled' : 'Fine'}
                     </p>
                 </div>
@@ -520,7 +520,7 @@ function MobileViolationCard({ v }) {
                     <span className="inline-block h-2 w-2 shrink-0 rounded-full" style={{ background: v.colorHex }} />
                     <span className="truncate font-medium">Unit #{v.unit} &bull; {v.location}</span>
                 </div>
-                <span className="flex shrink-0 items-center gap-1 text-[11px] text-slate-400">
+                <span className="flex shrink-0 items-center gap-1 text-[11px] text-slate-500">
                     <Clock size={11} /> {v.date}
                 </span>
             </div>
@@ -528,7 +528,7 @@ function MobileViolationCard({ v }) {
             <div className="mt-3 border-t border-slate-100 pt-2.5">
                 <Link
                     href={route('operator.violations.ticket', { id: v.db_id })}
-                    className="flex w-full items-center justify-center gap-1.5 rounded-xl bg-[#182B62] py-2.5 text-xs font-bold text-white shadow-xs transition-all hover:bg-[#25449B] active:scale-[0.98]"
+                    className="flex w-full items-center justify-center gap-1.5 rounded-xl bg-[#182B62] py-2.5 text-xs font-bold text-white shadow-sm transition-all hover:bg-[#25449B] active:scale-[0.98]"
                 >
                     <span>View Details</span>
                     <ChevronRight size={13} strokeWidth={2.5} className="text-white/70" />

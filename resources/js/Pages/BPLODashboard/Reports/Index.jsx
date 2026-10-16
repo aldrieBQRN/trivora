@@ -15,7 +15,7 @@ import ExportDialog from '@/Components/ExportDialog';
 
 const STATUS_COLORS = { pending: '#CBD5E1', released: '#182B62' };
 const GRANULARITIES = ['day', 'week', 'month'];
-const CARD_SHADOW = 'shadow-[0_1px_2px_0_rgba(15,23,42,0.04),0_8px_24px_-8px_rgba(15,23,42,0.10)]';
+const CARD_SHADOW = 'shadow-[0_1px_3px_0_rgba(15,23,42,0.07),0_10px_28px_-8px_rgba(15,23,42,0.14)]';
 
 function ChartTooltip({ active, payload, label }) {
     if (!active || !payload || !payload.length) return null;
@@ -23,7 +23,7 @@ function ChartTooltip({ active, payload, label }) {
         <div className="rounded-xl border border-slate-200 bg-white/95 backdrop-blur-xs px-3.5 py-2.5 shadow-xl font-['Plus_Jakarta_Sans',sans-serif]">
             <p className="text-xs font-black text-slate-900 border-b border-slate-100 pb-1 mb-1.5">{label}</p>
             {payload.map((p) => (
-                <p key={p.dataKey} className="text-xs text-slate-500 font-medium flex items-center justify-between gap-3">
+                <p key={p.dataKey} className="text-xs text-slate-600 font-medium flex items-center justify-between gap-3">
                     <span>{p.name}:</span>
                     <span className="font-bold text-slate-900 tabular-nums">{p.value}</span>
                 </p>
@@ -34,27 +34,27 @@ function ChartTooltip({ active, payload, label }) {
 
 function KpiTile({ label, value, hint, icon: Icon }) {
     return (
-        <div className={`flex flex-col justify-between rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-4 sm:p-5 lg:p-6 ${CARD_SHADOW} transition-all hover:border-slate-300 hover:shadow-[0_4px_6px_-1px_rgba(15,23,42,0.06),0_12px_28px_-8px_rgba(15,23,42,0.14)]`}>
+        <div className={`flex flex-col justify-between rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-3 sm:p-4 lg:px-5 lg:py-4 ${CARD_SHADOW} transition-all hover:border-slate-300 hover:shadow-[0_2px_6px_0_rgba(15,23,42,0.08),0_18px_36px_-12px_rgba(15,23,42,0.20)]`}>
             <div>
-                <div className="flex items-center justify-between border-b border-slate-100 pb-2 sm:pb-2.5">
-                    <span className="font-['Plus_Jakarta_Sans',sans-serif] text-[10px] sm:text-[10.5px] font-bold uppercase tracking-wider text-slate-400">
+                <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-2 sm:pb-2.5">
+                    <span className="font-['Plus_Jakarta_Sans',sans-serif] text-[9.5px] sm:text-[10.5px] font-bold uppercase tracking-wide sm:tracking-wider leading-tight text-slate-500">
                         {label}
                     </span>
                     {Icon && (
-                        <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-xl bg-indigo-50 border border-indigo-100 text-[#182B62]">
+                        <div className="flex h-7 w-7 shrink-0 sm:h-8 sm:w-8 items-center justify-center rounded-xl bg-indigo-50 border border-indigo-100 text-[#182B62]">
                             <Icon size={15} strokeWidth={2.2} />
                         </div>
                     )}
                 </div>
                 <div className="mt-2.5 sm:mt-3">
-                    <p className="font-['Plus_Jakarta_Sans',sans-serif] text-xl sm:text-2xl lg:text-3xl font-black tracking-tight tabular-nums text-slate-900 leading-none">
+                    <p className="font-['Plus_Jakarta_Sans',sans-serif] text-2xl lg:text-3xl font-black tracking-tight tabular-nums text-slate-900 leading-none">
                         {value}
                     </p>
                 </div>
             </div>
             {hint && (
-                <div className="mt-3 rounded-xl bg-slate-50 border border-slate-100/90 px-2.5 py-1.5 sm:p-2.5 flex items-center justify-between text-[10.5px] sm:text-xs">
-                    <span className="font-['Plus_Jakarta_Sans',sans-serif] text-slate-500 font-medium truncate">
+                <div className="mt-2.5 max-sm:hidden rounded-xl bg-slate-50 border border-slate-100/90 shadow-sm px-2.5 py-1.5 flex items-center justify-between text-[10.5px] sm:text-xs">
+                    <span className="font-['Plus_Jakarta_Sans',sans-serif] text-slate-600 font-medium truncate">
                         {hint}
                     </span>
                 </div>
@@ -71,7 +71,7 @@ function StatBlock({ icon: Icon, value, label }) {
             </span>
             <div className="min-w-0">
                 <p className="text-2xl font-extrabold tracking-tight tabular-nums text-[#182B62]">{value}</p>
-                <p className="mt-0.5 text-[10.5px] font-semibold uppercase tracking-wide text-slate-400">{label}</p>
+                <p className="mt-0.5 text-[10.5px] font-semibold uppercase tracking-wide text-slate-500">{label}</p>
             </div>
         </div>
     );
@@ -153,7 +153,7 @@ export default function BPLOReportsIndex({ from, to, filters, reportData }) {
                     <h1 className="text-2xl sm:text-[28px] font-extrabold tracking-tight text-slate-900 leading-tight">
                         Reports &amp; Analytics
                     </h1>
-                    <p className="mt-1 text-xs sm:text-sm text-slate-500 max-w-2xl leading-relaxed">
+                    <p className="mt-1 text-xs sm:text-sm text-slate-600 max-w-2xl leading-relaxed">
                         Municipal tricycle licensing, sticker release volumes, and operational throughput analytics
                     </p>
                 </div>
@@ -161,7 +161,7 @@ export default function BPLOReportsIndex({ from, to, filters, reportData }) {
                     <button
                         type="button"
                         onClick={() => setExportOpen(true)}
-                        className="inline-flex items-center gap-2 rounded-xl bg-[#182B62] hover:bg-[#25449B] px-4 py-2.5 text-xs font-bold text-white shadow-xs transition-all active:scale-[0.98] cursor-pointer"
+                        className="inline-flex items-center gap-2 rounded-xl bg-[#182B62] hover:bg-[#25449B] px-4 py-2.5 text-xs font-bold text-white shadow-sm transition-all active:scale-[0.98] cursor-pointer"
                     >
                         <Download size={15} strokeWidth={2.2} className="text-white" />
                         <span>Export</span>
@@ -173,20 +173,22 @@ export default function BPLOReportsIndex({ from, to, filters, reportData }) {
             <div className={`mb-6 rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-3.5 sm:p-4 ${CARD_SHADOW} print:hidden`}>
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div className="flex flex-1 flex-wrap items-center gap-2.5">
-                        <DateRangeFilter from={from} to={to} onChange={handleDateChange} />
-                        <select
-                            value={filters.status || ''}
-                            onChange={(e) => handleStatusChange(e.target.value)}
-                            className="h-10 w-full shrink-0 rounded-xl border border-slate-200 bg-slate-50/70 pl-3 pr-8 text-xs font-bold text-slate-700 transition-colors focus:border-[#182B62] focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#182B62] sm:w-44 cursor-pointer"
-                        >
-                            <option value="">All Statuses</option>
-                            <option value="pending">Pending Release</option>
-                            <option value="released">Released</option>
-                        </select>
+                        <DateRangeFilter from={from} to={to} onChange={handleDateChange}>
+                            <select
+                                value={filters.status || ''}
+                                onChange={(e) => handleStatusChange(e.target.value)}
+                                aria-label="Filter by release status"
+                                className="h-10 w-full min-w-0 shrink-0 rounded-xl border border-slate-200 bg-slate-50/70 pl-3 pr-8 text-xs font-bold text-slate-700 transition-colors focus:border-[#182B62] focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#182B62] sm:order-last sm:w-44 cursor-pointer"
+                            >
+                                <option value="">All Statuses</option>
+                                <option value="pending">Pending Release</option>
+                                <option value="released">Released</option>
+                            </select>
+                        </DateRangeFilter>
                     </div>
 
-                    <div className="flex items-center gap-2">
-                        <span className="text-xs font-medium text-slate-500">
+                    <div className="hidden items-center gap-2 sm:flex">
+                        <span className="text-xs font-medium text-slate-600">
                             Range: <strong className="text-slate-800">{from}</strong> – <strong className="text-slate-800">{to}</strong>
                         </span>
                     </div>
@@ -195,10 +197,10 @@ export default function BPLOReportsIndex({ from, to, filters, reportData }) {
 
             {/* 1. Releasing Overview */}
             <div className="mb-3 flex items-center justify-between">
-                <p className="text-[11px] font-bold uppercase tracking-wide text-slate-400">Releasing Overview</p>
-                <p className="text-[11px] font-semibold text-slate-500">{from} – {to}</p>
+                <p className="text-[11px] font-bold uppercase tracking-wide text-slate-500">Releasing Overview</p>
+                <p className="text-[11px] font-semibold text-slate-600">{from} – {to}</p>
             </div>
-                    <div className="mb-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4 items-stretch">
+                    <div className="mb-6 grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4 items-stretch">
                         <KpiTile
                             label="Total for BPLO Release"
                             value={overview.total_for_bplo}
@@ -240,7 +242,7 @@ export default function BPLOReportsIndex({ from, to, filters, reportData }) {
                                             type="button"
                                             onClick={() => setGranularity(g)}
                                             className={`rounded-lg px-2.5 py-1 text-[11px] font-bold capitalize transition-all ${
-                                                granularity === g ? 'bg-[#182B62] text-white shadow-2xs' : 'text-slate-500 hover:text-slate-900 hover:bg-white/50'
+                                                granularity === g ? 'bg-[#182B62] text-white shadow-sm' : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
                                             }`}
                                         >
                                             {g}
@@ -250,7 +252,7 @@ export default function BPLOReportsIndex({ from, to, filters, reportData }) {
                             )}
                         >
                             {chartData.length === 0 ? (
-                                <p className="text-xs text-slate-400">No releasing activity in this range.</p>
+                                <p className="text-xs text-slate-500">No releasing activity in this range.</p>
                             ) : (
                                 <ResponsiveContainer width="100%" height={260}>
                                     <BarChart data={chartData}>
@@ -266,7 +268,7 @@ export default function BPLOReportsIndex({ from, to, filters, reportData }) {
 
                         <ReportCard icon={Tag} title="Release Status Breakdown" subtitle="Current BPLO pipeline">
                             {totalInPipeline === 0 ? (
-                                <p className="text-xs text-slate-400">No applications in the BPLO pipeline yet.</p>
+                                <p className="text-xs text-slate-500">No applications in the BPLO pipeline yet.</p>
                             ) : (
                                 <>
                                     <ResponsiveContainer width="100%" height={150}>
@@ -286,7 +288,7 @@ export default function BPLOReportsIndex({ from, to, filters, reportData }) {
                                                     <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: STATUS_COLORS[s.status] }} />
                                                     {s.label}
                                                 </span>
-                                                <span className="text-slate-500">{s.count} ({s.pct}%)</span>
+                                                <span className="text-slate-600">{s.count} ({s.pct}%)</span>
                                             </div>
                                         ))}
                                     </div>
@@ -318,8 +320,8 @@ export default function BPLOReportsIndex({ from, to, filters, reportData }) {
                                         <p className="text-2xl font-extrabold tracking-tight tabular-nums text-[#182B62]">
                                             {processing.avg_days_to_release !== null ? `${processing.avg_days_to_release}d` : '—'}
                                         </p>
-                                        <p className="mt-0.5 text-[10.5px] font-semibold uppercase tracking-wide text-slate-400">Avg. Processing Time</p>
-                                        <p className="mt-1 text-[10.5px] text-slate-400">
+                                        <p className="mt-0.5 text-[10.5px] font-semibold uppercase tracking-wide text-slate-500">Avg. Processing Time</p>
+                                        <p className="mt-1 text-[10.5px] text-slate-500">
                                             {processing.sample_size > 0
                                                 ? `From ${processing.sample_size} release${processing.sample_size === 1 ? '' : 's'} in this period`
                                                 : 'No releases with complete timing data in this range'}
@@ -334,8 +336,8 @@ export default function BPLOReportsIndex({ from, to, filters, reportData }) {
                                         </span>
                                         <div className="min-w-0">
                                             <p className="text-sm font-bold text-slate-900">{processing.oldest_pending.reference}</p>
-                                            <p className="mt-0.5 text-[10.5px] font-semibold uppercase tracking-wide text-slate-400">Oldest Pending Release</p>
-                                            <p className="mt-1 text-[10.5px] text-slate-400">
+                                            <p className="mt-0.5 text-[10.5px] font-semibold uppercase tracking-wide text-slate-500">Oldest Pending Release</p>
+                                            <p className="mt-1 text-[10.5px] text-slate-500">
                                                 {processing.oldest_pending.operator} · waiting {processing.oldest_pending.days_ago} day{processing.oldest_pending.days_ago === 1 ? '' : 's'} (since {processing.oldest_pending.since})
                                             </p>
                                         </div>
@@ -347,25 +349,25 @@ export default function BPLOReportsIndex({ from, to, filters, reportData }) {
                                         </span>
                                         <div className="min-w-0">
                                             <p className="text-sm font-bold text-slate-900">Nothing waiting</p>
-                                            <p className="mt-0.5 text-[10.5px] font-semibold uppercase tracking-wide text-slate-400">Oldest Pending Release</p>
+                                            <p className="mt-0.5 text-[10.5px] font-semibold uppercase tracking-wide text-slate-500">Oldest Pending Release</p>
                                         </div>
                                     </div>
                                 )}
                             </div>
 
                             <div>
-                                <p className="mb-2 text-[10.5px] font-semibold uppercase tracking-wide text-slate-400">Recent Release Activity</p>
+                                <p className="mb-2 text-[10.5px] font-semibold uppercase tracking-wide text-slate-500">Recent Release Activity</p>
                                 {recentActivity.length === 0 ? (
-                                    <p className="text-xs text-slate-400">No release activity in this range yet.</p>
+                                    <p className="text-xs text-slate-500">No release activity in this range yet.</p>
                                 ) : (
                                     <div className="space-y-1.5">
                                         {recentActivity.map((r, i) => (
                                             <div key={i} className="flex items-center justify-between rounded-lg border border-slate-100 px-3 py-2 text-xs">
                                                 <div className="min-w-0">
                                                     <p className="truncate font-semibold text-slate-800">{r.reference} · {r.plate}</p>
-                                                    <p className="truncate text-[10.5px] text-slate-400">{r.operator}</p>
+                                                    <p className="truncate text-[10.5px] text-slate-500">{r.operator}</p>
                                                 </div>
-                                                <span className="shrink-0 text-[10.5px] text-slate-500">{r.release_date}</span>
+                                                <span className="shrink-0 text-[10.5px] text-slate-600">{r.release_date}</span>
                                             </div>
                                         ))}
                                     </div>

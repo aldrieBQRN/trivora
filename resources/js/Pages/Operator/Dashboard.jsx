@@ -24,7 +24,7 @@ const delay = (ms) => ({ animationDelay: `${ms}ms` });
 
 // Shared soft, layered shadow token — same elevation language used across TMODashboard, so this
 // panel reads as one consistent product rather than a different template.
-const CARD_SHADOW = 'shadow-[0_1px_2px_0_rgba(15,23,42,0.04),0_8px_24px_-8px_rgba(15,23,42,0.10)]';
+const CARD_SHADOW = 'shadow-[0_1px_3px_0_rgba(15,23,42,0.07),0_10px_28px_-8px_rgba(15,23,42,0.14)]';
 
 const WEEKDAY_ORDER = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
@@ -136,19 +136,19 @@ export default function OperatorDashboard({ operator, stats, tricycles, recentVi
                ══════════════════════════════════════════════════════════════ */}
             <div className={`mb-6 flex flex-col gap-3 border-b border-slate-200/80 pb-5 sm:flex-row sm:items-center sm:justify-between ${FADE}`} style={delay(0)}>
                 <div>
-                    <h1 className="text-2xl font-extrabold leading-tight tracking-tight text-slate-900 sm:text-[28px]">
+                    <h1 className="text-2xl sm:text-[28px] font-black tracking-tight text-slate-900 leading-tight">
                         Dashboard
                     </h1>
-                    <p className="mt-1 text-xs leading-relaxed text-slate-500 sm:text-sm">
+                    <p className="mt-1 text-xs leading-relaxed text-slate-600 sm:text-sm">
                         {greeting} &bull; {heroMessage}
                     </p>
                 </div>
                 <div className="flex flex-wrap items-center gap-2.5">
-                    <div className="flex items-center gap-2 rounded-xl border border-slate-200/80 bg-white px-3.5 py-2 shadow-2xs">
-                        <Calendar size={14} className="text-slate-400" />
+                    <div className="flex items-center gap-2 rounded-xl border border-slate-200/80 bg-white px-3.5 py-2 shadow-sm">
+                        <Calendar size={14} className="text-slate-500" />
                         <span className="text-xs font-semibold text-slate-700">{today}</span>
                     </div>
-                    <div className="flex items-center gap-2 rounded-xl border border-slate-200/80 bg-white px-3.5 py-2 shadow-2xs">
+                    <div className="flex items-center gap-2 rounded-xl border border-slate-200/80 bg-white px-3.5 py-2 shadow-sm">
                         <Clock size={14} className="text-[#182B62]" />
                         <span className="font-mono text-xs font-bold tabular-nums text-slate-900">
                             {currentTime.toLocaleTimeString('en-US', { hour12: false })}
@@ -163,7 +163,7 @@ export default function OperatorDashboard({ operator, stats, tricycles, recentVi
             {expiredUnit && (
                 <div className={`mb-6 flex flex-col gap-4 rounded-2xl border border-red-200/80 bg-red-50/80 p-4 sm:p-5 ${CARD_SHADOW} sm:flex-row sm:items-center sm:justify-between ${FADE}`} style={delay(50)}>
                     <div className="flex items-start gap-3.5">
-                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-red-600 text-white shadow-xs">
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-red-600 text-white shadow-sm">
                             <AlertCircle size={20} strokeWidth={2.5} />
                         </div>
                         <div>
@@ -179,7 +179,7 @@ export default function OperatorDashboard({ operator, stats, tricycles, recentVi
                     </div>
                     <Link
                         href={route('operator.mtop')}
-                        className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-red-600 px-4 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-red-700 transition-colors"
+                        className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-red-600 px-4 py-2.5 text-xs font-bold text-white shadow-sm hover:bg-red-700 transition-colors"
                     >
                         <FileText size={14} />
                         Track Application
@@ -188,9 +188,9 @@ export default function OperatorDashboard({ operator, stats, tricycles, recentVi
             )}
 
             {/* ══════════════════════════════════════════════════════════════
-                3. ACTION / KPI CARDS — Strict 1-col on mobile, 4-col on lg
+                3. ACTION / KPI CARDS — compact 2-col on mobile, 4-col on lg
                ══════════════════════════════════════════════════════════════ */}
-            <div className={`mb-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4 items-stretch ${FADE}`} style={delay(100)}>
+            <div className={`mb-6 grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4 items-stretch ${FADE}`} style={delay(100)}>
                 <ActionCard
                     href={route('operator.fleet')}
                     icon={Bike}
@@ -249,53 +249,82 @@ export default function OperatorDashboard({ operator, stats, tricycles, recentVi
                ══════════════════════════════════════════════════════════════ */}
             <div className={`mb-6 grid grid-cols-1 gap-4 lg:grid-cols-3 lg:gap-6 items-stretch ${FADE}`} style={delay(150)}>
                 {/* Left: 7-Day Coding Schedule Strip (2 Cols on lg) */}
-                <div className={`flex flex-col justify-between rounded-2xl border border-slate-200/80 bg-white p-5 sm:p-6 ${CARD_SHADOW} lg:col-span-2`}>
+                <div className={`flex flex-col justify-between rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-4 sm:p-5 lg:p-6 ${CARD_SHADOW} lg:col-span-2`}>
                     <div>
-                        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-4">
-                            <div className="flex items-center gap-2.5">
-                                <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#182B62]/[0.08] text-[#182B62]">
-                                    <Calendar size={16} strokeWidth={2.2} />
+                        <div className="flex flex-col gap-3 border-b border-slate-100 pb-4 sm:flex-row sm:items-center sm:justify-between">
+                            <div className="flex min-w-0 items-center gap-2.5">
+                                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[#182B62]/10 bg-[#182B62]/[0.07] text-[#182B62]">
+                                    <Calendar size={17} strokeWidth={2.2} />
                                 </div>
-                                <div>
-                                    <h2 className="text-sm font-bold text-slate-900 leading-tight">Weekly Coding Schedule</h2>
-                                    <p className="text-[11px] text-slate-400 mt-0.5">Municipal Color Coding Ordinance schedule</p>
+                                <div className="min-w-0">
+                                    <h2 className="text-[15px] font-bold leading-tight text-slate-900">Weekly Coding Schedule</h2>
+                                    <p className="mt-0.5 text-[11.5px] font-medium text-slate-600">Municipal Color Coding Ordinance · restricted plate endings</p>
                                 </div>
                             </div>
-                            <div className="flex items-center gap-2 rounded-xl bg-slate-50 border border-slate-200/80 px-3 py-1.5">
-                                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Restricted Today:</span>
-                                <span className="font-mono text-xs font-black text-[#182B62]">{todayRule.digits}</span>
+
+                            {/* Today's restriction at a glance */}
+                            <div className="flex shrink-0 items-center gap-2.5 self-start rounded-xl border border-slate-200/80 bg-slate-50 px-3 py-2 shadow-sm sm:self-auto">
+                                <span
+                                    className="h-2.5 w-2.5 shrink-0 rounded-full ring-2 ring-white"
+                                    style={{ backgroundColor: todayRule.hex || '#CBD5E1' }}
+                                />
+                                <div className="leading-tight">
+                                    <p className="text-[9.5px] font-bold uppercase tracking-wider text-slate-500">Restricted today</p>
+                                    <p className="font-mono text-[13px] font-black text-[#182B62]">
+                                        {todayRule.digits === 'None' ? 'No coding' : `Plates ending ${todayRule.digits}`}
+                                    </p>
+                                </div>
                             </div>
                         </div>
 
-                        {/* 7 Day schedule cards */}
-                        <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-7">
+                        {/* 7-day schedule: compact rows on phones/tablets, day tiles on desktop */}
+                        <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-7 lg:gap-2.5">
                             {codingRules.map((rule) => {
                                 const isToday = rule.day === todayName;
+                                const hasCoding = rule.digits !== 'None';
                                 return (
                                     <div
                                         key={rule.day}
-                                        className={`flex items-center justify-between gap-2 rounded-xl border p-2.5 lg:flex-col lg:justify-center lg:gap-1.5 lg:p-2 lg:text-center transition-all ${
+                                        className={`flex items-center gap-3 rounded-xl border px-3 py-2.5 transition-all lg:flex-col lg:items-stretch lg:gap-2 lg:px-2.5 lg:py-3 lg:text-center ${
                                             isToday
-                                                ? 'border-[#182B62] bg-[#182B62]/[0.03] shadow-xs'
-                                                : 'border-slate-200/70 bg-white hover:border-slate-300'
+                                                ? 'border-[#182B62] bg-[#182B62]/[0.04] shadow-[0_4px_14px_-6px_rgba(24,43,98,0.35)] ring-1 ring-[#182B62]/15'
+                                                : 'border-slate-200/80 bg-white hover:border-slate-300 hover:shadow-sm'
                                         }`}
                                     >
-                                        <div className="flex min-w-0 items-center gap-1.5 lg:gap-1">
-                                            <span className="truncate text-xs font-bold text-slate-700 lg:text-[11px]">
+                                        {/* Day */}
+                                        <div className="flex w-[92px] shrink-0 items-center gap-1.5 lg:w-auto lg:justify-center">
+                                            <span className={`text-[12.5px] font-bold lg:text-[11px] lg:uppercase lg:tracking-wider ${isToday ? 'text-[#182B62]' : hasCoding ? 'text-slate-800' : 'text-slate-500'}`}>
                                                 <span className="lg:hidden">{rule.day}</span>
                                                 <span className="hidden lg:inline">{rule.day.slice(0, 3)}</span>
                                             </span>
                                             {isToday && (
-                                                <span className="shrink-0 rounded-md bg-[#182B62] px-1.5 py-0.5 text-[8.5px] font-extrabold uppercase tracking-wide text-white lg:hidden">
+                                                <span className="rounded-md bg-[#182B62] px-1.5 py-0.5 text-[8.5px] font-extrabold uppercase tracking-wide text-white lg:hidden">
                                                     Today
                                                 </span>
                                             )}
                                         </div>
-                                        <span className="shrink-0 rounded-md border px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide lg:w-full lg:truncate lg:text-[9.5px]" style={rule.badgeStyle}>
-                                            {rule.color}
+
+                                        {/* Color */}
+                                        <div className="flex min-w-0 flex-1 items-center gap-1.5 lg:flex-none lg:justify-center">
+                                            <span className="h-2 w-2 shrink-0 rounded-full" style={rule.dotStyle} />
+                                            <span className={`truncate text-[11px] font-semibold ${hasCoding ? 'text-slate-700' : 'text-slate-500'}`}>
+                                                {rule.color}
+                                            </span>
+                                        </div>
+
+                                        {/* Restricted plate endings */}
+                                        <span
+                                            className={`shrink-0 rounded-lg border px-2 py-1 font-mono text-[11.5px] font-black tabular-nums lg:w-full lg:text-[12px] ${
+                                                hasCoding ? 'text-slate-900' : 'border-dashed border-slate-200 bg-transparent text-slate-500'
+                                            }`}
+                                            style={hasCoding ? { backgroundColor: `${rule.hex}12`, borderColor: `${rule.hex}40` } : undefined}
+                                            title={hasCoding ? `Plates ending in ${rule.digits}` : 'No coding restriction'}
+                                        >
+                                            {hasCoding ? rule.digits : '—'}
                                         </span>
+
                                         {isToday && (
-                                            <span className="hidden rounded-md bg-[#182B62] px-1.5 py-0.5 text-[8px] font-extrabold uppercase tracking-wide text-white lg:block">
+                                            <span className="hidden self-center rounded-md bg-[#182B62] px-2 py-0.5 text-[8.5px] font-extrabold uppercase tracking-wider text-white lg:block">
                                                 Today
                                             </span>
                                         )}
@@ -305,18 +334,18 @@ export default function OperatorDashboard({ operator, stats, tricycles, recentVi
                         </div>
                     </div>
 
-                    <div className="mt-4 flex items-start gap-2.5 rounded-xl bg-slate-50 border border-slate-100 p-3 text-slate-600">
+                    <div className="mt-4 flex items-start gap-2.5 rounded-xl border border-slate-100 bg-slate-50 p-3 text-slate-700 shadow-sm">
                         <Info size={15} className="mt-0.5 shrink-0 text-[#182B62]" />
-                        <p className="text-[11px] leading-relaxed">
+                        <p className="text-[11.5px] leading-relaxed">
                             Automated IoT enforcement is active across the municipal center. Ensure your unit is parked or off restricted corridors on designated coding days.
                         </p>
                     </div>
                 </div>
 
                 {/* Right: Compliance Score Card (1 Col on lg) */}
-                <div className={`flex flex-col items-center justify-between rounded-2xl border border-slate-200/80 bg-white p-5 sm:p-6 ${CARD_SHADOW} text-center`}>
+                <div className={`flex flex-col items-center justify-between rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-4 sm:p-5 lg:p-6 ${CARD_SHADOW} text-center`}>
                     <div className="w-full flex items-center justify-between border-b border-slate-100 pb-3">
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Health & Compliance</span>
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Health & Compliance</span>
                         <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wide ${
                             complianceScore >= 80 ? 'bg-emerald-50 text-emerald-700' : complianceScore >= 50 ? 'bg-amber-50 text-amber-700' : 'bg-red-50 text-red-700'
                         }`}>
@@ -328,7 +357,7 @@ export default function OperatorDashboard({ operator, stats, tricycles, recentVi
                         <ScoreRing value={complianceScore} color={scoreTone} size={150} textClassName="text-slate-900" trackColor="#F1F5F9" />
                     </div>
 
-                    <p className="text-[11px] text-slate-500 leading-relaxed">
+                    <p className="text-[11px] text-slate-600 leading-relaxed">
                         Calculated from active MTOP permit validity, scheduled inspections, and unsettled traffic citation records.
                     </p>
                 </div>
@@ -348,14 +377,14 @@ export default function OperatorDashboard({ operator, stats, tricycles, recentVi
                                 <p className="text-sm font-bold text-slate-900">
                                     {applicationProgress.type} in Progress &bull; Unit {applicationProgress.unit}
                                 </p>
-                                <p className="text-xs text-slate-500">
+                                <p className="text-xs text-slate-600">
                                     Ref: {applicationProgress.reference} &bull; Stage: {applicationProgress.stepLabel}
                                 </p>
                             </div>
                         </div>
                         <Link
                             href={route('operator.mtop.details', { id: applicationProgress.db_id })}
-                            className="inline-flex shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-bold text-slate-700 shadow-2xs hover:bg-slate-50 transition-colors"
+                            className="inline-flex shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-bold text-slate-700 shadow-sm hover:bg-slate-50 transition-colors"
                         >
                             View Application
                         </Link>
@@ -377,7 +406,7 @@ export default function OperatorDashboard({ operator, stats, tricycles, recentVi
                         })}
                     </div>
 
-                    <p className={`mt-3 flex items-start gap-1.5 text-xs leading-relaxed ${applicationProgress.needsAction ? 'font-semibold text-[#182B62]' : 'text-slate-500'}`}>
+                    <p className={`mt-3 flex items-start gap-1.5 text-xs leading-relaxed ${applicationProgress.needsAction ? 'font-semibold text-[#182B62]' : 'text-slate-600'}`}>
                         {applicationProgress.needsAction && <AlertCircle size={14} className="mt-0.5 shrink-0" />}
                         {applicationProgress.message}
                     </p>
@@ -407,7 +436,7 @@ export default function OperatorDashboard({ operator, stats, tricycles, recentVi
                         <div className="flex flex-1 flex-col items-center justify-center px-5 py-10 text-center">
                             <Bike size={28} className="mx-auto mb-2 text-slate-300" />
                             <p className="text-sm font-semibold text-slate-800">No tricycle registered yet</p>
-                            <p className="mt-1 text-xs text-slate-500">Register a unit to start tracking compliance.</p>
+                            <p className="mt-1 text-xs text-slate-600">Register a unit to start tracking compliance.</p>
                         </div>
                     ) : tricycles.slice(0, 1).map((trike) => (
                         <div key={trike.id} className="flex flex-1 flex-col gap-4 p-5">
@@ -423,8 +452,8 @@ export default function OperatorDashboard({ operator, stats, tricycles, recentVi
                                 </div>
                             </div>
 
-                            <div className="flex flex-col gap-1.5 rounded-xl bg-slate-50 border border-slate-100 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-2">
-                                <span className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wide text-slate-400">
+                            <div className="flex flex-col gap-1.5 rounded-xl bg-slate-50 border border-slate-100 shadow-sm px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-2">
+                                <span className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wide text-slate-500">
                                     <FileText size={13} /> MTOP Franchise
                                 </span>
                                 <span className={`text-xs font-bold ${trike.is_expired ? 'text-red-600' : 'text-[#182B62]'}`}>
@@ -443,7 +472,7 @@ export default function OperatorDashboard({ operator, stats, tricycles, recentVi
 
                             <Link
                                 href={route('operator.fleet')}
-                                className="flex items-center justify-center gap-1.5 rounded-xl border border-slate-200/80 bg-white py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-50 transition-colors lg:mt-auto shadow-2xs"
+                                className="flex items-center justify-center gap-1.5 rounded-xl border border-slate-200/80 bg-white py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-50 transition-colors lg:mt-auto shadow-sm"
                             >
                                 View Full Vehicle Details <ChevronRight size={13} />
                             </Link>
@@ -461,7 +490,7 @@ export default function OperatorDashboard({ operator, stats, tricycles, recentVi
                             <h2 className="text-sm font-bold text-slate-900">Active Violations</h2>
                         </div>
                         {violationCount > 0 && (
-                            <Link href={route('operator.violations')} className="shrink-0 text-xs font-semibold text-slate-400 hover:text-slate-700">
+                            <Link href={route('operator.violations')} className="shrink-0 text-xs font-semibold text-slate-500 hover:text-slate-700">
                                 View all ({violationCount})
                             </Link>
                         )}
@@ -476,12 +505,12 @@ export default function OperatorDashboard({ operator, stats, tricycles, recentVi
                                         </div>
                                         <div className="min-w-0">
                                             <p className="truncate text-xs font-bold text-slate-900">Color Coding Breach</p>
-                                            <p className="truncate text-[11px] text-slate-500 mt-0.5">{v.date} &bull; Unit {v.coding_scheme_number}</p>
+                                            <p className="truncate text-[11px] text-slate-600 mt-0.5">{v.date} &bull; Unit {v.coding_scheme_number}</p>
                                         </div>
                                     </div>
                                     <Link
                                         href={route('operator.violations.ticket', { id: v.id })}
-                                        className="shrink-0 rounded-xl bg-[#182B62] px-3.5 py-1.5 text-xs font-bold text-white shadow-2xs hover:bg-[#25449B] transition-colors"
+                                        className="shrink-0 rounded-xl bg-[#182B62] px-3.5 py-1.5 text-xs font-bold text-white shadow-sm hover:bg-[#25449B] transition-colors"
                                     >
                                         View Ticket
                                     </Link>
@@ -494,7 +523,7 @@ export default function OperatorDashboard({ operator, stats, tricycles, recentVi
                                 <ShieldCheck size={22} className="text-[#182B62]" />
                             </div>
                             <p className="text-sm font-bold text-slate-800">No active violations</p>
-                            <p className="mt-1 max-w-xs text-xs text-slate-500">You are fully compliant with the Color Coding Ordinance.</p>
+                            <p className="mt-1 max-w-xs text-xs text-slate-600">You are fully compliant with the Color Coding Ordinance.</p>
                         </div>
                     )}
                 </div>
@@ -553,34 +582,34 @@ function ActionCard({ href, icon: Icon, active, danger, value, label, badge, met
     return (
         <Link
             href={href}
-            className={`group flex flex-col justify-between rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-4 sm:p-5 lg:p-6 ${CARD_SHADOW} transition-all hover:border-slate-300 hover:shadow-[0_4px_6px_-1px_rgba(15,23,42,0.06),0_12px_28px_-8px_rgba(15,23,42,0.14)] ${danger ? 'hover:border-red-300' : ''}`}
+            className={`group flex flex-col justify-between rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-3 sm:p-4 lg:px-5 lg:py-4 ${CARD_SHADOW} transition-all hover:border-slate-300 hover:shadow-[0_2px_6px_0_rgba(15,23,42,0.08),0_18px_36px_-12px_rgba(15,23,42,0.20)] ${danger ? 'hover:border-red-300' : ''}`}
         >
             <div>
-                <div className="flex items-center justify-between border-b border-slate-100 pb-2 sm:pb-2.5">
-                    <span className="font-['Plus_Jakarta_Sans',sans-serif] text-[10px] sm:text-[10.5px] font-bold uppercase tracking-wider text-slate-400">
+                <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-2 sm:pb-2.5">
+                    <span className="font-['Plus_Jakarta_Sans',sans-serif] text-[9.5px] sm:text-[10.5px] font-bold uppercase tracking-wide sm:tracking-wider leading-tight text-slate-500">
                         {label}
                     </span>
-                    <div className={`flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-xl border ${iconWrapClass}`}>
+                    <div className={`flex h-7 w-7 shrink-0 sm:h-8 sm:w-8 items-center justify-center rounded-xl border ${iconWrapClass}`}>
                         <Icon size={15} strokeWidth={2.2} />
                     </div>
                 </div>
-                <div className="mt-2 sm:mt-2.5 flex items-baseline gap-1.5 sm:gap-2">
-                    <span className={`font-['Plus_Jakarta_Sans',sans-serif] text-xl sm:text-2xl lg:text-3xl font-black tracking-tight tabular-nums leading-none ${valueColorClass}`}>
+                <div className="mt-2 sm:mt-2.5 flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5 sm:gap-2">
+                    <span className={`font-['Plus_Jakarta_Sans',sans-serif] text-2xl lg:text-3xl font-black tracking-tight tabular-nums leading-none ${valueColorClass}`}>
                         {value}
                     </span>
                     {badge && (
-                        <span className="font-['Plus_Jakarta_Sans',sans-serif] text-[9.5px] sm:text-[10.5px] font-extrabold uppercase tracking-wider text-slate-400">
+                        <span className="font-['Plus_Jakarta_Sans',sans-serif] text-[9.5px] sm:text-[10.5px] font-extrabold uppercase tracking-wider text-slate-500">
                             {badge}
                         </span>
                     )}
                 </div>
-                <p className="mt-1 text-[10px] sm:text-[11px] font-medium text-slate-500 font-['Plus_Jakarta_Sans',sans-serif] line-clamp-1">
+                <p className="mt-1 max-sm:hidden text-[10px] sm:text-[11px] font-medium text-slate-600 font-['Plus_Jakarta_Sans',sans-serif] line-clamp-1">
                     {meta}
                 </p>
             </div>
 
-            <div className="mt-3 rounded-xl bg-slate-50 border border-slate-100/90 px-2.5 py-1.5 sm:p-2.5 flex items-center justify-between text-[10.5px] sm:text-xs">
-                <span className="font-['Plus_Jakarta_Sans',sans-serif] font-semibold text-slate-500 truncate">{footerLabel}</span>
+            <div className="mt-2.5 max-sm:hidden rounded-xl bg-slate-50 border border-slate-100/90 shadow-sm px-2.5 py-1.5 flex items-center justify-between text-[10.5px] sm:text-xs">
+                <span className="font-['Plus_Jakarta_Sans',sans-serif] font-semibold text-slate-600 truncate">{footerLabel}</span>
                 <span className={`font-['Plus_Jakarta_Sans',sans-serif] font-bold flex items-center gap-1 transition-colors shrink-0 ${danger ? 'text-red-600 group-hover:text-red-700' : 'text-[#182B62] group-hover:text-[#25449B]'}`}>
                     {cta} <ChevronRight size={13} className="transition-transform group-hover:translate-x-0.5" />
                 </span>

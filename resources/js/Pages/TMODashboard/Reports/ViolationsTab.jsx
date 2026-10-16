@@ -31,12 +31,12 @@ export default function ViolationsTab({ from, to, data }) {
     return (
         <div className="font-['Plus_Jakarta_Sans',sans-serif]">
             <div className="mb-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-1 border-b border-slate-100 pb-2.5">
-                <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Violation &amp; Compliance Analytics</p>
-                <p className="text-xs font-semibold text-slate-500 font-mono">{from} – {to}</p>
+                <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Violation &amp; Compliance Analytics</p>
+                <p className="text-xs font-semibold text-slate-600 font-mono">{from} – {to}</p>
             </div>
 
             {/* 4 Overview KPI Cards: 1 per row on mobile, 2 on tablet, 4 on desktop */}
-            <div className="mb-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4 items-stretch">
+            <div className="mb-6 grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4 items-stretch">
                 <KpiTile label="Total Citations" value={data.kpis.total_violations} hint="Recorded in selected period" icon={ShieldAlert} />
                 <KpiTile label="Penalties Assessed" value={peso(data.kpis.fines_assessed)} hint="Total fines issued in period" icon={Wallet} />
                 <KpiTile
