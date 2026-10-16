@@ -815,9 +815,7 @@ export default function PublicApply() {
                                     disabled={otpSending}
                                     style={{ opacity: isStep2Valid && !otpSending ? 1 : 0.55, cursor: 'pointer' }}
                                 >
-                                    {otpSending && !otpOpen ? (
-                                        <><Loader2 size={16} strokeWidth={2.4} style={{ animation: 'paSpin .8s linear infinite' }} /> Sending code...</>
-                                    ) : 'Continue'}
+                                    Continue
                                 </button>
                             </div>
                         </div>
@@ -1098,6 +1096,21 @@ export default function PublicApply() {
                 </div>
                 </div>
             </main>
+
+            {/* Sending-code modal (shown while the first code is being sent) */}
+            {otpSending && !otpOpen && (
+                <div className="pa-modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="pa-otp-sending-title" aria-busy="true">
+                    <div className="pa-modal">
+                        <div className="pa-modal-icon">
+                            <Loader2 size={22} strokeWidth={2.4} style={{ animation: 'paSpin .8s linear infinite' }} />
+                        </div>
+                        <h3 id="pa-otp-sending-title" className="pa-modal-title">Sending verification code</h3>
+                        <p className="pa-modal-sub">
+                            Please wait while we send a 6-digit code to <strong>{normalizedEmail}</strong>.
+                        </p>
+                    </div>
+                </div>
+            )}
 
             {/* Email verification modal (Applicant Information → Continue) */}
             {otpOpen && (

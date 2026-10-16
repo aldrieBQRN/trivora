@@ -143,7 +143,15 @@ export const REGISTRATION_CSS = `
 @media (max-width: 900px) { .pa-step-v-line { width: 100%; height: 2px; min-height: 0; flex: 1; margin-top: 16px; } }
 
 .pa-step-v-text { padding-bottom: 28px; padding-top: 5px; }
-@media (max-width: 900px) { .pa-step-v-text { display: none; } }
+@media (max-width: 900px) {
+  .pa-step-v { min-width: 0; position: relative; }
+  .pa-step-v-rail { justify-content: center; }
+  .pa-step-v-line { position: absolute; top: 16px; left: calc(50% + 21px); right: calc(-50% + 17px); width: auto; margin-top: 0; }
+  .pa-step-v-text { align-self: stretch; padding: 0 2px; text-align: center; }
+  .pa-step-v-text .pa-step-v-label { font-size: 11px; line-height: 1.3; margin-bottom: 0; overflow-wrap: anywhere; }
+  .pa-step-v-text .pa-step-v-desc { display: none; }
+}
+@media (max-width: 480px) { .pa-step-v-text .pa-step-v-label { font-size: 10px; } }
 .pa-step-v-label {
   font-family: 'Plus Jakarta Sans', sans-serif; font-size: 13px; font-weight: 700;
   letter-spacing: -0.01em; color: rgba(255,255,255,.65);

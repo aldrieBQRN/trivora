@@ -3,8 +3,8 @@
 @section('title', 'New color-coding violation')
 
 @section('content')
-    <h1 style="margin:0 0 8px;font-size:20px;color:#0f172a;">New color-coding violation recorded</h1>
-    <p style="margin:0 0 20px;color:#475569;">A new violation has been recorded in Trivora and is awaiting TMO action.</p>
+    <p style="margin:0 0 6px;font-size:20px;font-weight:700;color:#0f172a;">New color-coding violation recorded</p>
+    <p style="margin:0 0 24px;font-size:14px;line-height:1.6;color:#64748b;">A new violation has been recorded in Trivora and is awaiting TMO action.</p>
 
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
         @include('emails.violations._row', ['label' => 'Reference', 'value' => $details['tmo_reference']])
@@ -46,7 +46,7 @@
 
     <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:24px 0 8px;">
         <tr>
-            <td style="border-radius:6px;background-color:#182B62;">
+            <td style="border-radius:8px;background-color:#182B62;">
                 <a href="{{ $details['tmo_url'] }}" style="display:inline-block;padding:12px 22px;color:#ffffff;text-decoration:none;font-weight:600;font-size:14px;">View violation details</a>
             </td>
         </tr>

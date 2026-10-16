@@ -28,13 +28,10 @@ class PublicInquiryNotice extends Notification
         return (new MailMessage)
             ->subject(self::singleLine("[Inquiry] {$this->inquiry['subject']} – {$this->inquiry['name']}"))
             ->replyTo($this->inquiry['email'], $this->inquiry['name'])
-            ->greeting('New public inquiry')
-            ->line('**Name:** ' . $this->inquiry['name'])
-            ->line('**Email:** ' . $this->inquiry['email'])
-            ->line('**Subject:** ' . $this->inquiry['subject'])
-            ->line('**Message:**')
-            ->line($this->inquiry['message'])
-            ->salutation('Reply to this email to respond to the sender.');
+            ->view(
+                ['html' => 'emails.public-inquiry', 'text' => 'emails.public-inquiry-text'],
+                ['inquiry' => $this->inquiry]
+            );
     }
 
     private static function singleLine(string $value): string

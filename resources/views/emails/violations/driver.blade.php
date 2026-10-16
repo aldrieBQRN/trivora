@@ -3,8 +3,8 @@
 @section('title', 'Color-coding violation recorded')
 
 @section('content')
-    <h1 style="margin:0 0 8px;font-size:20px;color:#0f172a;">Color-coding violation recorded</h1>
-    <p style="margin:0 0 20px;color:#475569;">
+    <p style="margin:0 0 6px;font-size:20px;font-weight:700;color:#0f172a;">Color-coding violation recorded</p>
+    <p style="margin:0 0 24px;font-size:14px;line-height:1.6;color:#64748b;">
         Hello {{ $details['driver_name'] ?? 'Driver' }}, a color-coding violation has been recorded for your tricycle.
     </p>
 
@@ -33,7 +33,7 @@
         @include('emails.violations._row', ['label' => 'Status', 'value' => $details['status_label']])
     </table>
 
-    <h2 style="margin:24px 0 8px;font-size:16px;color:#0f172a;">How to review this violation</h2>
+    <p style="margin:28px 0 8px;font-size:15px;font-weight:700;color:#0f172a;">How to review this violation</p>
     <ol style="margin:0 0 12px;padding-left:20px;color:#334155;">
         <li>Open the <strong>Trivora Driver</strong> app and go to <strong>Violations</strong>.</li>
         <li>Select citation <strong>{{ $details['driver_reference'] }}</strong> to see its details.</li>
