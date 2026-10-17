@@ -5,13 +5,13 @@ namespace Database\Seeders;
 use App\Models\Application;
 use App\Models\ApplicationDocument;
 use App\Models\ApplicationStatusHistory;
-use App\Models\ColorCodingScheme;
 use App\Models\FranchiseScheme;
 use App\Models\Inspection;
 use App\Models\Operator;
 use App\Models\Payment;
 use App\Models\Tricycle;
 use App\Models\User;
+use Database\Seeders\Concerns\ResolvesColorCoding;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Str;
 
@@ -54,6 +54,8 @@ use Illuminate\Support\Str;
  */
 class DemoDriverMTOPApplicationsSeeder extends Seeder
 {
+    use ResolvesColorCoding;
+
     public function run(): void
     {
         $operator = Operator::whereHas('user', fn ($q) => $q->where('email', 'driver.pramos@trivora.ph'))->first();
@@ -66,8 +68,6 @@ class DemoDriverMTOPApplicationsSeeder extends Seeder
         $tmo  = User::where('email', 'tmo.jdelacruz@trivora.gov.ph')->first();
         $bplo = User::where('email', 'bplo.areyes@trivora.gov.ph')->first();
 
-
-        $redScheme = ColorCodingScheme::where('name', 'Red')->first();
 
         // -----------------------------------------------------------------
         // Retire the exception/duplicate-stage demo fixtures
@@ -115,7 +115,6 @@ class DemoDriverMTOPApplicationsSeeder extends Seeder
             $operator,
             $tri35,
             'new',
-            $redScheme,
             $tmo,
             $bplo
         );
@@ -193,7 +192,6 @@ class DemoDriverMTOPApplicationsSeeder extends Seeder
         Operator $operator,
         Tricycle $tricycle,
         string $appType,
-        ?ColorCodingScheme $colorScheme,
         ?User $tmo,
         ?User $bplo
     ): Application {
@@ -285,6 +283,7 @@ class DemoDriverMTOPApplicationsSeeder extends Seeder
         Payment::where('application_id', $app->id)->delete();
 
         $codingNumber = $tricycle->coding_scheme_number ?: '0715';
+        $colorScheme = $this->schemeForCoding($codingNumber);
 
         // Franchise Number (MTOP-YYYY-NNNN): this application is already at TMO Final
         // Confirmation, so BPLO release has happened — which generates the serial once

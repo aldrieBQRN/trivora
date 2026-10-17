@@ -6,7 +6,6 @@ use App\Models\Application;
 use App\Models\ApplicationDocument;
 use App\Models\ApplicationDriver;
 use App\Models\ApplicationStatusHistory;
-use App\Models\ColorCodingScheme;
 use App\Models\Driver;
 use App\Models\FranchiseScheme;
 use App\Models\Inspection;
@@ -16,6 +15,7 @@ use App\Models\Tricycle;
 use App\Models\TricycleLocation;
 use App\Models\User;
 use App\Models\Violation;
+use Database\Seeders\Concerns\ResolvesColorCoding;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Hash;
@@ -49,6 +49,8 @@ use Illuminate\Support\Str;
  */
 class DemoStageDriversSeeder extends Seeder
 {
+    use ResolvesColorCoding;
+
     public function run(): void
     {
 
@@ -336,10 +338,12 @@ class DemoStageDriversSeeder extends Seeder
         // -----------------------------------------------------------------
         $triExpired = Tricycle::where('plate_number', 'STG-0005')->first();
         $triRenewed = Tricycle::where('plate_number', 'STG-0008')->first();
-        $redScheme  = ColorCodingScheme::where('name', 'Red')->first();
 
         if ($triExpired) {
             $fsExpired = FranchiseScheme::where('tricycle_id', $triExpired->id)->first();
+            $expiredScheme = $fsExpired?->colorCodingScheme ?? $this->schemeForCoding($triExpired->coding_scheme_number);
+            $at1 = $this->codingDayOnOrBefore($expiredScheme, now()->subDays(20)->setTime(9, 30, 0));
+            $at2 = $this->codingDayOnOrBefore($expiredScheme, now()->subDays(3)->setTime(11, 15, 0));
             $ping1 = TricycleLocation::create([
                 'tricycle_id' => $triExpired->id,
                 'latitude'    => 14.0722,
@@ -348,23 +352,23 @@ class DemoStageDriversSeeder extends Seeder
                 'heading_deg' => 45,
                 'accuracy_m'  => 5.0,
                 'source'      => 'mobile_app',
-                'recorded_at' => now()->subDays(20)->setTime(9, 30, 0),
+                'recorded_at' => $at1,
             ]);
             Violation::updateOrCreate(
                 ['tricycle_id' => $triExpired->id, 'status' => 'resolved'],
                 [
                     'franchise_scheme_id'    => $fsExpired?->id,
-                    'color_coding_scheme_id' => $redScheme?->id,
+                    'color_coding_scheme_id' => $expiredScheme?->id,
                     'location_snapshot_id'   => $ping1->id,
                     'detected_by'            => null,
                     'violation_type'         => 'color_coding',
-                    'detected_at'            => now()->subDays(20)->setTime(9, 30, 0),
-                    'day_of_week'            => 'Monday',
+                    'detected_at'            => $at1,
+                    'day_of_week'            => $at1->format('l'),
                     'detection_method'       => 'automated',
                     'status'                 => 'resolved',
                     'fine_amount'            => 500.00,
                     'fine_paid_at'           => now()->subDays(18),
-                    'notes'                  => 'Automated Telematics: Red coding restricted day violation. Paid at Municipal Treasurer.',
+                    'notes'                  => "Automated Telematics: {$expiredScheme?->name} coding restricted day violation. Paid at Municipal Treasurer.",
                 ]
             );
 
@@ -376,29 +380,32 @@ class DemoStageDriversSeeder extends Seeder
                 'heading_deg' => 180,
                 'accuracy_m'  => 4.0,
                 'source'      => 'mobile_app',
-                'recorded_at' => now()->subDays(3)->setTime(11, 15, 0),
+                'recorded_at' => $at2,
             ]);
             Violation::updateOrCreate(
                 ['tricycle_id' => $triExpired->id, 'status' => 'open'],
                 [
                     'franchise_scheme_id'    => $fsExpired?->id,
-                    'color_coding_scheme_id' => $redScheme?->id,
+                    'color_coding_scheme_id' => $expiredScheme?->id,
                     'location_snapshot_id'   => $ping2->id,
                     'detected_by'            => null,
                     'violation_type'         => 'color_coding',
-                    'detected_at'            => now()->subDays(3)->setTime(11, 15, 0),
-                    'day_of_week'            => 'Monday',
+                    'detected_at'            => $at2,
+                    'day_of_week'            => $at2->format('l'),
                     'detection_method'       => 'automated',
                     'status'                 => 'open',
                     'fine_amount'            => 500.00,
                     'fine_paid_at'           => null,
-                    'notes'                  => 'Automated Telematics: Operating unit with expired franchise and Monday coding restriction.',
+                    'notes'                  => "Automated Telematics: Operating unit with expired franchise and {$at2->format('l')} coding restriction.",
                 ]
             );
         }
 
         if ($triRenewed) {
             $fsRenewed = FranchiseScheme::where('tricycle_id', $triRenewed->id)->first();
+            $renewedScheme = $fsRenewed?->colorCodingScheme ?? $this->schemeForCoding($triRenewed->coding_scheme_number);
+            $at3 = $this->codingDayOnOrBefore($renewedScheme, now()->subDays(15)->setTime(14, 0, 0));
+            $at4 = $this->codingDayOnOrBefore($renewedScheme, now()->subDays(1)->setTime(16, 20, 0));
             $ping3 = TricycleLocation::create([
                 'tricycle_id' => $triRenewed->id,
                 'latitude'    => 14.0705,
@@ -407,18 +414,18 @@ class DemoStageDriversSeeder extends Seeder
                 'heading_deg' => 270,
                 'accuracy_m'  => 5.0,
                 'source'      => 'mobile_app',
-                'recorded_at' => now()->subDays(15)->setTime(14, 0, 0),
+                'recorded_at' => $at3,
             ]);
             Violation::updateOrCreate(
                 ['tricycle_id' => $triRenewed->id, 'status' => 'resolved'],
                 [
                     'franchise_scheme_id'    => $fsRenewed?->id,
-                    'color_coding_scheme_id' => $redScheme?->id,
+                    'color_coding_scheme_id' => $renewedScheme?->id,
                     'location_snapshot_id'   => $ping3->id,
                     'detected_by'            => null,
                     'violation_type'         => 'color_coding',
-                    'detected_at'            => now()->subDays(15)->setTime(14, 0, 0),
-                    'day_of_week'            => 'Monday',
+                    'detected_at'            => $at3,
+                    'day_of_week'            => $at3->format('l'),
                     'detection_method'       => 'automated',
                     'status'                 => 'resolved',
                     'fine_amount'            => 500.00,
@@ -435,23 +442,23 @@ class DemoStageDriversSeeder extends Seeder
                 'heading_deg' => 90,
                 'accuracy_m'  => 4.5,
                 'source'      => 'mobile_app',
-                'recorded_at' => now()->subDays(1)->setTime(16, 20, 0),
+                'recorded_at' => $at4,
             ]);
             Violation::updateOrCreate(
                 ['tricycle_id' => $triRenewed->id, 'status' => 'open'],
                 [
                     'franchise_scheme_id'    => $fsRenewed?->id,
-                    'color_coding_scheme_id' => $redScheme?->id,
+                    'color_coding_scheme_id' => $renewedScheme?->id,
                     'location_snapshot_id'   => $ping4->id,
                     'detected_by'            => null,
                     'violation_type'         => 'color_coding',
-                    'detected_at'            => now()->subDays(1)->setTime(16, 20, 0),
-                    'day_of_week'            => 'Monday',
+                    'detected_at'            => $at4,
+                    'day_of_week'            => $at4->format('l'),
                     'detection_method'       => 'automated',
                     'status'                 => 'open',
                     'fine_amount'            => 500.00,
                     'fine_paid_at'           => null,
-                    'notes'                  => 'Automated Telematics: Monday coding restricted corridor operation detected.',
+                    'notes'                  => "Automated Telematics: {$at4->format('l')} coding restricted corridor operation detected.",
                 ]
             );
         }
@@ -718,7 +725,7 @@ class DemoStageDriversSeeder extends Seeder
         );
 
         // Scheme issued but NOT yet active — TMO final confirmation activates it.
-        $scheme = ColorCodingScheme::where('name', 'Blue')->first();
+        $scheme = $this->schemeForCoding($s['coding']);
         if ($scheme && $bplo) {
             FranchiseScheme::updateOrCreate(
                 ['tricycle_id' => $tri->id],
@@ -797,7 +804,7 @@ class DemoStageDriversSeeder extends Seeder
 
         // Expired permit: active record (is_active = true) already past its expiry date,
         // issue date exactly 3 years before expiry — same shape as APP-2026-00001.
-        $scheme = ColorCodingScheme::where('name', 'Red')->first();
+        $scheme = $this->schemeForCoding($s['coding']);
         if ($scheme && $bplo) {
             FranchiseScheme::updateOrCreate(
                 ['tricycle_id' => $tri->id],
@@ -881,7 +888,7 @@ class DemoStageDriversSeeder extends Seeder
         );
 
         // 2. Initial FranchiseScheme that is now EXPIRED
-        $scheme = ColorCodingScheme::where('name', 'Violet')->first() ?? ColorCodingScheme::first();
+        $scheme = $this->schemeForCoding($s['coding']);
         if ($scheme && $bplo) {
             FranchiseScheme::updateOrCreate(
                 ['tricycle_id' => $tri->id],

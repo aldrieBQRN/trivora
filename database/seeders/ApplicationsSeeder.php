@@ -13,11 +13,14 @@ use App\Models\Operator;
 use App\Models\Payment;
 use App\Models\Tricycle;
 use App\Models\User;
+use Database\Seeders\Concerns\ResolvesColorCoding;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Str;
 
 class ApplicationsSeeder extends Seeder
 {
+    use ResolvesColorCoding;
+
     /**
      * Seed sample applications at different stages of the workflow pipeline.
      *
@@ -191,10 +194,6 @@ class ApplicationsSeeder extends Seeder
         $tri24     = Tricycle::where('plate_number', 'ABC-8901')->first();
         $tri25     = Tricycle::where('plate_number', 'XYZ-2346')->first();
 
-        $redScheme    = ColorCodingScheme::where('name', 'Red')->first();
-        $blueScheme   = ColorCodingScheme::where('name', 'Blue')->first();
-        $yellowScheme = ColorCodingScheme::where('name', 'Yellow')->first();
-        $greenScheme  = ColorCodingScheme::where('name', 'Green')->first();
 
         // The retired in-system payment workflow's statuses must never appear in ANY
         // application's append-only trail — they predate the canonical 1-5 step scale and
@@ -290,14 +289,15 @@ class ApplicationsSeeder extends Seeder
             // Keyed by tricycle_id (one permit row per unit, whatever seed order ran) and
             // never touching a scheme issued under a different application, so TricyclesSeeder
             // re-runs can't silently restore a future expiry over this deliberate expiry.
-            if ($redScheme && $bplo) {
+            $tri1Scheme = $this->schemeForCoding($tri1->coding_scheme_number ?: '0142');
+            if ($tri1Scheme && $bplo) {
                 FranchiseScheme::updateOrCreate(
                     ['tricycle_id' => $tri1->id],
                     [
                         'application_id'         => $app1->id,
                         'franchise_number'       => $app1->sticker_number ?: 'MTOP-2026-0001',
                         'sticker_number'         => $tri1->coding_scheme_number ?: '0142',
-                        'color_coding_scheme_id' => $redScheme->id,
+                        'color_coding_scheme_id' => $tri1Scheme->id,
                         'issued_by'              => $bplo->id,
                         'issue_date'             => now()->subYears(3)->subDays(30)->toDateString(),
                         'expiry_date'            => now()->subDays(30)->toDateString(),
@@ -681,14 +681,15 @@ class ApplicationsSeeder extends Seeder
 
             // No Payment row — see APPLICATION 1's note above.
 
-            if ($blueScheme && $bplo) {
+            $tri6Scheme = $this->schemeForCoding($tri6->coding_scheme_number ?: '0512');
+            if ($tri6Scheme && $bplo) {
                 FranchiseScheme::updateOrCreate(
                     ['tricycle_id' => $tri6->id],
                     [
                         'application_id'         => $app6->id,
                         'franchise_number'       => $app6->sticker_number ?: 'MTOP-2026-0512',
                         'sticker_number'         => $tri6->coding_scheme_number ?: '0512',
-                        'color_coding_scheme_id' => $blueScheme->id,
+                        'color_coding_scheme_id' => $tri6Scheme->id,
                         'issued_by'              => $bplo->id,
                         'issue_date'             => now()->subDays(2)->toDateString(),
                         'expiry_date'            => now()->addYears(3)->toDateString(),
@@ -972,7 +973,6 @@ class ApplicationsSeeder extends Seeder
                 $opBen,
                 $tri21,
                 'new',
-                $blueScheme ?? $redScheme,
                 $tmo,
                 $bplo,
                 $admin
@@ -989,7 +989,6 @@ class ApplicationsSeeder extends Seeder
                 $opCarla,
                 $tri22,
                 'renewal',
-                $blueScheme,
                 $tmo,
                 $bplo,
                 $admin
@@ -1006,7 +1005,6 @@ class ApplicationsSeeder extends Seeder
                 $opDante,
                 $tri23,
                 'renewal',
-                $yellowScheme ?? $redScheme,
                 $tmo,
                 $bplo,
                 $admin
@@ -1023,7 +1021,6 @@ class ApplicationsSeeder extends Seeder
                 $opElena,
                 $tri24,
                 'new',
-                $yellowScheme ?? $blueScheme,
                 $tmo,
                 $bplo,
                 $admin
@@ -1297,14 +1294,15 @@ class ApplicationsSeeder extends Seeder
             ]
         );
 
-        if ($redScheme && $bplo) {
+        $regDemoScheme = $this->schemeForCoding('0777');
+        if ($regDemoScheme && $bplo) {
             FranchiseScheme::updateOrCreate(
                 ['tricycle_id' => $triRegDemo->id],
                 [
                     'application_id'         => $appRegDemo->id,
                     'franchise_number'       => $appRegDemo->sticker_number ?: 'MTOP-2026-7788',
                     'sticker_number'         => '0777',
-                    'color_coding_scheme_id' => $redScheme->id,
+                    'color_coding_scheme_id' => $regDemoScheme->id,
                     'issued_by'              => $bplo->id,
                     'issue_date'             => now()->subDays(10)->toDateString(),
                     'expiry_date'            => now()->addYears(3)->toDateString(),
@@ -1620,7 +1618,6 @@ class ApplicationsSeeder extends Seeder
         Operator $operator,
         Tricycle $tricycle,
         string $appType,
-        ?ColorCodingScheme $colorScheme,
         ?User $tmo,
         ?User $bplo,
         ?User $admin
@@ -1712,6 +1709,7 @@ class ApplicationsSeeder extends Seeder
         );
 
         $codingNumber = $tricycle->coding_scheme_number ?: '0001';
+        $colorScheme = $this->schemeForCoding($codingNumber);
 
         // Franchise Number (MTOP-YYYY-NNNN): BPLO release generates it once
         // (BPLOController::showReleaseForm) and persists it to the application first, then

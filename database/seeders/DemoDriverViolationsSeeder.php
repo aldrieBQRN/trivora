@@ -9,6 +9,7 @@ use App\Models\TricycleLocation;
 use App\Models\User;
 use App\Models\Violation;
 use Carbon\Carbon;
+use Database\Seeders\Concerns\ResolvesColorCoding;
 use Illuminate\Database\Seeder;
 
 /**
@@ -18,33 +19,36 @@ use Illuminate\Database\Seeder;
  * tricycle/franchise-scheme relationship set up when the account was created; no new driver,
  * operator, or tricycle is created here.
  *
- * Idempotent: each violation is matched on its fixed (tricycle_id, detected_at) pair — both
- * hardcoded, not relative to now() — so re-running this seeder never duplicates records.
+ * Idempotent: each violation is matched on its (tricycle_id, detected_at) pair — detected_at is
+ * the unit's coding day on or before a hardcoded date, not relative to now() — so re-running this
+ * seeder never duplicates records. {scheme}/{day} in each note are filled from the unit's scheme.
  *
  * Not wired into DatabaseSeeder::run(), same as TestDriverViolationsSeeder — invoke explicitly:
  *   php artisan db:seed --class=Database\\Seeders\\DemoDriverViolationsSeeder
  */
 class DemoDriverViolationsSeeder extends Seeder
 {
+    use ResolvesColorCoding;
+
     /** @var array<string, array{email: string, detected_at: string, lat: float, lng: float, note: string}> */
     private const DEMO_DRIVERS = [
         'driver.brgy10@trivora.test' => [
             'detected_at' => '2026-09-05 08:20:00',
             'lat' => 14.0728,
             'lng' => 120.6319,
-            'note' => 'System detected Red-coded tricycle (DEMO-0001) operating near Brgy. 10 Public Market on a restricted Friday.',
+            'note' => 'System detected {scheme}-coded tricycle (DEMO-0001) operating near Brgy. 10 Public Market on a restricted {day}.',
         ],
         'driver.brgy8@trivora.test' => [
             'detected_at' => '2026-09-06 16:40:00',
             'lat' => 14.0689,
             'lng' => 120.6274,
-            'note' => 'System detected Red-coded tricycle (DEMO-0002) operating near Brgy. 8 Public Market on a restricted Saturday.',
+            'note' => 'System detected {scheme}-coded tricycle (DEMO-0002) operating near Brgy. 8 Public Market on a restricted {day}.',
         ],
         'driver.brgy4@trivora.test' => [
             'detected_at' => '2026-09-08 11:05:00',
             'lat' => 14.0642,
             'lng' => 120.6350,
-            'note' => 'System detected Red-coded tricycle (DEMO-0003) operating near Wawa Port & Baywalk, Barangay 4 on a restricted Tuesday.',
+            'note' => 'System detected {scheme}-coded tricycle (DEMO-0003) operating near Wawa Port & Baywalk, Barangay 4 on a restricted {day}.',
         ],
     ];
 
@@ -81,7 +85,8 @@ class DemoDriverViolationsSeeder extends Seeder
             return;
         }
 
-        $detectedAt = Carbon::parse($data['detected_at']);
+        $scheme = $franchise->colorCodingScheme ?? $this->schemeForCoding($tricycle?->coding_scheme_number);
+        $detectedAt = $this->codingDayOnOrBefore($scheme, Carbon::parse($data['detected_at']));
 
         $existing = Violation::where('tricycle_id', $tricycleId)->where('detected_at', $detectedAt)->first();
         if ($existing) {
@@ -105,7 +110,7 @@ class DemoDriverViolationsSeeder extends Seeder
         Violation::create([
             'tricycle_id' => $tricycleId,
             'franchise_scheme_id' => $franchise->id,
-            'color_coding_scheme_id' => $franchise->color_coding_scheme_id,
+            'color_coding_scheme_id' => $scheme?->id,
             'location_snapshot_id' => $location->id,
             'detected_by' => null,
             'violation_type' => 'color_coding',
@@ -115,7 +120,7 @@ class DemoDriverViolationsSeeder extends Seeder
             'status' => 'open',
             'fine_amount' => 500.00,
             'fine_paid_at' => null,
-            'notes' => $data['note'],
+            'notes' => strtr($data['note'], ['{scheme}' => $scheme?->name, '{day}' => $detectedAt->format('l')]),
         ]);
 
         $this->command->info("✔ Violation seeded for {$email} (tricycle {$tricycle?->plate_number}).");

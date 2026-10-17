@@ -5,7 +5,6 @@ namespace Database\Seeders;
 use App\Models\Application;
 use App\Models\ApplicationDocument;
 use App\Models\ApplicationStatusHistory;
-use App\Models\ColorCodingScheme;
 use App\Models\Driver;
 use App\Models\FranchiseScheme;
 use App\Models\Inspection;
@@ -17,6 +16,7 @@ use App\Models\User;
 use App\Models\Violation;
 use App\Models\ViolationAppeal;
 use Carbon\Carbon;
+use Database\Seeders\Concerns\ResolvesColorCoding;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -32,6 +32,8 @@ use Illuminate\Support\Str;
  */
 class TestAccountsSeeder extends Seeder
 {
+    use ResolvesColorCoding;
+
     public function run(): void
     {
         // ---------------------------------------------------------------------
@@ -115,7 +117,6 @@ class TestAccountsSeeder extends Seeder
         // 2. Five Driver Demo Accounts (for Driver App login with mobile)
         // ---------------------------------------------------------------------
         $adminUser = User::where('email', 'admin@trivora.gov.ph')->first() ?: User::first();
-        $colorSchemes = ColorCodingScheme::all()->keyBy('name');
 
         $canonicalDocTypes = [
             'police_clearance',
@@ -131,13 +132,14 @@ class TestAccountsSeeder extends Seeder
 
         $todayDay = now()->format('l');
 
-        // Weekday mapping: day -> [scheme, primary_digit, secondary_digit]
+        // Weekday mapping: day -> [primary_digit, secondary_digit]; the color scheme itself is
+        // resolved from the franchise number's last digit below, exactly as the system does.
         $weekdayCodingMap = [
-            'Monday'    => ['scheme' => 'Red',    'd1' => 1, 'd2' => 2],
-            'Tuesday'   => ['scheme' => 'Blue',   'd1' => 3, 'd2' => 4],
-            'Wednesday' => ['scheme' => 'Yellow', 'd1' => 5, 'd2' => 6],
-            'Thursday'  => ['scheme' => 'Green',  'd1' => 7, 'd2' => 8],
-            'Friday'    => ['scheme' => 'White',  'd1' => 9, 'd2' => 0],
+            'Monday'    => ['d1' => 1, 'd2' => 2],
+            'Tuesday'   => ['d1' => 3, 'd2' => 4],
+            'Wednesday' => ['d1' => 5, 'd2' => 6],
+            'Thursday'  => ['d1' => 7, 'd2' => 8],
+            'Friday'    => ['d1' => 9, 'd2' => 0],
         ];
 
         // Filter out today's day of week so these 5 new drivers are GUARANTEED NOT restricted today
@@ -146,7 +148,7 @@ class TestAccountsSeeder extends Seeder
         $c1 = $weekdayCodingMap[$nonTodayDays[1]];
         $c2 = $weekdayCodingMap[$nonTodayDays[2]];
         $c3 = $weekdayCodingMap[$nonTodayDays[3]];
-        $c4 = isset($nonTodayDays[4]) ? $weekdayCodingMap[$nonTodayDays[4]] : ['scheme' => $c0['scheme'], 'd1' => $c0['d2']];
+        $c4 = isset($nonTodayDays[4]) ? $weekdayCodingMap[$nonTodayDays[4]] : ['d1' => $c0['d2']];
 
         $baseDriversData = [
             [
@@ -164,7 +166,6 @@ class TestAccountsSeeder extends Seeder
                 'make'        => 'Honda',
                 'model'       => 'TMX 125',
                 'color'       => 'White',
-                'scheme_name' => 'White',
                 'barangay'    => 'Brgy. 10',
                 'ref'         => 'APP-2026-09999',
                 'lat'         => 14.0725,
@@ -186,7 +187,6 @@ class TestAccountsSeeder extends Seeder
                 'make'        => 'Yamaha',
                 'model'       => 'STX 125',
                 'color'       => 'Blue',
-                'scheme_name' => 'Blue',
                 'barangay'    => 'Bucana',
                 'ref'         => 'APP-2026-09992',
                 'lat'         => 14.0770,
@@ -208,7 +208,6 @@ class TestAccountsSeeder extends Seeder
                 'make'        => 'Kawasaki',
                 'model'       => 'Barako II',
                 'color'       => 'Red',
-                'scheme_name' => 'Blue',
                 'barangay'    => 'Brgy. 8',
                 'ref'         => 'APP-2026-09993',
                 'lat'         => 14.0745,
@@ -230,7 +229,6 @@ class TestAccountsSeeder extends Seeder
                 'make'        => 'Bajaj',
                 'model'       => 'RE 4S',
                 'color'       => 'Green',
-                'scheme_name' => 'Green',
                 'barangay'    => 'Brgy. 4',
                 'ref'         => 'APP-2026-09994',
                 'lat'         => 14.0700,
@@ -252,7 +250,6 @@ class TestAccountsSeeder extends Seeder
                 'make'        => 'Honda',
                 'model'       => 'TMX Alpha',
                 'color'       => 'Black',
-                'scheme_name' => 'Yellow',
                 'barangay'    => 'Brgy. 1',
                 'ref'         => 'APP-2026-09995',
                 'lat'         => 14.0760,
@@ -278,7 +275,6 @@ class TestAccountsSeeder extends Seeder
                 'make'        => 'Yamaha',
                 'model'       => 'STX 125',
                 'color'       => 'Blue',
-                'scheme_name' => $c0['scheme'],
                 'barangay'    => 'Bucana',
                 'ref'         => 'APP-2026-09986',
                 'lat'         => 14.0775,
@@ -308,7 +304,6 @@ class TestAccountsSeeder extends Seeder
                 'make'        => 'Kawasaki',
                 'model'       => 'Barako II',
                 'color'       => 'Red',
-                'scheme_name' => $c1['scheme'],
                 'barangay'    => 'Brgy. 10',
                 'ref'         => 'APP-2026-09987',
                 'lat'         => 14.0735,
@@ -338,7 +333,6 @@ class TestAccountsSeeder extends Seeder
                 'make'        => 'Honda',
                 'model'       => 'TMX 125',
                 'color'       => 'White',
-                'scheme_name' => $c2['scheme'],
                 'barangay'    => 'Brgy. 8',
                 'ref'         => 'APP-2026-09988',
                 'lat'         => 14.0750,
@@ -373,7 +367,6 @@ class TestAccountsSeeder extends Seeder
                 'make'        => 'Bajaj',
                 'model'       => 'RE 4S',
                 'color'       => 'Green',
-                'scheme_name' => $c3['scheme'],
                 'barangay'    => 'Brgy. 4',
                 'ref'         => 'APP-2026-09989',
                 'lat'         => 14.0690,
@@ -410,7 +403,6 @@ class TestAccountsSeeder extends Seeder
                 'make'        => 'Honda',
                 'model'       => 'TMX Alpha',
                 'color'       => 'Black',
-                'scheme_name' => $c4['scheme'],
                 'barangay'    => 'Brgy. 1',
                 'ref'         => 'APP-2026-09990',
                 'lat'         => 14.0765,
@@ -450,7 +442,7 @@ class TestAccountsSeeder extends Seeder
         }
 
         foreach ($driversData as $d) {
-            $scheme = $colorSchemes->get($d['scheme_name']) ?? $colorSchemes->first();
+            $scheme = $this->schemeForCoding($d['franchise']);
 
             $driverUser = User::updateOrCreate(
                 ['email' => $d['email']],
@@ -622,8 +614,8 @@ class TestAccountsSeeder extends Seeder
 
             // Demo Violations for Primary Demo Driver (TEST-0001)
             if (!empty($d['with_violations'])) {
-                $pastDetectedAt = Carbon::parse('2026-09-10 10:15:00');
-                $recentDetectedAt = Carbon::parse('2026-09-24 15:45:00');
+                $pastDetectedAt = $this->codingDayOnOrBefore($scheme, Carbon::parse('2026-09-11 10:15:00'));
+                $recentDetectedAt = $this->codingDayOnOrBefore($scheme, Carbon::parse('2026-09-25 15:45:00'));
 
                 if (!Violation::where('tricycle_id', $tricycle->id)->where('detected_at', $pastDetectedAt)->exists()) {
                     $pastPing = TricycleLocation::create([
@@ -645,12 +637,12 @@ class TestAccountsSeeder extends Seeder
                         'detected_by'            => null,
                         'violation_type'         => 'color_coding',
                         'detected_at'            => $pastDetectedAt,
-                        'day_of_week'            => 'Thursday',
+                        'day_of_week'            => $pastDetectedAt->format('l'),
                         'detection_method'       => 'automated',
                         'status'                 => 'resolved',
                         'fine_amount'            => 500.00,
                         'fine_paid_at'           => Carbon::parse('2026-09-12 14:20:00'),
-                        'notes'                  => 'Automated Telematics: Unit detected active within Poblacion corridor during Blue coding window. Fine settled at Municipal Treasurer\'s Office.',
+                        'notes'                  => "Automated Telematics: Unit detected active within Poblacion corridor during {$scheme?->name} coding window. Fine settled at Municipal Treasurer's Office.",
                     ]);
                 }
 
@@ -674,7 +666,7 @@ class TestAccountsSeeder extends Seeder
                         'detected_by'            => null,
                         'violation_type'         => 'color_coding',
                         'detected_at'            => $recentDetectedAt,
-                        'day_of_week'            => 'Thursday',
+                        'day_of_week'            => $recentDetectedAt->format('l'),
                         'detection_method'       => 'automated',
                         'status'                 => 'open',
                         'fine_amount'            => 1000.00,
@@ -688,6 +680,9 @@ class TestAccountsSeeder extends Seeder
             if (!empty($d['custom_violations'])) {
                 foreach ($d['custom_violations'] as $vData) {
                     $detectedAt = Carbon::parse($vData['detected_at'] ?? now()->subDays(3)->setTime(10, 30, 0));
+                    if ($vData['violation_type'] === 'color_coding') {
+                        $detectedAt = $this->codingDayOnOrBefore($scheme, $detectedAt);
+                    }
 
                     $violation = Violation::where('tricycle_id', $tricycle->id)
                         ->where('detected_at', $detectedAt)

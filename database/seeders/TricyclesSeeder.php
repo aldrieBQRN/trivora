@@ -51,15 +51,6 @@ class TricyclesSeeder extends Seeder
 
         // TODA Zones
 
-        // Color coding scheme cache
-        $colorSchemes = [
-            'Red'    => ColorCodingScheme::where('name', 'Red')->first(),
-            'Blue'   => ColorCodingScheme::where('name', 'Blue')->first(),
-            'Yellow' => ColorCodingScheme::where('name', 'Yellow')->first(),
-            'Green'  => ColorCodingScheme::where('name', 'Green')->first(),
-            'White'  => ColorCodingScheme::where('name', 'White')->first(),
-        ];
-
         $adminUser = \App\Models\User::where('role', 'admin')->orWhere('role', 'bplo_staff')->first() ?: \App\Models\User::first();
 
         // Authentic Nasugbu Registered Tricycle Units across all TODAs
@@ -149,7 +140,7 @@ class TricyclesSeeder extends Seeder
 
             // Determine matching color coding scheme by last digit of 4-digit number from DB rules
             $lastDigit = (int)substr($data['coding_number'], -1);
-            $schemeModel = \App\Services\ColorCodingRuleService::schemeForLastDigit($lastDigit) ?? ($colorSchemes['White'] ?? null);
+            $schemeModel = \App\Services\ColorCodingRuleService::schemeForLastDigit($lastDigit);
             if ($schemeModel) {
                 // Never clobber a franchise issued by a real application (application_id set):
                 // e.g. Pedro Ramos's completed APP-2026-00001 deliberately holds an EXPIRED
@@ -184,12 +175,13 @@ class TricyclesSeeder extends Seeder
             $mobTrike->update([
                 'coding_scheme_number' => '0141',
             ]);
-            if (!empty($colorSchemes['Red'])) {
+            $mobScheme = \App\Services\ColorCodingRuleService::schemeForLastDigit(1);
+            if ($mobScheme) {
                 $mobSerial = 'MTOP-' . now()->format('Y') . '-0141';
                 FranchiseScheme::updateOrCreate(
                     ['tricycle_id' => $mobTrike->id],
                     [
-                        'color_coding_scheme_id' => $colorSchemes['Red']->id,
+                        'color_coding_scheme_id' => $mobScheme->id,
                         'franchise_number'       => $mobSerial,
                         'sticker_number'         => '0141',
                         'issued_by'              => $adminUser?->id ?: 1,

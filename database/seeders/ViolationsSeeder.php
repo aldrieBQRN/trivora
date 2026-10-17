@@ -2,16 +2,18 @@
 
 namespace Database\Seeders;
 
-use App\Models\ColorCodingScheme;
 use App\Models\FranchiseScheme;
 use App\Models\Tricycle;
 use App\Models\TricycleLocation;
 use App\Models\User;
 use App\Models\Violation;
+use Database\Seeders\Concerns\ResolvesColorCoding;
 use Illuminate\Database\Seeder;
 
 class ViolationsSeeder extends Seeder
 {
+    use ResolvesColorCoding;
+
     /**
      * Seed sample GPS location pings and auto-detected violations
      * for the tricycle that has an active franchise (Pedro Ramos / AAA-1234).
@@ -20,7 +22,7 @@ class ViolationsSeeder extends Seeder
     {
         $tricycle = Tricycle::where('plate_number', 'AAA-1234')->first();
         $franchise = FranchiseScheme::where('franchise_number', 'FS-2023-00001')->first() ?: FranchiseScheme::first();
-        $redScheme = ColorCodingScheme::where('name', 'Red')->first();
+        $aaaScheme = $this->schemeForCoding($tricycle?->coding_scheme_number);
         $tmo = User::where('email', 'tmo.msantos@trivora.gov.ph')->first();
 
         // Ensure AAA-1234 is owned by legitimate operator Pedro Ramos
@@ -29,7 +31,7 @@ class ViolationsSeeder extends Seeder
             $tricycle->update(['operator_id' => $opPedro->id]);
         }
 
-        if (! $tricycle || ! $franchise || ! $redScheme) {
+        if (! $tricycle || ! $franchise || ! $aaaScheme) {
             $this->command->warn('⚠  Skipping violations seeder — required franchise/scheme data not found.');
             return;
         }
@@ -62,8 +64,11 @@ class ViolationsSeeder extends Seeder
 
         // -----------------------------------------------------------------
         // Seed a past AUTOMATED color-coding violation (resolved)
-        // Scenario: Red-coded tricycle was detected operating on a Monday.
+        // Scenario: the unit was detected operating on its own coding day.
+        // AAA-1234's three citations sit a week apart — at most one color-coding
+        // violation per unit per day (violations_color_coding_daily_unique).
         // -----------------------------------------------------------------
+        $pastAt = $this->codingDayOnOrBefore($aaaScheme, now()->subDays(14)->setTime(8, 30, 0));
         $pastLocation = TricycleLocation::create([
             'tricycle_id' => $tricycle->id,
             'latitude'    => 14.0728000,
@@ -72,7 +77,7 @@ class ViolationsSeeder extends Seeder
             'heading_deg' => 90,
             'accuracy_m'  => 5.0,
             'source'      => self::pingSource($tricycle),
-            'recorded_at' => now()->subDays(7)->setTime(8, 30, 0),
+            'recorded_at' => $pastAt,
         ]);
 
         if (! Violation::where('tricycle_id', $tricycle->id)
@@ -83,17 +88,17 @@ class ViolationsSeeder extends Seeder
             Violation::create([
                 'tricycle_id'             => $tricycle->id,
                 'franchise_scheme_id'     => $franchise->id,
-                'color_coding_scheme_id'  => $redScheme->id,
+                'color_coding_scheme_id'  => $aaaScheme->id,
                 'location_snapshot_id'    => $pastLocation->id,
                 'detected_by'             => null, // automated — no officer
                 'violation_type'          => 'color_coding',
-                'detected_at'             => now()->subDays(7)->setTime(8, 30, 0),
-                'day_of_week'             => 'Monday',
+                'detected_at'             => $pastAt,
+                'day_of_week'             => $pastAt->format('l'),
                 'detection_method'        => 'automated',
                 'status'                  => 'resolved',
                 'fine_amount'             => 500.00,
                 'fine_paid_at'            => now()->subDays(5),
-                'notes'                   => 'System detected Red-coded tricycle (AAA-1234) operating on Monday. Fine collected.',
+                'notes'                   => "System detected {$aaaScheme->name}-coded tricycle (AAA-1234) operating on {$pastAt->format('l')}. Fine collected.",
             ]);
         }
 
@@ -102,25 +107,40 @@ class ViolationsSeeder extends Seeder
         // Scenario: Same tricycle detected again on a restricted day.
         // -----------------------------------------------------------------
         $latestLocation = $locationRecords[0] ?? null;
+        $openAt = $this->codingDayOnOrBefore($aaaScheme, now()->subMinutes(5));
 
         if ($latestLocation && ! Violation::where('tricycle_id', $tricycle->id)
             ->where('status', 'open')
             ->exists()
         ) {
+            // The detection ping must be from the coding day itself, not just the latest ping.
+            if (! $openAt->equalTo($latestLocation->recorded_at)) {
+                $latestLocation = TricycleLocation::create([
+                    'tricycle_id' => $tricycle->id,
+                    'latitude'    => $latestLocation->latitude,
+                    'longitude'   => $latestLocation->longitude,
+                    'speed_kmh'   => $latestLocation->speed_kmh,
+                    'heading_deg' => $latestLocation->heading_deg,
+                    'accuracy_m'  => $latestLocation->accuracy_m,
+                    'source'      => self::pingSource($tricycle),
+                    'recorded_at' => $openAt,
+                ]);
+            }
+
             Violation::create([
                 'tricycle_id'             => $tricycle->id,
                 'franchise_scheme_id'     => $franchise->id,
-                'color_coding_scheme_id'  => $redScheme->id,
+                'color_coding_scheme_id'  => $aaaScheme->id,
                 'location_snapshot_id'    => $latestLocation->id,
                 'detected_by'             => null, // automated
                 'violation_type'          => 'color_coding',
-                'detected_at'             => now()->subMinutes(5),
-                'day_of_week'             => 'Monday',
+                'detected_at'             => $openAt,
+                'day_of_week'             => $openAt->format('l'),
                 'detection_method'        => 'automated',
                 'status'                  => 'open',
                 'fine_amount'             => 1000.00, // repeat offense
                 'fine_paid_at'            => null,
-                'notes'                   => 'Repeat color-coding violation. Tricycle AAA-1234 detected operating on restricted day (Monday).',
+                'notes'                   => "Repeat color-coding violation. Tricycle AAA-1234 detected operating on restricted day ({$openAt->format('l')}).",
             ]);
         }
 
@@ -134,6 +154,7 @@ class ViolationsSeeder extends Seeder
             ->where('detection_method', 'manual')
             ->exists()
         ) {
+            $officerAt = $this->codingDayOnOrBefore($aaaScheme, now()->subDays(7)->setTime(11, 0, 0));
             $officerLocation = TricycleLocation::create([
                 'tricycle_id' => $tricycle->id,
                 'latitude'    => 14.0725000,
@@ -142,23 +163,23 @@ class ViolationsSeeder extends Seeder
                 'heading_deg' => 270,
                 'accuracy_m'  => 6.0,
                 'source'      => self::pingSource($tricycle),
-                'recorded_at' => now()->subDays(3)->setTime(11, 0, 0),
+                'recorded_at' => $officerAt,
             ]);
 
             Violation::create([
                 'tricycle_id'             => $tricycle->id,
                 'franchise_scheme_id'     => $franchise->id,
-                'color_coding_scheme_id'  => $redScheme->id,
+                'color_coding_scheme_id'  => $aaaScheme->id,
                 'location_snapshot_id'    => $officerLocation->id,
                 'detected_by'             => $tmo->id,
                 'violation_type'          => 'color_coding',
-                'detected_at'             => now()->subDays(3)->setTime(11, 0, 0),
-                'day_of_week'             => 'Friday',
+                'detected_at'             => $officerAt,
+                'day_of_week'             => $officerAt->format('l'),
                 'detection_method'        => 'manual',
                 'status'                  => 'acknowledged',
                 'fine_amount'             => 500.00,
                 'fine_paid_at'            => null,
-                'notes'                   => 'Red-coded tricycle observed operating on a restricted Friday. Manually filed by TMO Officer Maria Santos.',
+                'notes'                   => "{$aaaScheme->name}-coded tricycle observed operating on a restricted {$officerAt->format('l')}. Manually filed by TMO Officer Maria Santos.",
             ]);
         }
 
@@ -168,12 +189,13 @@ class ViolationsSeeder extends Seeder
         // -----------------------------------------------------------------
         $tri4 = Tricycle::where('plate_number', 'DDD-3456')->first();
         $tri5 = Tricycle::where('plate_number', 'EEE-7890')->first();
-        $blueScheme = ColorCodingScheme::where('name', 'Blue')->first();
+        $tri4Scheme = $this->schemeForCoding($tri4?->coding_scheme_number);
+        $tri5Scheme = $this->schemeForCoding($tri5?->coding_scheme_number);
 
         $app4 = \App\Models\Application::where('reference_number', 'APP-2026-00004')->first();
         $app5 = \App\Models\Application::where('reference_number', 'APP-2026-00005')->first();
 
-        if ($tri4 && $tri5 && $blueScheme) {
+        if ($tri4 && $tri5 && $tri4Scheme && $tri5Scheme) {
             // NOTE on Franchise Number: both schemes below are linked to applications that
             // never reached BPLO release (APP-2026-00004 is rejected, APP-2026-00005 failed
             // inspection), so no STK-YYYY-NNNN was ever issued for them. The real workflow
@@ -185,7 +207,7 @@ class ViolationsSeeder extends Seeder
                 [
                     'application_id'         => $app4 ? $app4->id : 4,
                     'tricycle_id'            => $tri4->id,
-                    'color_coding_scheme_id' => $redScheme->id,
+                    'color_coding_scheme_id' => $tri4Scheme->id,
                     'issued_by'              => $tmo->id,
                     'issue_date'             => now()->subYear()->toDateString(),
                     'expiry_date'            => now()->addMonths(6)->toDateString(),
@@ -198,7 +220,7 @@ class ViolationsSeeder extends Seeder
                 [
                     'application_id'         => $app5 ? $app5->id : 5,
                     'tricycle_id'            => $tri5->id,
-                    'color_coding_scheme_id' => $blueScheme->id,
+                    'color_coding_scheme_id' => $tri5Scheme->id,
                     'issued_by'              => $tmo->id,
                     'issue_date'             => now()->subYear()->toDateString(),
                     'expiry_date'            => now()->addMonths(4)->toDateString(),
@@ -208,6 +230,7 @@ class ViolationsSeeder extends Seeder
 
             // Open officer-filed color coding violation for Maria Clara (DDD-3456)
             if (! Violation::where('tricycle_id', $tri4->id)->exists()) {
+                $dddAt = $this->codingDayOnOrBefore($tri4Scheme, now()->subDays(2)->setTime(14, 15, 0));
                 $dddLocation = TricycleLocation::create([
                     'tricycle_id' => $tri4->id,
                     'latitude'    => 14.0733000,
@@ -216,27 +239,28 @@ class ViolationsSeeder extends Seeder
                     'heading_deg' => 45,
                     'accuracy_m'  => 5.5,
                     'source'      => self::pingSource($tri4),
-                    'recorded_at' => now()->subDays(2)->setTime(14, 15, 0),
+                    'recorded_at' => $dddAt,
                 ]);
 
                 Violation::create([
                     'tricycle_id'             => $tri4->id,
                     'franchise_scheme_id'     => $fs4->id,
-                    'color_coding_scheme_id'  => $redScheme->id,
+                    'color_coding_scheme_id'  => $tri4Scheme->id,
                     'location_snapshot_id'    => $dddLocation->id,
                     'detected_by'             => $tmo->id,
                     'violation_type'          => 'color_coding',
-                    'detected_at'             => now()->subDays(2)->setTime(14, 15, 0),
-                    'day_of_week'             => now()->subDays(2)->format('l'),
+                    'detected_at'             => $dddAt,
+                    'day_of_week'             => $dddAt->format('l'),
                     'detection_method'        => 'manual',
                     'status'                  => 'open',
                     'fine_amount'             => 500.00,
                     'fine_paid_at'            => null,
-                    'notes'                   => 'Red-coded tricycle observed operating on a restricted day. Filed by TMO Officer.',
+                    'notes'                   => "{$tri4Scheme->name}-coded tricycle observed operating on a restricted day. Filed by TMO Officer.",
                 ]);
             }
 
             // Open automated violation for Ricardo Santos (EEE-7890)
+            $eeeAt = $this->codingDayOnOrBefore($tri5Scheme, now()->subMinutes(12));
             $pingLocation = TricycleLocation::create([
                 'tricycle_id' => $tri5->id,
                 'latitude'    => 14.0740,
@@ -245,24 +269,24 @@ class ViolationsSeeder extends Seeder
                 'heading_deg' => 180,
                 'accuracy_m'  => 4.5,
                 'source'      => self::pingSource($tri5),
-                'recorded_at' => now()->subMinutes(12),
+                'recorded_at' => $eeeAt,
             ]);
 
             if (! Violation::where('tricycle_id', $tri5->id)->exists()) {
                 Violation::create([
                     'tricycle_id'             => $tri5->id,
                     'franchise_scheme_id'     => $fs5->id,
-                    'color_coding_scheme_id'  => $blueScheme->id,
+                    'color_coding_scheme_id'  => $tri5Scheme->id,
                     'location_snapshot_id'    => $pingLocation->id,
                     'detected_by'             => null,
                     'violation_type'          => 'color_coding',
-                    'detected_at'             => now()->subMinutes(12),
-                    'day_of_week'             => 'Tuesday',
+                    'detected_at'             => $eeeAt,
+                    'day_of_week'             => $eeeAt->format('l'),
                     'detection_method'        => 'automated',
                     'status'                  => 'open',
                     'fine_amount'             => 500.00,
                     'fine_paid_at'            => null,
-                    'notes'                   => 'Color coding detection logic warning. Blue coding scheme operating on Tuesday.',
+                    'notes'                   => "Color coding detection logic warning. {$tri5Scheme->name} coding scheme operating on {$eeeAt->format('l')}.",
                 ]);
             }
         }

@@ -11,6 +11,7 @@ use App\Models\User;
 use App\Models\Violation;
 use App\Models\ViolationAppeal;
 use Carbon\Carbon;
+use Database\Seeders\Concerns\ResolvesColorCoding;
 use Illuminate\Database\Seeder;
 
 /**
@@ -29,6 +30,8 @@ use Illuminate\Database\Seeder;
  */
 class TestDriverViolationsSeeder extends Seeder
 {
+    use ResolvesColorCoding;
+
     public function run(): void
     {
         $driverUser = User::where('email', 'driver.test@trivora.test')->first();
@@ -48,17 +51,17 @@ class TestDriverViolationsSeeder extends Seeder
         // The test tricycle (set up by TestAccountsSeeder) has no franchise scheme yet, but
         // violations.franchise_scheme_id is required — every real tricycle has one, so this
         // fills a genuine gap rather than fabricating throwaway data.
-        $redScheme = ColorCodingScheme::where('name', 'Red')->first();
         $bplo = User::where('role', 'bplo_staff')->first();
 
         $testCoding = (string) (Tricycle::whereKey($tricycleId)->value('coding_scheme_number') ?: '9999');
+        $codingScheme = $this->schemeForCoding($testCoding);
         $serial = 'MTOP-' . now()->format('Y') . '-' . str_pad($testCoding, 4, '0', STR_PAD_LEFT);
 
         $franchise = FranchiseScheme::where('tricycle_id', $tricycleId)->first();
         if (! $franchise) {
             $franchise = FranchiseScheme::create([
                 'tricycle_id'            => $tricycleId,
-                'color_coding_scheme_id' => $redScheme?->id,
+                'color_coding_scheme_id' => $codingScheme?->id,
                 'franchise_number'       => $serial,
                 'sticker_number'         => $testCoding,
                 'issued_by'              => $bplo?->id,
@@ -73,35 +76,38 @@ class TestDriverViolationsSeeder extends Seeder
             ]);
         }
 
+        // Citations follow the unit's own scheme, so each falls on its restricted weekday.
+        $scheme = $franchise->colorCodingScheme ?? $codingScheme;
+
         $tmoJuan = User::where('email', 'tmo.jdelacruz@trivora.gov.ph')->first();
         $tmoMaria = User::where('email', 'tmo.msantos@trivora.gov.ph')->first();
 
         // ------------------------------------------------------------------
         // 1. RESOLVED — an old automated color-coding citation, fine already paid.
         // ------------------------------------------------------------------
-        $this->seedResolved($tricycleId, $franchise->id, $redScheme?->id);
+        $this->seedResolved($tricycleId, $franchise->id, $scheme);
 
         // ------------------------------------------------------------------
         // 2. APPEAL UNDER REVIEW — a color-coding citation filed by an officer, appeal filed, awaiting decision.
         // ------------------------------------------------------------------
-        $this->seedUnderReview($tricycleId, $franchise->id, $redScheme?->id, $driver->id);
+        $this->seedUnderReview($tricycleId, $franchise->id, $scheme, $driver->id);
 
         // ------------------------------------------------------------------
         // 3. PENDING / OPEN — a freshly issued citation, no appeal filed yet.
         // ------------------------------------------------------------------
-        $this->seedPending($tricycleId, $franchise->id, $redScheme?->id);
+        $this->seedPending($tricycleId, $franchise->id, $scheme);
 
         // ------------------------------------------------------------------
         // 4. FINE PAYMENT REQUIRED — appeal was filed and rejected.
         // ------------------------------------------------------------------
-        $this->seedRejected($tricycleId, $franchise->id, $redScheme?->id, $driver->id, $tmoMaria?->id);
+        $this->seedRejected($tricycleId, $franchise->id, $scheme, $driver->id, $tmoMaria?->id);
 
         $this->command->info('✔ Test driver violations seeded for driver.test@trivora.test (resolved, appeal under review, pending, fine payment required).');
     }
 
-    private function seedResolved(int $tricycleId, int $franchiseId, ?int $colorSchemeId): void
+    private function seedResolved(int $tricycleId, int $franchiseId, ?ColorCodingScheme $scheme): void
     {
-        $detectedAt = Carbon::parse('2026-08-20 09:15:00');
+        $detectedAt = $this->codingDayOnOrBefore($scheme, Carbon::parse('2026-08-20 09:15:00'));
 
         $existing = Violation::where('tricycle_id', $tricycleId)->where('detected_at', $detectedAt)->first();
         if ($existing) {
@@ -125,7 +131,7 @@ class TestDriverViolationsSeeder extends Seeder
         Violation::create([
             'tricycle_id' => $tricycleId,
             'franchise_scheme_id' => $franchiseId,
-            'color_coding_scheme_id' => $colorSchemeId,
+            'color_coding_scheme_id' => $scheme?->id,
             'location_snapshot_id' => $location->id,
             'detected_by' => null,
             'violation_type' => 'color_coding',
@@ -135,19 +141,19 @@ class TestDriverViolationsSeeder extends Seeder
             'status' => 'resolved',
             'fine_amount' => 500.00,
             'fine_paid_at' => Carbon::parse('2026-08-22 10:30:00'),
-            'notes' => 'System detected Red-coded tricycle (TEST-0001) operating near Nasugbu Public Market, Poblacion on a restricted Thursday. Fine settled at the Municipal Treasurer\'s Office.',
+            'notes' => "System detected {$scheme?->name}-coded tricycle (TEST-0001) operating near Nasugbu Public Market, Poblacion on a restricted {$detectedAt->format('l')}. Fine settled at the Municipal Treasurer's Office.",
         ]);
     }
 
-    private function seedUnderReview(int $tricycleId, int $franchiseId, ?int $colorSchemeId, int $driverId): void
+    private function seedUnderReview(int $tricycleId, int $franchiseId, ?ColorCodingScheme $scheme, int $driverId): void
     {
-        $detectedAt = Carbon::parse('2026-09-03 14:30:00');
+        $detectedAt = $this->codingDayOnOrBefore($scheme, Carbon::parse('2026-09-03 14:30:00'));
 
         $violation = Violation::firstOrCreate(
             ['tricycle_id' => $tricycleId, 'detected_at' => $detectedAt],
             [
                 'franchise_scheme_id' => $franchiseId,
-                'color_coding_scheme_id' => $colorSchemeId,
+                'color_coding_scheme_id' => $scheme?->id,
                 'location_snapshot_id' => null,
                 'detected_by' => User::where('email', 'tmo.jdelacruz@trivora.gov.ph')->value('id'),
                 'violation_type' => 'color_coding',
@@ -157,7 +163,7 @@ class TestDriverViolationsSeeder extends Seeder
                 'status' => 'contested',
                 'fine_amount' => 1000.00,
                 'fine_paid_at' => null,
-                'notes' => 'Red-coded tricycle (TEST-0001) observed operating near Wawa Port & Baywalk, Barangay 4 on a restricted day. Filed by TMO Officer.',
+                'notes' => "{$scheme?->name}-coded tricycle (TEST-0001) observed operating near Wawa Port & Baywalk, Barangay 4 on a restricted day. Filed by TMO Officer.",
             ]
         );
 
@@ -179,9 +185,9 @@ class TestDriverViolationsSeeder extends Seeder
         );
     }
 
-    private function seedPending(int $tricycleId, int $franchiseId, ?int $colorSchemeId): void
+    private function seedPending(int $tricycleId, int $franchiseId, ?ColorCodingScheme $scheme): void
     {
-        $detectedAt = Carbon::parse('2026-09-07 07:45:00');
+        $detectedAt = $this->codingDayOnOrBefore($scheme, Carbon::parse('2026-09-07 07:45:00'));
 
         $existing = Violation::where('tricycle_id', $tricycleId)->where('detected_at', $detectedAt)->first();
         if ($existing) {
@@ -205,7 +211,7 @@ class TestDriverViolationsSeeder extends Seeder
         Violation::create([
             'tricycle_id' => $tricycleId,
             'franchise_scheme_id' => $franchiseId,
-            'color_coding_scheme_id' => $colorSchemeId,
+            'color_coding_scheme_id' => $scheme?->id,
             'location_snapshot_id' => $location->id,
             'detected_by' => null,
             'violation_type' => 'color_coding',
@@ -215,19 +221,19 @@ class TestDriverViolationsSeeder extends Seeder
             'status' => 'open',
             'fine_amount' => 2500.00,
             'fine_paid_at' => null,
-            'notes' => 'System detected Red-coded tricycle (TEST-0001) operating near Nasugbu Municipal Hall, J.P. Rizal St., Poblacion on a restricted Monday.',
+            'notes' => "System detected {$scheme?->name}-coded tricycle (TEST-0001) operating near Nasugbu Municipal Hall, J.P. Rizal St., Poblacion on a restricted {$detectedAt->format('l')}.",
         ]);
     }
 
-    private function seedRejected(int $tricycleId, int $franchiseId, ?int $colorSchemeId, int $driverId, ?int $reviewerId): void
+    private function seedRejected(int $tricycleId, int $franchiseId, ?ColorCodingScheme $scheme, int $driverId, ?int $reviewerId): void
     {
-        $detectedAt = Carbon::parse('2026-08-24 11:00:00');
+        $detectedAt = $this->codingDayOnOrBefore($scheme, Carbon::parse('2026-08-24 11:00:00'));
 
         $violation = Violation::firstOrCreate(
             ['tricycle_id' => $tricycleId, 'detected_at' => $detectedAt],
             [
                 'franchise_scheme_id' => $franchiseId,
-                'color_coding_scheme_id' => $colorSchemeId,
+                'color_coding_scheme_id' => $scheme?->id,
                 'location_snapshot_id' => null,
                 'detected_by' => $reviewerId,
                 'violation_type' => 'color_coding',
@@ -240,7 +246,7 @@ class TestDriverViolationsSeeder extends Seeder
                 'status' => 'open',
                 'fine_amount' => 1000.00,
                 'fine_paid_at' => null,
-                'notes' => 'Red-coded tricycle cited operating near SM Savemore Nasugbu, National Highway, Barangay 10 on a restricted day — repeat offense.',
+                'notes' => "{$scheme?->name}-coded tricycle cited operating near SM Savemore Nasugbu, National Highway, Barangay 10 on a restricted day — repeat offense.",
             ]
         );
 
