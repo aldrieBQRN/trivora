@@ -44,12 +44,12 @@ return [
     // Public link to the latest Trivora Driver Android build (an EAS build/APK URL). Shown as the
     // "Download Driver App" card in the Driver panel sidebar; the card is hidden while unset.
     'driver_app' => [
-        'download_url' => env('DRIVER_APP_DOWNLOAD_URL', 'https://expo.dev/artifacts/eas/GlPWH8YgKW8KXlNwTyCldnAPFS1O8wIRlFDZqWyD4QI.apk'),
+        'download_url' => env('DRIVER_APP_DOWNLOAD_URL', 'https://expo.dev/artifacts/eas/Su2BC8EOJOFYcwV9V017SCNzeS3xMCRRwuY4xn7K3CM.apk'),
     ],
 
     // Public link to the latest Trivora Passenger Android build.
     'passenger_app' => [
-        'download_url' => env('PASSENGER_APP_DOWNLOAD_URL', 'https://expo.dev/artifacts/eas/fJlIb-haxuhPgCWe-EDIR2FrrdsxMhrMI9QsF305TDo.apk'),
+        'download_url' => env('PASSENGER_APP_DOWNLOAD_URL', 'https://expo.dev/artifacts/eas/Eo5gck54HnOQRn7RcS811PYKt7PS6I3Hr_P-V6HBJbU.apk'),
     ],
 
     // Expo Push Service — phone notifications for the passenger and driver apps (see
