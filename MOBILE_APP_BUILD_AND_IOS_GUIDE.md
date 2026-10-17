@@ -38,7 +38,7 @@ eas build -p android --profile preview
 
 | App | Version | Direct Download Link |
 | :--- | :---: | :--- |
-| 🚕 **Trivora Driver App** | 1.1.0 (Build 18) | [Download Driver APK (Build 18)](https://expo.dev/artifacts/eas/7QjVxIjZesjojUn4yPhRfjxaRbSxU6YCedWwf69LTpY.apk) |
+| 🚕 **Trivora Driver App** | 1.2.0 (Build 19) | [Download Driver APK (Build 19)](https://expo.dev/artifacts/eas/GlPWH8YgKW8KXlNwTyCldnAPFS1O8wIRlFDZqWyD4QI.apk) |
 | 👤 **Trivora Passenger App** | 1.1.0 (Build 12) | [Download Passenger APK (Build 12)](https://expo.dev/artifacts/eas/fJlIb-haxuhPgCWe-EDIR2FrrdsxMhrMI9QsF305TDo.apk) |
 
 > 💡 **Can I rename the APK file after downloading?**  
