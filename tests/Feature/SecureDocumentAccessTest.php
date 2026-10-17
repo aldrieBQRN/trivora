@@ -174,6 +174,46 @@ class SecureDocumentAccessTest extends TestCase
     }
 
     #[Test]
+    public function a_stored_non_document_file_is_downloaded_never_rendered(): void
+    {
+        $htmlPath = 'applications/documents/legacy_payload.html';
+        Storage::disk('local')->put($htmlPath, '<script>alert(document.cookie)</script>');
+
+        $htmlDoc = ApplicationDocument::create([
+            'application_id' => $this->application->id,
+            'document_type' => 'cedula',
+            'file_name' => 'cedula.html',
+            'file_path' => $htmlPath,
+            'file_size_kb' => 1,
+            'mime_type' => 'text/html',
+            'review_status' => 'pending',
+        ]);
+
+        $response = $this->actingAs($this->tmoUser)->get('/documents/application/' . $htmlDoc->id);
+
+        $response->assertStatus(200);
+        $response->assertHeader('Content-Type', 'application/octet-stream');
+        $this->assertStringStartsWith('attachment', $response->headers->get('Content-Disposition'));
+    }
+
+    #[Test]
+    public function document_resubmission_rejects_files_that_are_not_documents(): void
+    {
+        $this->ownerUser->update(['is_active' => true]);
+        $this->application->update(['status' => 'rejected']);
+
+        $response = $this->actingAs($this->ownerUser)->post("/operator/mtop/{$this->application->id}/fix", [
+            'documents' => [
+                'cedula' => [UploadedFile::fake()->createWithContent('cedula.pdf', '<script>alert(1)</script>')],
+            ],
+        ]);
+
+        $response->assertSessionHasErrors('documents.cedula');
+        $this->assertSame('rejected', $this->application->fresh()->status);
+        $this->assertSame(0, ApplicationDocument::where('application_id', $this->application->id)->where('document_type', 'cedula')->count());
+    }
+
+    #[Test]
     public function legacy_file_on_public_disk_is_safely_served_by_authorized_route(): void
     {
         $legacyPath = 'applications/documents/legacy_orcr.pdf';

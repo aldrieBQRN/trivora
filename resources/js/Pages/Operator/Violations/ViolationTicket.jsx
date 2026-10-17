@@ -1,6 +1,7 @@
 import React, { useRef, useState } from 'react';
 import { Head, usePage, useForm } from '@inertiajs/react';
 import useBackgroundRefresh from '@/hooks/useBackgroundRefresh';
+import { prepareUploads, showUploadErrors } from '@/lib/prepareUploads';
 import OperatorLayout from '@/Layouts/OperatorLayout';
 import { BackLink, Button, Label, ErrorText, Textarea } from '@/Components/TMO';
 import {
@@ -132,10 +133,13 @@ function AppealForm({ appealUrl }) {
         proof: null,
     });
 
-    const handleFile = (file) => {
+    const handleFile = async (file) => {
         if (!file) return;
-        setData('proof', file);
-        setPreview(URL.createObjectURL(file));
+        const { files: [photo], errors } = await prepareUploads([file], { types: ['image/jpeg', 'image/png', 'image/webp'] });
+        showUploadErrors(errors);
+        if (!photo) return;
+        setData('proof', photo);
+        setPreview(URL.createObjectURL(photo));
     };
 
     const removePhoto = () => {

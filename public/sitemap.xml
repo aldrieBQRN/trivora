@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:xhtml="http://www.w3.org/1999/xhtml"
+        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
+  <url>
+    <loc>https://trivora-mh55.onrender.com/</loc>
+    <lastmod>2026-10-17</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>1.0</priority>
+    <image:image>
+      <image:loc>https://trivora-mh55.onrender.com/images/og-preview.png</image:loc>
+      <image:title>TRIVORA - Smart Tricycle Management System, Nasugbu, Batangas</image:title>
+      <image:caption>Track. Protect. Connect. Official municipal tricycle franchise regulation and passenger safety portal.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://trivora-mh55.onrender.com/register-mtop</loc>
+    <lastmod>2026-10-17</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://trivora-mh55.onrender.com/login</loc>
+    <lastmod>2026-10-17</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+</urlset>

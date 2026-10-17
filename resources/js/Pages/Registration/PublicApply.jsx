@@ -415,7 +415,11 @@ export default function PublicApply() {
 
     return (
         <div className="pa-root">
-            <Head title="Franchise Registration | TRIVORA Nasugbu" />
+            <Head>
+                <title>Franchise Registration | TRIVORA Nasugbu</title>
+                <meta name="description" content="Apply for your Motorized Tricycle Operator's Permit (MTOP) franchise online with the Municipality of Nasugbu, Batangas. Fast document submission and inspection scheduling." />
+                <link rel="canonical" href="https://trivora-mh55.onrender.com/register-mtop" />
+            </Head>
             <style dangerouslySetInnerHTML={{ __html: CSS }} />
 
             {/* ── SPLIT LEFT: branding + vertical step tracker (hidden once submitted) ── */}

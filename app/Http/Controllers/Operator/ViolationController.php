@@ -201,7 +201,7 @@ class ViolationController extends Controller
 
         $evidencePath = null;
         if ($request->hasFile('proof')) {
-            $evidencePath = $request->file('proof')->store('violation_appeals', 'local');
+            $evidencePath = \App\Services\SecureUpload::store($request->file('proof'), 'violation_appeals', 'local', 'proof', 2000)['path'];
         }
 
         $statusBeforeAppeal = $violation->status;

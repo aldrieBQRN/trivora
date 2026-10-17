@@ -290,4 +290,122 @@ class PassengerAuthTest extends TestCase
 
         $response->assertStatus(401);
     }
+
+    #[Test]
+    public function updating_name_and_mobile_persists_and_keeps_the_emergency_contact()
+    {
+        [$user, $passenger] = $this->makePassenger();
+        $passenger->update(['emergency_contact' => 'Juan Dela Cruz (09171234567)']);
+        Sanctum::actingAs($user, ['*']);
+
+        $this->putJson('/api/v1/passenger/profile', [
+            'name' => 'Maria Clara Santos',
+            'mobile_number' => '09998887777',
+        ])->assertOk()
+            ->assertJsonPath('user.name', 'Maria Clara Santos')
+            ->assertJsonPath('user.mobile_number', '09998887777');
+
+        $this->assertSame('Maria Clara Santos', $user->fresh()->name);
+        $this->assertSame('09998887777', $passenger->fresh()->mobile_number);
+        // Not sent, so not cleared.
+        $this->assertSame('Juan Dela Cruz (09171234567)', $passenger->fresh()->emergency_contact);
+    }
+
+    #[Test]
+    public function updating_to_a_mobile_number_used_by_another_passenger_is_rejected()
+    {
+        [, $other] = $this->makePassenger();
+        [$user, $passenger] = $this->makePassenger();
+        Sanctum::actingAs($user, ['*']);
+
+        $this->putJson('/api/v1/passenger/profile', ['mobile_number' => $other->mobile_number])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('mobile_number');
+
+        $this->assertNotSame($other->mobile_number, $passenger->fresh()->mobile_number);
+    }
+
+    #[Test]
+    public function the_profile_update_ignores_email()
+    {
+        [$user] = $this->makePassenger();
+        $original = $user->email;
+        Sanctum::actingAs($user, ['*']);
+
+        $this->putJson('/api/v1/passenger/profile', ['email' => 'sneaky.change@trivora.test'])->assertOk();
+
+        $this->assertSame($original, $user->fresh()->email);
+    }
+
+    #[Test]
+    public function changing_email_sends_a_code_to_the_new_address_and_saves_it_only_after_verification()
+    {
+        Notification::fake();
+        [$user] = $this->makePassenger();
+        $original = $user->email;
+        $newEmail = 'new.'.uniqid().'@trivora.test';
+        Sanctum::actingAs($user, ['*']);
+
+        $this->postJson('/api/v1/passenger/profile/email/send-code', ['email' => $newEmail])->assertOk();
+
+        $code = null;
+        Notification::assertSentTo(new AnonymousNotifiable, RegistrationEmailCodeNotice::class, function ($notification, $channels, $notifiable) use ($newEmail, &$code) {
+            $code = $notification->code;
+
+            return $notifiable->routes['mail'] === $newEmail;
+        });
+
+        // Nothing changes until the code is confirmed.
+        $this->assertSame($original, $user->fresh()->email);
+
+        $this->postJson('/api/v1/passenger/profile/email/verify', ['email' => $newEmail, 'code' => $code])
+            ->assertOk()
+            ->assertJsonPath('user.email', $newEmail);
+
+        $this->assertSame($newEmail, $user->fresh()->email);
+    }
+
+    #[Test]
+    public function a_wrong_email_change_code_does_not_change_the_email()
+    {
+        Notification::fake();
+        [$user] = $this->makePassenger();
+        $original = $user->email;
+        $newEmail = 'new.'.uniqid().'@trivora.test';
+        Sanctum::actingAs($user, ['*']);
+
+        $this->postJson('/api/v1/passenger/profile/email/send-code', ['email' => $newEmail])->assertOk();
+
+        $sent = null;
+        Notification::assertSentTo(new AnonymousNotifiable, RegistrationEmailCodeNotice::class, function ($notification) use (&$sent) {
+            $sent = $notification->code;
+
+            return true;
+        });
+        $wrong = $sent === '000000' ? '111111' : '000000';
+
+        $this->postJson('/api/v1/passenger/profile/email/verify', ['email' => $newEmail, 'code' => $wrong])
+            ->assertStatus(422);
+
+        $this->assertSame($original, $user->fresh()->email);
+    }
+
+    #[Test]
+    public function an_email_change_code_is_refused_for_the_current_or_a_taken_email()
+    {
+        Notification::fake();
+        [$other] = $this->makePassenger();
+        [$user] = $this->makePassenger();
+        Sanctum::actingAs($user, ['*']);
+
+        $this->postJson('/api/v1/passenger/profile/email/send-code', ['email' => $user->email])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('email');
+
+        $this->postJson('/api/v1/passenger/profile/email/send-code', ['email' => $other->email])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('email');
+
+        Notification::assertNothingSent();
+    }
 }

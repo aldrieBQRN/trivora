@@ -61,7 +61,7 @@ class DriverGcashQrController extends Controller
         $newPath = $oldPath;
 
         if ($request->hasFile('qr_image')) {
-            $newPath = $request->file('qr_image')->store('driver_gcash_qrs', 'public');
+            $newPath = \App\Services\SecureUpload::store($request->file('qr_image'), 'driver_gcash_qrs', 'public', 'qr_image', 1600)['path'];
             if ($oldPath && $oldPath !== $newPath && Storage::disk('public')->exists($oldPath)) {
                 Storage::disk('public')->delete($oldPath);
             }

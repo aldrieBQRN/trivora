@@ -28,7 +28,8 @@ trait DrivesFranchiseWorkflow
 
     protected function fakeDocument(string $name): UploadedFile
     {
-        return UploadedFile::fake()->create($name, 200, 'application/pdf');
+        // Real PDF header: uploads are checked by content (App\Services\SecureUpload), not by name.
+        return UploadedFile::fake()->createWithContent($name, "%PDF-1.4\n" . str_repeat('0', 200 * 1024));
     }
 
     protected function registrationPayload(array $overrides = []): array

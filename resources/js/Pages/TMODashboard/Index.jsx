@@ -562,7 +562,7 @@ export default function LiveMonitoring({ initialTricycles = [], stats = {}, acti
 
                 {/* ── LEFT MAIN: LIVE INTERACTIVE MAP CANVAS (8 COLS) ── */}
                 <div className={`lg:col-span-8 overflow-hidden rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-2.5 sm:p-3 ${CARD_SHADOW}`}>
-                    <div className="relative h-[380px] sm:h-[500px] lg:h-[620px] w-full overflow-hidden rounded-xl sm:rounded-2xl border border-slate-200/50">
+                    <div className="relative h-[clamp(420px,70dvh,560px)] sm:h-[500px] lg:h-[620px] w-full overflow-hidden rounded-xl sm:rounded-2xl border border-slate-200/50">
                         <TricycleMap
                             tricycles={realTricycles}
                             selectedUnitId={selectedUnitId}
@@ -700,19 +700,6 @@ export default function LiveMonitoring({ initialTricycles = [], stats = {}, acti
                                 <ChevronRight size={15} className="text-slate-500 group-hover:translate-x-0.5 transition-transform" />
                             </Link>
                         </div>
-                    </div>
-
-                    <div className="mt-4 flex items-center justify-between rounded-xl bg-slate-50 border border-slate-100 shadow-sm px-3.5 py-2.5 text-[11px] text-slate-600 font-['Plus_Jakarta_Sans',sans-serif]">
-                        <span className="font-medium">GPS Telemetry Service</span>
-                        {realTricycles.length > 0 ? (
-                            <span className="font-bold text-emerald-700 bg-emerald-50 border border-emerald-200/60 px-2 py-0.5 rounded-md">
-                                Connected
-                            </span>
-                        ) : (
-                            <span className="font-bold text-slate-600 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded-md">
-                                Awaiting Signal
-                            </span>
-                        )}
                     </div>
                 </div>
 

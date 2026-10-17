@@ -1,2 +1,19 @@
 User-agent: *
-Disallow:
+Allow: /
+Allow: /register-mtop
+Allow: /ride/
+Allow: /login
+Allow: /images/
+Allow: /favicon.ico
+Allow: /sitemap.xml
+
+# Protect internal staff portals and private data pipelines
+Disallow: /tmo/
+Disallow: /bplo/
+Disallow: /operator/
+Disallow: /api/
+Disallow: /storage/documents/
+Disallow: /telescope/
+Disallow: /horizon/
+
+Sitemap: https://trivora-mh55.onrender.com/sitemap.xml

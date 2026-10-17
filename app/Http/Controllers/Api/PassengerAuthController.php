@@ -8,6 +8,8 @@ use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rule;
+use App\Services\RegistrationEmailVerification;
 
 class PassengerAuthController extends Controller
 {
@@ -190,34 +192,107 @@ class PassengerAuthController extends Controller
      */
     public function updateProfile(Request $request): JsonResponse
     {
-        $validated = $request->validate([
-            'emergency_contact_name' => 'nullable|string|max:80',
-            'emergency_contact_phone' => 'nullable|string|max:20',
-        ]);
-
-        $passenger = Passenger::where('user_id', $request->user()->id)->first();
+        $user = $request->user();
+        $passenger = Passenger::where('user_id', $user->id)->first();
 
         if (! $passenger) {
             return response()->json(['message' => 'No passenger profile found for this account.'], 403);
         }
 
-        $name = trim((string) ($validated['emergency_contact_name'] ?? ''));
-        $phone = trim((string) ($validated['emergency_contact_phone'] ?? ''));
+        // Email is not editable here: changing it needs a code sent to the new address
+        // (sendEmailChangeCode / verifyEmailChange).
+        $validated = $request->validate([
+            'name' => 'sometimes|required|string|max:150',
+            'mobile_number' => [
+                'sometimes', 'required', 'string', 'max:20',
+                Rule::unique('passengers', 'mobile_number')->ignore($passenger->id),
+            ],
+            'emergency_contact_name' => 'nullable|string|max:80',
+            'emergency_contact_phone' => 'nullable|string|max:20',
+        ], [
+            'mobile_number.unique' => 'This mobile number is already used by another Trivora account.',
+        ]);
 
-        $emergencyContact = match (true) {
-            $name !== '' && $phone !== '' => "{$name} ({$phone})",
-            $name !== '' => $name,
-            $phone !== '' => $phone,
-            default => null,
-        };
+        if (array_key_exists('name', $validated)) {
+            $user->update(['name' => trim($validated['name'])]);
+        }
+        if (array_key_exists('mobile_number', $validated)) {
+            $passenger->mobile_number = trim($validated['mobile_number']);
+        }
 
-        $passenger->update(['emergency_contact' => $emergencyContact]);
+        // Only touched when sent, so a name/mobile-only update never clears it.
+        if ($request->hasAny(['emergency_contact_name', 'emergency_contact_phone'])) {
+            $name = trim((string) ($validated['emergency_contact_name'] ?? ''));
+            $phone = trim((string) ($validated['emergency_contact_phone'] ?? ''));
+
+            $passenger->emergency_contact = match (true) {
+                $name !== '' && $phone !== '' => "{$name} ({$phone})",
+                $name !== '' => $name,
+                $phone !== '' => $phone,
+                default => null,
+            };
+        }
+
+        $passenger->save();
 
         return response()->json([
             'message' => 'Profile updated successfully.',
             'user' => [
+                'name' => $user->name,
+                'email' => $user->email,
+                'mobile_number' => $passenger->mobile_number,
                 'emergency_contact' => $passenger->emergency_contact,
             ],
+        ]);
+    }
+
+    /**
+     * Email change, step 1: email a 6-digit code to the NEW address (refused if it is already
+     * this account's email or registered to any account).
+     */
+    public function sendEmailChangeCode(Request $request, RegistrationEmailVerification $verification): JsonResponse
+    {
+        $validated = $request->validate(['email' => 'required|string|email|max:255']);
+
+        if (strtolower(trim($validated['email'])) === strtolower((string) $request->user()->email)) {
+            return response()->json([
+                'message' => 'This is already your email address.',
+                'errors' => ['email' => ['This is already your email address.']],
+            ], 422);
+        }
+
+        $verification->send($validated['email'], RegistrationEmailVerification::CONTEXT_EMAIL_CHANGE);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'We sent a 6-digit code to your new email.',
+            'resend_after_seconds' => RegistrationEmailVerification::RESEND_COOLDOWN_SECONDS,
+        ]);
+    }
+
+    /**
+     * Email change, step 2: the correct code for the new address saves it as this account's email.
+     */
+    public function verifyEmailChange(Request $request, RegistrationEmailVerification $verification): JsonResponse
+    {
+        $user = $request->user();
+
+        $validated = $request->validate([
+            // Re-checked here too: the address could have been taken since the code was sent.
+            'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users', 'email')->ignore($user->id)],
+            'code' => 'required|digits:6',
+        ], [
+            'email.unique' => 'This email is already registered to a Trivora account.',
+        ]);
+
+        $verification->confirm($validated['email'], $validated['code']);
+
+        $user->update(['email' => strtolower(trim($validated['email']))]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Email updated.',
+            'user' => ['email' => $user->email],
         ]);
     }
 

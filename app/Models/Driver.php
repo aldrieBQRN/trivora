@@ -50,7 +50,7 @@ class Driver extends Model
 
     public function getGcashQrUrlAttribute(): ?string
     {
-        return $this->gcash_qr_path ? asset('storage/' . $this->gcash_qr_path) : null;
+        return $this->gcash_qr_path ? \App\Services\SecureUpload::publicUrl($this->gcash_qr_path) : null;
     }
 
     public function getHasGcashQrAttribute(): bool

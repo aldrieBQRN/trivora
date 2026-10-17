@@ -180,6 +180,11 @@ Route::prefix('v1/passenger')->group(function () {
     Route::middleware('auth:sanctum')->group(function () {
         Route::get('/me', [PassengerAuthController::class, 'me']);
         Route::put('/profile', [PassengerAuthController::class, 'updateProfile']);
+        // Email change — a 6-digit code sent to the new address must be confirmed first.
+        Route::middleware('throttle:10,1')->group(function () {
+            Route::post('/profile/email/send-code', [PassengerAuthController::class, 'sendEmailChangeCode']);
+            Route::post('/profile/email/verify', [PassengerAuthController::class, 'verifyEmailChange']);
+        });
         Route::post('/logout', [PassengerAuthController::class, 'logout']);
 
         // In-app notifications + this device's Expo push token — always the signed-in account's

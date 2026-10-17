@@ -23,11 +23,13 @@ ENV COMPOSER_ALLOW_SUPERUSER=1 \
 # Install system dependencies & Nginx
 RUN apk add --no-cache \
     nginx \
+    su-exec \
     curl \
     git \
     mysql-client \
     libpng-dev \
     libjpeg-turbo-dev \
+    libwebp-dev \
     freetype-dev \
     libzip-dev \
     zip \
@@ -38,7 +40,7 @@ RUN apk add --no-cache \
     linux-headers
 
 # Install PHP extensions required by Laravel 12
-RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
+RUN docker-php-ext-configure gd --with-freetype --with-jpeg --with-webp \
     && docker-php-ext-install -j$(nproc) \
         pdo_mysql \
         mbstring \

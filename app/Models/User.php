@@ -92,7 +92,7 @@ class User extends Authenticatable
      */
     public function getProfilePhotoUrlAttribute(): ?string
     {
-        return $this->profile_photo_path ? asset('storage/' . $this->profile_photo_path) : null;
+        return $this->profile_photo_path ? \App\Services\SecureUpload::publicUrl($this->profile_photo_path) : null;
     }
 
     // -------------------------------------------------------------------------

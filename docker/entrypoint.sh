@@ -24,7 +24,23 @@ php artisan storage:link || true
 # ─── 3. START WEB SERVER FIRST ────────────────────────────────────────
 # Render requires port 80 within ~60 s. Start PHP-FPM + Nginx NOW so the
 # health-check passes, then do slower DB work in the background.
-echo "🔌 Starting PHP-FPM..."
+
+# PHP-FPM pool: the image default (5 workers) means only 5 requests run at once and the rest
+# queue. Each worker uses ~40-60 MB, and this container also runs the queue worker, scheduler
+# and Reverb (~150 MB), so size it to the instance: 512 MB → 6, 1 GB → 12, 2 GB → 25.
+FPM_MAX="${PHP_FPM_MAX_CHILDREN:-6}"
+FPM_SPARE=$(( FPM_MAX < 4 ? FPM_MAX : 4 ))
+cat > /usr/local/etc/php-fpm.d/zz-trivora.conf <<EOF
+[www]
+pm = dynamic
+pm.max_children = ${FPM_MAX}
+pm.start_servers = 1
+pm.min_spare_servers = 1
+pm.max_spare_servers = ${FPM_SPARE}
+pm.max_requests = 500
+EOF
+
+echo "🔌 Starting PHP-FPM (max ${FPM_MAX} workers)..."
 php-fpm -D
 
 for i in 1 2 3 4 5 6 7 8 9 10; do
@@ -128,6 +144,33 @@ chown -R www-data:www-data /var/lib/nginx
     chmod -R 777 /var/www/html/storage /var/www/html/bootstrap/cache
 
     echo "✅ Background database initialisation complete."
+
+    # 4f. Long-running processes, started only after migrations so none of them ever runs
+    # against an old schema. Each runs as www-data (same owner as storage/) and is restarted
+    # if it exits; queue:work also exits on its own every hour to release memory.
+    #  - queue:work   — queued mail/notifications (QUEUE_CONNECTION=database)
+    #  - schedule:work — routes/console.php (e.g. drivers:auto-offline-stale every minute)
+    #  - reverb:start — realtime driver location for the passenger app, reached through
+    #                   nginx at wss://<host>/app/... (docker/nginx.conf)
+    run_forever() {
+        while true; do
+            # `|| …` keeps `set -e` from ending the loop when the process fails.
+            su-exec www-data "$@" || echo "⚠️ '$*' exited ($?) — restarting in 5s"
+            sleep 5
+        done
+    }
+
+    if [ "$QUEUE_WORKER_ENABLED" != "false" ]; then
+        run_forever php artisan queue:work --sleep=3 --tries=3 --timeout=120 --max-time=3600 &
+    fi
+    if [ "$SCHEDULER_ENABLED" != "false" ]; then
+        run_forever php artisan schedule:work &
+    fi
+    if [ "$REVERB_ENABLED" != "false" ]; then
+        run_forever php artisan reverb:start --host=127.0.0.1 --port=8080 &
+    fi
+    echo "✅ Background workers started."
+    wait
 ) &
 
 # ─── 5. Start Nginx in FOREGROUND (PID 1 — keeps container alive) ─────

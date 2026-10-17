@@ -20,6 +20,8 @@ use Illuminate\Validation\ValidationException;
  *    RegistrationController::store() refuses an unverified email.
  *  - passenger app sign-up (API, no session): a correct code returns a short-lived
  *    verification token that PassengerAuthController::register() requires.
+ *  - passenger app email change (API, signed in): the code is sent to the NEW address and
+ *    confirm() checks it before PassengerAuthController::verifyEmailChange() saves it.
  * The code is kept hashed in the cache; nothing is written to the users table here.
  */
 class RegistrationEmailVerification
@@ -33,6 +35,7 @@ class RegistrationEmailVerification
     /** Email wording per sign-up flow ("Enter this code to confirm your email address …"). */
     public const CONTEXT_MTOP = 'for your Trivora MTOP application.';
     public const CONTEXT_PASSENGER = 'and finish creating your Trivora passenger account.';
+    public const CONTEXT_EMAIL_CHANGE = 'as the new email for your Trivora passenger account.';
 
     /**
      * @throws ValidationException
@@ -95,6 +98,17 @@ class RegistrationEmailVerification
         Cache::put($this->tokenKey($token), $this->normalize($email), now()->addMinutes(self::API_TOKEN_MINUTES));
 
         return $token;
+    }
+
+    /**
+     * API flow where the caller acts on the result itself (e.g. saving a signed-in user's new
+     * email): check the code, with no session flag or token issued.
+     *
+     * @throws ValidationException
+     */
+    public function confirm(string $email, string $code): void
+    {
+        $this->checkCode($email, $code);
     }
 
     /** Whether $token was issued for exactly this email (and is still valid). */

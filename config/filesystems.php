@@ -30,7 +30,23 @@ return [
 
     'disks' => [
 
-        'local' => [
+        // Every upload is written to one of these two disks: 'local' (private — application
+        // documents, appeal evidence; only served through SecureDocumentController) and
+        // 'public' (profile photos, GCash QRs). A container host like Render wipes its own disk
+        // on every deploy/restart, so set UPLOADS_DRIVER=s3 there to keep both in S3-compatible
+        // object storage (AWS S3, Cloudflare R2): AWS_BUCKET must be private, AWS_PUBLIC_BUCKET
+        // publicly readable at AWS_URL. No code changes — both disks keep their names.
+        'local' => env('UPLOADS_DRIVER') === 's3' ? [
+            'driver' => 's3',
+            'key' => env('AWS_ACCESS_KEY_ID'),
+            'secret' => env('AWS_SECRET_ACCESS_KEY'),
+            'region' => env('AWS_DEFAULT_REGION', 'auto'),
+            'bucket' => env('AWS_BUCKET'),
+            'endpoint' => env('AWS_ENDPOINT'),
+            'use_path_style_endpoint' => env('AWS_USE_PATH_STYLE_ENDPOINT', false),
+            'throw' => false,
+            'report' => false,
+        ] : [
             'driver' => 'local',
             'root' => storage_path('app/private'),
             'serve' => true,
@@ -38,7 +54,18 @@ return [
             'report' => false,
         ],
 
-        'public' => [
+        'public' => env('UPLOADS_DRIVER') === 's3' ? [
+            'driver' => 's3',
+            'key' => env('AWS_ACCESS_KEY_ID'),
+            'secret' => env('AWS_SECRET_ACCESS_KEY'),
+            'region' => env('AWS_DEFAULT_REGION', 'auto'),
+            'bucket' => env('AWS_PUBLIC_BUCKET', env('AWS_BUCKET')),
+            'url' => env('AWS_URL'),
+            'endpoint' => env('AWS_ENDPOINT'),
+            'use_path_style_endpoint' => env('AWS_USE_PATH_STYLE_ENDPOINT', false),
+            'throw' => false,
+            'report' => false,
+        ] : [
             'driver' => 'local',
             'root' => storage_path('app/public'),
             'url' => rtrim(env('APP_URL', 'http://localhost'), '/').'/storage',

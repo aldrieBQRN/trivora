@@ -7,10 +7,14 @@ import { createRoot } from 'react-dom/client';
 // resources/js/app.jsx
 import 'leaflet/dist/leaflet.css';
 
-const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
+const appName = import.meta.env.VITE_APP_NAME || 'Trivora';
 
 createInertiaApp({
-    title: (title) => `${title} - ${appName}`,
+    title: (title) => {
+        if (!title) return `${appName} | Track. Protect. Connect.`;
+        if (title.toUpperCase().includes('TRIVORA')) return title;
+        return `${title} | ${appName}`;
+    },
     resolve: (name) =>
         resolvePageComponent(
             `./Pages/${name}.jsx`,

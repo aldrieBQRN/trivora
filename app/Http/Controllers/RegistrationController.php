@@ -97,27 +97,27 @@ class RegistrationController extends Controller
             // delivery receipt (vehicles without OR/CR yet or new units), authorization letter
             // (claimed by someone other than the operator/owner).
             'documents'                         => 'required|array',
-            'documents.police_clearance'        => 'required|array|min:1',
+            'documents.police_clearance'        => 'required|array|min:1|max:5',
             'documents.police_clearance.*'      => 'required|file|mimes:pdf,jpg,jpeg,png,webp|max:5120',
-            'documents.health_certificate'      => 'required|array|min:1',
+            'documents.health_certificate'      => 'required|array|min:1|max:5',
             'documents.health_certificate.*'    => 'required|file|mimes:pdf,jpg,jpeg,png,webp|max:5120',
-            'documents.orcr_photocopy'          => 'required|array|min:1',
+            'documents.orcr_photocopy'          => 'required|array|min:1|max:5',
             'documents.orcr_photocopy.*'        => 'required|file|mimes:pdf,jpg,jpeg,png,webp|max:5120',
-            'documents.drivers_license'         => 'required|array|min:1',
+            'documents.drivers_license'         => 'required|array|min:1|max:5',
             'documents.drivers_license.*'       => 'required|file|mimes:pdf,jpg,jpeg,png,webp|max:5120',
-            'documents.barangay_clearance'      => 'required|array|min:1',
+            'documents.barangay_clearance'      => 'required|array|min:1|max:5',
             'documents.barangay_clearance.*'    => 'required|file|mimes:pdf,jpg,jpeg,png,webp|max:5120',
-            'documents.toda_clearance'          => 'required|array|min:1',
+            'documents.toda_clearance'          => 'required|array|min:1|max:5',
             'documents.toda_clearance.*'        => 'required|file|mimes:pdf,jpg,jpeg,png,webp|max:5120',
-            'documents.cedula'                  => 'required|array|min:1',
+            'documents.cedula'                  => 'required|array|min:1|max:5',
             'documents.cedula.*'                => 'required|file|mimes:pdf,jpg,jpeg,png,webp|max:5120',
-            'documents.driver_id'               => 'required|array|min:1',
+            'documents.driver_id'               => 'required|array|min:1|max:5',
             'documents.driver_id.*'             => 'required|file|mimes:pdf,jpg,jpeg,png,webp|max:5120',
-            'documents.tariff_list'             => 'required|array|min:1',
+            'documents.tariff_list'             => 'required|array|min:1|max:5',
             'documents.tariff_list.*'           => 'required|file|mimes:pdf,jpg,jpeg,png,webp|max:5120',
-            'documents.delivery_receipt'        => 'nullable|array',
+            'documents.delivery_receipt'        => 'nullable|array|max:5',
             'documents.delivery_receipt.*'      => 'file|mimes:pdf,jpg,jpeg,png,webp|max:5120',
-            'documents.authorization_letter'    => 'nullable|array',
+            'documents.authorization_letter'    => 'nullable|array|max:5',
             'documents.authorization_letter.*'  => 'file|mimes:pdf,jpg,jpeg,png,webp|max:5120',
         ];
 
@@ -162,7 +162,10 @@ class RegistrationController extends Controller
             ]);
         }
 
-        [$user, $reference, $application] = DB::transaction(function () use ($request, $ownerIsDriver) {
+        // Allocated before the transaction so the counter lock is never held during uploads.
+        $refNo = \App\Models\Application::generateReferenceNumber();
+
+        [$user, $reference, $application] = DB::transaction(function () use ($request, $ownerIsDriver, $refNo) {
             // 1. Create User
             $user = \App\Models\User::create([
                 'name'     => $request->input('first_name') . ' ' . $request->input('last_name'),
@@ -213,10 +216,7 @@ class RegistrationController extends Controller
                 'status'         => 'unregistered',
             ]);
 
-            // 4. Create Application — reference derived from the highest existing
-            //    suffix (not a row count), so seeded gaps can't cause a duplicate.
-            $refNo = \App\Models\Application::generateReferenceNumber();
-
+            // 4. Create Application ($refNo allocated above, outside this transaction).
             $application = \App\Models\Application::create([
                 'reference_number'        => $refNo,
                 'operator_id'             => $operator->id,
@@ -268,14 +268,14 @@ class RegistrationController extends Controller
                     if (isset($docKeys[$key])) {
                         $files = is_array($fileOrFiles) ? $fileOrFiles : [$fileOrFiles];
                         foreach ($files as $file) {
-                            $path = $file->store('applications/documents', 'local');
+                            $stored = \App\Services\SecureUpload::store($file, 'applications/documents', 'local', "documents.{$key}");
                             \App\Models\ApplicationDocument::create([
                                 'application_id' => $application->id,
                                 'document_type'  => $docKeys[$key],
-                                'file_name'      => $key . '_' . $file->getClientOriginalName(),
-                                'file_path'      => $path,
-                                'file_size_kb'   => round($file->getSize() / 1024),
-                                'mime_type'      => $file->getMimeType(),
+                                'file_name'      => \App\Services\SecureUpload::displayName($file, $stored['path'], $key . '_'),
+                                'file_path'      => $stored['path'],
+                                'file_size_kb'   => round($stored['size'] / 1024),
+                                'mime_type'      => $stored['mime'],
                                 'review_status'  => 'pending',
                             ]);
                         }

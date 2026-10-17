@@ -121,31 +121,31 @@ class MTOPController extends Controller
             'cr_number'        => 'required|string|max:50',
 
             'documents'                         => 'required|array',
-            'documents.police_clearance'        => 'required|array|min:1',
+            'documents.police_clearance'        => 'required|array|min:1|max:5',
             'documents.police_clearance.*'      => 'required|file|mimes:pdf,jpg,jpeg,png,webp|max:5120',
-            'documents.health_certificate'      => 'required|array|min:1',
+            'documents.health_certificate'      => 'required|array|min:1|max:5',
             'documents.health_certificate.*'    => 'required|file|mimes:pdf,jpg,jpeg,png,webp|max:5120',
-            'documents.orcr_photocopy'          => 'required|array|min:1',
+            'documents.orcr_photocopy'          => 'required|array|min:1|max:5',
             'documents.orcr_photocopy.*'        => 'required|file|mimes:pdf,jpg,jpeg,png,webp|max:5120',
-            'documents.drivers_license'         => 'required|array|min:1',
+            'documents.drivers_license'         => 'required|array|min:1|max:5',
             'documents.drivers_license.*'       => 'required|file|mimes:pdf,jpg,jpeg,png,webp|max:5120',
-            'documents.barangay_clearance'      => 'required|array|min:1',
+            'documents.barangay_clearance'      => 'required|array|min:1|max:5',
             'documents.barangay_clearance.*'    => 'required|file|mimes:pdf,jpg,jpeg,png,webp|max:5120',
-            'documents.toda_clearance'          => 'required|array|min:1',
+            'documents.toda_clearance'          => 'required|array|min:1|max:5',
             'documents.toda_clearance.*'        => 'required|file|mimes:pdf,jpg,jpeg,png,webp|max:5120',
-            'documents.cedula'                  => 'required|array|min:1',
+            'documents.cedula'                  => 'required|array|min:1|max:5',
             'documents.cedula.*'                => 'required|file|mimes:pdf,jpg,jpeg,png,webp|max:5120',
-            'documents.driver_id'               => 'required|array|min:1',
+            'documents.driver_id'               => 'required|array|min:1|max:5',
             'documents.driver_id.*'             => 'required|file|mimes:pdf,jpg,jpeg,png,webp|max:5120',
-            'documents.tariff_list'             => 'required|array|min:1',
+            'documents.tariff_list'             => 'required|array|min:1|max:5',
             'documents.tariff_list.*'           => 'required|file|mimes:pdf,jpg,jpeg,png,webp|max:5120',
-            'documents.delivery_receipt'        => 'nullable|array',
+            'documents.delivery_receipt'        => 'nullable|array|max:5',
             'documents.delivery_receipt.*'      => 'file|mimes:pdf,jpg,jpeg,png,webp|max:5120',
-            'documents.authorization_letter'    => 'nullable|array',
+            'documents.authorization_letter'    => 'nullable|array|max:5',
             'documents.authorization_letter.*'  => 'file|mimes:pdf,jpg,jpeg,png,webp|max:5120',
             // Renewal-only requirement (App\Models\ApplicationDocument::CANONICAL_REQUIREMENTS
             // 'prangkisa', renewal_only => true).
-            'documents.prangkisa'               => 'required_if:application_type,renewal|array|min:1',
+            'documents.prangkisa'               => 'required_if:application_type,renewal|array|min:1|max:5',
             'documents.prangkisa.*'             => 'file|mimes:pdf,jpg,jpeg,png,webp|max:5120',
         ];
 
@@ -200,7 +200,10 @@ class MTOPController extends Controller
             }
         }
 
-        return \Illuminate\Support\Facades\DB::transaction(function () use ($request, $user, $operator, $appType, $unitId, $ownerIsDriver) {
+        // Allocated before the transaction so the counter lock is never held during uploads.
+        $refNo = \App\Models\Application::generateReferenceNumber();
+
+        return \Illuminate\Support\Facades\DB::transaction(function () use ($request, $user, $operator, $appType, $unitId, $ownerIsDriver, $refNo) {
             $tricycle = null;
 
             // 1. Resolve Tricycle Unit
@@ -267,10 +270,7 @@ class MTOPController extends Controller
                 abort(422, 'No tricycle unit could be resolved for this application.');
             }
 
-            // 2. Create Application — reference derived from the highest existing
-            //    suffix (not a row count), so seeded gaps can't cause a duplicate.
-            $refNo = \App\Models\Application::generateReferenceNumber();
-
+            // 2. Create Application ($refNo allocated above, outside this transaction).
             $application = \App\Models\Application::create([
                 'reference_number' => $refNo,
                 'operator_id'      => $operator->id,
@@ -310,14 +310,14 @@ class MTOPController extends Controller
                     if (in_array($key, $validDocKeys, true)) {
                         $files = is_array($fileOrFiles) ? $fileOrFiles : [$fileOrFiles];
                         foreach ($files as $file) {
-                            $path = $file->store('applications/documents', 'local');
+                            $stored = \App\Services\SecureUpload::store($file, 'applications/documents', 'local', "documents.{$key}");
                             \App\Models\ApplicationDocument::create([
                                 'application_id' => $application->id,
                                 'document_type'  => $key,
-                                'file_name'      => $file->getClientOriginalName(),
-                                'file_path'      => $path,
-                                'file_size_kb'   => round($file->getSize() / 1024),
-                                'mime_type'      => $file->getMimeType(),
+                                'file_name'      => \App\Services\SecureUpload::displayName($file, $stored['path']),
+                                'file_path'      => $stored['path'],
+                                'file_size_kb'   => round($stored['size'] / 1024),
+                                'mime_type'      => $stored['mime'],
                                 'review_status'  => 'pending',
                             ]);
                         }
@@ -836,6 +836,14 @@ class MTOPController extends Controller
 
         $isPhysFix = in_array($app->status, ['failed_inspection']);
 
+        if (! $isPhysFix) {
+            $request->validate([
+                'documents'     => 'required|array',
+                'documents.*'   => 'required|array|min:1|max:5',
+                'documents.*.*' => 'required|file|mimes:pdf,jpg,jpeg,png,webp|max:5120',
+            ]);
+        }
+
         $statusBeforeFix = $app->status;
 
         \Illuminate\Support\Facades\DB::transaction(function () use ($request, $app, $isPhysFix, $user) {
@@ -899,14 +907,14 @@ class MTOPController extends Controller
                             // 2. Store the new files under this requirement
                             $files = is_array($fileOrFiles) ? $fileOrFiles : [$fileOrFiles];
                             foreach ($files as $file) {
-                                $path = $file->store('applications/documents', 'local');
+                                $stored = \App\Services\SecureUpload::store($file, 'applications/documents', 'local', "documents.{$key}");
                                 \App\Models\ApplicationDocument::create([
                                     'application_id' => $app->id,
                                     'document_type'  => $key,
-                                    'file_name'      => $file->getClientOriginalName(),
-                                    'file_path'      => $path,
-                                    'file_size_kb'   => round($file->getSize() / 1024),
-                                    'mime_type'      => $file->getMimeType(),
+                                    'file_name'      => \App\Services\SecureUpload::displayName($file, $stored['path']),
+                                    'file_path'      => $stored['path'],
+                                    'file_size_kb'   => round($stored['size'] / 1024),
+                                    'mime_type'      => $stored['mime'],
                                     'review_status'  => 'pending',
                                     'review_notes'   => null,
                                 ]);

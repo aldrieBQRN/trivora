@@ -1397,6 +1397,128 @@ const FAQS = [
   }
 ];
 
+const SEO_STRUCTURED_DATA = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "GovernmentOrganization",
+      "@id": "https://trivora-mh55.onrender.com/#organization",
+      "name": "Traffic Management Office (TMO) & Business Permits and Licensing Office (BPLO)",
+      "alternateName": ["TRIVORA", "Pamahalaang Bayan ng Nasugbu - TMO"],
+      "url": "https://trivora-mh55.onrender.com",
+      "logo": "https://trivora-mh55.onrender.com/images/embolem-logo.png",
+      "image": "https://trivora-mh55.onrender.com/images/og-preview.png",
+      "description": "Official municipal smart tricycle regulatory platform and franchise management system of the Municipality of Nasugbu, Batangas.",
+      "telephone": "+63-43-740-8112",
+      "email": "tmo@nasugbu.gov.ph",
+      "address": {
+        "@type": "PostalAddress",
+        "streetAddress": "F. Alix Street, Pamahalaang Bayan ng Nasugbu",
+        "addressLocality": "Nasugbu",
+        "addressRegion": "Batangas",
+        "postalCode": "4231",
+        "addressCountry": "PH"
+      },
+      "geo": {
+        "@type": "GeoCoordinates",
+        "latitude": 14.0772,
+        "longitude": 120.6331
+      },
+      "openingHoursSpecification": [
+        {
+          "@type": "OpeningHoursSpecification",
+          "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
+          "opens": "08:00",
+          "closes": "17:00"
+        }
+      ],
+      "areaServed": {
+        "@type": "AdministrativeArea",
+        "name": "Nasugbu, Batangas, Philippines"
+      }
+    },
+    {
+      "@type": "GovernmentService",
+      "@id": "https://trivora-mh55.onrender.com/#service-mtop",
+      "name": "Motorized Tricycle Operator's Permit (MTOP) Franchise Registration & Verification",
+      "serviceType": "Public Transportation Franchise & Safety Management",
+      "provider": {
+        "@id": "https://trivora-mh55.onrender.com/#organization"
+      },
+      "areaServed": {
+        "@type": "AdministrativeArea",
+        "name": "Nasugbu, Batangas"
+      },
+      "description": "Digital application, inspection scheduling, fee computation, and plate verification for motorized tricycles in Nasugbu, Batangas."
+    },
+    {
+      "@type": "WebSite",
+      "@id": "https://trivora-mh55.onrender.com/#website",
+      "url": "https://trivora-mh55.onrender.com",
+      "name": "TRIVORA - Track. Protect. Connect.",
+      "description": "Smart Tricycle Management System of the Municipality of Nasugbu, Batangas.",
+      "publisher": {
+        "@id": "https://trivora-mh55.onrender.com/#organization"
+      },
+      "inLanguage": "en-PH"
+    },
+    {
+      "@type": "FAQPage",
+      "@id": "https://trivora-mh55.onrender.com/#faq",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "What papers do I need to apply for or renew an MTOP franchise in Nasugbu?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Required documents include photocopy of OR/CR (or Delivery Receipt if newly purchased), back-to-back photocopy of Driver's License (Professional / Restriction 1/A1), original Barangay Clearance, Police Clearance or LGU Certification, Driver's Health Certificate, Cedula (Community Tax Certificate), TODA / NAFTODA / ACTODAN Clearance, Driver's ID, sidecar Tariff Fee Display, and Xerox of existing Prangkisa (for renewals)."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "How can passengers check if a tricycle has an active permit in Nasugbu?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Type the tricycle plate number in the online verification portal on the TRIVORA website. It instantly cross-references municipal records with the TMO and BPLO database to verify whether the franchise is active, valid, and authorized to operate."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "How does daily color-coding and route monitoring work in Nasugbu?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "TRIVORA tracks assigned weekly color-coding schedules and authorized municipal TODA routes for operators and drivers, preventing coding violations and ensuring orderly traffic flow across Nasugbu barangays."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Where and how do I pay my tricycle franchise fees in Nasugbu?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "After your tricycle physical inspection is conducted and approved by TMO personnel, payment is made in person at the Municipal Treasurer cashier at the Nasugbu Municipal Hall."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "How long does the online tricycle MTOP application process take?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Most applications are completed in 2 to 3 working days once the unit's physical inspection is successfully conducted by TMO personnel."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "What should I do if my tricycle franchise has already expired?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Log into your operator account on TRIVORA, proceed to Franchise Renewal, upload updated OR/CR and clearances, and present your tricycle at the TMO testing bay for physical inspection to reinstate your operating permit."
+          }
+        }
+      ]
+    }
+  ]
+};
+
 export default function Welcome() {
   const [plateQuery, setPlateQuery] = useState('');
   const [scrolled, setScrolled] = useState(false);
@@ -1648,7 +1770,14 @@ export default function Welcome() {
 
   return (
     <div className="wl-root">
-      <Head title="TRIVORA | Smart Tricycle Management System — Nasugbu, Batangas" />
+      <Head>
+        <title>TRIVORA | Track. Protect. Connect.</title>
+        <meta name="description" content="TRIVORA is the official Smart Tricycle Management System of the Municipality of Nasugbu, Batangas. Verify tricycle franchises, inspect color-coding schedules, view digital fare matrices, and apply for MTOP permits online." />
+        <link rel="canonical" href="https://trivora-mh55.onrender.com" />
+        <script type="application/ld+json">
+          {JSON.stringify(SEO_STRUCTURED_DATA)}
+        </script>
+      </Head>
       <style dangerouslySetInnerHTML={{ __html: CSS }} />
 
       {/* ══════ STICKY NAVBAR (CRISP WHITE BACKGROUND) ══════════ */}

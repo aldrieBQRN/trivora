@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Support\Facades\DB;
 
 class Application extends Model
 {
@@ -57,17 +58,37 @@ class Application extends Model
      * concurrent insert winning the same candidate), so this is safe to call
      * inside the caller's transaction.
      */
+    /**
+     * Next APP-YYYY-NNNNN, allocated from a locked counter row so simultaneous submissions never
+     * get the same number. Call it BEFORE opening the submission's own transaction: inside one,
+     * the counter lock would be held until that whole submission (uploads included) commits,
+     * making every other applicant wait. A submission that fails afterwards leaves a gap.
+     */
     public static function generateReferenceNumber(): string
     {
         $prefix = 'APP-' . now()->year . '-';
 
-        $highest = (int) static::where('reference_number', 'like', $prefix . '%')
-            ->pluck('reference_number')
-            ->map(fn (string $ref): int => (int) substr($ref, strlen($prefix)))
-            ->max();
-
         do {
-            $reference = $prefix . str_pad(++$highest, 5, '0', STR_PAD_LEFT);
+            $next = DB::transaction(function () use ($prefix) {
+                if (! DB::table('reference_counters')->where('name', $prefix)->exists()) {
+                    // First use of this series: continue after the highest existing suffix.
+                    $highest = (int) static::where('reference_number', 'like', $prefix . '%')
+                        ->pluck('reference_number')
+                        ->map(fn (string $ref): int => (int) substr($ref, strlen($prefix)))
+                        ->max();
+                    DB::table('reference_counters')->insertOrIgnore([
+                        'name' => $prefix, 'value' => $highest, 'created_at' => now(), 'updated_at' => now(),
+                    ]);
+                }
+
+                $value = DB::table('reference_counters')->where('name', $prefix)->lockForUpdate()->value('value') + 1;
+                DB::table('reference_counters')->where('name', $prefix)->update(['value' => $value, 'updated_at' => now()]);
+
+                return $value;
+            });
+
+            $reference = $prefix . str_pad($next, 5, '0', STR_PAD_LEFT);
+            // A number inserted outside this counter (e.g. seeders) is skipped, never reused.
         } while (static::where('reference_number', $reference)->exists());
 
         return $reference;

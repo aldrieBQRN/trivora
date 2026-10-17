@@ -10,6 +10,7 @@ import {
     vehicleBodyTypes,
     VEHICLE_DETAIL_FIELDS
 } from '@/data/registrationRequirements';
+import { MAX_FILES_PER_DOCUMENT, prepareUploads, showUploadErrors } from '@/lib/prepareUploads';
 
 /* ─────────────────────────────────────────────────────────────────────────
    Shared franchise registration UI — the design system of Public Registration
@@ -1440,6 +1441,18 @@ export function FileUpload({ id, label, hint, required, conditional, files = [],
     const videoRef = useRef(null);
     const streamRef = useRef(null);
 
+    // Every path into this tile (picker, camera capture, camera-app fallback) goes through the
+    // same type/size checks and photo downscaling before it reaches the form.
+    const addFiles = async (list) => {
+        const { files: accepted, errors } = await prepareUploads(list);
+        const room = Math.max(0, MAX_FILES_PER_DOCUMENT - files.length);
+        if (accepted.length > room) {
+            errors.push(`Up to ${MAX_FILES_PER_DOCUMENT} files can be attached to ${label}.`);
+        }
+        showUploadErrors(errors);
+        if (room > 0 && accepted.length) onUpload(accepted.slice(0, room));
+    };
+
     useEffect(() => {
         const urls = files.map(file => {
             if (file) {
@@ -1508,7 +1521,7 @@ export function FileUpload({ id, label, hint, required, conditional, files = [],
         canvas.toBlob((blob) => {
             if (blob) {
                 const capturedFile = new File([blob], `captured_doc_${Date.now()}.jpg`, { type: 'image/jpeg' });
-                onUpload([capturedFile]);
+                addFiles([capturedFile]);
                 stopCamera();
             }
         }, 'image/jpeg', 0.9);
@@ -1550,7 +1563,7 @@ export function FileUpload({ id, label, hint, required, conditional, files = [],
                 style={{ display: 'none' }}
                 onChange={e => {
                     if (e.target.files && e.target.files.length > 0) {
-                        onUpload(e.target.files);
+                        addFiles(e.target.files);
                         e.target.value = '';
                     }
                 }}
@@ -1713,7 +1726,7 @@ export function FileUpload({ id, label, hint, required, conditional, files = [],
                                         style={{ display: 'none' }}
                                         onChange={e => {
                                             if (e.target.files && e.target.files.length > 0) {
-                                                onUpload(e.target.files);
+                                                addFiles(e.target.files);
                                                 stopCamera();
                                             }
                                         }}

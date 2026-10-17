@@ -15,6 +15,7 @@ import {
     Settings,
 } from 'lucide-react';
 import { PHYSICAL_INSPECTION_ITEMS } from '@/data/physicalInspectionItems';
+import { MAX_FILES_PER_DOCUMENT, prepareUploads, showUploadErrors } from '@/lib/prepareUploads';
 
 // Shared soft, layered shadow token — same elevation language used across the redesigned TMO
 // and Operator panels, so this page reads as one consistent product rather than a different template.
@@ -61,10 +62,16 @@ export default function MTOPFix({ application }) {
     const [repairsConfirmed, setRepairsConfirmed] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    const handleFileSelect = (docId, files) => {
+    const handleFileSelect = async (docId, files) => {
+        const { files: accepted, errors } = await prepareUploads(files);
+        if (accepted.length > MAX_FILES_PER_DOCUMENT) {
+            errors.push(`Up to ${MAX_FILES_PER_DOCUMENT} files can be attached per document.`);
+        }
+        showUploadErrors(errors);
+        if (!accepted.length) return;
         setNewFiles(prev => ({
             ...prev,
-            [docId]: files
+            [docId]: accepted.slice(0, MAX_FILES_PER_DOCUMENT)
         }));
     };
 

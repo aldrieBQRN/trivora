@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, ZoomControl } from 'react-leaflet';
 import L from 'leaflet';
-import { Navigation, Maximize2, Minimize2, MapPin, Compass, List } from 'lucide-react';
+import { Navigation, Maximize2, Minimize2, MapPin, Compass, List, ChevronDown, Layers } from 'lucide-react';
 import 'leaflet/dist/leaflet.css';
 
 export const resolveTricycleStatus = (status, isOnline = true, connectionStatus = 'online') => {
@@ -134,6 +134,10 @@ export default function TricycleMap({
     const [mapRef, setMapRef] = useState(null);
     const [isFullscreen, setIsFullscreen] = useState(false);
     const [showPanel, setShowPanel] = useState(true);
+    const [showLegend, setShowLegend] = useState(true);
+    // Full View on phones stacks the units panel under the map with a -mt-4 overlap,
+    // so lift the legend by the same amount to keep it clear of the panel.
+    const legendOffset = isFullscreen && fullscreenPanel && showPanel ? 'mb-4 md:mb-0' : '';
 
     const [isFollowing, setIsFollowing] = useState(false);
     const [isFlying, setIsFlying] = useState(false);
@@ -288,7 +292,7 @@ export default function TricycleMap({
     return (
         <div
             ref={containerRef}
-            className={`relative flex flex-col overflow-hidden bg-slate-900 border border-slate-200/90 shadow-sm ${
+            className={`relative isolate flex flex-col overflow-hidden bg-slate-900 border border-slate-200/90 shadow-sm ${
                 isFullscreen
                     ? 'fixed inset-0 z-[99999] w-screen h-[100dvh] rounded-none md:flex-row [&_.leaflet-bottom]:mb-4 md:[&_.leaflet-bottom]:mb-0 md:[&_.leaflet-bottom.leaflet-right]:mr-4'
                     : 'h-full w-full rounded-2xl'
@@ -479,23 +483,41 @@ export default function TricycleMap({
 
                 {/* FLOATING LEGEND — compacted (smaller padding/font/dot size) on mobile so it
                     doesn't dominate a shorter mobile map viewport; unchanged from the original at
-                    sm+ breakpoints. */}
-                <div className="pointer-events-auto absolute bottom-2 left-2 sm:bottom-4 sm:left-4 z-[9999] min-w-[150px] sm:min-w-[200px] rounded-xl border border-slate-200 bg-white/95 p-2.5 sm:p-3.5 shadow-[0_4px_12px_rgba(15,23,42,0.08)] backdrop-blur-[6px]">
-                    <p className="mb-1.5 sm:mb-2 border-b border-slate-200 pb-1 sm:pb-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-900">
-                        Status Legend
-                    </p>
+                    sm+ breakpoints. Collapsible to a small pill so it doesn't cover pins. */}
+                {showLegend ? (
+                    <div className={`pointer-events-auto absolute bottom-2 left-2 sm:bottom-4 sm:left-4 z-[1000] ${legendOffset} min-w-[150px] sm:min-w-[200px] rounded-xl border border-slate-200 bg-white/95 p-2.5 sm:p-3.5 shadow-[0_4px_12px_rgba(15,23,42,0.08)] backdrop-blur-[6px]`}>
+                        <button
+                            type="button"
+                            onClick={() => setShowLegend(false)}
+                            title="Hide Legend"
+                            className="mb-1.5 sm:mb-2 flex w-full items-center justify-between gap-2 border-b border-slate-200 pb-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-900 hover:text-[#182B62]"
+                        >
+                            Status Legend
+                            <ChevronDown size={14} className="text-slate-500" />
+                        </button>
 
-                    <div className="flex flex-col gap-1.5 sm:gap-2">
-                        {STATUS_LEGEND_ITEMS.map((item) => (
-                            <div key={item.key} className="flex items-center gap-1.5 sm:gap-2">
-                                <LegendMarkerPin color={item.color} isOffline={item.isOffline} />
-                                <span className="text-[11.5px] sm:text-[12.5px] font-medium text-slate-800 leading-tight">
-                                    {item.label}
-                                </span>
-                            </div>
-                        ))}
+                        <div className="flex flex-col gap-1.5 sm:gap-2">
+                            {STATUS_LEGEND_ITEMS.map((item) => (
+                                <div key={item.key} className="flex items-center gap-1.5 sm:gap-2">
+                                    <LegendMarkerPin color={item.color} isOffline={item.isOffline} />
+                                    <span className="text-[11.5px] sm:text-[12.5px] font-medium text-slate-800 leading-tight">
+                                        {item.label}
+                                    </span>
+                                </div>
+                            ))}
+                        </div>
                     </div>
-                </div>
+                ) : (
+                    <button
+                        type="button"
+                        onClick={() => setShowLegend(true)}
+                        title="Show Legend"
+                        className={`pointer-events-auto absolute bottom-2 left-2 sm:bottom-4 sm:left-4 z-[1000] ${legendOffset} inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-2 sm:px-3 py-1.5 text-[12.5px] font-semibold text-[#182B62] shadow-sm hover:bg-slate-50 transition-colors`}
+                    >
+                        <Layers size={13} />
+                        <span>Legend</span>
+                    </button>
+                )}
             </div>
 
             {/* Phones (portrait): stacked under the map. md+ (tablets, landscape phones,

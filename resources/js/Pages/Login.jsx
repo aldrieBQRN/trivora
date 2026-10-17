@@ -1146,7 +1146,11 @@ export default function Login({ mode = 'login', status, email, resendAfterSecond
 
     return (
         <div className="ol-root">
-            <Head title={`${mode === 'login' ? 'Sign In' : mode === 'change' ? 'Set Your Password' : 'Reset Password'} | TRIVORA — Nasugbu, Batangas`} />
+            <Head>
+                <title>{`${mode === 'login' ? 'Sign In' : mode === 'change' ? 'Set Your Password' : 'Reset Password'} | TRIVORA — Nasugbu, Batangas`}</title>
+                <meta name="description" content="Sign in to the TRIVORA unified portal for TMO staff, BPLO licensing officers, and authorized tricycle operators in Nasugbu, Batangas." />
+                <link rel="canonical" href="https://trivora-mh55.onrender.com/login" />
+            </Head>
             <style dangerouslySetInnerHTML={{ __html: CSS }} />
 
             {/* ── Brand Side (Left Column: Royal Blue + Backdrop) ── */}

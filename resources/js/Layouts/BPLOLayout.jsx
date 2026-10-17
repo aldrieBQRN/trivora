@@ -177,9 +177,13 @@ export default function BPLOLayout({ children, title, role = "BPLO Officer", bre
                 {/* Logo & Portal Branding Header */}
                 <div className={`flex h-[72px] shrink-0 items-center justify-between px-4 border-b border-white/[0.08] ${collapsed ? 'lg:justify-center lg:px-0' : ''}`}>
                     <Link href="/bplo-dashboard" className="group flex min-w-0 items-center gap-3.5" aria-label="Trivora BPLO Portal — Dashboard">
-                        {/* The logo image already carries the TRIVORA wordmark, so no duplicate text label */}
-                        <div className={`flex h-10 shrink-0 items-center justify-center rounded-xl bg-white px-2.5 py-1.5 shadow-sm transition-transform group-hover:scale-[1.03] lg:h-11 lg:px-3 ${collapsed ? 'lg:!h-10 lg:w-[52px] lg:!px-1.5' : ''}`}>
-                            <img src="/images/logo.png" alt="Trivora" className={`h-6 w-auto object-contain lg:h-7 ${collapsed ? 'lg:!h-auto lg:w-full' : ''}`} />
+                        <div className={`flex h-10 shrink-0 items-center justify-center rounded-xl bg-white shadow-sm transition-transform group-hover:scale-[1.03] ${collapsed ? 'px-2.5 py-1.5 lg:h-11 lg:w-11 lg:p-1.5' : 'px-2.5 py-1.5 lg:h-11 lg:px-3'}`}>
+                            {/* Full logo when sidebar is open or on mobile drawer */}
+                            <img src="/images/logo.png" alt="Trivora" className={`h-6 w-auto object-contain lg:h-7 ${collapsed ? 'lg:hidden' : ''}`} />
+                            {/* Emblem logo only when sidebar is collapsed in laptop/desktop view */}
+                            {collapsed && (
+                                <img src="/images/embolem-logo.png" alt="Trivora" className="hidden h-7 w-7 object-contain lg:block" />
+                            )}
                         </div>
                         <span className={`flex shrink-0 flex-col justify-center leading-none ${collapsed ? 'lg:hidden' : ''}`}>
                             <span className="text-[15px] font-black tracking-wide text-white">BPLO</span>

@@ -86,7 +86,7 @@ class ProfileController extends Controller
         $user = $request->user();
         $oldPath = $user->profile_photo_path;
 
-        $user->update(['profile_photo_path' => $request->file('photo')->store('profile_photos', 'public')]);
+        $user->update(['profile_photo_path' => \App\Services\SecureUpload::store($request->file('photo'), 'profile_photos', 'public', 'photo', 1024)['path']]);
 
         if ($oldPath) {
             Storage::disk('public')->delete($oldPath);

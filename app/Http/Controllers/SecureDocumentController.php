@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\ApplicationDocument;
 use App\Models\ViolationAppeal;
+use App\Services\SecureUpload;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
@@ -150,10 +151,18 @@ class SecureDocumentController extends Controller
             'X-Content-Type-Options' => 'nosniff',
         ];
 
-        if ($mimeType) {
+        // Only PDFs and images render inline. Anything else (e.g. an HTML file stored before
+        // uploads were validated) is forced to download as opaque bytes, so it can never run
+        // in a staff member's session.
+        $mimeType ??= Storage::disk($disk)->mimeType($normalized) ?: null;
+        if (in_array($mimeType, SecureUpload::SAFE_INLINE_MIMES, true)) {
             $headers['Content-Type'] = $mimeType;
+
+            return Storage::disk($disk)->response($normalized, $downloadName, $headers);
         }
 
-        return Storage::disk($disk)->response($normalized, $downloadName, $headers);
+        $headers['Content-Type'] = 'application/octet-stream';
+
+        return Storage::disk($disk)->download($normalized, $downloadName, $headers);
     }
 }
