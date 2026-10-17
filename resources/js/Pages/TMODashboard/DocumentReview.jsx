@@ -142,6 +142,21 @@ export default function DocumentReview({ application }) {
     const rejectedCount = requirements.filter(r => docStatuses[r.id] === 'rejected').length;
 
     const mandatoryApprovedCount = mandatoryRequirements.filter(r => docStatuses[r.id] === 'approved').length;
+
+    // Bulk-approve every mandatory requirement, clearing any correction flags on them.
+    const handleApproveAllMandatory = () => {
+        const ids = mandatoryRequirements.map(r => r.id);
+        setDocStatuses(prev => {
+            const next = { ...prev };
+            ids.forEach(id => { next[id] = 'approved'; });
+            return next;
+        });
+        setRejectionReasons(prev => {
+            const next = { ...prev };
+            ids.forEach(id => { delete next[id]; });
+            return next;
+        });
+    };
     const mandatoryPct = mandatoryRequirements.length > 0 ? Math.round((mandatoryApprovedCount / mandatoryRequirements.length) * 100) : 0;
 
 
@@ -202,6 +217,25 @@ export default function DocumentReview({ application }) {
                     onClose={() => setActivePreviewDoc(null)}
                     maxWidth="4xl"
                     title={`${previewDocLabel}${previewCategoryDocs.length > 1 ? ` (${activeSubDocIndex + 1} of ${previewCategoryDocs.length})` : ''}`}
+                    footer={
+                        <>
+                            <Button
+                                variant="danger"
+                                icon={X}
+                                onClick={() => { const id = activePreviewDoc; setActivePreviewDoc(null); openRejectModal(id); }}
+                            >
+                                {docStatuses[activePreviewDoc] === 'rejected' ? 'Edit Correction' : 'Reject'}
+                            </Button>
+                            <Button
+                                variant="success"
+                                icon={Check}
+                                disabled={docStatuses[activePreviewDoc] === 'approved'}
+                                onClick={() => { if (docStatuses[activePreviewDoc] !== 'approved') handleApprove(activePreviewDoc); setActivePreviewDoc(null); }}
+                            >
+                                {docStatuses[activePreviewDoc] === 'approved' ? 'Verified' : 'Approve'}
+                            </Button>
+                        </>
+                    }
                 >
                     {previewCategoryDocs.length > 1 && (
                         <div className="mb-4 flex gap-2 overflow-x-auto border-b border-slate-200 pb-3 custom-scrollbar">
@@ -350,9 +384,21 @@ export default function DocumentReview({ application }) {
                                         </p>
                                     </div>
                                 </div>
-                                <span className="text-xs font-bold text-slate-700 bg-white border border-slate-200 px-2.5 py-1 rounded-lg w-fit">
-                                    {mandatoryApprovedCount} of {mandatoryRequirements.length} Verified
-                                </span>
+                                {mandatoryApprovedCount === mandatoryRequirements.length ? (
+                                    <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-lg w-fit">
+                                        <CheckCircle2 size={13} strokeWidth={2.4} />
+                                        All Verified
+                                    </span>
+                                ) : (
+                                    <button
+                                        type="button"
+                                        onClick={handleApproveAllMandatory}
+                                        className="inline-flex h-8 items-center gap-1.5 rounded-xl bg-[#182B62] px-3 text-xs font-bold text-white shadow-sm hover:bg-[#25449B] transition-colors w-fit cursor-pointer"
+                                    >
+                                        <Check size={13} strokeWidth={2.6} />
+                                        Approve All
+                                    </button>
+                                )}
                             </div>
 
                             <div className="p-4 sm:p-5 space-y-3">

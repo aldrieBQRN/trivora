@@ -290,14 +290,14 @@ class DashboardController extends Controller
     {
         $format = $this->exportFormat($request);
         $registryList = $this->registryListData();
-        $filename = $this->exportFilename('trivora_active_tricycle_registry_' . now()->toDateString(), $format);
+        $filename = $this->exportFilename('trivora_tricycle_registry_' . now()->toDateString(), $format);
 
-        $this->logExport($format, $filename, 'Active Tricycle Registry', 'tmo_registry', $registryList->count());
+        $this->logExport($format, $filename, 'Tricycle Registry', 'tmo_registry', $registryList->count());
 
         return $this->streamMunicipalReport($format, [
-            'title'      => 'Active Tricycle Registry',
+            'title'      => 'Tricycle Registry',
             'subtitle'   => 'As of: ' . now()->format('F d, Y \a\t h:i A'),
-            'sheetTitle' => 'Active Tricycle Registry',
+            'sheetTitle' => 'Tricycle Registry',
             'docRef'     => 'LGU-NAS-TMO-REGISTRY',
             'columns'    => 9,
             'kpis'       => [

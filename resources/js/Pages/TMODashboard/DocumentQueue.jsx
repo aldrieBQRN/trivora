@@ -458,7 +458,7 @@ function StatusPill({ status }) {
     const isPending = status === 'Pending';
     return (
         <span
-            className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-bold border ${
+            className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase border ${
                 isPending
                     ? 'border-amber-200 bg-amber-50 text-amber-800'
                     : 'border-rose-200 bg-rose-50 text-rose-700'

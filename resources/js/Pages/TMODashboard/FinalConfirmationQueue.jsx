@@ -16,7 +16,7 @@ function StatusPill({ status }) {
     const isPending = status === 'Awaiting Final Confirmation' || status === 'awaiting_tmo_confirmation' || status === 'Pending';
     return (
         <span
-            className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-bold shadow-sm transition-colors ${
+            className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase shadow-sm transition-colors ${
                 isPending
                     ? 'border border-amber-200 bg-amber-50 text-amber-800'
                     : 'border border-emerald-200 bg-emerald-50 text-emerald-700'

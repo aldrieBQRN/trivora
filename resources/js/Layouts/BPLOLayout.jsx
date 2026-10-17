@@ -41,6 +41,7 @@ export default function BPLOLayout({ children, title, role = "BPLO Officer", bre
             group: "Management",
             links: [
                 { name: 'Staff Management',     icon: Users,           route: '/bplo/users'      },
+                { name: 'System Activity Logs', icon: ScrollText,      route: '/bplo/activity-logs' },
             ]
         }
     ];

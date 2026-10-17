@@ -64,7 +64,8 @@ function formatDate(isoDate) {
 
 export default function MyTricycles({ tricycles = [], auth }) {
     const operatorName = auth?.user?.name || 'Driver';
-    const [query, setQuery] = useState('');
+    // Prefilled from ?search= so other pages (e.g. MTOP application details) can link to a specific unit.
+    const [query, setQuery] = useState(() => new URLSearchParams(window.location.search).get('search') || '');
     const [fleetFilter, setFleetFilter] = useState('all');
 
     // Background refresh of the driver's own tricycles: an approval or activation completed by
@@ -133,18 +134,8 @@ export default function MyTricycles({ tricycles = [], auth }) {
                             My Tricycles
                         </h1>
                         <p className="mt-1 text-xs sm:text-sm text-slate-600 max-w-2xl leading-relaxed">
-                            {registered.length > 0
-                                ? `${registered.length} registered unit${registered.length !== 1 ? 's' : ''} • Franchise specs & live tracking connectivity`
-                                : 'Registered tricycle units linked to your approved franchise applications.'}
+                            View your registered tricycle units, franchise details, and tracking status.
                         </p>
-                    </div>
-                    <div className="flex flex-wrap items-center gap-2.5">
-                        <Link
-                            href={route('operator.mtop.create')}
-                            className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-xl bg-[#182B62] px-3.5 text-xs font-bold text-white shadow-sm hover:bg-[#25449B] transition-colors font-['Plus_Jakarta_Sans',sans-serif]"
-                        >
-                            <span>Register New Unit</span>
-                        </Link>
                     </div>
                 </div>
 

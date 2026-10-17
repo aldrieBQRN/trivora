@@ -28,6 +28,31 @@ const CARD_SHADOW = 'shadow-[0_1px_3px_0_rgba(15,23,42,0.07),0_10px_28px_-8px_rg
 
 const WEEKDAY_ORDER = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
+// Max units listed on the dashboard's "My Tricycles" card — the full list lives on the Fleet page.
+const MAX_UNITS_SHOWN = 3;
+
+// A franchise within this many days of expiry counts as "expiring" / a renewal alert.
+const RENEWAL_ALERT_DAYS = 30;
+
+const isExpiringSoon = (t) => !t.is_expired && t.mtop_days_left !== null && t.mtop_days_left <= RENEWAL_ALERT_DAYS;
+
+const MTOP_THEME = { Expired: 'red', Renewing: 'amber', Expiring: 'amber', Valid: 'emerald' };
+
+// Lower = more urgent; drives the ordering of the multi-unit list.
+const unitUrgency = (t) => {
+    if (t.is_expired) return t.has_pending_renewal ? 1 : 0;
+    if (isExpiringSoon(t)) return 2;
+    return 3;
+};
+
+function unitMtopBadge(t) {
+    if (t.has_pending_renewal) return { label: 'Renewing', className: 'border-amber-200 bg-amber-50 text-amber-700' };
+    if (t.is_expired) return { label: 'Expired', className: 'border-red-200 bg-red-50 text-red-700' };
+    if (isExpiringSoon(t)) return { label: 'Expiring', className: 'border-amber-200 bg-amber-50 text-amber-700' };
+    if (t.mtop_status === 'Valid') return { label: 'Valid', className: 'border-emerald-200 bg-emerald-50 text-emerald-700' };
+    return { label: t.mtop_status || 'Pending', className: 'border-slate-200 bg-slate-50 text-slate-600' };
+}
+
 export default function OperatorDashboard({ operator, stats, tricycles, recentViolations, expiringRegistrations = [], applicationProgress, activeCodingSchemes = [] }) {
     const [currentTime, setCurrentTime] = useState(new Date());
 
@@ -68,13 +93,62 @@ export default function OperatorDashboard({ operator, stats, tricycles, recentVi
         return codingRules.find((r) => r.day === todayName) || { day: todayName, digits: 'None' };
     }, [codingRules, todayName]);
 
-    const expiredUnit = tricycles.find((t) => t.is_expired);
     const finesDue = Number(stats.pending_fine_amount) > 0;
     const violationCount = recentViolations.length;
     const primaryUnit = tricycles[0];
-    const soonestExpiring = expiringRegistrations.length > 0
-        ? [...expiringRegistrations].sort((a, b) => a.days_left - b.days_left)[0]
-        : null;
+    const unitCount = tricycles.length;
+    const isFleet = unitCount > 1;
+
+    // Fleet-wide franchise summary — an operator can own several units, so every card/alert
+    // below reasons over all of them instead of just the first tricycle.
+    const { expiredUnits, unrenewedExpiredUnits, validCount, attentionCount, sortedUnits } = useMemo(() => {
+        const expired = tricycles.filter((t) => t.is_expired);
+        const expiringSoon = tricycles.filter(isExpiringSoon);
+        const byDaysLeft = (a, b) => (a.mtop_days_left ?? Infinity) - (b.mtop_days_left ?? Infinity);
+        return {
+            expiredUnits: expired,
+            unrenewedExpiredUnits: expired.filter((t) => !t.has_pending_renewal),
+            validCount: tricycles.filter((t) => t.mtop_status === 'Valid').length,
+            attentionCount: expired.length + expiringSoon.length,
+            sortedUnits: [...tricycles].sort((a, b) => unitUrgency(a) - unitUrgency(b) || byDaysLeft(a, b)),
+        };
+    }, [tricycles]);
+    const hasExpired = expiredUnits.length > 0;
+    const expiredUnitList = expiredUnits.map((t) => `#${t.coding_scheme_number || 'N/A'}`).join(', ');
+
+    // MTOP Franchise card — one unit shows its own status; a fleet shows the most urgent count.
+    const mtopCard = (() => {
+        if (unitCount === 0) return { value: 'None', badge: 'Franchise', meta: 'No franchise on record', theme: 'blue' };
+        if (!isFleet) {
+            const { label } = unitMtopBadge(primaryUnit);
+            const hasExpiry = primaryUnit.mtop_expiry && primaryUnit.mtop_expiry !== 'N/A';
+            return {
+                value: label,
+                badge: 'Franchise',
+                meta: hasExpiry ? `${primaryUnit.is_expired ? 'Expired' : 'Expires'} ${primaryUnit.mtop_expiry}` : 'Not yet activated',
+                theme: MTOP_THEME[label] || 'blue',
+            };
+        }
+        const [count, word] = unrenewedExpiredUnits.length > 0
+            ? [unrenewedExpiredUnits.length, 'Expired']
+            : hasExpired ? [expiredUnits.length, 'Renewing'] : [validCount, 'Valid'];
+        return {
+            value: `${count} ${word}`,
+            badge: count === 1 ? 'Franchise' : 'Franchises',
+            meta: validCount < unitCount
+                ? `${validCount} of ${unitCount} permits valid`
+                : `All ${unitCount} permits valid`,
+            theme: hasExpired ? 'red' : validCount === unitCount ? 'emerald' : 'amber',
+        };
+    })();
+
+    // expiringRegistrations holds every active franchise — only upcoming ones inside the alert
+    // window are real "alerts"; already-expired permits are flagged by the MTOP card instead.
+    const upcomingRenewals = expiringRegistrations
+        .filter((r) => r.days_left >= 0)
+        .sort((a, b) => a.days_left - b.days_left);
+    const renewalAlerts = upcomingRenewals.filter((r) => r.days_left <= RENEWAL_ALERT_DAYS);
+    const soonestExpiring = upcomingRenewals[0] || null;
     // Human-readable renewal countdown — rounds defensively so a raw float can never
     // leak into the card, and switches to months/years for long-dated franchises.
     const renewalCountdown = (() => {
@@ -83,12 +157,12 @@ export default function OperatorDashboard({ operator, stats, tricycles, recentVi
         if (!Number.isFinite(days)) return null;
         if (days <= 0) return 'due today';
         if (days < 30) return `in ${days} day${days === 1 ? '' : 's'}`;
-        if (days < 365) {
-            const months = Math.max(1, Math.round(days / 30));
-            return `in ~${months} month${months === 1 ? '' : 's'}`;
-        }
+        const months = Math.max(1, Math.round(days / 30));
+        // 12 rounded months reads better as "1 year"
+        if (months < 12) return `in ${months} month${months === 1 ? '' : 's'}`;
+        if (days < 365) return 'in 1 year';
         const years = (days / 365).toFixed(1).replace(/\.0$/, '');
-        return `in ~${years} year${years === '1' ? '' : 's'}`;
+        return `in ${years} year${years === '1' ? '' : 's'}`;
     })();
 
     useEffect(() => {
@@ -96,30 +170,20 @@ export default function OperatorDashboard({ operator, stats, tricycles, recentVi
         return () => clearInterval(timer);
     }, []);
 
-    const { greeting, today } = useMemo(() => {
-        const hour = new Date().getHours();
-        const timeOfDay = hour < 12 ? 'morning' : hour < 18 ? 'afternoon' : 'evening';
-        return {
-            greeting: `Good ${timeOfDay}, ${operator.name.split(' ')[0]}`,
-            today: new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' }),
-        };
-    }, [operator.name]);
+    const today = useMemo(
+        () => new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' }),
+        []
+    );
 
     const complianceScore = useMemo(() => {
         let score = 100;
-        if (expiredUnit && !expiredUnit.has_pending_renewal) score -= 40;
-        else if (expiredUnit) score -= 15;
+        expiredUnits.forEach((t) => { score -= t.has_pending_renewal ? 15 : 40; });
         score -= violationCount * 15;
         return Math.max(10, Math.min(100, score));
-    }, [expiredUnit, violationCount]);
+    }, [expiredUnits, violationCount]);
 
     const scoreTone = complianceScore >= 80 ? '#182B62' : complianceScore >= 50 ? '#64748B' : '#DC2626';
 
-    const heroMessage = expiredUnit
-        ? `Your MTOP franchise permit needs attention — ${expiredUnit.has_pending_renewal ? 'renewal is in progress.' : 'submit a renewal to stay compliant.'}`
-        : violationCount > 0
-            ? `You have ${violationCount} active violation${violationCount === 1 ? '' : 's'} awaiting settlement.`
-            : "You're all caught up — your unit is compliant and active.";
 
     return (
         <OperatorLayout title="Dashboard" operatorName={operator.name}>
@@ -140,7 +204,7 @@ export default function OperatorDashboard({ operator, stats, tricycles, recentVi
                         Dashboard
                     </h1>
                     <p className="mt-1 text-xs leading-relaxed text-slate-600 sm:text-sm">
-                        {greeting} &bull; {heroMessage}
+                        Overview of your tricycle units, franchise permits, and color coding schedule.
                     </p>
                 </div>
                 <div className="flex flex-wrap items-center gap-2.5">
@@ -151,7 +215,7 @@ export default function OperatorDashboard({ operator, stats, tricycles, recentVi
                     <div className="flex items-center gap-2 rounded-xl border border-slate-200/80 bg-white px-3.5 py-2 shadow-sm">
                         <Clock size={14} className="text-[#182B62]" />
                         <span className="font-mono text-xs font-bold tabular-nums text-slate-900">
-                            {currentTime.toLocaleTimeString('en-US', { hour12: false })}
+                            {currentTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true })}
                         </span>
                     </div>
                 </div>
@@ -160,7 +224,7 @@ export default function OperatorDashboard({ operator, stats, tricycles, recentVi
             {/* ══════════════════════════════════════════════════════════════
                 2. FRANCHISE EXPIRED ALERT
                ══════════════════════════════════════════════════════════════ */}
-            {expiredUnit && (
+            {hasExpired && (
                 <div className={`mb-6 flex flex-col gap-4 rounded-2xl border border-red-200/80 bg-red-50/80 p-4 sm:p-5 ${CARD_SHADOW} sm:flex-row sm:items-center sm:justify-between ${FADE}`} style={delay(50)}>
                     <div className="flex items-start gap-3.5">
                         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-red-600 text-white shadow-sm">
@@ -168,12 +232,18 @@ export default function OperatorDashboard({ operator, stats, tricycles, recentVi
                         </div>
                         <div>
                             <p className="text-sm font-bold text-red-900">
-                                Compliance Alert: Tricycle MTOP Franchise Permit Expired
+                                {expiredUnits.length > 1
+                                    ? `Compliance Alert: ${expiredUnits.length} Tricycle MTOP Franchise Permits Expired`
+                                    : 'Compliance Alert: Tricycle MTOP Franchise Permit Expired'}
                             </p>
                             <p className="mt-1 text-xs text-red-700 leading-relaxed">
-                                {expiredUnit.has_pending_renewal
-                                    ? `The franchise permit for Unit #${expiredUnit.coding_scheme_number} expired on ${expiredUnit.mtop_expiry}. Renewal application is currently in progress.`
-                                    : `The franchise permit for Unit #${expiredUnit.coding_scheme_number || 'N/A'} expired on ${expiredUnit.mtop_expiry}. Check your application status in the Application Tracker.`}
+                                {expiredUnits.length > 1
+                                    ? `The franchise permits for Units ${expiredUnitList} have expired. ${unrenewedExpiredUnits.length === 0
+                                        ? 'Renewal applications are currently in progress.'
+                                        : 'Check your application status in the Application Tracker.'}`
+                                    : expiredUnits[0].has_pending_renewal
+                                        ? `The franchise permit for Unit #${expiredUnits[0].coding_scheme_number} expired on ${expiredUnits[0].mtop_expiry}. Renewal application is currently in progress.`
+                                        : `The franchise permit for Unit #${expiredUnits[0].coding_scheme_number || 'N/A'} expired on ${expiredUnits[0].mtop_expiry}. Check your application status in the Application Tracker.`}
                             </p>
                         </div>
                     </div>
@@ -195,12 +265,14 @@ export default function OperatorDashboard({ operator, stats, tricycles, recentVi
                     href={route('operator.fleet')}
                     icon={Bike}
                     active
-                    value={primaryUnit?.coding_scheme_number || 'No Unit'}
-                    badge={primaryUnit ? 'Unit' : ''}
-                    label="Registered Tricycle"
-                    meta={primaryUnit ? `Plate ${primaryUnit.plate_number || 'N/A'}` : 'Register a unit to get started'}
+                    value={unitCount}
+                    badge={unitCount === 1 ? 'Unit' : 'Units'}
+                    label={isFleet ? 'Registered Tricycles' : 'Registered Tricycle'}
+                    meta={isFleet
+                        ? `${stats.active_units} active${attentionCount > 0 ? ` · ${attentionCount} need${attentionCount === 1 ? 's' : ''} attention` : ''}`
+                        : (primaryUnit ? `Sticker ${primaryUnit.coding_scheme_number || 'N/A'} · Plate ${primaryUnit.plate_number || 'N/A'}` : 'Register a unit to get started')}
                     footerLabel="Action:"
-                    cta="Manage Unit"
+                    cta={isFleet ? 'Manage Fleet' : 'Manage Unit'}
                     colorTheme="indigo"
                 />
                 <ActionCard
@@ -219,28 +291,32 @@ export default function OperatorDashboard({ operator, stats, tricycles, recentVi
                 <ActionCard
                     href={route('operator.mtop')}
                     icon={FileText}
-                    active={!!expiredUnit}
-                    danger={!!expiredUnit}
-                    value={expiredUnit ? (expiredUnit.has_pending_renewal ? 'Renewing' : 'Expired') : (primaryUnit ? 'Valid' : 'None')}
-                    badge="Franchise"
+                    active={hasExpired}
+                    danger={hasExpired}
+                    value={mtopCard.value}
+                    badge={mtopCard.badge}
                     label="MTOP Franchise"
-                    meta={primaryUnit ? `Expires ${primaryUnit.mtop_expiry || 'N/A'}` : 'No franchise on record'}
+                    meta={mtopCard.meta}
                     footerLabel="Permit:"
                     cta="View Details"
-                    colorTheme={expiredUnit ? 'red' : 'emerald'}
+                    colorTheme={mtopCard.theme}
                 />
                 <ActionCard
                     href={route('operator.mtop')}
                     icon={Calendar}
-                    active={expiringRegistrations.length > 0}
-                    danger={!!soonestExpiring && soonestExpiring.days_left <= 30}
-                    value={expiringRegistrations.length}
-                    badge="Alerts"
+                    active={renewalAlerts.length > 0}
+                    danger={!!soonestExpiring && soonestExpiring.days_left <= 7}
+                    value={renewalAlerts.length}
+                    badge={renewalAlerts.length === 1 ? 'Alert' : 'Alerts'}
                     label="Renewal Alerts"
-                    meta={soonestExpiring && renewalCountdown ? `${soonestExpiring.coding_scheme_number} — renews ${renewalCountdown}` : 'No upcoming renewals'}
+                    meta={renewalAlerts.length > 0 && renewalCountdown
+                        ? `${soonestExpiring.franchise_number || soonestExpiring.coding_scheme_number} renews ${renewalCountdown}${renewalAlerts.length > 1 ? ` (+${renewalAlerts.length - 1} more)` : ''}`
+                        : soonestExpiring
+                            ? `None in next ${RENEWAL_ALERT_DAYS} days`
+                            : 'No upcoming renewals'}
                     footerLabel="Schedule:"
                     cta="View Franchise"
-                    colorTheme={soonestExpiring && soonestExpiring.days_left <= 30 ? 'amber' : 'blue'}
+                    colorTheme={renewalAlerts.length > 0 ? 'amber' : 'blue'}
                 />
             </div>
 
@@ -425,14 +501,49 @@ export default function OperatorDashboard({ operator, stats, tricycles, recentVi
                             <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[#182B62]/[0.08] text-[#182B62]">
                                 <Bike size={16} strokeWidth={2.2} />
                             </div>
-                            <h2 className="text-sm font-bold text-slate-900">My Tricycle</h2>
+                            <h2 className="text-sm font-bold text-slate-900">{isFleet ? `My Tricycles (${unitCount})` : 'My Tricycle'}</h2>
                         </div>
                         <Link href={route('operator.fleet')} className="shrink-0 text-xs font-bold text-[#182B62] hover:text-[#25449B]">
                             Manage
                         </Link>
                     </div>
 
-                    {tricycles.length === 0 ? (
+                    {isFleet ? (
+                        <>
+                            {/* Most urgent units first (expired → renewing → expiring soon → valid) */}
+                            <div className="flex-1 divide-y divide-slate-100">
+                                {sortedUnits.slice(0, MAX_UNITS_SHOWN).map((trike) => {
+                                    const badge = unitMtopBadge(trike);
+                                    return (
+                                        <div key={trike.id} className="flex items-center justify-between gap-2 px-5 py-3.5 transition-colors hover:bg-slate-50/60">
+                                            <div className="flex min-w-0 items-center gap-3">
+                                                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#182B62]/[0.08] text-[#182B62]">
+                                                    <Bike size={15} strokeWidth={2.4} />
+                                                </div>
+                                                <div className="min-w-0">
+                                                    <p className="truncate font-mono text-xs font-bold uppercase text-slate-900">{trike.plate_number || 'N/A'}</p>
+                                                    <p className="truncate text-[11px] text-slate-600 mt-0.5">
+                                                        Sticker {trike.coding_scheme_number || 'N/A'} &bull; {trike.make_model || 'N/A'}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            <span className={`shrink-0 rounded-md border px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wide ${badge.className}`}>
+                                                {badge.label}
+                                            </span>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                            <div className="px-5 pb-5 pt-1">
+                                <Link
+                                    href={route('operator.fleet')}
+                                    className="flex items-center justify-center gap-1.5 rounded-xl border border-slate-200/80 bg-white py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-50 transition-colors shadow-sm"
+                                >
+                                    {unitCount > MAX_UNITS_SHOWN ? `View All ${unitCount} Units` : 'View Full Fleet Details'} <ChevronRight size={13} />
+                                </Link>
+                            </div>
+                        </>
+                    ) : tricycles.length === 0 ? (
                         <div className="flex flex-1 flex-col items-center justify-center px-5 py-10 text-center">
                             <Bike size={28} className="mx-auto mb-2 text-slate-300" />
                             <p className="text-sm font-semibold text-slate-800">No tricycle registered yet</p>
@@ -445,10 +556,13 @@ export default function OperatorDashboard({ operator, stats, tricycles, recentVi
                                     <Bike size={22} strokeWidth={2.4} />
                                 </div>
                                 <div className="min-w-0">
-                                    <h3 className="truncate text-base font-bold leading-tight text-slate-900">{trike.coding_scheme_number || 'N/A'}</h3>
-                                    <span className="mt-0.5 inline-block rounded-md bg-slate-100 px-2 py-0.5 font-mono text-[11px] font-bold uppercase tracking-wide text-slate-600">
-                                        {trike.plate_number || 'N/A'}
-                                    </span>
+                                    <h3 className="truncate text-base font-bold leading-tight text-slate-900">{trike.franchise_number || 'No franchise yet'}</h3>
+                                    <p className="mt-0.5 text-[11px] text-slate-600">
+                                        Sticker {trike.coding_scheme_number || 'N/A'} &bull;{' '}
+                                        <span className="rounded-md bg-slate-100 px-2 py-0.5 font-mono font-bold uppercase tracking-wide text-slate-600">
+                                            {trike.plate_number || 'N/A'}
+                                        </span>
+                                    </p>
                                 </div>
                             </div>
 

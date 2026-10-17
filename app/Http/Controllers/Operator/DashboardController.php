@@ -95,7 +95,9 @@ class DashboardController extends Controller
             return [
                 'id'                  => $tri->id,
                 'coding_scheme_number' => $tri->coding_scheme_number ?: 'N/A',
+                'franchise_number'    => $fs?->franchise_number,
                 'plate_number'        => $tri->plate_number,
+                'make_model'          => trim("{$tri->make} {$tri->model}") ?: null,
                 'status'              => ucfirst($tri->status),
                 'driver'              => 'Self / Unassigned',
                 'is_expired'          => $isExpired,
@@ -141,6 +143,7 @@ class DashboardController extends Controller
                 $daysLeft = (int) now()->diffInDays($scheme->expiry_date, false);
                 return [
                     'coding_scheme_number' => $scheme->tricycle?->coding_scheme_number ?: ($scheme->sticker_number ?: $scheme->franchise_number),
+                    'franchise_number' => $scheme->franchise_number,
                     'expiration_date' => $scheme->expiry_date->toDateString(),
                     'days_left'       => $daysLeft,
                 ];

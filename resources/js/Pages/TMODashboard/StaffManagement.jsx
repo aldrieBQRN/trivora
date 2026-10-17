@@ -27,7 +27,7 @@ function StatusPill({ user, onToggleStatus }) {
             type="button"
             onClick={() => onToggleStatus(user)}
             title={user.is_current_user ? 'You cannot deactivate your own account' : 'Click to toggle status'}
-            className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-bold shadow-sm transition-all cursor-pointer ${
+            className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase shadow-sm transition-all cursor-pointer ${
                 isActive
                     ? 'border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100/80'
                     : 'border border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100/80'
@@ -282,7 +282,17 @@ export default function StaffManagement({
             if (result.isConfirmed) {
                 router.delete(route('tmo.users.destroy', user.id), {
                     preserveScroll: true,
-                    onSuccess: () => {
+                    onSuccess: (page) => {
+                        const blocked = page.props.flash?.error;
+                        if (blocked) {
+                            Swal.fire({
+                                title: 'Cannot Delete Staff',
+                                text: blocked,
+                                icon: 'error',
+                                confirmButtonColor: '#182B62',
+                            });
+                            return;
+                        }
                         Swal.fire({
                             title: 'Deleted',
                             text: 'Staff account removed.',
@@ -753,7 +763,7 @@ export default function StaffManagement({
                     {/* Position */}
                     <div className="sm:col-span-1">
                         <label className="block text-xs font-bold text-slate-900 mb-1">
-                            Position / Designation
+                            Position / Designation <span className="text-rose-600">*</span>
                         </label>
                         <input
                             type="text"
@@ -761,6 +771,7 @@ export default function StaffManagement({
                             onChange={(e) => addForm.setData('position', e.target.value)}
                             placeholder="e.g. TMO Inspector"
                             className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3.5 py-2 text-xs sm:text-sm text-slate-900 placeholder:text-slate-500 focus:bg-white focus:outline-none focus:border-[#182B62] focus:ring-2 focus:ring-[#182B62]/10 transition-all"
+                            required
                         />
                         {addForm.errors.position && (
                             <p className="mt-1 flex items-center gap-1 text-[11px] font-semibold text-rose-600">
@@ -772,7 +783,7 @@ export default function StaffManagement({
                     {/* Contact Number */}
                     <div className="sm:col-span-1">
                         <label className="block text-xs font-bold text-slate-900 mb-1">
-                            Contact Number
+                            Contact Number <span className="text-rose-600">*</span>
                         </label>
                         <input
                             type="text"
@@ -780,6 +791,7 @@ export default function StaffManagement({
                             onChange={(e) => addForm.setData('contact_number', e.target.value)}
                             placeholder="e.g. 0917 123 4567"
                             className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3.5 py-2 text-xs sm:text-sm text-slate-900 placeholder:text-slate-500 focus:bg-white focus:outline-none focus:border-[#182B62] focus:ring-2 focus:ring-[#182B62]/10 transition-all"
+                            required
                         />
                         {addForm.errors.contact_number && (
                             <p className="mt-1 flex items-center gap-1 text-[11px] font-semibold text-rose-600">
@@ -791,7 +803,7 @@ export default function StaffManagement({
                     {/* Birthday */}
                     <div className="sm:col-span-1">
                         <label className="block text-xs font-bold text-slate-900 mb-1">
-                            Birthday
+                            Birthday <span className="text-rose-600">*</span>
                         </label>
                         <input
                             type="date"
@@ -799,6 +811,7 @@ export default function StaffManagement({
                             value={addForm.data.birthday}
                             onChange={(e) => addForm.setData('birthday', e.target.value)}
                             className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3.5 py-2 text-xs sm:text-sm text-slate-900 focus:bg-white focus:outline-none focus:border-[#182B62] focus:ring-2 focus:ring-[#182B62]/10 transition-all"
+                            required
                         />
                         {addForm.errors.birthday && (
                             <p className="mt-1 flex items-center gap-1 text-[11px] font-semibold text-rose-600">
@@ -832,7 +845,7 @@ export default function StaffManagement({
                     {/* Address */}
                     <div className="sm:col-span-2">
                         <label className="block text-xs font-bold text-slate-900 mb-1">
-                            Residential Address
+                            Residential Address <span className="text-rose-600">*</span>
                         </label>
                         <input
                             type="text"
@@ -840,6 +853,7 @@ export default function StaffManagement({
                             onChange={(e) => addForm.setData('address', e.target.value)}
                             placeholder="e.g. Barangay Poblacion 1, Nasugbu, Batangas"
                             className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3.5 py-2 text-xs sm:text-sm text-slate-900 placeholder:text-slate-500 focus:bg-white focus:outline-none focus:border-[#182B62] focus:ring-2 focus:ring-[#182B62]/10 transition-all"
+                            required
                         />
                         {addForm.errors.address && (
                             <p className="mt-1 flex items-center gap-1 text-[11px] font-semibold text-rose-600">
@@ -942,7 +956,7 @@ export default function StaffManagement({
                         {/* Position */}
                         <div className="sm:col-span-1">
                             <label className="block text-xs font-bold text-slate-900 mb-1">
-                                Position / Designation
+                                Position / Designation <span className="text-rose-600">*</span>
                             </label>
                             <input
                                 type="text"
@@ -950,6 +964,7 @@ export default function StaffManagement({
                                 onChange={(e) => editForm.setData('position', e.target.value)}
                                 placeholder="e.g. TMO Inspector"
                                 className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3.5 py-2 text-xs sm:text-sm text-slate-900 focus:bg-white focus:outline-none focus:border-[#182B62] focus:ring-2 focus:ring-[#182B62]/10 transition-all"
+                                required
                             />
                             {editForm.errors.position && (
                                 <p className="mt-1 flex items-center gap-1 text-[11px] font-semibold text-rose-600">
@@ -961,7 +976,7 @@ export default function StaffManagement({
                         {/* Contact Number */}
                         <div className="sm:col-span-1">
                             <label className="block text-xs font-bold text-slate-900 mb-1">
-                                Contact Number
+                                Contact Number <span className="text-rose-600">*</span>
                             </label>
                             <input
                                 type="text"
@@ -969,6 +984,7 @@ export default function StaffManagement({
                                 onChange={(e) => editForm.setData('contact_number', e.target.value)}
                                 placeholder="e.g. 0917 123 4567"
                                 className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3.5 py-2 text-xs sm:text-sm text-slate-900 focus:bg-white focus:outline-none focus:border-[#182B62] focus:ring-2 focus:ring-[#182B62]/10 transition-all"
+                                required
                             />
                             {editForm.errors.contact_number && (
                                 <p className="mt-1 flex items-center gap-1 text-[11px] font-semibold text-rose-600">
@@ -980,7 +996,7 @@ export default function StaffManagement({
                         {/* Birthday */}
                         <div className="sm:col-span-1">
                             <label className="block text-xs font-bold text-slate-900 mb-1">
-                                Birthday
+                                Birthday <span className="text-rose-600">*</span>
                             </label>
                             <input
                                 type="date"
@@ -988,6 +1004,7 @@ export default function StaffManagement({
                                 value={editForm.data.birthday}
                                 onChange={(e) => editForm.setData('birthday', e.target.value)}
                                 className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3.5 py-2 text-xs sm:text-sm text-slate-900 focus:bg-white focus:outline-none focus:border-[#182B62] focus:ring-2 focus:ring-[#182B62]/10 transition-all"
+                                required
                             />
                             {editForm.errors.birthday && (
                                 <p className="mt-1 flex items-center gap-1 text-[11px] font-semibold text-rose-600">
@@ -1020,7 +1037,7 @@ export default function StaffManagement({
                         {/* Address */}
                         <div className="sm:col-span-2">
                             <label className="block text-xs font-bold text-slate-900 mb-1">
-                                Residential Address
+                                Residential Address <span className="text-rose-600">*</span>
                             </label>
                             <input
                                 type="text"
@@ -1028,6 +1045,7 @@ export default function StaffManagement({
                                 onChange={(e) => editForm.setData('address', e.target.value)}
                                 placeholder="e.g. Barangay Poblacion 1, Nasugbu, Batangas"
                                 className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3.5 py-2 text-xs sm:text-sm text-slate-900 focus:bg-white focus:outline-none focus:border-[#182B62] focus:ring-2 focus:ring-[#182B62]/10 transition-all"
+                                required
                             />
                             {editForm.errors.address && (
                                 <p className="mt-1 flex items-center gap-1 text-[11px] font-semibold text-rose-600">

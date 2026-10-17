@@ -134,8 +134,8 @@ export default function TricycleRegistry({ initialUnits = [], activeCodingScheme
     };
 
     return (
-        <TrivoraLayout title="Active Tricycle Registry" role="TMO Officer">
-            <Head title="Active Tricycle Registry | TRIVORA" />
+        <TrivoraLayout title="Tricycle Registry" role="TMO Officer">
+            <Head title="Tricycle Registry | TRIVORA" />
             <div className="font-['Plus_Jakarta_Sans',sans-serif]">
 
                 {/* ══════════════════════════════════════════════════════════════
@@ -144,7 +144,7 @@ export default function TricycleRegistry({ initialUnits = [], activeCodingScheme
                 <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-slate-200/80 pb-4">
                     <div>
                         <h1 className="font-['Plus_Jakarta_Sans',sans-serif] text-2xl sm:text-[28px] font-black tracking-tight text-slate-900 leading-tight">
-                            Active Tricycle Registry
+                            Tricycle Registry
                         </h1>
                         <p className="mt-1 text-xs sm:text-sm text-slate-600 max-w-2xl leading-relaxed">
                             Official registry of registered tricycles operating in Nasugbu.
@@ -586,7 +586,7 @@ export default function TricycleRegistry({ initialUnits = [], activeCodingScheme
                     recordCount={initialUnits.length}
                     scopeNote="Entire Tricycle Registry"
                     exportUrl={route('tmo.registry.export-excel')}
-                    fallbackName="trivora_active_tricycle_registry"
+                    fallbackName="trivora_tricycle_registry"
                 />
             </div>
         </TrivoraLayout>
@@ -607,7 +607,7 @@ function StatusPill({ status }) {
     const meta = STATUS_PILL_META[status] || STATUS_PILL_META.suspended;
     return (
         <span
-            className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-bold shadow-sm transition-colors font-['Plus_Jakarta_Sans',sans-serif] ${meta.className}`}
+            className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase shadow-sm transition-colors font-['Plus_Jakarta_Sans',sans-serif] ${meta.className}`}
         >
             <span>{meta.label}</span>
         </span>

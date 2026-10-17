@@ -11,6 +11,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
@@ -95,10 +96,10 @@ class TMOUserController extends Controller
             'name'           => 'required|string|max:150',
             'email'          => 'required|string|email|max:255|unique:users,email',
             'is_active'      => 'boolean',
-            'position'       => 'nullable|string|max:100',
-            'birthday'       => 'nullable|date|before:today|after:1900-01-01',
-            'contact_number' => 'nullable|string|max:30',
-            'address'        => 'nullable|string|max:255',
+            'position'       => 'required|string|max:100',
+            'birthday'       => 'required|date|before:today|after:1900-01-01',
+            'contact_number' => 'required|string|max:30',
+            'address'        => 'required|string|max:255',
         ]);
 
         // All-or-nothing: if anything fails before the credentials are issued (e.g. a database
@@ -201,10 +202,10 @@ class TMOUserController extends Controller
             'email'          => ['required', 'string', 'email', 'max:255', Rule::unique('users', 'email')->ignore($user->id)],
             'password'       => ['nullable', 'string', Password::defaults()],
             'is_active'      => 'boolean',
-            'position'       => 'nullable|string|max:100',
-            'birthday'       => 'nullable|date|before:today|after:1900-01-01',
-            'contact_number' => 'nullable|string|max:30',
-            'address'        => 'nullable|string|max:255',
+            'position'       => 'required|string|max:100',
+            'birthday'       => 'required|date|before:today|after:1900-01-01',
+            'contact_number' => 'required|string|max:30',
+            'address'        => 'required|string|max:255',
         ]);
 
         $oldValues = [
@@ -307,23 +308,65 @@ class TMOUserController extends Controller
         $employeeId = $user->employee_id;
         $userId = $user->id;
 
-        AuditService::log(
-            module: 'user_management',
-            action: 'staff.deleted',
-            record: $user,
-            description: "Deleted TMO personnel account for {$userName} ({$employeeId})",
-            oldValues: [
+        // Staff who already acted on official records keep their account so those records stay
+        // attributed to them; deleting would fail on restricted keys or erase who did the work.
+        $recordCount = $this->staffRecordCount($userId);
+        if ($recordCount > 0) {
+            return redirect()->route('tmo.users')->with('error',
+                "{$userName} has {$recordCount} official " . Str::plural('record', $recordCount)
+                . ' (inspections, reviews, or approvals) and cannot be deleted. Deactivate the account instead to block sign-in.');
+        }
+
+        DB::transaction(function () use ($user, $userName, $employeeId, $userId) {
+            $oldValues = [
                 'name'        => $user->name,
                 'email'       => $user->email,
                 'employee_id' => $employeeId,
                 'role'        => $user->role,
-            ],
-            newValues: null,
-            targetReference: $employeeId ?: "USER-{$userId}"
-        );
+            ];
 
-        $user->delete();
+            $user->delete();
+
+            AuditService::log(
+                module: 'user_management',
+                action: 'staff.deleted',
+                record: $user,
+                description: "Deleted TMO personnel account for {$userName} ({$employeeId})",
+                oldValues: $oldValues,
+                newValues: null,
+                targetReference: $employeeId ?: "USER-{$userId}"
+            );
+        });
 
         return redirect()->route('tmo.users')->with('success', "Staff account for {$userName} has been removed.");
+    }
+
+    /**
+     * Number of official records that name this user as the acting staff member.
+     */
+    private function staffRecordCount(int $userId): int
+    {
+        $columns = [
+            'inspections'                  => 'inspector_id',
+            'application_status_histories' => 'changed_by',
+            'franchise_status_histories'   => 'changed_by',
+            'franchise_schemes'            => 'issued_by',
+            'payments'                     => 'processed_by',
+            'application_documents'        => 'reviewed_by',
+            'violations'                   => 'detected_by',
+            'violation_appeals'            => 'reviewed_by',
+            'violation_enforcements'       => 'confirmed_by',
+            'gps_devices'                  => 'paired_by',
+            'fare_configurations'          => 'created_by',
+        ];
+
+        $count = 0;
+        foreach ($columns as $table => $column) {
+            if (Schema::hasColumn($table, $column)) {
+                $count += DB::table($table)->where($column, $userId)->count();
+            }
+        }
+
+        return $count;
     }
 }

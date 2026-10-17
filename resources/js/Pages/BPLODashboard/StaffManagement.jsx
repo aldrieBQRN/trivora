@@ -893,7 +893,7 @@ function StatusPill({ user, onToggleStatus }) {
             type="button"
             onClick={() => onToggleStatus(user)}
             title={user.is_current_user ? 'You cannot deactivate your own account' : 'Click to toggle status'}
-            className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold shadow-sm transition-colors ${
+            className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[10px] font-semibold uppercase shadow-sm transition-colors ${
                 isActive
                     ? 'border border-emerald-200/90 bg-emerald-50 text-emerald-700 hover:bg-emerald-100/70'
                     : 'border border-rose-200/90 bg-rose-50 text-rose-700 hover:bg-rose-100/70'

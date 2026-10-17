@@ -432,7 +432,7 @@ const STATUS_PILL = {
 function StatusPill({ status }) {
     const s = STATUS_PILL[status] || STATUS_PILL.unpaid;
     return (
-        <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold shadow-sm ${s.className}`}>
+        <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-[10px] font-semibold uppercase shadow-sm ${s.className}`}>
             {s.label}
         </span>
     );

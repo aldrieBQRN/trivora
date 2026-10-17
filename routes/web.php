@@ -328,6 +328,10 @@ Route::middleware(['auth', 'role:bplo_staff,admin'])->group(function () {
     Route::patch('/bplo/users/{user}/toggle-status', [App\Http\Controllers\BPLO\BPLOUserController::class, 'toggleStatus'])->name('bplo.users.toggle-status');
     Route::post('/bplo/users/{user}/resend-credentials', [App\Http\Controllers\BPLO\BPLOUserController::class, 'resendCredentials'])->middleware('throttle:6,1')->name('bplo.users.resend-credentials');
     Route::delete('/bplo/users/{user}', [App\Http\Controllers\BPLO\BPLOUserController::class, 'destroy'])->name('bplo.users.destroy');
+
+    // --- SYSTEM ACTIVITY / AUDIT LOGS (BPLO staff activity only) ---
+    Route::get('/bplo/activity-logs', [\App\Http\Controllers\AuditLogController::class, 'index'])->name('bplo.activity-logs');
+    Route::get('/bplo/activity-logs/export', [\App\Http\Controllers\AuditLogController::class, 'export'])->name('bplo.activity-logs.export');
 });
 
 

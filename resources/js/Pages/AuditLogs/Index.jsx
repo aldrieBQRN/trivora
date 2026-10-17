@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Head, router, usePage } from '@inertiajs/react';
 import useBackgroundRefresh from '@/hooks/useBackgroundRefresh';
 import TrivoraLayout from '@/Layouts/TrivoraLayout';
+import BPLOLayout from '@/Layouts/BPLOLayout';
 import { Modal } from '@/Components/TMO';
 import ExportDialog from '@/Components/ExportDialog';
 import {
@@ -14,18 +15,29 @@ import {
 const CARD_SHADOW = 'shadow-[0_1px_3px_0_rgba(15,23,42,0.07),0_10px_28px_-8px_rgba(15,23,42,0.14)]';
 
 export default function Index({
-    logs = { data: [], current_page: 1, last_page: 1, total: 0, per_page: 15 },
+    logs = { data: [], current_page: 1, last_page: 1, total: 0, per_page: 10 },
     stats = { total: 0, today: 0, staff: 0, driver: 0 },
     filters = {},
     availableModules = [],
     availableRoles = [],
     exportUrl,
+    office = 'tmo',
 }) {
     const { auth } = usePage().props;
     const user = auth?.user || {};
 
-    const Layout = TrivoraLayout;
-    const layoutProps = { title: 'System Activity Logs', role: 'TMO Personnel' };
+    // TMO sees its personnel and driver activity; BPLO sees only its own staff.
+    const isBplo = office === 'bplo';
+    const Layout = isBplo ? BPLOLayout : TrivoraLayout;
+    const layoutProps = { title: 'System Activity Logs', role: isBplo ? 'BPLO Officer' : 'TMO Personnel' };
+
+    // Cards 3 & 4: TMO splits staff vs driver activity; BPLO (staff-only log) splits by kind of work.
+    const card3 = isBplo
+        ? { label: 'Franchise Actions', value: stats.franchise, caption: 'Releasing & franchise issuance', metaLabel: 'Module:', meta: 'Franchise' }
+        : { label: 'Staff Actions', value: stats.staff, caption: 'TMO personnel', metaLabel: 'Offices:', meta: 'TMO' };
+    const card4 = isBplo
+        ? { label: 'Account Activity', value: stats.account, caption: 'Sign-ins, staff & profile changes', metaLabel: 'Module:', meta: 'Access & Accounts' }
+        : { label: 'Driver Actions', value: stats.driver, caption: 'Driver portal transactions', metaLabel: 'Portal:', meta: 'Driver Web App' };
 
     const [selectedLog, setSelectedLog] = useState(null);
     const [exportOpen, setExportOpen] = useState(false);
@@ -357,7 +369,9 @@ export default function Index({
                             System Activity Logs
                         </h1>
                         <p className="mt-1 text-xs sm:text-sm text-slate-600 max-w-2xl leading-relaxed">
-                            Audit trail of administrative actions, inspections, violations, and portal activities in Nasugbu.
+                            {isBplo
+                                ? 'Audit trail of BPLO staff actions, franchise releasing, and account activity.'
+                                : 'Audit trail of TMO staff actions, inspections, violations, and driver portal activity.'}
                         </p>
                     </div>
 
@@ -375,7 +389,7 @@ export default function Index({
                 {/* ══════════════════════════════════════════════════════════════
                     2. COMPACT OPERATIONAL KPI DECK (1 card per row on mobile < 640px)
                    ══════════════════════════════════════════════════════════════ */}
-                <div className="mb-6 grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4 items-stretch print:hidden">
+                <div className={`mb-6 grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4 items-stretch print:hidden`}>
                     {/* Card 1: Total Activities */}
                     <div className={`flex flex-col justify-between rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-3 sm:p-4 lg:px-5 lg:py-4 ${CARD_SHADOW} transition-all hover:border-slate-300 hover:shadow-[0_2px_6px_0_rgba(15,23,42,0.08),0_18px_36px_-12px_rgba(15,23,42,0.20)]`}>
                         <div>
@@ -440,12 +454,12 @@ export default function Index({
                         </div>
                     </div>
 
-                    {/* Card 3: Staff Actions */}
+                    {/* Card 3 */}
                     <div className={`flex flex-col justify-between rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-3 sm:p-4 lg:px-5 lg:py-4 ${CARD_SHADOW} transition-all hover:border-slate-300 hover:shadow-[0_2px_6px_0_rgba(15,23,42,0.08),0_18px_36px_-12px_rgba(15,23,42,0.20)]`}>
                         <div>
                             <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-2 sm:pb-2.5">
                                 <span className="text-[9.5px] sm:text-[10.5px] font-bold uppercase tracking-wide sm:tracking-wider leading-tight text-slate-500">
-                                    Staff Actions
+                                    {card3.label}
                                 </span>
                                 <div className="flex h-7 w-7 shrink-0 sm:h-8 sm:w-8 items-center justify-center rounded-xl bg-emerald-50 border border-emerald-100 text-emerald-600">
                                     <ShieldCheck size={15} strokeWidth={2.2} />
@@ -453,31 +467,31 @@ export default function Index({
                             </div>
                             <div className="mt-2 sm:mt-2.5 flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5 sm:gap-2">
                                 <span className="text-2xl lg:text-3xl font-black tracking-tight tabular-nums text-emerald-600 leading-none">
-                                    {stats.staff}
+                                    {card3.value ?? 0}
                                 </span>
                                 <span className="text-[9.5px] sm:text-[10.5px] font-extrabold uppercase tracking-wider text-slate-500">
                                     Actions
                                 </span>
                             </div>
                             <p className="mt-1 max-sm:hidden text-[10px] sm:text-[11px] font-medium text-slate-600 line-clamp-1">
-                                TMO, BPLO, and Admin personnel
+                                {card3.caption}
                             </p>
                         </div>
 
                         <div className="mt-2.5 max-sm:hidden rounded-xl bg-slate-50 border border-slate-100/90 shadow-sm px-2.5 py-1.5 sm:px-3 flex items-center justify-between text-[10.5px] sm:text-xs">
-                            <span className="font-semibold text-slate-500 shrink-0">Offices:</span>
+                            <span className="font-semibold text-slate-500 shrink-0">{card3.metaLabel}</span>
                             <span className="font-bold text-slate-800 shrink-0">
-                                TMO &amp; BPLO
+                                {card3.meta}
                             </span>
                         </div>
                     </div>
 
-                    {/* Card 4: Driver Actions */}
+                    {/* Card 4 */}
                     <div className={`flex flex-col justify-between rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-3 sm:p-4 lg:px-5 lg:py-4 ${CARD_SHADOW} transition-all hover:border-slate-300 hover:shadow-[0_2px_6px_0_rgba(15,23,42,0.08),0_18px_36px_-12px_rgba(15,23,42,0.20)]`}>
                         <div>
                             <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-2 sm:pb-2.5">
                                 <span className="text-[9.5px] sm:text-[10.5px] font-bold uppercase tracking-wide sm:tracking-wider leading-tight text-slate-500">
-                                    Driver Actions
+                                    {card4.label}
                                 </span>
                                 <div className="flex h-7 w-7 shrink-0 sm:h-8 sm:w-8 items-center justify-center rounded-xl bg-sky-50 border border-sky-100 text-sky-600">
                                     <Users size={15} strokeWidth={2.2} />
@@ -485,21 +499,21 @@ export default function Index({
                             </div>
                             <div className="mt-2 sm:mt-2.5 flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5 sm:gap-2">
                                 <span className="text-2xl lg:text-3xl font-black tracking-tight tabular-nums text-sky-600 leading-none">
-                                    {stats.driver}
+                                    {card4.value ?? 0}
                                 </span>
                                 <span className="text-[9.5px] sm:text-[10.5px] font-extrabold uppercase tracking-wider text-slate-500">
                                     Actions
                                 </span>
                             </div>
                             <p className="mt-1 max-sm:hidden text-[10px] sm:text-[11px] font-medium text-slate-600 line-clamp-1">
-                                Driver portal transactions
+                                {card4.caption}
                             </p>
                         </div>
 
                         <div className="mt-2.5 max-sm:hidden rounded-xl bg-slate-50 border border-slate-100/90 shadow-sm px-2.5 py-1.5 sm:px-3 flex items-center justify-between text-[10.5px] sm:text-xs">
-                            <span className="font-semibold text-slate-500 shrink-0">Portal:</span>
+                            <span className="font-semibold text-slate-500 shrink-0">{card4.metaLabel}</span>
                             <span className="font-bold text-slate-800 shrink-0">
-                                Driver Web App
+                                {card4.meta}
                             </span>
                         </div>
                     </div>
@@ -538,7 +552,7 @@ export default function Index({
                         {/* Filter Controls Row */}
                         <div className="grid grid-cols-2 sm:flex items-center gap-2">
                             {/* Module Dropdown */}
-                            <div className="col-span-1 sm:flex-1 lg:flex-none">
+                            <div className={`${isBplo ? 'col-span-2' : 'col-span-1'} sm:flex-1 lg:flex-none`}>
                                 <select
                                     value={module}
                                     onChange={handleModuleChange}
@@ -553,7 +567,8 @@ export default function Index({
                                 </select>
                             </div>
 
-                            {/* Actor Role Dropdown */}
+                            {/* Actor Role Dropdown (TMO only — the BPLO log has a single role) */}
+                            {!isBplo && (
                             <div className="col-span-1 sm:flex-1 lg:flex-none">
                                 <select
                                     value={role}
@@ -568,6 +583,7 @@ export default function Index({
                                     ))}
                                 </select>
                             </div>
+                            )}
 
                             {/* Date From & To */}
                             <div className="col-span-2 sm:col-span-auto sm:flex-[2] lg:flex-none flex items-center gap-1.5">
@@ -1169,12 +1185,6 @@ export default function Index({
                                         )}
                                     </div>
                                 )}
-
-                                {/* Technical Metadata Strip */}
-                                <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-slate-200/80 bg-slate-50/60 px-3 py-2 text-[11px] text-slate-600">
-                                    <span>IP Address: <strong className="font-mono text-slate-700">{selectedLog.ip_address || 'Internal Network'}</strong></span>
-                                    <span>Audit ID: <strong className="font-mono text-slate-700">#{selectedLog.id}</strong></span>
-                                </div>
                             </div>
                         );
                     })()}

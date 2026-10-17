@@ -32,13 +32,13 @@ function displayGroupOf(bucket) {
 function StatusPill({ status }) {
     if (displayGroupOf(status) === 'Reinspect') {
         return (
-            <span className="inline-flex items-center gap-1 rounded-full border border-rose-200 bg-rose-50 px-2.5 py-0.5 text-xs font-bold text-rose-700 shadow-sm">
+            <span className="inline-flex items-center gap-1 rounded-full border border-rose-200 bg-rose-50 px-2.5 py-0.5 text-[10px] font-bold uppercase text-rose-700 shadow-sm">
                 Reinspect
             </span>
         );
     }
     return (
-        <span className="inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2.5 py-0.5 text-xs font-bold text-amber-800 shadow-sm">
+        <span className="inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2.5 py-0.5 text-[10px] font-bold uppercase text-amber-800 shadow-sm">
             Pending
         </span>
     );

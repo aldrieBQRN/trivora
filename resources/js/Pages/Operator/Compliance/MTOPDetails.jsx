@@ -7,7 +7,7 @@ import {
     FileText, CheckCircle2, Clock, AlertCircle,
     Bike, FileSearch, ClipboardCheck, Stamp, AlertTriangle,
     XCircle, Wrench, Settings, RefreshCw, RotateCcw,
-    Wallet, Receipt, CreditCard, Calendar, ShieldCheck, Check, User,
+    Wallet, Receipt, CreditCard, Calendar, ShieldCheck, Check, User, ExternalLink,
 } from 'lucide-react';
 import { PHYSICAL_INSPECTION_ITEMS } from '@/data/physicalInspectionItems';
 
@@ -26,7 +26,7 @@ const DOC_STATUS_CLASSES = {
 
 const BRAND_ICON_CHIP = 'bg-gradient-to-br from-[#182B62]/[0.10] to-[#182B62]/[0.02] text-[#182B62]';
 
-function Card({ icon: Icon, title, headerTone, children, className = '' }) {
+function Card({ icon: Icon, title, headerTone, action, children, className = '' }) {
     return (
         <div className={`overflow-hidden rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white ${CARD_SHADOW} ${className}`}>
             <div className="flex items-center gap-3 border-b border-slate-100 bg-slate-50/60 px-5 py-4">
@@ -35,7 +35,8 @@ function Card({ icon: Icon, title, headerTone, children, className = '' }) {
                         <Icon size={16} />
                     </div>
                 )}
-                <h2 className="text-[15px] font-bold text-slate-900">{title}</h2>
+                <h2 className="min-w-0 text-[15px] font-bold text-slate-900">{title}</h2>
+                {action && <div className="ml-auto shrink-0">{action}</div>}
             </div>
             <div className="p-5">{children}</div>
         </div>
@@ -544,7 +545,16 @@ export default function MTOPDetails({ application }) {
                         </div>
                     </Card>
 
-                    <Card icon={Bike} title="Tricycle Information">
+                    <Card
+                        icon={Bike}
+                        title="Tricycle Information"
+                        action={app.plate && app.plate !== 'N/A' && (
+                            <Button as={Link} href={route('operator.fleet', { search: app.plate })} variant="secondary" size="sm" icon={ExternalLink} className="!rounded-xl">
+                                <span className="sm:hidden">View</span>
+                                <span className="hidden sm:inline">View in My Tricycles</span>
+                            </Button>
+                        )}
+                    >
                         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
                             <InfoItem label="Make & Model" value={app.make} />
                             <InfoItem label="Plate Number" value={app.plate} />
@@ -698,9 +708,9 @@ export default function MTOPDetails({ application }) {
 
 function InfoItem({ label, value }) {
     return (
-        <div>
+        <div className="min-w-0">
             <span className="block text-[10px] font-bold uppercase tracking-wide text-slate-500">{label}</span>
-            <span className="mt-1 block text-sm font-semibold text-slate-900">{value}</span>
+            <span className="mt-1 block text-sm font-semibold text-slate-900 break-words">{value}</span>
         </div>
     );
 }

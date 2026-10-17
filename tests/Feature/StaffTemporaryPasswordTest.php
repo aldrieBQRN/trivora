@@ -50,6 +50,9 @@ class StaffTemporaryPasswordTest extends TestCase
             'name' => 'New Officer',
             'email' => $email,
             'position' => 'Officer I',
+            'birthday' => '1990-01-15',
+            'contact_number' => '09171234567',
+            'address' => 'Poblacion 1, Nasugbu, Batangas',
         ], $extra));
     }
 

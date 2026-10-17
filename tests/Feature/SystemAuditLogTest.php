@@ -67,6 +67,32 @@ class SystemAuditLogTest extends TestCase
         $response->assertStatus(403);
     }
 
+    public function test_each_office_only_sees_its_own_activity(): void
+    {
+        AuditService::log(module: 'auth', action: 'auth.login', record: null, description: 'TMO login', actor: $this->tmoUser);
+        AuditService::log(module: 'auth', action: 'auth.login', record: null, description: 'BPLO login', actor: $this->bploUser);
+        AuditService::log(module: 'application', action: 'application.submitted', record: null, description: 'Driver submitted', actor: $this->driverUser);
+
+        $this->actingAs($this->tmoUser)->get(route('tmo.activity-logs'))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->where('office', 'tmo')
+                ->where('logs.data', fn ($rows) => collect($rows)->pluck('actor_role')->diff(['tmo_personnel', 'tricycle_driver'])->isEmpty()
+                    && collect($rows)->pluck('description')->contains('Driver submitted'))
+            );
+
+        $this->actingAs($this->bploUser)->get(route('bplo.activity-logs'))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->component('AuditLogs/Index')
+                ->where('office', 'bplo')
+                ->where('logs.data', fn ($rows) => collect($rows)->pluck('actor_role')->unique()->values()->all() === ['bplo_staff'])
+                ->where('stats.driver', 0)
+            );
+
+        $this->actingAs($this->tmoUser)->get(route('bplo.activity-logs'))->assertStatus(403);
+    }
+
     public function test_driver_cannot_view_administrative_activity_logs(): void
     {
         $tmoResponse = $this->actingAs($this->driverUser)
@@ -89,6 +115,8 @@ class SystemAuditLogTest extends TestCase
             'password'       => 'Password123!',
             'position'       => 'Traffic Enforcer I',
             'contact_number' => '09171234567',
+            'birthday'       => '1990-01-15',
+            'address'        => 'Poblacion 1, Nasugbu, Batangas',
         ]);
 
         $response->assertRedirect(route('tmo.users'));
@@ -122,6 +150,8 @@ class SystemAuditLogTest extends TestCase
             'email'          => $targetUser->email,
             'position'       => 'Senior Enforcer',
             'contact_number' => '09189998888',
+            'birthday'       => '1990-01-15',
+            'address'        => 'Poblacion 1, Nasugbu, Batangas',
         ]);
 
         $response->assertRedirect(route('tmo.users'));
@@ -181,6 +211,30 @@ class SystemAuditLogTest extends TestCase
         $this->assertEquals('Officer To Delete', $log->old_values['name']);
         $this->assertEquals('TMO-9999', $log->target_reference);
         $this->assertEquals($this->tmoUser->name, $log->actor_name);
+    }
+
+    public function test_tmo_staff_with_official_records_cannot_be_deleted(): void
+    {
+        $targetUser = User::factory()->create(['role' => 'tmo_personnel', 'name' => 'Officer With Records']);
+
+        $fare = FareConfiguration::firstOrCreate(
+            ['effective_date' => '2025-06-01'],
+            [
+                'base_fare'               => 50.00,
+                'base_fare_per_passenger' => 25.00,
+                'included_distance_km'    => 4.00,
+                'rate_per_km'             => 5.00,
+                'is_active'               => false,
+            ]
+        );
+        \Illuminate\Support\Facades\DB::table('fare_configurations')->where('id', $fare->id)->update(['created_by' => $targetUser->id]);
+
+        $this->actingAs($this->tmoUser)->delete(route('tmo.users.destroy', $targetUser))
+            ->assertRedirect(route('tmo.users'))
+            ->assertSessionHas('error');
+
+        $this->assertDatabaseHas('users', ['id' => $targetUser->id]);
+        $this->assertDatabaseMissing('audit_logs', ['action' => 'staff.deleted', 'target_id' => $targetUser->id]);
     }
 
     public function test_fare_update_generates_audit_log(): void
@@ -361,7 +415,7 @@ class SystemAuditLogTest extends TestCase
             ->where('logs.data.0.module', 'document_review')
         );
 
-        $response2 = $this->actingAs($this->tmoUser)->get(route('tmo.activity-logs', ['role' => 'bplo_staff']));
+        $response2 = $this->actingAs($this->bploUser)->get(route('bplo.activity-logs', ['role' => 'bplo_staff']));
         $response2->assertStatus(200);
         $response2->assertInertia(fn ($page) => $page
             ->has('logs.data', 1)

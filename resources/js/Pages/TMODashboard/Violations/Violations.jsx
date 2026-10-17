@@ -565,7 +565,7 @@ function StatusPill({ record }) {
 
     if (isAppealed) {
         return (
-            <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-bold border border-indigo-200/90 bg-indigo-50 text-indigo-800 shadow-sm font-['Plus_Jakarta_Sans',sans-serif]">
+            <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase border border-indigo-200/90 bg-indigo-50 text-indigo-800 shadow-sm font-['Plus_Jakarta_Sans',sans-serif]">
                 Appeal Pending
             </span>
         );
@@ -573,14 +573,14 @@ function StatusPill({ record }) {
 
     if (isSettled) {
         return (
-            <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-bold border border-emerald-200/90 bg-emerald-50 text-emerald-700 shadow-sm font-['Plus_Jakarta_Sans',sans-serif]">
+            <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase border border-emerald-200/90 bg-emerald-50 text-emerald-700 shadow-sm font-['Plus_Jakarta_Sans',sans-serif]">
                 Settled
             </span>
         );
     }
 
     return (
-        <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-bold border border-amber-200/90 bg-amber-50 text-amber-800 shadow-sm font-['Plus_Jakarta_Sans',sans-serif]">
+        <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase border border-amber-200/90 bg-amber-50 text-amber-800 shadow-sm font-['Plus_Jakarta_Sans',sans-serif]">
             Unsettled
         </span>
     );

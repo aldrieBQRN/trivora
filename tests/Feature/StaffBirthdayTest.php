@@ -40,15 +40,17 @@ class StaffBirthdayTest extends TestCase
 
         $this->actingAs($manager)->post($base, [
             'name' => 'Birthday Staff', 'email' => $email, 'password' => 'SecurePass123', 'birthday' => '1990-05-17',
+            'position' => 'Officer I', 'contact_number' => '09171234567', 'address' => 'Poblacion 1, Nasugbu, Batangas',
         ])->assertSessionHasNoErrors()->assertRedirect(route($routeName));
 
         $staff = User::where('email', $email)->firstOrFail();
         $this->assertSame('1990-05-17', $staff->birthday->format('Y-m-d'));
 
         // Update to another date.
+        $details = ['position' => 'Officer I', 'contact_number' => '09171234567', 'address' => 'Poblacion 1, Nasugbu, Batangas'];
         $this->actingAs($manager)->put("{$base}/{$staff->id}", [
             'name' => 'Birthday Staff', 'email' => $email, 'birthday' => '1991-02-03',
-        ])->assertSessionHasNoErrors();
+        ] + $details)->assertSessionHasNoErrors();
         $this->assertSame('1991-02-03', $staff->fresh()->birthday->format('Y-m-d'));
 
         // Listed with both the form value and a display label.
@@ -59,10 +61,15 @@ class StaffBirthdayTest extends TestCase
         $this->assertSame('1991-02-03', $row['birthday']);
         $this->assertSame('Feb 03, 1991', $row['birthday_label']);
 
-        // Clearing it is allowed.
-        $this->actingAs($manager)->put("{$base}/{$staff->id}", ['name' => 'Birthday Staff', 'email' => $email, 'birthday' => ''])
-            ->assertSessionHasNoErrors();
-        $this->assertNull($staff->fresh()->birthday);
+        // TMO requires every staff detail on edit; BPLO still allows clearing the birthday.
+        $clear = $this->actingAs($manager)->put("{$base}/{$staff->id}", ['name' => 'Birthday Staff', 'email' => $email, 'birthday' => ''] + $details);
+        if ($role === 'tmo_personnel') {
+            $clear->assertSessionHasErrors('birthday');
+            $this->assertSame('1991-02-03', $staff->fresh()->birthday->format('Y-m-d'));
+        } else {
+            $clear->assertSessionHasNoErrors();
+            $this->assertNull($staff->fresh()->birthday);
+        }
     }
 
     #[Test]

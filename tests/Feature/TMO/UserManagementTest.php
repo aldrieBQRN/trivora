@@ -36,6 +36,10 @@ class UserManagementTest extends TestCase
         $response = $this->actingAs($admin)->post('/tmo/users', [
             'name' => 'New TMO Officer',
             'email' => 'new.officer@trivora.gov.ph',
+            'position' => 'TMO Inspector',
+            'birthday' => '1990-01-15',
+            'contact_number' => '09171234567',
+            'address' => 'Poblacion 1, Nasugbu, Batangas',
         ]);
 
         $response->assertSessionHasNoErrors();
@@ -56,6 +60,10 @@ class UserManagementTest extends TestCase
         $response = $this->actingAs($admin)->put("/tmo/users/{$target->id}", [
             'name' => 'Updated Name',
             'email' => $target->email,
+            'position' => 'Officer I',
+            'birthday' => '1990-01-15',
+            'contact_number' => '09171234567',
+            'address' => 'Poblacion 1, Nasugbu, Batangas',
         ]);
 
         $response->assertSessionHasNoErrors();
@@ -93,6 +101,10 @@ class UserManagementTest extends TestCase
             'name' => $target->name,
             'email' => $target->email,
             'password' => 'BrandNewPass123',
+            'position' => 'Officer I',
+            'birthday' => '1990-01-15',
+            'contact_number' => '09171234567',
+            'address' => 'Poblacion 1, Nasugbu, Batangas',
         ]);
 
         $response->assertSessionHasNoErrors();

@@ -819,7 +819,7 @@ export default function FareManagement({ currentFare = {}, fareHistory = [] }) {
 function FareStatusPill({ status, label }) {
     if (status === 'active') {
         return (
-            <span className="inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-0.5 text-xs font-bold text-emerald-700 shadow-sm">
+            <span className="inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-0.5 text-[10px] font-bold uppercase text-emerald-700 shadow-sm">
                 <span>{label || 'Active'}</span>
             </span>
         );
@@ -827,14 +827,14 @@ function FareStatusPill({ status, label }) {
 
     if (status === 'scheduled') {
         return (
-            <span className="inline-flex items-center rounded-full border border-blue-200 bg-blue-50 px-2.5 py-0.5 text-xs font-bold text-blue-700 shadow-sm">
+            <span className="inline-flex items-center rounded-full border border-blue-200 bg-blue-50 px-2.5 py-0.5 text-[10px] font-bold uppercase text-blue-700 shadow-sm">
                 <span>{label || 'Scheduled'}</span>
             </span>
         );
     }
 
     return (
-        <span className="inline-flex items-center rounded-full border border-slate-200 bg-slate-100 px-2.5 py-0.5 text-xs font-bold text-slate-600">
+        <span className="inline-flex items-center rounded-full border border-slate-200 bg-slate-100 px-2.5 py-0.5 text-[10px] font-bold uppercase text-slate-600">
             <span>{label || 'Historical'}</span>
         </span>
     );

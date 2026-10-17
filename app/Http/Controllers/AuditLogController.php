@@ -25,10 +25,7 @@ class AuditLogController extends Controller
      */
     public function index(Request $request): Response
     {
-        $user = $request->user();
-        if (!$user || !in_array($user->role, ['tmo_personnel', 'admin'], true)) {
-            abort(403, 'Unauthorized. Administrative activity logs are restricted to TMO Personnel.');
-        }
+        $office = $this->office($request);
 
         $search = trim((string) $request->input('search', ''));
         $module = $request->input('module');
@@ -37,7 +34,7 @@ class AuditLogController extends Controller
         $from   = $request->input('from');
         $to     = $request->input('to');
 
-        $query = AuditLog::forAdminWeb()->with('user');
+        $query = $this->scopedQuery($office)->with('user');
 
         if ($search !== '') {
             $query->where(function ($q) use ($search) {
@@ -70,7 +67,7 @@ class AuditLogController extends Controller
 
         $logs = $query->orderBy('created_at', 'desc')
             ->orderBy('id', 'desc')
-            ->paginate(15)
+            ->paginate(10)
             ->withQueryString();
 
         $logs->through(function ($log) {
@@ -100,13 +97,13 @@ class AuditLogController extends Controller
                 'old_values'       => $this->sanitizePayload($log->old_values),
                 'new_values'       => $this->sanitizePayload($log->new_values),
                 'metadata'         => $this->sanitizePayload($log->metadata),
-                'ip_address'       => $log->ip_address,
                 'created_at'       => $log->created_at?->format('M d, Y h:i A'),
                 'created_at_human' => $log->created_at?->diffForHumans(),
             ];
         });
 
-        $availableModules = [
+        $bploModules = ['auth', 'franchise', 'user_management', 'profile', 'reports'];
+        $availableModules = array_values(array_filter([
             ['value' => 'auth',            'label' => 'Authentication & Access'],
             ['value' => 'document_review', 'label' => 'Document Review'],
             ['value' => 'inspection',      'label' => 'Physical Inspection'],
@@ -117,23 +114,28 @@ class AuditLogController extends Controller
             ['value' => 'application',     'label' => 'Driver Applications'],
             ['value' => 'profile',         'label' => 'Account Settings'],
             ['value' => 'reports',         'label' => 'Reports & Analytics'],
-        ];
+        ], fn ($m) => $office === 'tmo' || in_array($m['value'], $bploModules, true)));
 
-        $availableRoles = [
+        $availableRoles = array_values(array_filter([
             ['value' => 'tmo_personnel',   'label' => 'TMO Personnel'],
             ['value' => 'bplo_staff',      'label' => 'BPLO Staff'],
             ['value' => 'tricycle_driver', 'label' => 'Tricycle Driver / Operator'],
             ['value' => 'admin',           'label' => 'Administrator'],
-        ];
+        ], fn ($r) => in_array($r['value'], $this->scopedRoles($office), true)));
 
-        $exportRouteName = 'tmo.activity-logs.export';
+        $exportRouteName = "{$office}.activity-logs.export";
 
         $stats = [
-            'total'  => AuditLog::forAdminWeb()->count(),
-            'today'  => AuditLog::forAdminWeb()->whereDate('created_at', today())->count(),
-            'staff'  => AuditLog::forAdminWeb()->whereIn('actor_role', ['tmo_personnel', 'bplo_staff', 'admin'])->count(),
-            'driver' => AuditLog::forAdminWeb()->where('actor_role', 'tricycle_driver')->count(),
+            'total'  => $this->scopedQuery($office)->count(),
+            'today'  => $this->scopedQuery($office)->whereDate('created_at', today())->count(),
+            'staff'  => $this->scopedQuery($office)->where('actor_role', '!=', 'tricycle_driver')->count(),
+            'driver' => $this->scopedQuery($office)->where('actor_role', 'tricycle_driver')->count(),
         ];
+
+        if ($office === 'bplo') {
+            $stats['franchise'] = $this->scopedQuery($office)->where('module', 'franchise')->count();
+            $stats['account']   = $this->scopedQuery($office)->whereIn('module', ['auth', 'user_management', 'profile'])->count();
+        }
 
         return Inertia::render('AuditLogs/Index', [
             'logs'             => $logs,
@@ -149,6 +151,7 @@ class AuditLogController extends Controller
             'availableModules' => $availableModules,
             'availableRoles'   => $availableRoles,
             'exportUrl'        => route($exportRouteName),
+            'office'           => $office,
         ]);
     }
 
@@ -158,9 +161,7 @@ class AuditLogController extends Controller
     public function export(Request $request): SymfonyResponse
     {
         $user = $request->user();
-        if (!$user || !in_array($user->role, ['tmo_personnel', 'admin'], true)) {
-            abort(403, 'Unauthorized.');
-        }
+        $office = $this->office($request);
 
         $format = strtolower(trim((string) $request->input('format', 'excel')));
         $search = trim((string) $request->input('search', ''));
@@ -170,7 +171,7 @@ class AuditLogController extends Controller
         $from   = $request->input('from');
         $to     = $request->input('to');
 
-        $query = AuditLog::forAdminWeb();
+        $query = $this->scopedQuery($office);
 
         if ($search !== '') {
             $query->where(function ($q) use ($search) {
@@ -210,7 +211,7 @@ class AuditLogController extends Controller
         $filters = compact('search', 'module', 'role', 'action', 'from', 'to');
 
         if ($format === 'pdf') {
-            return $this->exportPdf($records, $timestampStr, $user, $filters, $from, $to);
+            return $this->exportPdf($records, $timestampStr, $user, $filters, $from, $to, $office);
         }
 
         if ($format === 'csv') {
@@ -221,7 +222,7 @@ class AuditLogController extends Controller
             return $this->exportJson($records, $timestampStr, $user, $filters);
         }
 
-        return $this->exportXlsx($records, $timestampStr, $user, $filters, $from, $to);
+        return $this->exportXlsx($records, $timestampStr, $user, $filters, $from, $to, $office);
     }
 
     /**
@@ -235,12 +236,12 @@ class AuditLogController extends Controller
     /**
      * Export to styled municipal PDF report in landscape orientation.
      */
-    protected function exportPdf($records, string $timestampStr, $user, array $filters, $from, $to): SymfonyResponse
+    protected function exportPdf($records, string $timestampStr, $user, array $filters, $from, $to, string $office): SymfonyResponse
     {
-        $officeName = ($user->role === 'bplo_staff')
+        $officeName = ($office === 'bplo')
             ? 'BUSINESS PERMITS AND LICENSING OFFICE (BPLO)'
             : 'TRICYCLE MANAGEMENT OFFICE (TMO)';
-        $footerCode = ($user->role === 'bplo_staff') ? 'BPLO' : 'TMO';
+        $footerCode = strtoupper($office);
 
         $periodLabel = ($from && $to)
             ? Carbon::parse($from)->format('M d, Y') . ' to ' . Carbon::parse($to)->format('M d, Y')
@@ -295,7 +296,7 @@ class AuditLogController extends Controller
     /**
      * Export to styled Excel (.xlsx) with non-sticky header and clean formatted action labels (no IP column).
      */
-    protected function exportXlsx($records, string $timestampStr, $user, array $filters, $from, $to): StreamedResponse
+    protected function exportXlsx($records, string $timestampStr, $user, array $filters, $from, $to, string $office): StreamedResponse
     {
         $spreadsheet = new Spreadsheet();
         $spreadsheet->getDefaultStyle()->getFont()->setName('Segoe UI');
@@ -303,10 +304,10 @@ class AuditLogController extends Controller
         $sheet->setTitle('System Activity Logs');
         $sheet->getPageSetup()->setOrientation(PageSetup::ORIENTATION_LANDSCAPE);
 
-        $officeName = ($user->role === 'bplo_staff')
+        $officeName = ($office === 'bplo')
             ? 'BUSINESS PERMITS AND LICENSING OFFICE (BPLO)'
             : 'TRICYCLE MANAGEMENT OFFICE (TMO)';
-        $footerCode = ($user->role === 'bplo_staff') ? 'BPLO' : 'TMO';
+        $footerCode = strtoupper($office);
 
         $periodLabel = ($from && $to)
             ? 'Period: ' . Carbon::parse($from)->format('M d, Y') . ' to ' . Carbon::parse($to)->format('M d, Y')
@@ -477,6 +478,27 @@ class AuditLogController extends Controller
 
             echo json_encode($exportData, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
         }, 200, $headers);
+    }
+
+    /**
+     * Office whose log is being viewed, taken from the route so admins get the same split.
+     */
+    protected function office(Request $request): string
+    {
+        return $request->routeIs('bplo.*') ? 'bplo' : 'tmo';
+    }
+
+    /**
+     * Actor roles each office may see: TMO sees its personnel and drivers, BPLO only its own staff.
+     */
+    protected function scopedRoles(string $office): array
+    {
+        return $office === 'bplo' ? ['bplo_staff'] : ['tmo_personnel', 'tricycle_driver'];
+    }
+
+    protected function scopedQuery(string $office)
+    {
+        return AuditLog::forAdminWeb()->whereIn('actor_role', $this->scopedRoles($office));
     }
 
     /**
